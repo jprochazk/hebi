@@ -2,19 +2,20 @@
 
 use std::fmt;
 
+use beef::lean::Cow;
 use logos::Logos;
 use span::Span;
 
 #[derive(Clone, Debug)]
-pub struct Token {
+pub struct Token<'src> {
   pub ws: usize,
+  pub lexeme: Cow<'src, str>,
   pub kind: TokenKind,
   pub span: Span,
 }
 
 pub struct Lexer<'src> {
-  src: &'src str,
-  tokens: Vec<Token>,
+  tokens: Vec<Token<'src>>,
   eof: Span,
 }
 
@@ -37,7 +38,7 @@ impl<'src> Lexer<'src> {
       let span = lexer.span().into();
 
       match kind {
-        // Handle whitespace
+        // Handle indentation
         TokenKind::_Indentation => {
           ws = lexeme.trim_start_matches(|c| c == '\n' || c == '\r').len();
           continue;
@@ -54,7 +55,12 @@ impl<'src> Lexer<'src> {
         }
         // Any other token is stored with its preceding whitespace
         _ => {
-          tokens.push(Token { ws, kind, span });
+          tokens.push(Token {
+            ws,
+            lexeme: lexeme.into(),
+            kind,
+            span,
+          });
           ws = 0;
         }
       }
@@ -63,12 +69,8 @@ impl<'src> Lexer<'src> {
     if !errors.is_empty() {
       Err(errors)
     } else {
-      Ok(Lexer { src, tokens, eof })
+      Ok(Lexer { tokens, eof })
     }
-  }
-
-  fn lexeme(&self, span: Span) -> &'src str {
-    &self.src[span.start..span.end]
   }
 }
 
@@ -93,7 +95,7 @@ impl<'src> peg::Parse for Lexer<'src> {
 }
 
 impl<'src> peg::ParseElem<'src> for Lexer<'src> {
-  type Element = &'src Token;
+  type Element = &'src Token<'src>;
 
   fn parse_elem(&'src self, pos: usize) -> peg::RuleResult<Self::Element> {
     match self.tokens.get(pos) {
@@ -109,7 +111,7 @@ impl<'src> peg::ParseLiteral for Lexer<'src> {
       return peg::RuleResult::Failed;
     };
 
-    if self.lexeme(token.span) == literal {
+    if token.lexeme.as_ref() == literal {
       peg::RuleResult::Matched(pos + 1, ())
     } else {
       peg::RuleResult::Failed
@@ -118,18 +120,20 @@ impl<'src> peg::ParseLiteral for Lexer<'src> {
 }
 
 impl<'src> peg::ParseSlice<'src> for Lexer<'src> {
-  type Slice = &'src [Token];
+  type Slice = &'src [Token<'src>];
 
   fn parse_slice(&'src self, p1: usize, p2: usize) -> Self::Slice {
     &self.tokens[p1..p2]
   }
 }
 
-#[derive(Clone, Debug, Logos)]
+#[derive(Clone, Copy, Debug, Logos)]
 pub enum TokenKind {
   // Keywords
   #[token("use")]
   Kw_Use,
+  #[token("as")]
+  Kw_As,
   #[token("pub")]
   Kw_Pub,
   #[token("fn")]
@@ -177,13 +181,13 @@ pub enum TokenKind {
   #[token(".")]
   Op_Dot,
   #[token(",")]
-  Comma,
+  Tok_Comma,
   #[token(";")]
-  Semicolon,
+  Tok_Semicolon,
   #[token(":")]
-  Colon,
+  Tok_Colon,
   #[token("?")]
-  Question,
+  Tok_Question,
 
   // Equals operators
   #[token("=")]
@@ -276,17 +280,17 @@ pub enum TokenKind {
 
 impl<'src> fmt::Debug for Lexer<'src> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    struct DebugToken<'src>(&'src str, Token);
+    struct DebugToken<'src>(Token<'src>);
     impl<'src> fmt::Debug for DebugToken<'src> {
       fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let TokenKind::Lit_Ident = self.1.kind {
+        if let TokenKind::Lit_Ident = self.0.kind {
           write!(
             f,
             "(>{} {:?} `{}` @{})",
-            self.1.ws, self.1.kind, self.0, self.1.span
+            self.0.ws, self.0.kind, self.0.lexeme, self.0.span
           )
         } else {
-          write!(f, "(>{} {:?} @{})", self.1.ws, self.1.kind, self.1.span)
+          write!(f, "(>{} {:?} @{})", self.0.ws, self.0.kind, self.0.span)
         }
       }
     }
@@ -295,7 +299,7 @@ impl<'src> fmt::Debug for Lexer<'src> {
       .tokens
       .clone()
       .into_iter()
-      .map(|token| DebugToken(self.lexeme(token.span), token))
+      .map(DebugToken)
       .collect::<Vec<_>>()
       .fmt(f)
   }

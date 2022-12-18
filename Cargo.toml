@@ -1,7 +1,8 @@
 [workspace]
 members = [
   "crates/span",
-  "crates/syntax"
+  "crates/diag",
+  "crates/syntax",
 ]
 
 [profile.dev.package.insta]

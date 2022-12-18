@@ -1,0 +1,11 @@
+---
+source: crates/diag/src/report/tests.rs
+expression: report.emit_to_string().unwrap()
+---
+error: invalid character sequence
+> test.mu:1
+| 
+| "
+| \
+| 
+

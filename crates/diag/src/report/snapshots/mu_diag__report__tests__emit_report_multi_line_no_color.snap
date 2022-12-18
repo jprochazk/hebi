@@ -1,0 +1,14 @@
+---
+source: crates/diag/src/report/tests.rs
+expression: report.emit_to_string().unwrap()
+---
+error: mismatched type
+> test.mu:1
+| 
+| let x: Foo = Bar {
+|   a: 0,
+|   b: 0,
+| };
+| 
++ expected `Foo`, found `Bar`
+
