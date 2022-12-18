@@ -1,0 +1,20 @@
+[package]
+name = "mu_syntax"
+description = "Syntax definitions and parser for the Mu language"
+repository = "https://github.com/jprochazk/mu"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+beef = "0.5.2"
+logos = "0.12.1"
+peg = "0.8.1"
+
+span = { path = "../span", package = "mu_span" }
+
+[dev-dependencies]
+insta = "1.23.0"
