@@ -46,15 +46,17 @@ v["a"]
 v(a)
 
 # functions
-# last expr return
 fn add(a, b):
-  a + b
+  return a + b
 
 v = add(0, 1)
 
 fn fib(n):
-  if n < 2: n
-  else: n * fib(n - 1)
+  if n < 2:
+    return n
+  else:
+    return n * fib(n - 1)
+
 fn print_fib(n):
   print(fib(n))
 
@@ -71,7 +73,8 @@ fn counter(start, step, end):
   loop:
     yield n
     n += step
-    if end && n > end: return
+    if end && n > end:
+      return
 
 for n in counter(0, 10, 100):
   print(n)
@@ -83,41 +86,38 @@ while v < 10:
 
 v = 0
 loop:
-  if v >= 10: break
+  if v >= 10:
+    break
   print(v)
   v += 1
 
-if v >= 10: print("larger than 10", v)
-else: print("not larger than 10", v)
-
 if v < 10:
   print("less than 10")
-else if v < 20:
+elif v < 20:
   print("less than 20")
 else:
   print("very large")
-
-# `if` is an expression
-fn clamp(v, min, max):
-  if v < min: min
-  elif v > max: max
-  else: v
 
 class Test:
   init(self, n):
     self.n = n
 
   get_n(self):
-    self.n
-
-  test0():
-    print("static", Test)
+    return self.n
 
   test1(self):
     print("instance", self)
 
+  test0():
+    print("static", Test)
+
 v = Test()
 print(v.get_n() == Test.get_n(v)) # true
+
+v = Test(n=10)
+
+Test.test0()
+v.test1()
 
 # errors
 # no exceptions, panic = abort

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::Range;
 
 use beef::lean::Cow;
 use span::Spanned;
@@ -10,6 +11,21 @@ pub type Map<K, V> = BTreeMap<K, V>;
 pub struct Module<'src> {
   pub imports: Vec<Import<'src>>,
   pub body: Vec<Stmt<'src>>,
+}
+
+impl<'src> Module<'src> {
+  pub fn new() -> Self {
+    Self {
+      imports: vec![],
+      body: vec![],
+    }
+  }
+}
+
+impl<'src> Default for Module<'src> {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -35,9 +51,11 @@ pub type Stmt<'src> = Spanned<StmtKind<'src>>;
 
 #[cfg_attr(test, derive(Debug))]
 pub enum StmtKind<'src> {
+  If(Box<If<'src>>),
+  Loop(Box<Loop<'src>>),
+  Ctrl(Box<Ctrl<'src>>),
   Func(Box<Func<'src>>),
   Class(Box<Class<'src>>),
-  Loop(Box<Loop<'src>>),
   Expr(Box<Expr<'src>>),
 }
 
@@ -46,7 +64,6 @@ pub struct Func<'src> {
   pub name: Ident<'src>,
   pub params: Vec<Ident<'src>>,
   pub body: Vec<Stmt<'src>>,
-  pub last_expr: Option<Expr<'src>>,
   pub has_yield: bool,
 }
 
@@ -93,8 +110,6 @@ pub enum ExprKind<'src> {
   GetField(Box<GetField<'src>>),
   SetField(Box<SetField<'src>>),
   Call(Box<Call<'src>>),
-  If(Box<If<'src>>),
-  Ctrl(Box<Ctrl<'src>>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -190,20 +205,51 @@ pub struct Call<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct If<'src> {
   pub branches: Vec<Branch<'src>>,
-  pub default: Option<Branch<'src>>,
+  pub default: Option<Vec<Stmt<'src>>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub struct Branch<'src> {
   pub cond: Expr<'src>,
   pub body: Vec<Stmt<'src>>,
-  pub last_expr: Option<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub enum Ctrl<'src> {
-  Yield(Expr<'src>),
   Return(Option<Expr<'src>>),
-  Break,
+  Yield(Expr<'src>),
   Continue,
+  Break,
+}
+
+pub fn stmt_if<'src>(
+  s: Range<usize>,
+  branches: Vec<Branch<'src>>,
+  default: Option<Vec<Stmt<'src>>>,
+) -> Stmt<'src> {
+  Stmt::new(s, StmtKind::If(Box::new(If { branches, default })))
+}
+
+pub fn branch<'src>(cond: Expr<'src>, body: Vec<Stmt<'src>>) -> Branch<'src> {
+  Branch { cond, body }
+}
+
+pub fn stmt_expr(e: Expr) -> Stmt {
+  Stmt::new(e.span, StmtKind::Expr(Box::new(e)))
+}
+
+pub fn stmt_return(s: Range<usize>, v: Option<Expr>) -> Stmt {
+  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Return(v))))
+}
+
+pub fn stmt_yield(s: Range<usize>, v: Expr) -> Stmt {
+  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Yield(v))))
+}
+
+pub fn stmt_continue<'src>(s: Range<usize>) -> Stmt<'src> {
+  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Continue)))
+}
+
+pub fn stmt_break<'src>(s: Range<usize>) -> Stmt<'src> {
+  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Break)))
 }

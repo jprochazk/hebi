@@ -1,5 +1,5 @@
 ---
-source: crates/syntax/src/grammar/tests.rs
+source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
 Module {
@@ -8,36 +8,18 @@ Module {
             path: [
                 "a",
             ],
-            alias: None,
+            alias: Some(
+                "x",
+            ),
         },
         Import {
             path: [
                 "a",
                 "b",
             ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-                "c",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "c",
-            ],
-            alias: None,
+            alias: Some(
+                "x",
+            ),
         },
         Import {
             path: [
@@ -45,7 +27,37 @@ Module {
                 "b",
                 "c",
             ],
-            alias: None,
+            alias: Some(
+                "x",
+            ),
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+            ],
+            alias: Some(
+                "x",
+            ),
+        },
+        Import {
+            path: [
+                "a",
+                "c",
+            ],
+            alias: Some(
+                "y",
+            ),
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+                "c",
+            ],
+            alias: Some(
+                "x",
+            ),
         },
         Import {
             path: [
@@ -53,39 +65,51 @@ Module {
                 "d",
                 "e",
             ],
-            alias: None,
+            alias: Some(
+                "y",
+            ),
         },
         Import {
             path: [
                 "a",
                 "b",
             ],
-            alias: None,
+            alias: Some(
+                "x",
+            ),
         },
         Import {
             path: [
                 "c",
                 "d",
             ],
-            alias: None,
+            alias: Some(
+                "y",
+            ),
         },
         Import {
             path: [
                 "a",
             ],
-            alias: None,
+            alias: Some(
+                "x",
+            ),
         },
         Import {
             path: [
                 "b",
             ],
-            alias: None,
+            alias: Some(
+                "y",
+            ),
         },
         Import {
             path: [
                 "c",
             ],
-            alias: None,
+            alias: Some(
+                "z",
+            ),
         },
     ],
     body: [],

@@ -1,21 +1,27 @@
 #![allow(non_camel_case_types)]
 
 use std::fmt;
+use std::ops::Range;
 
-use beef::lean::Cow;
 use logos::Logos;
 use span::Span;
 
 #[derive(Clone, Debug)]
-pub struct Token<'src> {
-  pub ws: usize,
-  pub lexeme: Cow<'src, str>,
+pub struct Token {
+  ws: Option<u64>,
   pub kind: TokenKind,
   pub span: Span,
 }
 
+impl Token {
+  pub fn indent(&self) -> Option<u64> {
+    self.ws
+  }
+}
+
 pub struct Lexer<'src> {
-  tokens: Vec<Token<'src>>,
+  src: &'src str,
+  tokens: Vec<Token>,
   eof: Span,
 }
 
@@ -29,18 +35,20 @@ impl<'src> Lexer<'src> {
   pub fn lex(src: &'src str) -> Result<Self, Vec<Error>> {
     let eof = (src.len()..src.len()).into();
 
-    let mut ws = 0;
+    let mut ws = Some(0);
     let mut errors = vec![];
     let mut tokens = vec![];
     let mut lexer = logos::Lexer::<'src, TokenKind>::new(src);
     while let Some(kind) = lexer.next() {
+      println!("{kind:?}");
       let lexeme = lexer.slice();
       let span = lexer.span().into();
 
       match kind {
         // Handle indentation
         TokenKind::_Indentation => {
-          ws = lexeme.trim_start_matches(|c| c == '\n' || c == '\r').len();
+          let n = lexeme.trim_start_matches(|c| c == '\n' || c == '\r').len() as u64;
+          ws = Some(n);
           continue;
         }
         // Filter any other whitespace and comments
@@ -55,13 +63,8 @@ impl<'src> Lexer<'src> {
         }
         // Any other token is stored with its preceding whitespace
         _ => {
-          tokens.push(Token {
-            ws,
-            lexeme: lexeme.into(),
-            kind,
-            span,
-          });
-          ws = 0;
+          tokens.push(Token { ws, kind, span });
+          ws = None;
         }
       }
     }
@@ -69,8 +72,20 @@ impl<'src> Lexer<'src> {
     if !errors.is_empty() {
       Err(errors)
     } else {
-      Ok(Lexer { tokens, eof })
+      Ok(Lexer { src, tokens, eof })
     }
+  }
+
+  pub fn get(&self, pos: usize) -> Option<&Token> {
+    self.tokens.get(pos)
+  }
+
+  pub fn lexeme(&self, token: &Token) -> &'src str {
+    &self.src[Range::from(token.span)]
+  }
+
+  pub fn tokens(&self) -> &[Token] {
+    &self.tokens[..]
   }
 }
 
@@ -95,11 +110,11 @@ impl<'src> peg::Parse for Lexer<'src> {
 }
 
 impl<'src> peg::ParseElem<'src> for Lexer<'src> {
-  type Element = &'src Token<'src>;
+  type Element = &'src TokenKind;
 
   fn parse_elem(&'src self, pos: usize) -> peg::RuleResult<Self::Element> {
     match self.tokens.get(pos) {
-      Some(token) => peg::RuleResult::Matched(pos + 1, token),
+      Some(token) => peg::RuleResult::Matched(pos + 1, &token.kind),
       None => peg::RuleResult::Failed,
     }
   }
@@ -111,7 +126,7 @@ impl<'src> peg::ParseLiteral for Lexer<'src> {
       return peg::RuleResult::Failed;
     };
 
-    if token.lexeme.as_ref() == literal {
+    if self.lexeme(token) == literal {
       peg::RuleResult::Matched(pos + 1, ())
     } else {
       peg::RuleResult::Failed
@@ -119,14 +134,8 @@ impl<'src> peg::ParseLiteral for Lexer<'src> {
   }
 }
 
-impl<'src> peg::ParseSlice<'src> for Lexer<'src> {
-  type Slice = &'src [Token<'src>];
-
-  fn parse_slice(&'src self, p1: usize, p2: usize) -> Self::Slice {
-    &self.tokens[p1..p2]
-  }
-}
-
+// When adding a token, if it is matched using `token` directive only,
+// then it should also be added to the `known` module below.
 #[derive(Clone, Copy, Debug, Logos)]
 pub enum TokenKind {
   // Keywords
@@ -263,7 +272,7 @@ pub enum TokenKind {
   Lit_Ident,
 
   #[doc(hidden)]
-  #[regex(r"\n\r?[ ]+")]
+  #[regex(r"\n\r?[ ]*")]
   _Indentation,
   #[doc(hidden)]
   #[regex(r"[ \n\r]+", logos::skip)]
@@ -280,17 +289,26 @@ pub enum TokenKind {
 
 impl<'src> fmt::Debug for Lexer<'src> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    struct DebugToken<'src>(Token<'src>);
-    impl<'src> fmt::Debug for DebugToken<'src> {
+    struct DebugToken<'src, 'lex>(Token, &'lex Lexer<'src>);
+    impl<'src, 'lex> fmt::Debug for DebugToken<'src, 'lex> {
       fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let TokenKind::Lit_Ident = self.0.kind {
           write!(
             f,
             "(>{} {:?} `{}` @{})",
-            self.0.ws, self.0.kind, self.0.lexeme, self.0.span
+            self.0.ws.unwrap_or(0),
+            self.0.kind,
+            &self.1.src[Range::from(self.0.span)],
+            self.0.span
           )
         } else {
-          write!(f, "(>{} {:?} @{})", self.0.ws, self.0.kind, self.0.span)
+          write!(
+            f,
+            "(>{} {:?} @{})",
+            self.0.ws.unwrap_or(0),
+            self.0.kind,
+            self.0.span
+          )
         }
       }
     }
@@ -299,7 +317,7 @@ impl<'src> fmt::Debug for Lexer<'src> {
       .tokens
       .clone()
       .into_iter()
-      .map(DebugToken)
+      .map(|t| DebugToken(t, self))
       .collect::<Vec<_>>()
       .fmt(f)
   }

@@ -6,6 +6,7 @@ error: invalid character sequence
 > test.mu:1
 | 
 | "
-| \
+| 
+\
 | 
 

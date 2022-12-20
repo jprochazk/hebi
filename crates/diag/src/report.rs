@@ -39,8 +39,8 @@ impl<'a> ReportBuilder<'a> {
     self
   }
 
-  pub fn message(mut self, message: Cow<'a, str>) -> Self {
-    self.message = Some(message);
+  pub fn message(mut self, message: impl Into<Cow<'a, str>>) -> Self {
+    self.message = Some(message.into());
     self
   }
 
@@ -49,8 +49,8 @@ impl<'a> ReportBuilder<'a> {
     self
   }
 
-  pub fn label(mut self, label: Cow<'a, str>) -> Self {
-    self.label = Some(label);
+  pub fn label(mut self, label: impl Into<Cow<'a, str>>) -> Self {
+    self.label = Some(label.into());
     self
   }
 
@@ -226,10 +226,10 @@ impl<'a> Report<'a> {
         w,
         "{} {}{}",
         pipe,
-        &snippet.s[..snippet.span.start], // unspanned
+        &snippet.s[..snippet.span.start].trim_start(), // unspanned
         style.span(
           snippet.s[snippet.span.start..first_lf] // spanned
-            .trim()
+            .trim_end()
         )
       )?;
 
@@ -274,9 +274,9 @@ impl<'a> Report<'a> {
         pipe,
         style.span(
           snippet.s[last_lf.min(snippet.span.end)..snippet.span.end] // spanned
-            .trim()
+            .trim_start()
         ),
-        &snippet.s[snippet.span.end..].trim(), // unspanned
+        &snippet.s[snippet.span.end..].trim_end(), // unspanned
       )?;
     } else {
       // single-line snippet
@@ -287,7 +287,7 @@ impl<'a> Report<'a> {
         pipe,
         &snippet.s[..snippet.span.start],
         style.span(&snippet.s[Range::from(snippet.span)]),
-        &snippet.s[snippet.span.end..].trim()
+        &snippet.s[snippet.span.end..].trim_end()
       )?;
     }
     // empty line at the end for symmetry
