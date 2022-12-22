@@ -125,6 +125,38 @@ impl<T> DerefMut for Spanned<T> {
   }
 }
 
+impl<T: std::hash::Hash> std::hash::Hash for Spanned<T> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    // self.span.hash(state);
+    self.value.hash(state);
+  }
+}
+
+impl<T: std::cmp::PartialEq> std::cmp::PartialEq for Spanned<T> {
+  fn eq(&self, other: &Self) -> bool {
+    /* self.span == other.span && */
+    self.value == other.value
+  }
+}
+
+impl<T: std::cmp::Eq> std::cmp::Eq for Spanned<T> {}
+
+impl<T: std::cmp::PartialOrd> std::cmp::PartialOrd for Spanned<T> {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    /* match self.span.partial_cmp(&other.span) {
+        Some(core::cmp::Ordering::Equal) => {}
+        ord => return ord,
+    } */
+    self.value.partial_cmp(&other.value)
+  }
+}
+
+impl<T: std::cmp::Ord> std::cmp::Ord for Spanned<T> {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.value.cmp(&other.value)
+  }
+}
+
 impl<T: std::fmt::Debug> std::fmt::Debug for Spanned<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     self.value.fmt(f)
