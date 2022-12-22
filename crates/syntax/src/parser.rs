@@ -213,7 +213,7 @@ peg::parser! {
           / call_arg_one(parsing_kw) ([Tok_Comma] call_arg_one(parsing_kw))* [Tok_Comma]?
 
         rule call_arg_one(parsing_kw: &mut bool)
-          = name:ident() [Op_Equal] value:expr()
+          = name:ident() [Tok_Colon] value:expr()
           {
             *parsing_kw = true;
             temp!(s.call_args).kw(name, value);
