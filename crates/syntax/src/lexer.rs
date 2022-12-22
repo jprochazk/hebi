@@ -40,7 +40,6 @@ impl<'src> Lexer<'src> {
     let mut tokens = vec![];
     let mut lexer = logos::Lexer::<'src, TokenKind>::new(src);
     while let Some(kind) = lexer.next() {
-      println!("{kind:?}");
       let lexeme = lexer.slice();
       let span = lexer.span().into();
 
@@ -287,32 +286,33 @@ pub enum TokenKind {
   _Error,
 }
 
+pub struct DebugToken<'src>(Token, &'src Lexer<'src>);
+impl<'src> fmt::Debug for DebugToken<'src> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let ws = self
+      .0
+      .indent()
+      .map(|v| v.to_string())
+      .unwrap_or_else(|| "_".to_owned());
+    let kind = self.0.kind;
+    let span = self.0.span;
+    if let TokenKind::Lit_Ident = self.0.kind {
+      let lexeme = self.1.lexeme(&self.0);
+      write!(f, "(>{ws} {kind:?} `{lexeme}` @{span})")
+    } else {
+      write!(f, "(>{ws} {kind:?} @{span})")
+    }
+  }
+}
+
+impl<'src> Lexer<'src> {
+  pub fn debug_tokens(&'src self) -> impl Iterator<Item = DebugToken<'src>> {
+    self.tokens().iter().map(|t| DebugToken(t.clone(), self))
+  }
+}
+
 impl<'src> fmt::Debug for Lexer<'src> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    struct DebugToken<'src, 'lex>(Token, &'lex Lexer<'src>);
-    impl<'src, 'lex> fmt::Debug for DebugToken<'src, 'lex> {
-      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let TokenKind::Lit_Ident = self.0.kind {
-          write!(
-            f,
-            "(>{} {:?} `{}` @{})",
-            self.0.ws.unwrap_or(0),
-            self.0.kind,
-            &self.1.src[Range::from(self.0.span)],
-            self.0.span
-          )
-        } else {
-          write!(
-            f,
-            "(>{} {:?} @{})",
-            self.0.ws.unwrap_or(0),
-            self.0.kind,
-            self.0.span
-          )
-        }
-      }
-    }
-
     self
       .tokens
       .clone()

@@ -7,9 +7,9 @@ v = true # bool
 v = "\tas\\df\x2800\n" # string
 v = [null, 0.1, true, "\tas\\df\x2800\n"] # array
 # object
-v = {a=null, b=0.1, c=true, d="\tas\\df\x2800\n"}
-v = {["a"]=null, ["b"]=0.1, ["c"]=true, ["d"]="\tas\\df\x2800\n"}
-v = {[0]=null, [1]=0.1, [2]=true, [3]="\tas\\df\x2800\n"}
+v = {a: null, b: 0.1, c: true, d: "\tas\\df\x2800\n"}
+v = {["a"]: null, ["b"]: 0.1, ["c"]: true, ["d"]: "\tas\\df\x2800\n"}
+v = {[0]: null, [1]: 0.1, [2]: true, [3]: "\tas\\df\x2800\n"}
 
 # operators
 v = 2 + 2
@@ -114,7 +114,7 @@ class Test:
 v = Test()
 print(v.get_n() == Test.get_n(v)) # true
 
-v = Test(n=10)
+v = Test(n: 10)
 
 Test.test0()
 v.test1()

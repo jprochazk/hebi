@@ -60,6 +60,9 @@ macro_rules! unary {
     let right = $right;
     $crate::ast::expr_unary(start..right.span.end, op, right)
   }};
+  (__operator (+)) => {
+    $crate::ast::UnaryOp::Plus
+  };
   (__operator (-)) => {
     $crate::ast::UnaryOp::Minus
   };

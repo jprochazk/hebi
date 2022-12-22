@@ -1,0 +1,10 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: "report(input, e)"
+---
+[31merror[0m: invalid indentation
+[34m>[0m code:2
+[34m|[0m 
+[34m|[0m [31;4m+[0m b
+[34m|[0m 
+

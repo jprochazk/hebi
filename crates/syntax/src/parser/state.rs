@@ -1,25 +1,24 @@
 use std::cell::RefCell;
 
 use crate::ast;
-use crate::ast::{Args, Expr, Ident, Module};
+use crate::ast::{Args, Expr, Module};
 use crate::lexer::{Lexer, Token};
 
-pub struct State<'src, 'lex> {
-  pub lexer: &'lex Lexer<'src>,
+pub struct State<'src> {
+  pub lexer: &'src Lexer<'src>,
   pub indent: IndentStack,
   pub module: Module<'src>,
   pub temp: Temp<'src>,
 }
 
-#[derive(Default)]
 pub struct Temp<'src> {
   pub call_args: Args<'src>,
   pub array_items: Vec<Expr<'src>>,
-  pub object_fields: Vec<(Ident<'src>, Expr<'src>)>,
+  pub object_fields: Vec<(Expr<'src>, Expr<'src>)>,
 }
 
-impl<'src, 'lex> State<'src, 'lex> {
-  pub fn new(lexer: &'lex Lexer<'src>) -> Self {
+impl<'src> State<'src> {
+  pub fn new(lexer: &'src Lexer<'src>) -> Self {
     Self {
       lexer,
       indent: IndentStack::new(),
@@ -79,10 +78,10 @@ impl IndentStack {
   }
 }
 
-pub struct StateRef<'src, 'lex>(RefCell<State<'src, 'lex>>);
+pub struct StateRef<'src>(RefCell<State<'src>>);
 
-impl<'src, 'lex> StateRef<'src, 'lex> {
-  pub fn new(lexer: &'lex Lexer<'src>) -> Self {
+impl<'src> StateRef<'src> {
+  pub fn new(lexer: &'src Lexer<'src>) -> Self {
     Self(RefCell::new(State::new(lexer)))
   }
 
@@ -94,11 +93,11 @@ impl<'src, 'lex> StateRef<'src, 'lex> {
     self.0.borrow_mut().module.imports.push(import)
   }
 
-  pub fn get_token(&self, pos: usize) -> &'lex Token {
+  pub fn get_token(&self, pos: usize) -> &'src Token {
     self.0.borrow().lexer.get(pos).unwrap()
   }
 
-  pub fn get_lexeme(&self, token: &'lex Token) -> &'src str {
+  pub fn get_lexeme(&self, token: &'src Token) -> &'src str {
     let lexer = self.0.borrow().lexer;
     lexer.lexeme(token)
   }
@@ -131,11 +130,11 @@ impl<'src, 'lex> StateRef<'src, 'lex> {
     self.0.borrow().indent.is_indent_gt(n)
   }
 
-  pub fn into_inner(self) -> State<'src, 'lex> {
+  pub fn into_inner(self) -> State<'src> {
     self.0.into_inner()
   }
 
-  pub fn inner(&self) -> &RefCell<State<'src, 'lex>> {
+  pub fn inner(&self) -> &RefCell<State<'src>> {
     &self.0
   }
 }

@@ -156,6 +156,7 @@ pub struct Unary<'src> {
 
 #[cfg_attr(test, derive(Debug))]
 pub enum UnaryOp {
+  Plus,
   Minus,
   Not,
 }
@@ -317,6 +318,21 @@ pub fn expr_field<'src>(s: Range<usize>, target: Expr<'src>, key: Ident<'src>) -
 
 pub fn expr_array(s: Range<usize>, items: Vec<Expr>) -> Expr {
   Expr::new(s, ExprKind::Literal(Box::new(Literal::Array(items))))
+}
+
+pub fn ident_key(v: Ident) -> Expr {
+  Expr::new(
+    v.span,
+    ExprKind::Literal(Box::new(Literal::String(v.into_inner().clone()))),
+  )
+}
+
+pub fn expr_object<'src>(s: Range<usize>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
+  Expr::new(s, ExprKind::Literal(Box::new(Literal::Object(items))))
+}
+
+pub fn expr_get_var(name: Ident) -> Expr {
+  Expr::new(name.span, ExprKind::GetVar(Box::new(GetVar { name })))
 }
 
 pub mod lit {
