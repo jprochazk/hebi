@@ -199,7 +199,36 @@ pub enum AssignOp {
 #[cfg_attr(test, derive(Debug))]
 pub struct Call<'src> {
   pub target: Expr<'src>,
-  pub args: Vec<Expr<'src>>,
+  pub args: Args<'src>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Args<'src> {
+  pub pos: Vec<Expr<'src>>,
+  pub kw: Map<Ident<'src>, Expr<'src>>,
+}
+
+impl<'src> Args<'src> {
+  pub fn new() -> Self {
+    Self {
+      pos: Vec::new(),
+      kw: Map::new(),
+    }
+  }
+
+  pub fn pos(&mut self, value: Expr<'src>) {
+    self.pos.push(value);
+  }
+
+  pub fn kw(&mut self, name: Ident<'src>, value: Expr<'src>) {
+    self.kw.insert(name, value);
+  }
+}
+
+impl<'src> Default for Args<'src> {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -252,4 +281,67 @@ pub fn stmt_continue<'src>(s: Range<usize>) -> Stmt<'src> {
 
 pub fn stmt_break<'src>(s: Range<usize>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Break)))
+}
+
+pub fn expr_binary<'src>(
+  s: Range<usize>,
+  op: BinaryOp,
+  left: Expr<'src>,
+  right: Expr<'src>,
+) -> Expr<'src> {
+  Expr::new(s, ExprKind::Binary(Box::new(Binary { op, left, right })))
+}
+
+pub fn expr_unary(s: Range<usize>, op: UnaryOp, right: Expr) -> Expr {
+  Expr::new(s, ExprKind::Unary(Box::new(Unary { op, right })))
+}
+
+pub fn expr_call<'src>(s: Range<usize>, target: Expr<'src>, args: Args<'src>) -> Expr<'src> {
+  Expr::new(s, ExprKind::Call(Box::new(Call { target, args })))
+}
+
+pub fn expr_index<'src>(s: Range<usize>, target: Expr<'src>, key: Expr<'src>) -> Expr<'src> {
+  Expr::new(s, ExprKind::GetField(Box::new(GetField { target, key })))
+}
+
+pub fn expr_field<'src>(s: Range<usize>, target: Expr<'src>, key: Ident<'src>) -> Expr<'src> {
+  expr_index(
+    s,
+    target,
+    Expr::new(
+      key.span,
+      ExprKind::Literal(Box::new(Literal::String(key.into_inner()))),
+    ),
+  )
+}
+
+pub fn expr_array(s: Range<usize>, items: Vec<Expr>) -> Expr {
+  Expr::new(s, ExprKind::Literal(Box::new(Literal::Array(items))))
+}
+
+pub mod lit {
+  use super::*;
+
+  pub fn null<'src>(_: &str) -> Literal<'src> {
+    Literal::Null
+  }
+
+  pub fn bool(lexeme: &str) -> Literal {
+    let v = match lexeme {
+      "true" => true,
+      "false" => false,
+      _ => unreachable!("bool is only ever `true` or `false`"),
+    };
+    Literal::Bool(v)
+  }
+
+  pub fn num(lexeme: &str) -> Option<Literal> {
+    Some(Literal::Number(lexeme.parse().ok()?))
+  }
+
+  pub fn str(lexeme: &str) -> Literal {
+    let lexeme = lexeme.strip_prefix('"').unwrap_or(lexeme);
+    let lexeme = lexeme.strip_suffix('"').unwrap_or(lexeme);
+    Literal::String(Cow::from(lexeme))
+  }
 }
