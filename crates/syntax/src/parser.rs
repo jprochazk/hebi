@@ -1,4 +1,11 @@
+#[macro_use]
+mod macros;
+
 mod state;
+
+use std::cell::RefCell;
+
+use state::State;
 
 use crate::ast;
 use crate::lexer::Lexer;
@@ -25,22 +32,20 @@ pub fn parse<'lex, 'src>(
 where
   'lex: 'src,
 {
-  let mut s = State::new(lex);
-  grammar::module(lex, &mut s)?;
-  Ok(s.module)
+  let s = RefCell::new(State::new(lex));
+  grammar::module(lex, &s)?;
+  Ok(s.into_inner().module)
 }
 
-use state::State;
-
 peg::parser! {
-  grammar grammar<'src, 'lex>(s: &mut State<'input, 'lex>) for Lexer<'src> {
+  grammar grammar<'src, 'lex>(s: &RefCell<State<'input, 'lex>>) for Lexer<'src> {
     pub rule module()
       = top_level_stmt()*
 
     rule top_level_stmt()
       = __ import_stmt() // one `import_stmt` may produce multiple imports
-      / __ stmt:simple_stmt() { s.module.body.push(stmt) }
-      / __ stmt:block_stmt()  { s.module.body.push(stmt) }
+      / __ stmt:simple_stmt() { s!(s).module.body.push(stmt) }
+      / __ stmt:block_stmt()  { s!(s).module.body.push(stmt) }
 
     rule import_stmt()
       = [Kw_Use] import_path_inner(&vec![])
@@ -54,8 +59,8 @@ peg::parser! {
 
       rule import_path( path: &Vec<ast::Ident<'input>>)
         = name:ident() [Op_Dot] import_path_inner(&path.with(name))
-        / name:ident() [Kw_As] alias:ident() { s.module.imports.push(ast::Import::alias(path.with(name), alias)); }
-        / name:ident() { s.module.imports.push(ast::Import::normal(path.with(name))); }
+        / name:ident() [Kw_As] alias:ident() { s!(s).module.imports.push(ast::Import::alias(path.with(name), alias)); }
+        / name:ident() { s!(s).module.imports.push(ast::Import::normal(path.with(name))); }
 
     // statements that don't introduce blocks must not be indented
     rule simple_stmt() -> ast::Stmt<'input>
@@ -100,16 +105,16 @@ peg::parser! {
         = [Kw_For] { todo!() }
 
         rule while_loop_stmt() -> ast::Stmt<'input>
-        = [Kw_For] { todo!() }
+        = [Kw_While] { todo!() }
 
         rule inf_loop_stmt() -> ast::Stmt<'input>
-        = [Kw_For] { todo!() }
+        = [Kw_Loop] { todo!() }
 
       rule fn_stmt() -> ast::Stmt<'input>
-        = [Kw_For]  { todo!() }
+        = [Kw_Fn]  { todo!() }
 
       rule class_stmt() -> ast::Stmt<'input>
-        = [Kw_For] { todo!() }
+        = [Kw_Class] { todo!() }
 
     rule block_body() -> Vec<ast::Stmt<'input>>
       = // one un-indented simple stmt
@@ -117,8 +122,10 @@ peg::parser! {
           vec![stmt]
         }
         // or any number of statements in a freshly indented block
-      / ___ first:stmt()
+      / expect_indent()
+        first:stmt()
         other:(__ stmt:stmt() { stmt })*
+        expect_dedent()
         {
           let mut other = other;
           other.splice(0..0, [first]);
@@ -129,23 +136,100 @@ peg::parser! {
     rule stmt() -> ast::Stmt<'input>
       = [_] { todo!() }
 
+    // TODO: assignment is an expression, but it may not be present in other expressions
+    // *AND* it may only actually exist in the context of a statement.
+    // TODO: expr_range is not a thing, it only exists in the context of `for` loops.
+
     // exprs care about whitespace unless they are within parentheses
     rule expr() -> ast::Expr<'input>
-      = [_] { todo!() }
+      = precedence! {
+        left:(@) _ [Op_QuestionQuestion] _ right:@ { binary!(left (??) right) }
+        --
+        left:(@) _ [Op_PipePipe] _ right:@ { binary!(left (||) right) }
+        --
+        left:(@) _ [Op_AndAnd] _ right:@ { binary!(left (&&) right) }
+        --
+        left:(@) _ [Op_EqualEqual] _ right:@ { binary!(left (==) right) }
+        left:(@) _ [Op_BangEqual] _ right:@ { binary!(left (!=) right) }
+        --
+        left:(@) _ [Op_More] _ right:@ { binary!(left (>) right) }
+        left:(@) _ [Op_MoreEqual] _ right:@ { binary!(left (>=) right) }
+        left:(@) _ [Op_Less] _ right:@ { binary!(left (<) right) }
+        left:(@) _ [Op_LessEqual] _ right:@ { binary!(left (<=) right) }
+        --
+        left:(@) _ [Op_Plus] _ right:@ { binary!(left (+) right) }
+        left:(@) _ [Op_Minus] _ right:@ { binary!(left (-) right) }
+        --
+        left:(@) _ [Op_Star] _ right:@ { binary!(left (*) right) }
+        left:(@) _ [Op_Slash] _ right:@ { binary!(left (/) right) }
+        left:(@) _ [Op_Percent] _ right:@ { binary!(left (%) right) }
+        --
+        left:(@) _ [Op_StarStar] _ right:@ { binary!(left (**) right) }
+        --
+        p:position!() [Op_Minus] _ right:(@) { unary!(p (-) right) }
+        p:position!() [Op_Not] _ right:(@) { unary!(p (!) right) }
+        --
+        left:(@) _ [Brk_ParenL] args:ignore_indent(<call_args()>) [Brk_ParenR] end:position!()
+          { ast::expr_call(left.span.start..end, left, args) }
+        left:(@) _ [Brk_SquareL] key:expr() [Brk_SquareR] end:position!()
+          { ast::expr_index(left.span.start..end, left, key) }
+        left:(@) _ [Op_Dot] key:ident()
+          { ast::expr_field(left.span.start..key.span.end, left, key) }
+        --
+        pos:position!() [Lit_Null] { literal!(s @ pos, null) }
+        pos:position!() [Lit_Bool] { literal!(s @ pos, bool) }
+        e:(pos:position!() [Lit_Number] {? literal!(s @ pos, num?) }) { e }
+        pos:position!() [Lit_String] { literal!(s @ pos, str) }
+        e:expr_array() { e }
+        e:expr_object() { e }
+      }
+
+        rule expr_array() -> ast::Expr<'input>
+          = l:position!()
+            [Brk_SquareL] (array_item() ([Tok_Comma] array_item())* [Tok_Comma]?)? [Brk_SquareR]
+            r:position!()
+            { ast::expr_array(l..r, take!(s.array_items)) }
+
+          rule array_item()
+            = e:expr() { s!(s).temp.array_items.push(e); }
+
+        rule expr_object() -> ast::Expr<'input>
+          = [_] {todo!()}
+
+      rule call_args() -> ast::Args<'input>
+        = call_args_inner(&mut false) { take!(s.call_args) }
+
+        rule call_args_inner(parsing_kw: &mut bool)
+          = &[Brk_ParenR]
+          / call_arg_one(parsing_kw) ([Tok_Comma] call_arg_one(parsing_kw))* [Tok_Comma]?
+
+        rule call_arg_one(parsing_kw: &mut bool)
+          = name:ident() [Op_Equal] value:expr() {
+              *parsing_kw = true;
+              s!(s).temp.call_args.kw(name, value);
+            }
+          / value:expr() {?
+            if *parsing_kw { return Err("keyword argument") }
+            s!(s).temp.call_args.pos(value);
+            Ok(())
+          }
 
     rule ident() -> ast::Ident<'input>
       = pos:position!() [Lit_Ident]
       {
-        let t = s.lexer.get(pos).unwrap();
-        ast::Ident::new(t.span, s.lexer.lexeme(t).into())
+        let t = s!(s).lexer.get(pos).unwrap();
+        ast::Ident::new(t.span, s!(s).lexer.lexeme(t).into())
       }
 
     // indentation rules
 
     /// indent == None
     rule _()
-      = &[_] pos:position!() {?
-        let t = s.lexer.get(pos).unwrap();
+      = pos:position!() &[_] {?
+        if s!(s).indent.is_ignored() {
+          return Ok(());
+        }
+        let t = s!(s).lexer.get(pos).unwrap();
         match t.indent() {
           Some(_) => Ok(()),
           None => Err("invalid indentation"),
@@ -154,27 +238,50 @@ peg::parser! {
 
     /// indent == current_indentation_level
     rule __()
-      = &[_] pos:position!() {?
-        let t = s.lexer.get(pos).unwrap();
+      = pos:position!() &[_] {?
+        if s!(s).indent.is_ignored() {
+          return Ok(());
+        }
+        let t = s!(s).lexer.get(pos).unwrap();
         let Some(n) = t.indent() else {
           return Err("invalid indentation")
         };
-        if !s.indent.is_indent_eq(n) {
+        if !s!(s).indent.is_indent_eq(n) {
           return Err("invalid indentation")
         }
         Ok(())
       }
 
     /// indent > current_indentation_level
-    rule ___()
-      = &[_] pos:position!() {?
-        let t = s.lexer.get(pos).unwrap();
+    rule expect_indent()
+      = pos:position!() &[_] {?
+        if s!(s).indent.is_ignored() {
+          return Ok(());
+        }
+        let t = s!(s).lexer.get(pos).unwrap();
         let Some(n) = t.indent() else {
           return Err("invalid indentation")
         };
-        if !s.indent.is_indent_gt(n) {
+        if !s!(s).indent.is_indent_gt(n) {
           return Err("invalid indentation")
         }
+        s!(s).indent.indent(n);
+        Ok(())
+      }
+
+    rule expect_dedent()
+      = pos:position!() &[_] {?
+        if s!(s).indent.is_ignored() {
+          return Ok(());
+        }
+        let t = s!(s).lexer.get(pos).unwrap();
+        let Some(n) = t.indent() else {
+          return Err("invalid indentation")
+        };
+        if !s!(s).indent.is_indent_lt(n) {
+          return Err("invalid indentation");
+        }
+        s!(s).indent.dedent();
         Ok(())
       }
 
@@ -182,10 +289,10 @@ peg::parser! {
       = _ignore_indent_start() v:inner() _ignore_indent_end() { v }
 
       rule _ignore_indent_start()
-        = { s.indent.ignore(true) }
+        = { s!(s).indent.ignore(true) }
 
       rule _ignore_indent_end()
-        = { s.indent.ignore(false) }
+        = { s!(s).indent.ignore(false) }
 
     // rule list<I, S>(item: rule<I>, sep: rule<S>) -> (Option<I>, Vec<(S, I)>)
     //   = first:item() items:(s:sep() i:item() { (s, i) })* sep()? { (Some(first), items) }
