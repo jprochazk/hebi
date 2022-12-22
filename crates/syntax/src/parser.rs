@@ -3,9 +3,7 @@ mod macros;
 
 mod state;
 
-use std::cell::RefCell;
-
-use state::State;
+use state::StateRef;
 
 use crate::ast;
 use crate::lexer::Lexer;
@@ -32,25 +30,25 @@ pub fn parse<'lex, 'src>(
 where
   'lex: 'src,
 {
-  let s = RefCell::new(State::new(lex));
+  let s = StateRef::new(lex);
   grammar::module(lex, &s)?;
   Ok(s.into_inner().module)
 }
 
 peg::parser! {
-  grammar grammar<'src, 'lex>(s: &RefCell<State<'input, 'lex>>) for Lexer<'src> {
+  grammar grammar<'src, 'lex>(s: &StateRef<'input, 'lex>) for Lexer<'src> {
     pub rule module()
       = top_level_stmt()*
 
     rule top_level_stmt()
       = __ import_stmt() // one `import_stmt` may produce multiple imports
-      / __ stmt:simple_stmt() { s!(s).module.body.push(stmt) }
-      / __ stmt:block_stmt()  { s!(s).module.body.push(stmt) }
+      / __ stmt:simple_stmt() { s.push_stmt(stmt) }
+      / __ stmt:block_stmt()  { s.push_stmt(stmt) }
 
     rule import_stmt()
       = [Kw_Use] import_path_inner(&vec![])
 
-      rule import_path_inner( path: &Vec<ast::Ident<'input>>)
+      rule import_path_inner(path: &Vec<ast::Ident<'input>>)
         = import_path_list(path)
         / import_path(path)
 
@@ -59,8 +57,8 @@ peg::parser! {
 
       rule import_path( path: &Vec<ast::Ident<'input>>)
         = name:ident() [Op_Dot] import_path_inner(&path.with(name))
-        / name:ident() [Kw_As] alias:ident() { s!(s).module.imports.push(ast::Import::alias(path.with(name), alias)); }
-        / name:ident() { s!(s).module.imports.push(ast::Import::normal(path.with(name))); }
+        / name:ident() [Kw_As] alias:ident() { s.push_import(ast::Import::alias(path.with(name), alias)); }
+        / name:ident() { s.push_import(ast::Import::normal(path.with(name))); }
 
     // statements that don't introduce blocks must not be indented
     rule simple_stmt() -> ast::Stmt<'input>
@@ -191,7 +189,7 @@ peg::parser! {
             { ast::expr_array(l..r, take!(s.array_items)) }
 
           rule array_item()
-            = e:expr() { s!(s).temp.array_items.push(e); }
+            = e:expr() { temp!(s.array_items).push(e); }
 
         rule expr_object() -> ast::Expr<'input>
           = [_] {todo!()}
@@ -206,19 +204,19 @@ peg::parser! {
         rule call_arg_one(parsing_kw: &mut bool)
           = name:ident() [Op_Equal] value:expr() {
               *parsing_kw = true;
-              s!(s).temp.call_args.kw(name, value);
+              temp!(s.call_args).kw(name, value);
             }
           / value:expr() {?
             if *parsing_kw { return Err("keyword argument") }
-            s!(s).temp.call_args.pos(value);
+            temp!(s.call_args).pos(value);
             Ok(())
           }
 
     rule ident() -> ast::Ident<'input>
       = pos:position!() [Lit_Ident]
       {
-        let t = s!(s).lexer.get(pos).unwrap();
-        ast::Ident::new(t.span, s!(s).lexer.lexeme(t).into())
+        let t = s.get_token(pos);
+        ast::Ident::new(t.span, s.get_lexeme(t).into())
       }
 
     // indentation rules
@@ -226,11 +224,10 @@ peg::parser! {
     /// indent == None
     rule _()
       = pos:position!() &[_] {?
-        if s!(s).indent.is_ignored() {
+        if s.is_indent_ignored() {
           return Ok(());
         }
-        let t = s!(s).lexer.get(pos).unwrap();
-        match t.indent() {
+        match s.get_token(pos).indent() {
           Some(_) => Ok(()),
           None => Err("invalid indentation"),
         }
@@ -239,14 +236,14 @@ peg::parser! {
     /// indent == current_indentation_level
     rule __()
       = pos:position!() &[_] {?
-        if s!(s).indent.is_ignored() {
+        if s.is_indent_ignored() {
           return Ok(());
         }
-        let t = s!(s).lexer.get(pos).unwrap();
+        let t = s.get_token(pos);
         let Some(n) = t.indent() else {
           return Err("invalid indentation")
         };
-        if !s!(s).indent.is_indent_eq(n) {
+        if !s.is_indent_eq(n) {
           return Err("invalid indentation")
         }
         Ok(())
@@ -255,33 +252,33 @@ peg::parser! {
     /// indent > current_indentation_level
     rule expect_indent()
       = pos:position!() &[_] {?
-        if s!(s).indent.is_ignored() {
+        if s.is_indent_ignored() {
           return Ok(());
         }
-        let t = s!(s).lexer.get(pos).unwrap();
+        let t = s.get_token(pos);
         let Some(n) = t.indent() else {
           return Err("invalid indentation")
         };
-        if !s!(s).indent.is_indent_gt(n) {
+        if !s.is_indent_gt(n) {
           return Err("invalid indentation")
         }
-        s!(s).indent.indent(n);
+        s.push_indent(n);
         Ok(())
       }
 
     rule expect_dedent()
       = pos:position!() &[_] {?
-        if s!(s).indent.is_ignored() {
+        if s.is_indent_ignored() {
           return Ok(());
         }
-        let t = s!(s).lexer.get(pos).unwrap();
+        let t = s.get_token(pos);
         let Some(n) = t.indent() else {
           return Err("invalid indentation")
         };
-        if !s!(s).indent.is_indent_lt(n) {
+        if !s.is_indent_lt(n) {
           return Err("invalid indentation");
         }
-        s!(s).indent.dedent();
+        s.pop_indent();
         Ok(())
       }
 
@@ -289,10 +286,10 @@ peg::parser! {
       = _ignore_indent_start() v:inner() _ignore_indent_end() { v }
 
       rule _ignore_indent_start()
-        = { s!(s).indent.ignore(true) }
+        = { s.ignore_indent(true) }
 
       rule _ignore_indent_end()
-        = { s!(s).indent.ignore(false) }
+        = { s.ignore_indent(false) }
 
     // rule list<I, S>(item: rule<I>, sep: rule<S>) -> (Option<I>, Vec<(S, I)>)
     //   = first:item() items:(s:sep() i:item() { (s, i) })* sep()? { (Some(first), items) }

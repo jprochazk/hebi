@@ -205,14 +205,14 @@ pub struct Call<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Args<'src> {
   pub pos: Vec<Expr<'src>>,
-  pub kw: Map<Ident<'src>, Expr<'src>>,
+  pub kw: Vec<(Ident<'src>, Expr<'src>)>,
 }
 
 impl<'src> Args<'src> {
   pub fn new() -> Self {
     Self {
       pos: Vec::new(),
-      kw: Map::new(),
+      kw: Vec::new(),
     }
   }
 
@@ -221,7 +221,7 @@ impl<'src> Args<'src> {
   }
 
   pub fn kw(&mut self, name: Ident<'src>, value: Expr<'src>) {
-    self.kw.insert(name, value);
+    self.kw.push((name, value));
   }
 }
 

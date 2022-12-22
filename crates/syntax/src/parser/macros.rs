@@ -72,8 +72,8 @@ macro_rules! literal {
   ($state:ident @ $pos:ident , $ty:ident) => {{
     let state = $state;
     let pos = $pos;
-    let tok = state.borrow_mut().lexer.get(pos).unwrap();
-    let lexeme = state.borrow().lexer.lexeme(tok);
+    let tok = state.get_token(pos);
+    let lexeme = state.get_lexeme(tok);
     $crate::ast::Expr::new(
       tok.span,
       $crate::ast::ExprKind::Literal(::std::boxed::Box::new($crate::ast::lit::$ty(lexeme))),
@@ -83,8 +83,8 @@ macro_rules! literal {
   ($state:ident @ $pos:ident , $ty:ident ? ) => {{
     let state = $state;
     let pos = $pos;
-    let tok = state.borrow_mut().lexer.get(pos).unwrap();
-    let lexeme = state.borrow().lexer.lexeme(tok);
+    let tok = state.get_token(pos);
+    let lexeme = state.get_lexeme(tok);
     let Some(inner) = $crate::ast::lit::$ty(lexeme) else { return Err(stringify!($ty)); };
     Ok($crate::ast::Expr::new(
       tok.span,
@@ -93,14 +93,14 @@ macro_rules! literal {
   }};
 }
 
-macro_rules! s {
-  ($state:ident) => {
-    $state.borrow_mut()
+macro_rules! take {
+  ($state:ident . $what:ident) => {
+    ::std::mem::take(&mut $state.inner().borrow_mut().temp.$what)
   };
 }
 
-macro_rules! take {
+macro_rules! temp {
   ($state:ident . $what:ident) => {
-    ::std::mem::take(&mut $state.borrow_mut().temp.$what)
+    &mut $state.inner().borrow_mut().temp.$what
   };
 }
