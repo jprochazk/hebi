@@ -1,0 +1,10 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: "report(input, e)"
+---
+[31merror[0m: expected keyword argument
+[34m>[0m code:1
+[34m|[0m 
+[34m|[0m a(b=c, d[31;4m)[0m
+[34m|[0m 
+

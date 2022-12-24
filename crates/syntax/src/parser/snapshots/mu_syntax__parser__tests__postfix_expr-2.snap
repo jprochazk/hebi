@@ -1,0 +1,77 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Expr(
+            GetField(
+                GetField {
+                    target: GetField(
+                        GetField {
+                            target: GetField(
+                                GetField {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "b",
+                                        ),
+                                    ),
+                                },
+                            ),
+                            key: GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
+                            ),
+                        },
+                    ),
+                    key: Literal(
+                        String(
+                            "d",
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetField(
+                GetField {
+                    target: GetField(
+                        GetField {
+                            target: GetField(
+                                GetField {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "b",
+                                        ),
+                                    ),
+                                },
+                            ),
+                            key: GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
+                            ),
+                        },
+                    ),
+                    key: Literal(
+                        String(
+                            "d",
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ],
+}

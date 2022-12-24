@@ -165,7 +165,7 @@ peg::parser! {
         --
         left:(@) _ [Brk_ParenL] args:ignore_indent(<call_args()>) [Brk_ParenR] end:position!()
           { ast::expr_call(left.span.start..end, left, args) }
-        left:(@) _ [Brk_SquareL] _ key:expr() [Brk_SquareR] end:position!()
+        left:(@) _ [Brk_SquareL] key:expr() [Brk_SquareR] end:position!()
           { ast::expr_index(left.span.start..end, left, key) }
         left:(@) _ [Op_Dot] _ key:ident()
           { ast::expr_field(left.span.start..key.span.end, left, key) }
@@ -213,14 +213,14 @@ peg::parser! {
           / call_arg_one(parsing_kw) ([Tok_Comma] call_arg_one(parsing_kw))* [Tok_Comma]?
 
         rule call_arg_one(parsing_kw: &mut bool)
-          = name:ident() [Tok_Colon] value:expr()
+          = name:ident() [Op_Equal] value:expr()
           {
             *parsing_kw = true;
             temp!(s.call_args).kw(name, value);
           }
           / value:expr()
           {?
-            if *parsing_kw { return Err("keyword argument") }
+            if *parsing_kw { return Err("@@expected keyword argument") }
             temp!(s.call_args).pos(value);
             Ok(())
           }
@@ -242,7 +242,7 @@ peg::parser! {
           return Ok(());
         }
         match s.get_token(pos).indent() {
-          Some(_) => Err("invalid indentation"),
+          Some(_) => Err("@@invalid indentation"),
           None => Ok(()),
         }
       }
@@ -256,10 +256,10 @@ peg::parser! {
         }
         let t = s.get_token(pos);
         let Some(n) = t.indent() else {
-          return Err("invalid indentation")
+          return Err("@@invalid indentation")
         };
         if !s.is_indent_eq(n) {
-          return Err("invalid indentation")
+          return Err("@@invalid indentation")
         }
         Ok(())
       }
@@ -273,10 +273,10 @@ peg::parser! {
         }
         let t = s.get_token(pos);
         let Some(n) = t.indent() else {
-          return Err("invalid indentation")
+          return Err("@@invalid indentation")
         };
         if !s.is_indent_gt(n) {
-          return Err("invalid indentation")
+          return Err("@@invalid indentation")
         }
         s.push_indent(n);
         Ok(())
@@ -290,10 +290,10 @@ peg::parser! {
           }
           let t = s.get_token(pos);
           let Some(n) = t.indent() else {
-            return Err("invalid indentation")
+            return Err("@@invalid indentation")
           };
           if !s.is_indent_lt(n) {
-            return Err("invalid indentation");
+            return Err("@@invalid indentation");
           }
           s.pop_indent();
           Ok(())

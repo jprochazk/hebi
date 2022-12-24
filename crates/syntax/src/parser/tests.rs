@@ -1,30 +1,25 @@
 use diag::Source;
 use indoc::indoc;
-use peg::error::{ExpectedSet, ParseError};
+use peg::error::ParseError;
 use span::Span;
 
 use super::*;
 
-fn relevant_error(set: &ExpectedSet) -> Option<&str> {
-  set.tokens().find(|&token| token == "invalid indentation")
-}
-
 fn report(source: &str, err: ParseError<Span>) -> String {
-  let message = if let Some(e) = relevant_error(&err.expected) {
-    e.to_string()
+  let message = if let Some(err) = err.expected.tokens().find(|&t| t.starts_with("@@")) {
+    err.strip_prefix("@@").unwrap_or(err).to_string()
   } else {
-    format!("{}", err.expected)
+    err.expected.to_string()
   };
 
-  let report = diag::Report::error()
+  diag::Report::error()
     .source(Source::string(source))
     .message(message)
     .span(err.location)
     .build()
-    .unwrap();
-  let mut buf = String::new();
-  report.emit(&mut buf).unwrap();
-  buf
+    .unwrap()
+    .emit_to_string()
+    .unwrap()
 }
 
 fn print_tokens(lex: &Lexer) {
@@ -162,4 +157,45 @@ fn unary_expr() {
   // check_expr!(r#"+a"#);
   check_expr!(r#"-a"#);
   check_expr!(r#"!a"#);
+}
+
+#[test]
+fn postfix_expr() {
+  check_expr!(r#"a.b[c].d"#);
+  check_module! {
+    r#"
+      a.b[c].d
+      a.b[c].d
+    "#
+  };
+
+  check_error! {
+    r#"
+      a
+      .b[c].d
+    "#
+  }
+  check_error! {
+    r#"
+      a.b[c]
+      .d
+    "#
+  }
+}
+
+#[test]
+fn call_expr() {
+  check_expr!(r#"a(b, c, d=e, f=g)"#);
+  check_module! {
+    r#"
+      a(b, c, d=e, f=g)
+      a(b, c, d=e, f=g)
+    "#
+  };
+
+  check_error! {
+    r#"
+      a(b=c, d)
+    "#
+  }
 }
