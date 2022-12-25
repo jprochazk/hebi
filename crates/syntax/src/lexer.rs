@@ -46,8 +46,7 @@ impl<'src> Lexer<'src> {
       match kind {
         // Handle indentation
         TokenKind::_Indentation => {
-          let n = lexeme.trim_start_matches(|c| c == '\n' || c == '\r').len() as u64;
-          ws = Some(n);
+          ws = Some(measure_indent(lexeme));
           continue;
         }
         // Filter any other whitespace and comments
@@ -271,19 +270,24 @@ pub enum TokenKind {
   Lit_Ident,
 
   #[doc(hidden)]
-  #[regex(r"\n\r?[ ]*")]
+  #[regex(r"(\r?\n)+[ ]*", priority = 10)]
   _Indentation,
   #[doc(hidden)]
-  #[regex(r"[ \n\r]+", logos::skip)]
+  #[regex(r"[ \n\r]+")]
   _Whitespace,
   #[doc(hidden)]
-  #[regex(r"#[^\n]*", logos::skip)]
+  #[regex(r"#[^\n]*")]
   _Comment,
 
   /// Errors are filtered out before parsing
   #[doc(hidden)]
   #[error]
   _Error,
+}
+
+fn measure_indent(s: &str) -> u64 {
+  let pos = s.rfind('\n').unwrap_or(0);
+  (s.len() - pos - 1) as u64
 }
 
 pub struct DebugToken<'src>(Token, &'src Lexer<'src>);
