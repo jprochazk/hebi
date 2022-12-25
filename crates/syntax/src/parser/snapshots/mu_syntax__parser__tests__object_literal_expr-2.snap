@@ -1,0 +1,141 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Expr(
+            Literal(
+                Object(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "d",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "f",
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Object(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "d",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "f",
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Object(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "d",
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: "f",
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ],
+}

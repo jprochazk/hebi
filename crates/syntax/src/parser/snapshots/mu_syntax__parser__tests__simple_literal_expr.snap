@@ -1,0 +1,63 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Expr(
+            Literal(
+                Null,
+            ),
+        ),
+        Expr(
+            Literal(
+                Bool(
+                    true,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Bool(
+                    false,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Number(
+                    1.0,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Number(
+                    0.1,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Number(
+                    1500.0,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Number(
+                    0.00314,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                String(
+                    "\\tas\\\\df\\x2800\\n",
+                ),
+            ),
+        ),
+    ],
+}

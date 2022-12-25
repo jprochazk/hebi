@@ -189,13 +189,83 @@ fn call_expr() {
   check_module! {
     r#"
       a(b, c, d=e, f=g)
-      a(b, c, d=e, f=g)
+      a(
+        b, 
+      c, d
+          =e, 
+        f=
+        g,
+          )
     "#
   };
 
   check_error! {
     r#"
       a(b=c, d)
+    "#
+  }
+}
+
+#[test]
+fn simple_literal_expr() {
+  check_module! {
+    r#"
+      null
+      true
+      false
+      1
+      0.1
+      1.5e3
+      3.14e-3
+      "\tas\\df\x2800\n"
+    "#
+  }
+}
+
+#[test]
+fn array_literal_expr() {
+  check_module! {
+    r#"
+      [0, 1, 2]
+      [0,
+       1,
+       2,]
+      [
+        0,
+        1,
+        2,
+      ]
+    "#
+  }
+}
+
+#[test]
+fn object_literal_expr() {
+  check_module! {
+    r#"
+      {a:b, c:d, e:f}
+      {a:b,
+        c:d,
+        e:f,}
+      {
+        a:b,
+        c:d,
+        e:f,
+      }
+    "#
+  }
+
+  check_module! {
+    r#"
+      {[a]:b, [c]:d, [e]:f}
+      {[a]:b,
+       [c]:d,
+       [e]:f,}
+      {
+        [a]:b,
+        [c]:d,
+        [e]:f,
+      }
     "#
   }
 }
