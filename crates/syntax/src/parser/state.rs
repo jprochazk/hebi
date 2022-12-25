@@ -35,7 +35,7 @@ impl<'src> State<'src> {
 pub struct IndentStack {
   stack: Vec<u64>,
   level: u64,
-  ignore: bool,
+  ignore_depth: u32,
 }
 
 impl IndentStack {
@@ -43,7 +43,7 @@ impl IndentStack {
     Self {
       stack: vec![0],
       level: 0,
-      ignore: false,
+      ignore_depth: 0,
     }
   }
 
@@ -60,11 +60,15 @@ impl IndentStack {
   }
 
   pub fn ignore(&mut self, v: bool) {
-    self.ignore = v;
+    if v {
+      self.ignore_depth += 1
+    } else {
+      self.ignore_depth -= 1
+    }
   }
 
   pub fn is_ignored(&self) -> bool {
-    self.ignore
+    self.ignore_depth > 0
   }
 
   pub fn push_indent(&mut self, n: u64) {
