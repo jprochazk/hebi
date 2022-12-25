@@ -35,12 +35,12 @@ pub fn parse<'src>(
 peg::parser! {
   grammar grammar<'src>(s: &StateRef<'input>) for Lexer<'src> {
     pub rule module()
-      = top_level_stmt()*
+      = (__ top_level_stmt())*
 
     rule top_level_stmt()
-      = __ import_stmt() // one `import_stmt` may produce multiple imports
-      / __ stmt:simple_stmt() { s.push_stmt(stmt) }
-      / __ stmt:block_stmt()  { s.push_stmt(stmt) }
+      = import_stmt() // one `import_stmt` may produce multiple imports
+      / stmt:simple_stmt() { s.push_stmt(stmt) }
+      / stmt:block_stmt()  { s.push_stmt(stmt) }
 
     rule import_stmt()
       = [Kw_Use] import_path_inner(&vec![])
