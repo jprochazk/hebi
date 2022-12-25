@@ -181,25 +181,27 @@ peg::parser! {
       }
 
         rule expr_array() -> ast::Expr<'input>
-          = ({ take!(s.array_items); })
-            l:position!()
-            [Brk_SquareL] (array_item() ([Tok_Comma] array_item())* [Tok_Comma]?)? [Brk_SquareR]
-            r:position!()
+          = l:position!() [Brk_SquareL] expr_array_inner() [Brk_SquareR] r:position!()
           { ast::expr_array(l..r, take!(s.array_items)) }
+
+          rule expr_array_inner()
+            = &[Brk_SquareR]
+            / array_item() ([Tok_Comma] array_item())* [Tok_Comma]?
 
           rule array_item()
             = e:expr() { temp!(s.array_items).push(e); }
 
         rule expr_object() -> ast::Expr<'input>
-          = ({ take!(s.object_fields); })
-            l:position!()
-            [Brk_CurlyL] (object_item() ([Tok_Comma] object_item())* [Tok_Comma]?)? [Brk_CurlyR]
-            r:position!()
+          = l:position!() [Brk_CurlyL] expr_object_inner() [Brk_CurlyR] r:position!()
           { ast::expr_object(l..r, take!(s.object_fields)) }
 
+          rule expr_object_inner()
+            = &[Brk_CurlyR]
+            / object_item() ([Tok_Comma] object_item())* [Tok_Comma]?
+
           rule object_item()
-            = key:object_key() [Tok_Colon] v:expr()
-            { temp!(s.object_fields).push((key, v)) }
+            = key:object_key() [Tok_Colon] value:expr()
+            { temp!(s.object_fields).push((key, value)) }
 
             rule object_key() -> ast::Expr<'input>
               = key:ident() { ast::ident_key(key) }
