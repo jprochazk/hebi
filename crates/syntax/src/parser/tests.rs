@@ -269,3 +269,21 @@ fn object_literal_expr() {
     "#
   }
 }
+
+#[test]
+fn grouping_expr() {
+  check_module! {
+    r#"
+      # asdf
+      (a + b)
+      (
+      a
+       +
+          b
+      )
+      (a
+        (b))
+      ((((a))))
+    "#
+  }
+}
