@@ -1,0 +1,143 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: None,
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Add,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Sub,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Div,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Mul,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Rem,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Pow,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    op: Some(
+                        Maybe,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+    ],
+}

@@ -287,3 +287,33 @@ fn grouping_expr() {
     "#
   }
 }
+
+#[test]
+fn assign_expr() {
+  check_module! {
+    r#"
+      # asdf
+      a = b
+      a += b
+      a -= b
+      a /= b
+      a *= b
+      a %= b
+      a **= b
+      a ??= b
+    "#
+  }
+
+  check_error! {
+    r#"
+      a
+        = b
+    "#
+  }
+  check_error! {
+    r#"
+      a =
+        b
+    "#
+  }
+}
