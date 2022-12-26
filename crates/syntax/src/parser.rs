@@ -69,7 +69,7 @@ peg::parser! {
         / l:position!() [Kw_Break] r:position!() { ast::stmt_break(l..r) }
 
       rule expr_stmt() -> ast::Stmt<'input>
-        = v:expr() { ast::stmt_expr(v) }
+        = v:expr_assign() { ast::stmt_expr(v) }
 
     // statements that introduce blocks must be indented
     rule block_stmt() -> ast::Stmt<'input>
@@ -128,11 +128,26 @@ peg::parser! {
     rule stmt() -> ast::Stmt<'input>
       = block_stmt() / simple_stmt()
 
-    // TODO: assignment is an expression, but it may not be present in other expressions
-    // *AND* it may only actually exist in the context of a statement.
     // TODO: expr_range is not a thing, it only exists in the context of `for` loops.
 
-    // exprs care about whitespace unless they are within parentheses
+    rule expr_assign() -> ast::Expr<'input>
+      = target:expr() assign:(_ op:assign_op() _ v:expr() { (op, v) })? {?
+        match assign {
+          Some((op, v)) => ast::expr_assign(target, op, v),
+          None => Ok(target),
+        }
+      }
+
+      rule assign_op() -> Option<ast::AssignOp>
+        = [Op_Equal] { None }
+        / [Op_PlusEqual] { Some(ast::AssignOp::Add) }
+        / [Op_MinusEqual] { Some(ast::AssignOp::Sub) }
+        / [Op_SlashEqual] { Some(ast::AssignOp::Div) }
+        / [Op_StarEqual] { Some(ast::AssignOp::Mul) }
+        / [Op_PercentEqual] { Some(ast::AssignOp::Rem) }
+        / [Op_StarStarEqual] { Some(ast::AssignOp::Pow) }
+        / [Op_QuestionQuestionEqual] { Some(ast::AssignOp::Maybe) }
+
     pub rule expr() -> ast::Expr<'input>
       = precedence! {
         left:(@) _ [Op_QuestionQuestion] _ right:@ { binary!(left (??) right) }

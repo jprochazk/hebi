@@ -335,6 +335,28 @@ pub fn expr_get_var(name: Ident) -> Expr {
   Expr::new(name.span, ExprKind::GetVar(Box::new(GetVar { name })))
 }
 
+pub fn expr_assign<'src>(
+  target: Expr<'src>,
+  op: Option<AssignOp>,
+  value: Expr<'src>,
+) -> Result<Expr<'src>, &'static str> {
+  let span = target.span.start..value.span.end;
+  let assign = match target.into_inner() {
+    ExprKind::GetVar(target) => ExprKind::SetVar(Box::new(SetVar {
+      target: *target,
+      op,
+      value,
+    })),
+    ExprKind::GetField(target) => ExprKind::SetField(Box::new(SetField {
+      target: *target,
+      op,
+      value,
+    })),
+    _ => return Err("@@invalid assignment target"),
+  };
+  Ok(Expr::new(span, assign))
+}
+
 pub mod lit {
   use super::*;
 
