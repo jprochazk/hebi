@@ -217,6 +217,8 @@ pub enum TokenKind {
   Op_QuestionQuestionEqual,
   #[token("!=")]
   Op_BangEqual,
+  #[token(":=")]
+  Op_ColonEqual,
 
   // Operators
   #[token("+")]

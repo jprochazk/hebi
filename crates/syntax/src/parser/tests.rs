@@ -294,6 +294,7 @@ fn assign_expr() {
     r#"
       # asdf
       a = b
+      a := b
       a += b
       a -= b
       a /= b
@@ -301,6 +302,20 @@ fn assign_expr() {
       a %= b
       a **= b
       a ??= b
+    "#
+  }
+
+  check_module! {
+    r#"
+      # asdf
+      a.b = b
+      a.b += b
+      a.b -= b
+      a.b /= b
+      a.b *= b
+      a.b %= b
+      a.b **= b
+      a.b ??= b
     "#
   }
 
@@ -315,5 +330,13 @@ fn assign_expr() {
       a =
         b
     "#
+  }
+
+  check_error! {
+    r#"a.b := c"#
+  }
+
+  check_error! {
+    r#"a() = b"#
   }
 }

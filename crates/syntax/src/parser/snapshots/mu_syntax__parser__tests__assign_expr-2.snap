@@ -1,10 +1,215 @@
 ---
 source: crates/syntax/src/parser/tests.rs
-expression: "report(input, e)"
+expression: module
 ---
-[31merror[0m: invalid indentation
-[34m>[0m code:2
-[34m|[0m 
-[34m|[0m   [31;4m=[0m b
-[34m|[0m 
-
+Module {
+    imports: [],
+    body: [
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: None,
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Add,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Sub,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Div,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Mul,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Rem,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Pow,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: Some(
+                        Maybe,
+                    ),
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+    ],
+}

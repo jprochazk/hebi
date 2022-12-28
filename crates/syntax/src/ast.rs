@@ -51,6 +51,7 @@ pub type Stmt<'src> = Spanned<StmtKind<'src>>;
 
 #[cfg_attr(test, derive(Debug))]
 pub enum StmtKind<'src> {
+  Var(Box<Var<'src>>),
   If(Box<If<'src>>),
   Loop(Box<Loop<'src>>),
   Ctrl(Box<Ctrl<'src>>),
@@ -197,6 +198,11 @@ pub enum AssignOp {
   Maybe,
 }
 
+pub enum AssignKind {
+  Op(Option<AssignOp>),
+  Decl,
+}
+
 #[cfg_attr(test, derive(Debug))]
 pub struct Call<'src> {
   pub target: Expr<'src>,
@@ -230,6 +236,12 @@ impl<'src> Default for Args<'src> {
   fn default() -> Self {
     Self::new()
   }
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Var<'src> {
+  pub name: Ident<'src>,
+  pub value: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -335,26 +347,48 @@ pub fn expr_get_var(name: Ident) -> Expr {
   Expr::new(name.span, ExprKind::GetVar(Box::new(GetVar { name })))
 }
 
-pub fn expr_assign<'src>(
+pub fn expr_stmt(expr: Expr) -> Stmt {
+  Stmt::new(expr.span, StmtKind::Expr(Box::new(expr)))
+}
+
+pub fn var_stmt<'src>(name: Ident<'src>, value: Expr<'src>) -> Stmt<'src> {
+  Stmt::new(
+    name.span.start..value.span.end,
+    StmtKind::Var(Box::new(Var { name, value })),
+  )
+}
+
+pub fn assign<'src>(
   target: Expr<'src>,
-  op: Option<AssignOp>,
+  kind: AssignKind,
   value: Expr<'src>,
-) -> Result<Expr<'src>, &'static str> {
+) -> Result<Stmt<'src>, &'static str> {
   let span = target.span.start..value.span.end;
-  let assign = match target.into_inner() {
-    ExprKind::GetVar(target) => ExprKind::SetVar(Box::new(SetVar {
-      target: *target,
-      op,
-      value,
-    })),
-    ExprKind::GetField(target) => ExprKind::SetField(Box::new(SetField {
-      target: *target,
-      op,
-      value,
-    })),
-    _ => return Err("@@invalid assignment target"),
-  };
-  Ok(Expr::new(span, assign))
+  match kind {
+    AssignKind::Decl => {
+      let name = match target.into_inner() {
+        ExprKind::GetVar(target) => target.name,
+        _ => return Err("@@invalid variable declaration"),
+      };
+      Ok(var_stmt(name, value))
+    }
+    AssignKind::Op(op) => {
+      let assign = match target.into_inner() {
+        ExprKind::GetVar(target) => ExprKind::SetVar(Box::new(SetVar {
+          target: *target,
+          op,
+          value,
+        })),
+        ExprKind::GetField(target) => ExprKind::SetField(Box::new(SetField {
+          target: *target,
+          op,
+          value,
+        })),
+        _ => return Err("@@invalid assignment target"),
+      };
+      Ok(expr_stmt(Expr::new(span, assign)))
+    }
+  }
 }
 
 pub mod lit {

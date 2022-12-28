@@ -20,6 +20,16 @@ Module {
                 },
             ),
         ),
+        Var(
+            Var {
+                name: "a",
+                value: GetVar(
+                    GetVar {
+                        name: "b",
+                    },
+                ),
+            },
+        ),
         Expr(
             SetVar(
                 SetVar {

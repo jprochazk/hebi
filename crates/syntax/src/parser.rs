@@ -69,7 +69,23 @@ peg::parser! {
         / l:position!() [Kw_Break] r:position!() { ast::stmt_break(l..r) }
 
       rule expr_stmt() -> ast::Stmt<'input>
-        = v:expr_assign() { ast::stmt_expr(v) }
+        = assign()
+
+        rule assign() -> ast::Stmt<'input>
+          // NOTE: when rewriting parser, fix the span here
+          = target:expr() _ op:assign_op() _ v:expr() {? ast::assign(target, op, v) }
+          / e:expr() { ast::expr_stmt(e) }
+
+          rule assign_op() -> ast::AssignKind
+            = [Op_ColonEqual] { ast::AssignKind::Decl }
+            / [Op_Equal] { ast::AssignKind::Op(None) }
+            / [Op_PlusEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Add)) }
+            / [Op_MinusEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Sub)) }
+            / [Op_SlashEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Div)) }
+            / [Op_StarEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Mul)) }
+            / [Op_PercentEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Rem)) }
+            / [Op_StarStarEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Pow)) }
+            / [Op_QuestionQuestionEqual] { ast::AssignKind::Op(Some(ast::AssignOp::Maybe)) }
 
     // statements that introduce blocks must be indented
     rule block_stmt() -> ast::Stmt<'input>
@@ -130,23 +146,6 @@ peg::parser! {
 
     // TODO: expr_range is not a thing, it only exists in the context of `for` loops.
 
-    rule expr_assign() -> ast::Expr<'input>
-      = target:expr() assign:(_ op:assign_op() _ v:expr() { (op, v) })? {?
-        match assign {
-          Some((op, v)) => ast::expr_assign(target, op, v),
-          None => Ok(target),
-        }
-      }
-
-      rule assign_op() -> Option<ast::AssignOp>
-        = [Op_Equal] { None }
-        / [Op_PlusEqual] { Some(ast::AssignOp::Add) }
-        / [Op_MinusEqual] { Some(ast::AssignOp::Sub) }
-        / [Op_SlashEqual] { Some(ast::AssignOp::Div) }
-        / [Op_StarEqual] { Some(ast::AssignOp::Mul) }
-        / [Op_PercentEqual] { Some(ast::AssignOp::Rem) }
-        / [Op_StarStarEqual] { Some(ast::AssignOp::Pow) }
-        / [Op_QuestionQuestionEqual] { Some(ast::AssignOp::Maybe) }
 
     pub rule expr() -> ast::Expr<'input>
       = precedence! {

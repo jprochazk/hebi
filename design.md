@@ -1,5 +1,8 @@
 ```python
 
+# variable declaration
+v := 0
+
 # values
 v = null # null
 v = 0.1 # number
@@ -69,7 +72,7 @@ for i in 0..10:
 # when called, iterators return an object with a `next` method
 # an iterator is done when its `next` method returns null
 fn counter(start, step, end):
-  n = start
+  n := start
   loop:
     yield n
     n += step
