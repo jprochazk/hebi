@@ -169,6 +169,8 @@ pub enum TokenKind {
   Kw_Elif,
   #[token("else")]
   Kw_Else,
+  #[token("pass")]
+  Kw_Pass,
 
   // Brackets
   #[token("{")]

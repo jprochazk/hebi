@@ -1,0 +1,37 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Loop(
+            While(
+                While {
+                    cond: Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                    body: [
+                        Pass,
+                    ],
+                },
+            ),
+        ),
+        Loop(
+            While(
+                While {
+                    cond: Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                    body: [
+                        Pass,
+                    ],
+                },
+            ),
+        ),
+    ],
+}

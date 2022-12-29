@@ -59,8 +59,12 @@ peg::parser! {
 
     // statements that don't introduce blocks must not be indented
     rule simple_stmt() -> ast::Stmt<'input>
-      = ctrl_stmt()
+      = pass_stmt()
+      / ctrl_stmt()
       / expr_stmt()
+
+      rule pass_stmt() -> ast::Stmt<'input>
+        = l:position!() [Kw_Pass] r:position!() { ast::stmt_pass(l..r) }
 
       rule ctrl_stmt() -> ast::Stmt<'input>
         = l:position!() [Kw_Return] v:expr()? r:position!() { ast::stmt_return(l..r, v) }
@@ -112,13 +116,29 @@ peg::parser! {
         / inf_loop_stmt()
 
         rule for_loop_stmt() -> ast::Stmt<'input>
-        = [Kw_For] { todo!() }
+          = l:position!() [Kw_For] item:ident() [Kw_In] iter:for_iter() [Tok_Colon] body:block_body() r:position!()
+          { ast::loop_for(l..r, item, iter, body) }
+
+          rule for_iter() -> ast::ForIter<'input>
+            = start:expr() rest:(
+              inclusive:([Op_Range] { false } / [Op_RangeInc] { true })
+              end:expr()
+              { (end, inclusive) }
+            )?
+            {
+              match rest {
+                Some((end, inclusive)) => ast::ForIter::Range(ast::IterRange { start, end, inclusive }),
+                None => ast::ForIter::Expr(start)
+              }
+            }
 
         rule while_loop_stmt() -> ast::Stmt<'input>
-        = [Kw_While] { todo!() }
+          = l:position!() [Kw_While] cond:expr() [Tok_Colon] body:block_body() r:position!()
+          { ast::loop_while(l..r, cond, body) }
 
         rule inf_loop_stmt() -> ast::Stmt<'input>
-        = [Kw_Loop] { todo!() }
+          = l:position!() [Kw_Loop] [Tok_Colon] body:block_body() r:position!()
+          { ast::loop_inf(l..r, body) }
 
       rule fn_stmt() -> ast::Stmt<'input>
         = [Kw_Fn]  { todo!() }
@@ -128,8 +148,7 @@ peg::parser! {
 
     rule block_body() -> Vec<ast::Stmt<'input>>
       // one un-indented simple stmt
-      = _ stmt:simple_stmt()
-      { vec![stmt] }
+      = _ stmt:simple_stmt() { vec![stmt] }
       // or any number of statements in a freshly indented block
       / expect_indent()
         first:stmt()

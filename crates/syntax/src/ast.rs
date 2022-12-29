@@ -58,6 +58,7 @@ pub enum StmtKind<'src> {
   Func(Box<Func<'src>>),
   Class(Box<Class<'src>>),
   Expr(Box<Expr<'src>>),
+  Pass,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -83,9 +84,22 @@ pub enum Loop<'src> {
 
 #[cfg_attr(test, derive(Debug))]
 pub struct For<'src> {
-  pub item_var: Ident<'src>,
-  pub iter: Expr<'src>,
+  pub item: Ident<'src>,
+  pub iter: ForIter<'src>,
   pub body: Vec<Stmt<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub enum ForIter<'src> {
+  Range(IterRange<'src>),
+  Expr(Expr<'src>),
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct IterRange<'src> {
+  pub start: Expr<'src>,
+  pub end: Expr<'src>,
+  pub inclusive: bool,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -296,6 +310,10 @@ pub fn stmt_break<'src>(s: Range<usize>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Break)))
 }
 
+pub fn stmt_pass<'src>(s: Range<usize>) -> Stmt<'src> {
+  Stmt::new(s, StmtKind::Pass)
+}
+
 pub fn expr_binary<'src>(
   s: Range<usize>,
   op: BinaryOp,
@@ -389,6 +407,32 @@ pub fn assign<'src>(
       Ok(expr_stmt(Expr::new(span, assign)))
     }
   }
+}
+
+pub fn loop_inf(s: Range<usize>, body: Vec<Stmt>) -> Stmt {
+  Stmt::new(
+    s,
+    StmtKind::Loop(Box::new(Loop::Infinite(Infinite { body }))),
+  )
+}
+
+pub fn loop_while<'src>(s: Range<usize>, cond: Expr<'src>, body: Vec<Stmt<'src>>) -> Stmt<'src> {
+  Stmt::new(
+    s,
+    StmtKind::Loop(Box::new(Loop::While(While { cond, body }))),
+  )
+}
+
+pub fn loop_for<'src>(
+  s: Range<usize>,
+  item: Ident<'src>,
+  iter: ForIter<'src>,
+  body: Vec<Stmt<'src>>,
+) -> Stmt<'src> {
+  Stmt::new(
+    s,
+    StmtKind::Loop(Box::new(Loop::For(For { item, iter, body }))),
+  )
 }
 
 pub mod lit {

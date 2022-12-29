@@ -340,3 +340,63 @@ fn assign_expr() {
     r#"a() = b"#
   }
 }
+
+#[test]
+fn loop_stmts() {
+  check_module! {
+    r#"
+      loop: pass
+      loop:
+        pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      loop:
+      pass
+    "#
+  }
+
+  check_module! {
+    r#"
+      while true: pass
+      while true:
+        pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      while true:
+      pass
+    "#
+  }
+
+  check_module! {
+    r#"
+      for i in iter(): pass
+      for i in iter():
+        pass
+      for i in 0..10: pass
+      for i in 0..10:
+        pass
+      for i in a()..b(): pass
+      for i in a()..b():
+        pass
+      for i in 0..=10: pass
+      for i in 0..=10:
+        pass
+      for i in a()..=b(): pass
+      for i in a()..=b():
+        pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      for i in iter():
+      pass
+    "#
+  }
+}
