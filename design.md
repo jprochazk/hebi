@@ -139,5 +139,71 @@ use json
 v = json.parse("{\"a\":0, \"b\":1}")
 print(v) # { a: 0, b: 1 }
 
+# data class, implicit initializer
+class A:
+  a = 100
+  # init(self, a = 100):
+  #   self.a = a
+
+print(A().a)     # 100
+print(A(a=10).a) # 10
+
+class B:
+  a = 100
+  init(self): # override the implicit initializer
+    pass
+
+print(B().a)   # 100
+# `a` is ignored
+print(B(a=10)) # 100
+
+class C:
+  # fields do not have to be declared
+  # and may be added in the initializer
+  # after `init` is called, the class is frozen
+  # no fields/methods may be added or removed
+  init(self):
+    self.a = 10
+
+print(C().a) # 10
+C().b = 10 # error: cannot add new field `b` to class `C`
+
+class A:
+  inherited(self):
+    print("test 0")
+
+class B(A): pass
+
+A().inherited() # test 0
+B().inherited() # test 0
+
+class C(B):
+  inherited(self): # override
+    print("test 1")
+
+C().inherited() # test 1
+
+class D(C):
+  inherited(self): # override with call to super
+    super.inherited()
+    print("test 2")
+
+D().inherited() # test 1
+                # test 2
+
+class X:
+  init(self):
+    self.v = 10
+
+class Y(X):
+  init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
+    self.v = 10
+
+class Z(X):
+  init(self, v):
+    super.init(self)
+    self.v += v
+
+print(Z(v=15).v) # 25
 ```
 
