@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::ast;
-use crate::ast::{Args, Expr, Module};
+use crate::ast::{Args, Expr, Field, Func, Module};
 use crate::lexer::{Lexer, Token};
 
 pub struct State<'src> {
@@ -15,6 +15,8 @@ pub struct Temp<'src> {
   pub call_args: Args<'src>,
   pub array_items: Vec<Expr<'src>>,
   pub object_fields: Vec<(Expr<'src>, Expr<'src>)>,
+  pub class_fields: Vec<Field<'src>>,
+  pub class_funcs: Vec<Func<'src>>,
 }
 
 impl<'src> State<'src> {
@@ -27,6 +29,8 @@ impl<'src> State<'src> {
         call_args: Args::new(),
         array_items: Vec::new(),
         object_fields: Vec::new(),
+        class_fields: Vec::new(),
+        class_funcs: Vec::new(),
       },
     }
   }
@@ -48,14 +52,17 @@ impl IndentStack {
   }
 
   pub fn is_indent_eq(&self, n: u64) -> bool {
+    println!("{} == {}", self.level, n);
     self.level == n
   }
 
   pub fn is_indent_gt(&self, n: u64) -> bool {
+    println!("{} < {}", self.level, n);
     self.level < n
   }
 
   pub fn is_indent_lt(&self, n: u64) -> bool {
+    println!("{} > {}", self.level, n);
     self.level > n
   }
 
@@ -73,12 +80,16 @@ impl IndentStack {
 
   pub fn push_indent(&mut self, n: u64) {
     self.stack.push(n);
-    self.level += n;
+    self.level = n;
   }
 
   pub fn pop_indent(&mut self) {
-    let n = self.stack.pop().unwrap();
-    self.level -= n;
+    self.stack.pop().unwrap();
+    self.level = self
+      .stack
+      .last()
+      .cloned()
+      .expect("pop_indent should not empty the indent stack");
   }
 }
 

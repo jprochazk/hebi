@@ -1,0 +1,2789 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [
+        Import {
+            path: [
+                "json",
+            ],
+            alias: None,
+        },
+    ],
+    body: [
+        Var(
+            Var {
+                name: "v",
+                value: Literal(
+                    Number(
+                        0.0,
+                    ),
+                ),
+            },
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Null,
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Number(
+                            0.1,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        String(
+                            "\\tas\\\\df\\x2800\\n",
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Array(
+                            [
+                                Literal(
+                                    Null,
+                                ),
+                                Literal(
+                                    Number(
+                                        0.1,
+                                    ),
+                                ),
+                                Literal(
+                                    Bool(
+                                        true,
+                                    ),
+                                ),
+                                Literal(
+                                    String(
+                                        "\\tas\\\\df\\x2800\\n",
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Object(
+                            [
+                                (
+                                    Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Null,
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "b",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Number(
+                                            0.1,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "c",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Bool(
+                                            true,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "d",
+                                        ),
+                                    ),
+                                    Literal(
+                                        String(
+                                            "\\tas\\\\df\\x2800\\n",
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Object(
+                            [
+                                (
+                                    Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Null,
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "b",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Number(
+                                            0.1,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "c",
+                                        ),
+                                    ),
+                                    Literal(
+                                        Bool(
+                                            true,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        String(
+                                            "d",
+                                        ),
+                                    ),
+                                    Literal(
+                                        String(
+                                            "\\tas\\\\df\\x2800\\n",
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Object(
+                            [
+                                (
+                                    Literal(
+                                        Number(
+                                            0.0,
+                                        ),
+                                    ),
+                                    Literal(
+                                        Null,
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        Number(
+                                            1.0,
+                                        ),
+                                    ),
+                                    Literal(
+                                        Number(
+                                            0.1,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        Number(
+                                            2.0,
+                                        ),
+                                    ),
+                                    Literal(
+                                        Bool(
+                                            true,
+                                        ),
+                                    ),
+                                ),
+                                (
+                                    Literal(
+                                        Number(
+                                            3.0,
+                                        ),
+                                    ),
+                                    Literal(
+                                        String(
+                                            "\\tas\\\\df\\x2800\\n",
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Add,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Sub,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Div,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Mul,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Rem,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Pow,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Eq,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Neq,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: More,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: MoreEq,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Less,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: LessEq,
+                            left: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Unary(
+                        Unary {
+                            op: Minus,
+                            right: Literal(
+                                Number(
+                                    2.0,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Unary(
+                        Unary {
+                            op: Not,
+                            right: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: And,
+                            left: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                            right: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Or,
+                            left: Literal(
+                                Bool(
+                                    false,
+                                ),
+                            ),
+                            right: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Binary(
+                        Binary {
+                            op: Maybe,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Add,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Sub,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Div,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Mul,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Rem,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Pow,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: Some(
+                        Maybe,
+                    ),
+                    value: Literal(
+                        Number(
+                            1.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetField(
+                GetField {
+                    target: GetVar(
+                        GetVar {
+                            name: "v",
+                        },
+                    ),
+                    key: Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetField(
+                GetField {
+                    target: GetVar(
+                        GetVar {
+                            name: "v",
+                        },
+                    ),
+                    key: Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "v",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Func(
+            Func {
+                name: "add",
+                params: [
+                    "a",
+                    "b",
+                ],
+                body: [
+                    Ctrl(
+                        Return(
+                            Some(
+                                Binary(
+                                    Binary {
+                                        op: Add,
+                                        left: GetVar(
+                                            GetVar {
+                                                name: "a",
+                                            },
+                                        ),
+                                        right: GetVar(
+                                            GetVar {
+                                                name: "b",
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: "add",
+                                },
+                            ),
+                            args: Args {
+                                pos: [
+                                    Literal(
+                                        Number(
+                                            0.0,
+                                        ),
+                                    ),
+                                    Literal(
+                                        Number(
+                                            1.0,
+                                        ),
+                                    ),
+                                ],
+                                kw: [],
+                            },
+                        },
+                    ),
+                },
+            ),
+        ),
+        Func(
+            Func {
+                name: "fib",
+                params: [
+                    "n",
+                ],
+                body: [
+                    If(
+                        If {
+                            branches: [
+                                Branch {
+                                    cond: Binary(
+                                        Binary {
+                                            op: Less,
+                                            left: GetVar(
+                                                GetVar {
+                                                    name: "n",
+                                                },
+                                            ),
+                                            right: Literal(
+                                                Number(
+                                                    2.0,
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                    body: [
+                                        Ctrl(
+                                            Return(
+                                                Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "n",
+                                                        },
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ],
+                            default: Some(
+                                [
+                                    Ctrl(
+                                        Return(
+                                            Some(
+                                                Binary(
+                                                    Binary {
+                                                        op: Mul,
+                                                        left: GetVar(
+                                                            GetVar {
+                                                                name: "n",
+                                                            },
+                                                        ),
+                                                        right: Call(
+                                                            Call {
+                                                                target: GetVar(
+                                                                    GetVar {
+                                                                        name: "fib",
+                                                                    },
+                                                                ),
+                                                                args: Args {
+                                                                    pos: [
+                                                                        Binary(
+                                                                            Binary {
+                                                                                op: Sub,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: "n",
+                                                                                    },
+                                                                                ),
+                                                                                right: Literal(
+                                                                                    Number(
+                                                                                        1.0,
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    kw: [],
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "print_fib",
+                params: [
+                    "n",
+                ],
+                body: [
+                    Expr(
+                        Call(
+                            Call {
+                                target: GetVar(
+                                    GetVar {
+                                        name: "print",
+                                    },
+                                ),
+                                args: Args {
+                                    pos: [
+                                        Call(
+                                            Call {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "fib",
+                                                    },
+                                                ),
+                                                args: Args {
+                                                    pos: [
+                                                        GetVar(
+                                                            GetVar {
+                                                                name: "n",
+                                                            },
+                                                        ),
+                                                    ],
+                                                    kw: [],
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    kw: [],
+                                },
+                            },
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Loop(
+            For(
+                For {
+                    item: "i",
+                    iter: Range(
+                        IterRange {
+                            start: Literal(
+                                Number(
+                                    0.0,
+                                ),
+                            ),
+                            end: Literal(
+                                Number(
+                                    10.0,
+                                ),
+                            ),
+                            inclusive: false,
+                        },
+                    ),
+                    body: [
+                        Expr(
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "print",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "i",
+                                                },
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+        Func(
+            Func {
+                name: "counter",
+                params: [
+                    "start",
+                    "step",
+                    "end",
+                ],
+                body: [
+                    Var(
+                        Var {
+                            name: "n",
+                            value: GetVar(
+                                GetVar {
+                                    name: "start",
+                                },
+                            ),
+                        },
+                    ),
+                    Loop(
+                        Infinite(
+                            Infinite {
+                                body: [
+                                    Ctrl(
+                                        Yield(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "n",
+                                                },
+                                            ),
+                                        ),
+                                    ),
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
+                                                    name: "n",
+                                                },
+                                                op: Some(
+                                                    Add,
+                                                ),
+                                                value: GetVar(
+                                                    GetVar {
+                                                        name: "step",
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    If(
+                                        If {
+                                            branches: [
+                                                Branch {
+                                                    cond: Binary(
+                                                        Binary {
+                                                            op: And,
+                                                            left: GetVar(
+                                                                GetVar {
+                                                                    name: "end",
+                                                                },
+                                                            ),
+                                                            right: Binary(
+                                                                Binary {
+                                                                    op: More,
+                                                                    left: GetVar(
+                                                                        GetVar {
+                                                                            name: "n",
+                                                                        },
+                                                                    ),
+                                                                    right: GetVar(
+                                                                        GetVar {
+                                                                            name: "end",
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                    body: [
+                                                        Ctrl(
+                                                            Return(
+                                                                None,
+                                                            ),
+                                                        ),
+                                                    ],
+                                                },
+                                            ],
+                                            default: None,
+                                        },
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Loop(
+            For(
+                For {
+                    item: "n",
+                    iter: Expr(
+                        Call(
+                            Call {
+                                target: GetVar(
+                                    GetVar {
+                                        name: "counter",
+                                    },
+                                ),
+                                args: Args {
+                                    pos: [
+                                        Literal(
+                                            Number(
+                                                0.0,
+                                            ),
+                                        ),
+                                        Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                        Literal(
+                                            Number(
+                                                100.0,
+                                            ),
+                                        ),
+                                    ],
+                                    kw: [],
+                                },
+                            },
+                        ),
+                    ),
+                    body: [
+                        Expr(
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "print",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "n",
+                                                },
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Number(
+                            0.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Loop(
+            While(
+                While {
+                    cond: Binary(
+                        Binary {
+                            op: Less,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Number(
+                                    10.0,
+                                ),
+                            ),
+                        },
+                    ),
+                    body: [
+                        Expr(
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "print",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                        Expr(
+                            SetVar(
+                                SetVar {
+                                    target: GetVar {
+                                        name: "v",
+                                    },
+                                    op: Some(
+                                        Add,
+                                    ),
+                                    value: Literal(
+                                        Number(
+                                            1.0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Literal(
+                        Number(
+                            0.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        If(
+                            If {
+                                branches: [
+                                    Branch {
+                                        cond: Binary(
+                                            Binary {
+                                                op: MoreEq,
+                                                left: GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
+                                                right: Literal(
+                                                    Number(
+                                                        10.0,
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                        body: [
+                                            Ctrl(
+                                                Break,
+                                            ),
+                                        ],
+                                    },
+                                ],
+                                default: None,
+                            },
+                        ),
+                        Expr(
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "print",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                        Expr(
+                            SetVar(
+                                SetVar {
+                                    target: GetVar {
+                                        name: "v",
+                                    },
+                                    op: Some(
+                                        Add,
+                                    ),
+                                    value: Literal(
+                                        Number(
+                                            1.0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Binary(
+                            Binary {
+                                op: Less,
+                                left: GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                                right: Literal(
+                                    Number(
+                                        10.0,
+                                    ),
+                                ),
+                            },
+                        ),
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "less than 10",
+                                                    ),
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    Branch {
+                        cond: Binary(
+                            Binary {
+                                op: Less,
+                                left: GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                                right: Literal(
+                                    Number(
+                                        20.0,
+                                    ),
+                                ),
+                            },
+                        ),
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "less than 20",
+                                                    ),
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+                default: Some(
+                    [
+                        Expr(
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "print",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            Literal(
+                                                String(
+                                                    "very large",
+                                                ),
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            },
+        ),
+        Class(
+            Class {
+                name: "Test",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                            "n",
+                        ],
+                        body: [
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "self",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "n",
+                                                ),
+                                            ),
+                                        },
+                                        op: None,
+                                        value: GetVar(
+                                            GetVar {
+                                                name: "n",
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    Func {
+                        name: "get_n",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Ctrl(
+                                Return(
+                                    Some(
+                                        GetField(
+                                            GetField {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "self",
+                                                    },
+                                                ),
+                                                key: Literal(
+                                                    String(
+                                                        "n",
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    Func {
+                        name: "test1",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "instance",
+                                                    ),
+                                                ),
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "self",
+                                                    },
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    Func {
+                        name: "test0",
+                        params: [],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "static",
+                                                    ),
+                                                ),
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "Test",
+                                                    },
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: "Test",
+                                },
+                            ),
+                            args: Args {
+                                pos: [],
+                                kw: [],
+                            },
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            Binary(
+                                Binary {
+                                    op: Eq,
+                                    left: Call(
+                                        Call {
+                                            target: GetField(
+                                                GetField {
+                                                    target: GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                    key: Literal(
+                                                        String(
+                                                            "get_n",
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                    right: Call(
+                                        Call {
+                                            target: GetField(
+                                                GetField {
+                                                    target: GetVar(
+                                                        GetVar {
+                                                            name: "Test",
+                                                        },
+                                                    ),
+                                                    key: Literal(
+                                                        String(
+                                                            "get_n",
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                ],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: "Test",
+                                },
+                            ),
+                            args: Args {
+                                pos: [],
+                                kw: [
+                                    (
+                                        "n",
+                                        Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: GetVar(
+                                GetVar {
+                                    name: "Test",
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "test0",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "test1",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "panic",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            Literal(
+                                String(
+                                    "asdf",
+                                ),
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    op: None,
+                    value: Call(
+                        Call {
+                            target: GetField(
+                                GetField {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "json",
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "parse",
+                                        ),
+                                    ),
+                                },
+                            ),
+                            args: Args {
+                                pos: [
+                                    Literal(
+                                        String(
+                                            "{\\\"a\\\":0, \\\"b\\\":1}",
+                                        ),
+                                    ),
+                                ],
+                                kw: [],
+                            },
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "A",
+                parent: None,
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            Literal(
+                                Number(
+                                    100.0,
+                                ),
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetField(
+                                GetField {
+                                    target: Call(
+                                        Call {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "A",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetField(
+                                GetField {
+                                    target: Call(
+                                        Call {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "A",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [
+                                                    (
+                                                        "a",
+                                                        Literal(
+                                                            Number(
+                                                                10.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "B",
+                parent: None,
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            Literal(
+                                Number(
+                                    100.0,
+                                ),
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetField(
+                                GetField {
+                                    target: Call(
+                                        Call {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "B",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "B",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [
+                                            (
+                                                "a",
+                                                Literal(
+                                                    Number(
+                                                        10.0,
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "C",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "self",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "a",
+                                                ),
+                                            ),
+                                        },
+                                        op: None,
+                                        value: Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetField(
+                                GetField {
+                                    target: Call(
+                                        Call {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "C",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "a",
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            SetField(
+                SetField {
+                    target: GetField {
+                        target: Call(
+                            Call {
+                                target: GetVar(
+                                    GetVar {
+                                        name: "C",
+                                    },
+                                ),
+                                args: Args {
+                                    pos: [],
+                                    kw: [],
+                                },
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "b",
+                            ),
+                        ),
+                    },
+                    op: None,
+                    value: Literal(
+                        Number(
+                            10.0,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "A",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "inherited",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "test 0",
+                                                    ),
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "B",
+                parent: Some(
+                    "A",
+                ),
+                fields: [],
+                funcs: [],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "A",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "inherited",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "B",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "inherited",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "C",
+                parent: Some(
+                    "B",
+                ),
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "inherited",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "test 1",
+                                                    ),
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "C",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "inherited",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "D",
+                parent: Some(
+                    "C",
+                ),
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "inherited",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetField(
+                                            GetField {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "super",
+                                                    },
+                                                ),
+                                                key: Literal(
+                                                    String(
+                                                        "inherited",
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "print",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                Literal(
+                                                    String(
+                                                        "test 2",
+                                                    ),
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "D",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                            key: Literal(
+                                String(
+                                    "inherited",
+                                ),
+                            ),
+                        },
+                    ),
+                    args: Args {
+                        pos: [],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+        Class(
+            Class {
+                name: "X",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "self",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "v",
+                                                ),
+                                            ),
+                                        },
+                                        op: None,
+                                        value: Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "Y",
+                parent: Some(
+                    "X",
+                ),
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                        ],
+                        body: [
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "self",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "v",
+                                                ),
+                                            ),
+                                        },
+                                        op: None,
+                                        value: Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "Z",
+                parent: Some(
+                    "X",
+                ),
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "init",
+                        params: [
+                            "self",
+                            "v",
+                        ],
+                        body: [
+                            Expr(
+                                Call(
+                                    Call {
+                                        target: GetField(
+                                            GetField {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "super",
+                                                    },
+                                                ),
+                                                key: Literal(
+                                                    String(
+                                                        "init",
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "self",
+                                                    },
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ),
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "self",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "v",
+                                                ),
+                                            ),
+                                        },
+                                        op: Some(
+                                            Add,
+                                        ),
+                                        value: GetVar(
+                                            GetVar {
+                                                name: "v",
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetVar(
+                        GetVar {
+                            name: "print",
+                        },
+                    ),
+                    args: Args {
+                        pos: [
+                            GetField(
+                                GetField {
+                                    target: Call(
+                                        Call {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "Z",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [
+                                                    (
+                                                        "v",
+                                                        Literal(
+                                                            Number(
+                                                                15.0,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        },
+                                    ),
+                                    key: Literal(
+                                        String(
+                                            "v",
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ],
+                        kw: [],
+                    },
+                },
+            ),
+        ),
+    ],
+}

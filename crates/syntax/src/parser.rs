@@ -67,7 +67,7 @@ peg::parser! {
         = l:position!() [Kw_Pass] r:position!() { ast::stmt_pass(l..r) }
 
       rule ctrl_stmt() -> ast::Stmt<'input>
-        = l:position!() [Kw_Return] _ v:expr()? r:position!() { ast::stmt_return(l..r, v) }
+        = l:position!() [Kw_Return] v:(_ v:expr() {v})? r:position!() { ast::stmt_return(l..r, v) }
         / l:position!() [Kw_Continue] r:position!() { ast::stmt_continue(l..r) }
         / l:position!() [Kw_Break] r:position!() { ast::stmt_break(l..r) }
         / l:position!() [Kw_Yield] _ v:expr() r:position!() { ast::stmt_yield(l..r, v) }
@@ -76,9 +76,13 @@ peg::parser! {
         = assign()
 
         rule assign() -> ast::Stmt<'input>
-          // NOTE: when rewriting parser, fix the span here
-          = target:expr() _ op:assign_op() _ v:expr() {? ast::assign(target, op, v) }
-          / e:expr() { ast::expr_stmt(e) }
+          // TODO: when rewriting parser, fix the span here
+          = target:expr() assign:(_ op:assign_op() _ v:expr() { (op,v) })? {?
+            match assign {
+              Some((op, v)) => ast::assign(target, op, v),
+              None => Ok(ast::expr_stmt(target))
+            }
+          }
 
           rule assign_op() -> ast::AssignKind
             = [Op_ColonEqual] { ast::AssignKind::Decl }
@@ -102,7 +106,7 @@ peg::parser! {
         = l:position!()
           first:([Kw_If] cond:expr() [Tok_Colon] body:block_body() { ast::branch(cond, body) })
           other:(__ [Kw_Elif] cond:expr() [Tok_Colon] body:block_body() { ast::branch(cond, body) })*
-          default:(__ [Kw_Else] body:block_body() { body })?
+          default:(__ [Kw_Else] [Tok_Colon] body:block_body() { body })?
           r:position!()
         {
           let mut other = other;
@@ -155,12 +159,31 @@ peg::parser! {
         { ast::func_stmt(l..r, func) }
 
       rule class_stmt() -> ast::Stmt<'input>
-        = l:position!() [Kw_Class] r:position!()
-        { todo!() }
+        = l:position!()
+          [Kw_Class]
+          name:ident()
+          parent:([Brk_ParenL] name:ident() [Brk_ParenR] { name })?
+          [Tok_Colon] class_members()
+          r:position!()
+        {
+          let fields = {take!(s.class_fields)};
+          let funcs = {take!(s.class_funcs)};
+          ast::class_stmt(l..r, name, parent, fields, funcs)
+        }
+
+        rule class_members()
+          = _ [Kw_Pass]
+          / expect_indent() ([Kw_Pass] / (class_member() (__ class_member())*)) expect_dedent()
+
+          rule class_member()
+            = f:func() { temp!(s.class_funcs).push(f) }
+            / name:ident() default:(_ [Op_Equal] _ v:expr() { v })? {
+              temp!(s.class_fields).push(ast::Field { name, default })
+            }
 
         rule func() -> ast::Func<'input>
           = name:ident()
-            [Brk_ParenL] params:params() [Brk_ParenR]
+            _ [Brk_ParenL] params:params() [Brk_ParenR]
             [Tok_Colon] body:block_body()
           { ast::func(name, params, body) }
 

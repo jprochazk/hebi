@@ -97,9 +97,9 @@ macro_rules! literal {
 }
 
 macro_rules! take {
-  ($state:ident . $what:ident) => {
+  ($state:ident . $what:ident) => {{
     ::std::mem::take(&mut $state.inner().borrow_mut().temp.$what)
-  };
+  }};
 }
 
 macro_rules! temp {

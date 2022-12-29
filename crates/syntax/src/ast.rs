@@ -71,7 +71,15 @@ pub struct Func<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Class<'src> {
   pub name: Ident<'src>,
+  pub parent: Option<Ident<'src>>,
+  pub fields: Vec<Field<'src>>,
   pub funcs: Vec<Func<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Field<'src> {
+  pub name: Ident<'src>,
+  pub default: Option<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -385,6 +393,24 @@ pub fn func<'src>(
   body: Vec<Stmt<'src>>,
 ) -> Func<'src> {
   Func { name, params, body }
+}
+
+pub fn class_stmt<'src>(
+  s: Range<usize>,
+  name: Ident<'src>,
+  parent: Option<Ident<'src>>,
+  fields: Vec<Field<'src>>,
+  funcs: Vec<Func<'src>>,
+) -> Stmt<'src> {
+  Stmt::new(
+    s,
+    StmtKind::Class(Box::new(Class {
+      name,
+      parent,
+      fields,
+      funcs,
+    })),
+  )
 }
 
 pub fn assign<'src>(

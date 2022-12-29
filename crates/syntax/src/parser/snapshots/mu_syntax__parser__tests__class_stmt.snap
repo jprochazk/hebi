@@ -1,0 +1,144 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: [
+                            "v",
+                        ],
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: [
+                            "v",
+                        ],
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: [
+                            "v",
+                        ],
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+            },
+        ),
+    ],
+}
