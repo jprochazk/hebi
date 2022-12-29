@@ -1,0 +1,73 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Func(
+            Func {
+                name: "f",
+                params: [],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [
+                    "a",
+                ],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [
+                    "a",
+                ],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [
+                    "a",
+                    "b",
+                ],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [
+                    "a",
+                    "b",
+                ],
+                body: [
+                    Pass,
+                ],
+            },
+        ),
+    ],
+}

@@ -66,7 +66,6 @@ pub struct Func<'src> {
   pub name: Ident<'src>,
   pub params: Vec<Ident<'src>>,
   pub body: Vec<Stmt<'src>>,
-  pub has_yield: bool,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -374,6 +373,18 @@ pub fn var_stmt<'src>(name: Ident<'src>, value: Expr<'src>) -> Stmt<'src> {
     name.span.start..value.span.end,
     StmtKind::Var(Box::new(Var { name, value })),
   )
+}
+
+pub fn func_stmt(s: Range<usize>, func: Func) -> Stmt {
+  Stmt::new(s, StmtKind::Func(Box::new(func)))
+}
+
+pub fn func<'src>(
+  name: Ident<'src>,
+  params: Vec<Ident<'src>>,
+  body: Vec<Stmt<'src>>,
+) -> Func<'src> {
+  Func { name, params, body }
 }
 
 pub fn assign<'src>(

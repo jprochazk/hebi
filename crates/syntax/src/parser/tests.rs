@@ -400,3 +400,43 @@ fn loop_stmts() {
     "#
   }
 }
+
+#[test]
+fn func_stmt() {
+  check_module! {
+    r#"
+      fn f(): pass
+      fn f():
+        pass
+      fn f(a): pass
+      fn f(a,): pass
+      fn f(a, b): pass
+      fn f(a, b,): pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      fn f():
+      pass
+    "#
+  }
+}
+
+#[test]
+fn ctrl_stmt() {
+  check_module! {
+    r#"
+      break
+      continue
+      return v
+      yield v
+    "#
+  }
+}
+
+// TODO: parse entire `design.md`
+/* #[test]
+fn whole_module() {
+
+} */

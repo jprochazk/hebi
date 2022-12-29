@@ -1,0 +1,35 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Ctrl(
+            Break,
+        ),
+        Ctrl(
+            Continue,
+        ),
+        Ctrl(
+            Return(
+                Some(
+                    GetVar(
+                        GetVar {
+                            name: "v",
+                        },
+                    ),
+                ),
+            ),
+        ),
+        Ctrl(
+            Yield(
+                GetVar(
+                    GetVar {
+                        name: "v",
+                    },
+                ),
+            ),
+        ),
+    ],
+}

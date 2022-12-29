@@ -67,10 +67,10 @@ peg::parser! {
         = l:position!() [Kw_Pass] r:position!() { ast::stmt_pass(l..r) }
 
       rule ctrl_stmt() -> ast::Stmt<'input>
-        = l:position!() [Kw_Return] v:expr()? r:position!() { ast::stmt_return(l..r, v) }
-        / l:position!() [Kw_Yield] v:expr() r:position!() { ast::stmt_yield(l..r, v) }
+        = l:position!() [Kw_Return] _ v:expr()? r:position!() { ast::stmt_return(l..r, v) }
         / l:position!() [Kw_Continue] r:position!() { ast::stmt_continue(l..r) }
         / l:position!() [Kw_Break] r:position!() { ast::stmt_break(l..r) }
+        / l:position!() [Kw_Yield] _ v:expr() r:position!() { ast::stmt_yield(l..r, v) }
 
       rule expr_stmt() -> ast::Stmt<'input>
         = assign()
@@ -95,7 +95,7 @@ peg::parser! {
     rule block_stmt() -> ast::Stmt<'input>
       = if_stmt()
       / loop_stmt()
-      / fn_stmt()
+      / func_stmt()
       / class_stmt()
 
       rule if_stmt() -> ast::Stmt<'input>
@@ -116,7 +116,11 @@ peg::parser! {
         / inf_loop_stmt()
 
         rule for_loop_stmt() -> ast::Stmt<'input>
-          = l:position!() [Kw_For] item:ident() [Kw_In] iter:for_iter() [Tok_Colon] body:block_body() r:position!()
+          = l:position!()
+            [Kw_For] item:ident()
+            [Kw_In] iter:for_iter()
+            [Tok_Colon] body:block_body()
+            r:position!()
           { ast::loop_for(l..r, item, iter, body) }
 
           rule for_iter() -> ast::ForIter<'input>
@@ -133,18 +137,41 @@ peg::parser! {
             }
 
         rule while_loop_stmt() -> ast::Stmt<'input>
-          = l:position!() [Kw_While] cond:expr() [Tok_Colon] body:block_body() r:position!()
+          = l:position!()
+            [Kw_While] cond:expr()
+            [Tok_Colon] body:block_body()
+            r:position!()
           { ast::loop_while(l..r, cond, body) }
 
         rule inf_loop_stmt() -> ast::Stmt<'input>
-          = l:position!() [Kw_Loop] [Tok_Colon] body:block_body() r:position!()
+          = l:position!()
+            [Kw_Loop]
+            [Tok_Colon] body:block_body()
+            r:position!()
           { ast::loop_inf(l..r, body) }
 
-      rule fn_stmt() -> ast::Stmt<'input>
-        = [Kw_Fn]  { todo!() }
+      rule func_stmt() -> ast::Stmt<'input>
+        = l:position!() [Kw_Fn] func:func() r:position!()
+        { ast::func_stmt(l..r, func) }
 
       rule class_stmt() -> ast::Stmt<'input>
-        = [Kw_Class] { todo!() }
+        = l:position!() [Kw_Class] r:position!()
+        { todo!() }
+
+        rule func() -> ast::Func<'input>
+          = name:ident()
+            [Brk_ParenL] params:params() [Brk_ParenR]
+            [Tok_Colon] body:block_body()
+          { ast::func(name, params, body) }
+
+          rule params() -> Vec<ast::Ident<'input>>
+            = &[Brk_ParenR] { vec![] }
+            / first:ident() rest:([Tok_Comma] n:ident() { n })* [Tok_Comma]?
+            {
+              let mut rest = rest;
+              rest.splice(0..0, [first]);
+              rest
+            }
 
     rule block_body() -> Vec<ast::Stmt<'input>>
       // one un-indented simple stmt
@@ -162,9 +189,6 @@ peg::parser! {
 
     rule stmt() -> ast::Stmt<'input>
       = block_stmt() / simple_stmt()
-
-    // TODO: expr_range is not a thing, it only exists in the context of `for` loops.
-
 
     pub rule expr() -> ast::Expr<'input>
       = precedence! {
