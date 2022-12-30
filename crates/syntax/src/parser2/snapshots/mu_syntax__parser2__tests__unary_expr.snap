@@ -1,0 +1,14 @@
+---
+source: crates/syntax/src/parser2/tests.rs
+expression: module
+---
+Unary(
+    Unary {
+        op: Plus,
+        right: GetVar(
+            GetVar {
+                name: "a",
+            },
+        ),
+    },
+)

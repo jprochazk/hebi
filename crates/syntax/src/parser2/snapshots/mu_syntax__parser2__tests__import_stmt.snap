@@ -1,0 +1,92 @@
+---
+source: crates/syntax/src/parser2/tests.rs
+expression: module
+---
+Module {
+    imports: [
+        Import {
+            path: [
+                "a",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+                "c",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "c",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+                "c",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "d",
+                "e",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+                "b",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "c",
+                "d",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "a",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "b",
+            ],
+            alias: None,
+        },
+        Import {
+            path: [
+                "c",
+            ],
+            alias: None,
+        },
+    ],
+    body: [],
+}

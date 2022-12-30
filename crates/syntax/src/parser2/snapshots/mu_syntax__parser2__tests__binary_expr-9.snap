@@ -1,0 +1,19 @@
+---
+source: crates/syntax/src/parser2/tests.rs
+expression: module
+---
+Binary(
+    Binary {
+        op: More,
+        left: GetVar(
+            GetVar {
+                name: "a",
+            },
+        ),
+        right: GetVar(
+            GetVar {
+                name: "b",
+            },
+        ),
+    },
+)
