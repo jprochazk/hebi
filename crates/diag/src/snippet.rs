@@ -1,5 +1,4 @@
-use std::borrow::Cow;
-
+use beef::lean::Cow;
 use span::Span;
 
 #[derive(Clone, Debug, PartialEq)]

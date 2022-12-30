@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use beef::lean::Cow;
 
 #[derive(Clone, Debug)]
 pub struct Source<'a> {

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 owo-colors = "3.5.0"
 thiserror = "1.0.37"
+beef = "0.5.2"
 
 span = { path = "../span", package = "mu_span" }
 

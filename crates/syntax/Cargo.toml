@@ -16,6 +16,7 @@ peg = "0.8.1"
 
 span = { path = "../span", package = "mu_span" }
 diag = { path = "../diag", package = "mu_diag" }
+stacker = "0.1.15"
 
 [dev-dependencies]
 indoc = "1.0.8"

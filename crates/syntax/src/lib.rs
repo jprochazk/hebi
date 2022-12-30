@@ -7,7 +7,7 @@ pub mod lexer2;
 pub mod parser;
 pub mod parser2;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Clone, Debug)]
 pub struct Error {

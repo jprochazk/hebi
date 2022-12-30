@@ -2,11 +2,11 @@
 //!
 //! The entrypoint to this module is [Report][`crate::Report`]
 
-use std::borrow::Cow;
 use std::fmt;
 use std::fmt::{Display, Write};
 use std::ops::Range;
 
+use beef::lean::Cow;
 use owo_colors as colors;
 use span::Span;
 use thiserror::Error;

@@ -1,3 +1,5 @@
+#![allow(clippy::needless_lifetimes)]
+
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -132,6 +134,7 @@ pub enum ExprKind<'src> {
   GetField(Box<GetField<'src>>),
   SetField(Box<SetField<'src>>),
   Call(Box<Call<'src>>),
+  Opt(Box<Opt<'src>>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -257,6 +260,11 @@ impl<'src> Default for Args<'src> {
   fn default() -> Self {
     Self::new()
   }
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Opt<'src> {
+  pub inner: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -470,6 +478,49 @@ pub fn loop_for<'src>(
     s,
     StmtKind::Loop(Box::new(Loop::For(For { item, iter, body }))),
   )
+}
+
+pub mod lit2 {
+  use span::Span;
+
+  use super::*;
+  use crate::{Error, Result};
+
+  pub fn null<'src>(s: impl Into<Span>) -> Expr<'src> {
+    let s = s.into();
+    Expr::new(s, ExprKind::Literal(Box::new(Literal::Null)))
+  }
+
+  pub fn bool<'src>(s: impl Into<Span>, lexeme: &str) -> Expr<'src> {
+    let s = s.into();
+    let v = match lexeme {
+      "true" => true,
+      "false" => false,
+      _ => unreachable!("bool is only ever `true` or `false`"),
+    };
+    Expr::new(s, ExprKind::Literal(Box::new(Literal::Bool(v))))
+  }
+
+  pub fn num<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
+    let s = s.into();
+    let value = lexeme
+      .parse()
+      .map_err(|e| Error::new(format!("invalid number {e}"), s))?;
+    Ok(Expr::new(
+      s,
+      ExprKind::Literal(Box::new(Literal::Number(value))),
+    ))
+  }
+
+  pub fn str<'src>(s: impl Into<Span>, lexeme: &'src str) -> Expr<'src> {
+    let s = s.into();
+    let lexeme = lexeme.strip_prefix('"').unwrap_or(lexeme);
+    let lexeme = lexeme.strip_suffix('"').unwrap_or(lexeme);
+    Expr::new(
+      s,
+      ExprKind::Literal(Box::new(Literal::String(Cow::from(lexeme)))),
+    )
+  }
 }
 
 pub mod lit {

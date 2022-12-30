@@ -2,7 +2,7 @@
 
 use std::borrow::Borrow;
 use std::fmt;
-use std::mem::discriminant;
+use std::mem::{discriminant, take};
 use std::ops::Range;
 
 use logos::Logos;
@@ -27,6 +27,7 @@ pub struct Lexer<'src> {
   inner: logos::Lexer<'src, TokenKind>,
   previous: Token,
   current: Token,
+  ws: Option<u64>,
   eof: Token,
 }
 
@@ -44,6 +45,7 @@ impl<'src> Lexer<'src> {
       inner: TokenKind::lexer(src),
       previous: eof.clone(),
       current: eof.clone(),
+      ws: Some(0),
       eof,
     };
     lex.bump();
@@ -80,18 +82,27 @@ impl<'src> Lexer<'src> {
 
   fn next_token(&mut self) -> Option<Token> {
     let lexer = &mut self.inner;
-    let mut ws = None;
     while let Some(kind) = lexer.next() {
       let lexeme = lexer.slice();
       let span = lexer.span().into();
 
       match kind {
         // Filter
-        TokenKind::_Tok_Whitespace | TokenKind::_Tok_Comment => {}
+        TokenKind::_Tok_Whitespace | TokenKind::_Tok_Comment => continue,
         // Measure indentation
-        TokenKind::_Tok_Indent => ws = Some(measure_indent(lexeme)),
-        // Return token
-        _ => return Some(Token { ws, kind, span }),
+        TokenKind::_Tok_Indent => {
+          self.ws = Some(measure_indent(lexeme));
+          continue;
+        }
+        // Return any other token
+        _ => {
+          let token = Token {
+            ws: take(&mut self.ws),
+            kind,
+            span,
+          };
+          return Some(token);
+        }
       }
     }
 
@@ -253,6 +264,78 @@ pub enum TokenKind {
   #[error]
   Tok_Error,
   Tok_Eof,
+}
+
+impl TokenKind {
+  pub fn name(&self) -> &'static str {
+    match self {
+      TokenKind::Kw_Use => "use",
+      TokenKind::Kw_As => "as",
+      TokenKind::Kw_Pub => "pub",
+      TokenKind::Kw_Fn => "fn",
+      TokenKind::Kw_Yield => "yield",
+      TokenKind::Kw_Class => "class",
+      TokenKind::Kw_For => "for",
+      TokenKind::Kw_In => "in",
+      TokenKind::Kw_While => "while",
+      TokenKind::Kw_Loop => "loop",
+      TokenKind::Kw_Return => "return",
+      TokenKind::Kw_Break => "break",
+      TokenKind::Kw_Continue => "continue",
+      TokenKind::Kw_If => "if",
+      TokenKind::Kw_Elif => "elif",
+      TokenKind::Kw_Else => "else",
+      TokenKind::Kw_Pass => "pass",
+      TokenKind::Brk_CurlyL => "{",
+      TokenKind::Brk_CurlyR => "}",
+      TokenKind::Brk_ParenL => "(",
+      TokenKind::Brk_ParenR => ")",
+      TokenKind::Brk_SquareL => "[",
+      TokenKind::Brk_SquareR => "]",
+      TokenKind::Op_Dot => ".",
+      TokenKind::Tok_Comma => ",",
+      TokenKind::Tok_Semicolon => ";",
+      TokenKind::Tok_Colon => ":",
+      TokenKind::Tok_Question => "?",
+      TokenKind::Op_Equal => "=",
+      TokenKind::Op_EqualEqual => "==",
+      TokenKind::Op_PlusEqual => "+=",
+      TokenKind::Op_MinusEqual => "-=",
+      TokenKind::Op_SlashEqual => "/=",
+      TokenKind::Op_StarEqual => "*=",
+      TokenKind::Op_PercentEqual => "%=",
+      TokenKind::Op_StarStarEqual => "**=",
+      TokenKind::Op_QuestionQuestionEqual => "?=",
+      TokenKind::Op_BangEqual => "!=",
+      TokenKind::Op_ColonEqual => ":=",
+      TokenKind::Op_Plus => "+",
+      TokenKind::Op_Minus => "-",
+      TokenKind::Op_Slash => "/",
+      TokenKind::Op_Star => "*",
+      TokenKind::Op_Percent => "%",
+      TokenKind::Op_StarStar => "**",
+      TokenKind::Op_QuestionQuestion => "??",
+      TokenKind::Op_Bang => "!",
+      TokenKind::Op_More => ">",
+      TokenKind::Op_MoreEqual => ">=",
+      TokenKind::Op_Less => "<",
+      TokenKind::Op_LessEqual => "<=",
+      TokenKind::Op_PipePipe => "||",
+      TokenKind::Op_AndAnd => "&&",
+      TokenKind::Op_Range => "..",
+      TokenKind::Op_RangeInc => "..=",
+      TokenKind::Lit_Null => "null",
+      TokenKind::Lit_Number => "number",
+      TokenKind::Lit_Bool => "bool",
+      TokenKind::Lit_String => "string",
+      TokenKind::Lit_Ident => "identifier",
+      TokenKind::_Tok_Indent => "<indentation>",
+      TokenKind::_Tok_Whitespace => "<whitespace>",
+      TokenKind::_Tok_Comment => "<comment>",
+      TokenKind::Tok_Error => "<error>",
+      TokenKind::Tok_Eof => "<eof>",
+    }
+  }
 }
 
 fn measure_indent(s: &str) -> u64 {
