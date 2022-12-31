@@ -67,6 +67,7 @@ pub struct Func<'src> {
   pub name: Ident<'src>,
   pub params: Vec<Ident<'src>>,
   pub body: Vec<Stmt<'src>>,
+  pub has_yield: bool,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -391,8 +392,14 @@ pub fn func<'src>(
   name: Ident<'src>,
   params: Vec<Ident<'src>>,
   body: Vec<Stmt<'src>>,
+  has_yield: bool,
 ) -> Func<'src> {
-  Func { name, params, body }
+  Func {
+    name,
+    params,
+    body,
+    has_yield,
+  }
 }
 
 pub fn class_stmt<'src>(

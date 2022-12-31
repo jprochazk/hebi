@@ -5,36 +5,389 @@ expression: module
 Module {
     imports: [],
     body: [
-        Ctrl(
-            Break,
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Ctrl(
+                            Break,
+                        ),
+                        Ctrl(
+                            Continue,
+                        ),
+                    ],
+                },
+            ),
         ),
-        Ctrl(
-            Continue,
+        Func(
+            Func {
+                name: "f",
+                params: [],
+                body: [
+                    Ctrl(
+                        Yield(
+                            GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            None,
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+                has_yield: true,
+            },
         ),
-        Ctrl(
-            Return(
-                Some(
-                    GetVar(
-                        GetVar {
-                            name: "v",
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Loop(
+                            Infinite(
+                                Infinite {
+                                    body: [
+                                        Ctrl(
+                                            Break,
+                                        ),
+                                        Ctrl(
+                                            Continue,
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                        Ctrl(
+                            Break,
+                        ),
+                        Ctrl(
+                            Continue,
+                        ),
+                    ],
+                },
+            ),
+        ),
+        Func(
+            Func {
+                name: "g",
+                params: [],
+                body: [
+                    Func(
+                        Func {
+                            name: "h",
+                            params: [],
+                            body: [
+                                Ctrl(
+                                    Yield(
+                                        GetVar(
+                                            GetVar {
+                                                name: "v",
+                                            },
+                                        ),
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        None,
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Some(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                            has_yield: true,
                         },
                     ),
-                ),
+                    Ctrl(
+                        Yield(
+                            GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            None,
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+                has_yield: true,
+            },
+        ),
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Func(
+                            Func {
+                                name: "i",
+                                params: [],
+                                body: [
+                                    Ctrl(
+                                        Yield(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            None,
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Some(
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                                has_yield: true,
+                            },
+                        ),
+                        Ctrl(
+                            Break,
+                        ),
+                        Ctrl(
+                            Continue,
+                        ),
+                    ],
+                },
             ),
         ),
-        Ctrl(
-            Return(
-                None,
+        Func(
+            Func {
+                name: "j",
+                params: [],
+                body: [
+                    Loop(
+                        Infinite(
+                            Infinite {
+                                body: [
+                                    Ctrl(
+                                        Break,
+                                    ),
+                                    Ctrl(
+                                        Continue,
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            None,
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+                has_yield: true,
+            },
+        ),
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Func(
+                            Func {
+                                name: "k",
+                                params: [],
+                                body: [
+                                    Loop(
+                                        Infinite(
+                                            Infinite {
+                                                body: [
+                                                    Ctrl(
+                                                        Break,
+                                                    ),
+                                                    Ctrl(
+                                                        Continue,
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Yield(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            None,
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Some(
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                                has_yield: true,
+                            },
+                        ),
+                        Ctrl(
+                            Break,
+                        ),
+                        Ctrl(
+                            Continue,
+                        ),
+                    ],
+                },
             ),
         ),
-        Ctrl(
-            Yield(
-                GetVar(
-                    GetVar {
-                        name: "v",
-                    },
-                ),
-            ),
+        Func(
+            Func {
+                name: "l",
+                params: [],
+                body: [
+                    Loop(
+                        Infinite(
+                            Infinite {
+                                body: [
+                                    Func(
+                                        Func {
+                                            name: "m",
+                                            params: [],
+                                            body: [
+                                                Ctrl(
+                                                    Yield(
+                                                        GetVar(
+                                                            GetVar {
+                                                                name: "v",
+                                                            },
+                                                        ),
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Return(
+                                                        None,
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Return(
+                                                        Some(
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: "v",
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ],
+                                            has_yield: true,
+                                        },
+                                    ),
+                                    Ctrl(
+                                        Break,
+                                    ),
+                                    Ctrl(
+                                        Continue,
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            None,
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "v",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+                has_yield: true,
+            },
         ),
     ],
 }

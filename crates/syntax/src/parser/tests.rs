@@ -525,18 +525,103 @@ fn func_stmt() {
 fn ctrl_stmt() {
   check_module! {
     r#"
-      break
-      continue
+      # simple
+      loop:
+        break
+        continue
+      
+      fn f():
+        yield v
+        return
+        return v
+
+      # nested
+      loop:
+        loop:
+          break
+          continue
+        break
+        continue
+
+      fn g():
+        fn h():
+          yield v
+          return
+          return v
+        yield v
+        return
+        return v
+      
+      loop:
+        fn i():
+          yield v
+          return
+          return v
+        break
+        continue
+
+      fn j():
+        loop:
+          break
+          continue
+        yield v
+        return
+        return v
+      
+      loop:
+        fn k():
+          loop:
+            break
+            continue
+          yield v
+          return
+          return v
+        break
+        continue
+
+      fn l():
+        loop:
+          fn m():
+            yield v
+            return
+            return v
+          break
+          continue
+        yield v
+        return
+        return v
+    "#
+  }
+
+  check_error! {
+    r#"
+      fn f():
+        yield
+          v
+    "#
+  }
+
+  check_error! {
+    r#"
       return v
-      return
+    "#
+  }
+
+  check_error! {
+    r#"
       yield v
     "#
   }
 
   check_error! {
     r#"
-      yield
-        v
+      continue
+    "#
+  }
+
+  check_error! {
+    r#"
+      break
     "#
   }
 }

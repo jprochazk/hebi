@@ -35,6 +35,7 @@ Module {
                         body: [
                             Pass,
                         ],
+                        has_yield: false,
                     },
                 ],
             },
@@ -64,6 +65,7 @@ Module {
                         body: [
                             Pass,
                         ],
+                        has_yield: false,
                     },
                 ],
             },
@@ -136,6 +138,7 @@ Module {
                         body: [
                             Pass,
                         ],
+                        has_yield: false,
                     },
                 ],
             },
@@ -167,6 +170,7 @@ Module {
                         body: [
                             Pass,
                         ],
+                        has_yield: false,
                     },
                 ],
             },

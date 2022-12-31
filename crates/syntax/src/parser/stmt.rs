@@ -1,4 +1,3 @@
-
 use super::*;
 
 impl<'src> Parser<'src> {
@@ -131,7 +130,7 @@ impl<'src> Parser<'src> {
     let iter = self.for_iter()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let body = self.body()?;
+    let body = self.loop_body()?;
     let end = self.previous().span.end;
     Ok(ast::for_loop_stmt(start..end, item, iter, body))
   }
@@ -161,7 +160,7 @@ impl<'src> Parser<'src> {
     let cond = self.expr()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let body = self.body()?;
+    let body = self.loop_body()?;
     let end = self.previous().span.end;
     Ok(ast::while_loop_stmt(start..end, cond, body))
   }
@@ -171,9 +170,21 @@ impl<'src> Parser<'src> {
     let start = self.previous().span.start;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let body = self.body()?;
+    let body = self.loop_body()?;
     let end = self.previous().span.end;
     Ok(ast::loop_stmt(start..end, body))
+  }
+
+  fn loop_body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
+    let ctx = Context {
+      current_loop: Some(()),
+      current_func: self.ctx.current_func,
+      ..Default::default()
+    };
+    let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
+    self.ctx.current_func = ctx.current_func;
+
+    Ok(body)
   }
 
   fn func_stmt(&mut self) -> Result<ast::Stmt<'src>> {
@@ -191,8 +202,17 @@ impl<'src> Parser<'src> {
     let params = self.func_params()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let body = self.body()?;
-    Ok(ast::func(name, params, body))
+    let ctx = Context {
+      current_func: Some(Func::default()),
+      ..Default::default()
+    };
+    let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
+    let has_yield = ctx
+      .current_func
+      // TODO: improve `ctx` API to make this impossible?
+      .expect("`ctx.current_func` set to `None` by a mysterious force outside of `Parser::func`")
+      .has_yield;
+    Ok(ast::func(name, params, body, has_yield))
   }
 
   // TODO: default params
@@ -310,6 +330,13 @@ impl<'src> Parser<'src> {
   }
 
   fn return_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    if self.ctx.current_func.is_none() {
+      return Err(Error::new(
+        "return outside of function",
+        self.current().span,
+      ));
+    }
+
     self.expect(Kw_Return)?;
     let start = self.previous().span.start;
     let value = self.no_indent().ok().map(|_| self.expr()).transpose()?;
@@ -318,20 +345,39 @@ impl<'src> Parser<'src> {
   }
 
   fn continue_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    if self.ctx.current_loop.is_none() {
+      return Err(Error::new("continue outside of loop", self.current().span));
+    }
+
     self.expect(Kw_Continue)?;
     Ok(ast::continue_stmt(self.previous().span))
   }
 
   fn break_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    if self.ctx.current_loop.is_none() {
+      return Err(Error::new("break outside of loop", self.current().span));
+    }
+
     self.expect(Kw_Break)?;
     Ok(ast::break_stmt(self.previous().span))
   }
 
   fn yield_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    if self.ctx.current_func.is_none() {
+      return Err(Error::new("yield outside of function", self.current().span));
+    }
+
     self.expect(Kw_Yield)?;
     let start = self.previous().span.start;
     self.no_indent()?;
     let value = self.expr()?;
+    let current_func = self
+      .ctx
+      .current_func
+      .as_mut()
+      // TODO: improve `ctx` API to make this impossible?
+      .expect("`ctx.current_func` set to `None` by a mysterious force outside of `Parser::func`");
+    current_func.has_yield = true;
     Ok(ast::yield_stmt(start..value.span.end, value))
   }
 

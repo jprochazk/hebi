@@ -12,6 +12,7 @@ Module {
                 body: [
                     Pass,
                 ],
+                has_yield: false,
             },
         ),
         Func(
@@ -21,6 +22,7 @@ Module {
                 body: [
                     Pass,
                 ],
+                has_yield: false,
             },
         ),
         Func(
@@ -32,6 +34,7 @@ Module {
                 body: [
                     Pass,
                 ],
+                has_yield: false,
             },
         ),
         Func(
@@ -43,18 +46,7 @@ Module {
                 body: [
                     Pass,
                 ],
-            },
-        ),
-        Func(
-            Func {
-                name: "f",
-                params: [
-                    "a",
-                    "b",
-                ],
-                body: [
-                    Pass,
-                ],
+                has_yield: false,
             },
         ),
         Func(
@@ -67,6 +59,20 @@ Module {
                 body: [
                     Pass,
                 ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: [
+                    "a",
+                    "b",
+                ],
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
             },
         ),
     ],

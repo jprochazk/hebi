@@ -22,9 +22,13 @@ pub fn parse(src: &str) -> Result<ast::Module, Vec<Error>> {
 
 struct Context {
   ignore_indent: bool,
-  in_loop: bool,
-  in_func: bool,
-  in_class: bool,
+  current_loop: Option<()>,
+  current_func: Option<Func>,
+}
+
+#[derive(Clone, Copy)]
+struct Func {
+  has_yield: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -32,10 +36,16 @@ impl Default for Context {
   fn default() -> Self {
     Self {
       ignore_indent: false,
-      in_loop: false,
-      in_func: false,
-      in_class: false,
+      current_loop: None,
+      current_func: None,
     }
+  }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for Func {
+  fn default() -> Self {
+    Self { has_yield: false }
   }
 }
 
@@ -152,11 +162,23 @@ impl<'src> Parser<'src> {
   /// Calls `f` in the context `ctx`.
   /// `ctx` is used only for the duration of the call to `f`.
   #[inline]
-  fn with_ctx<T>(&mut self, ctx: Context, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-    let mut prev_ctx = std::mem::replace(&mut self.ctx, ctx);
+  fn with_ctx<T>(&mut self, mut ctx: Context, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
+    std::mem::swap(&mut self.ctx, &mut ctx);
     let res = f(self);
-    std::mem::swap(&mut self.ctx, &mut prev_ctx);
+    std::mem::swap(&mut self.ctx, &mut ctx);
     res
+  }
+
+  #[inline]
+  fn with_ctx2<T>(
+    &mut self,
+    mut ctx: Context,
+    f: impl FnOnce(&mut Self) -> Result<T>,
+  ) -> Result<(Context, T)> {
+    std::mem::swap(&mut self.ctx, &mut ctx);
+    let res = f(self);
+    std::mem::swap(&mut self.ctx, &mut ctx);
+    Ok((ctx, res?))
   }
 
   /// Calls `f` and wraps the returned value in a span that encompasses the
