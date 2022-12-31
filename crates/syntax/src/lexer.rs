@@ -1,6 +1,8 @@
 #![allow(non_camel_case_types)]
 
+use std::borrow::Borrow;
 use std::fmt;
+use std::mem::{discriminant, take};
 use std::ops::Range;
 
 use logos::Logos;
@@ -8,133 +10,109 @@ use span::Span;
 
 #[derive(Clone, Debug)]
 pub struct Token {
-  ws: Option<u64>,
+  pub ws: Option<u64>,
   pub kind: TokenKind,
   pub span: Span,
 }
 
 impl Token {
-  pub fn indent(&self) -> Option<u64> {
-    self.ws
+  pub fn is(&self, kind: impl Borrow<TokenKind>) -> bool {
+    discriminant(&self.kind) == discriminant(kind.borrow())
   }
 }
 
+#[derive(Clone)]
 pub struct Lexer<'src> {
   src: &'src str,
-  tokens: Vec<Token>,
-  eof: Span,
-}
-
-#[derive(Debug)]
-pub struct Error {
-  pub span: Span,
-  pub lexeme: String,
+  inner: logos::Lexer<'src, TokenKind>,
+  previous: Token,
+  current: Token,
+  ws: Option<u64>,
+  eof: Token,
 }
 
 impl<'src> Lexer<'src> {
-  pub fn lex(src: &'src str) -> Result<Self, Vec<Error>> {
-    let eof = (src.len()..src.len()).into();
+  pub fn new(src: &'src str) -> Self {
+    let end = src.len();
+    let eof = Token {
+      ws: None,
+      span: (end..end).into(),
+      kind: TokenKind::Tok_Eof,
+    };
 
-    let mut ws = Some(0);
-    let mut errors = vec![];
-    let mut tokens = vec![];
-    let mut lexer = logos::Lexer::<'src, TokenKind>::new(src);
+    let mut lex = Self {
+      src,
+      inner: TokenKind::lexer(src),
+      previous: eof.clone(),
+      current: eof.clone(),
+      ws: Some(0),
+      eof,
+    };
+    lex.bump();
+
+    lex
+  }
+
+  #[inline]
+  pub fn previous(&self) -> &Token {
+    &self.previous
+  }
+
+  #[inline]
+  pub fn current(&self) -> &Token {
+    &self.current
+  }
+
+  #[inline]
+  pub fn eof(&self) -> &Token {
+    &self.eof
+  }
+
+  #[inline]
+  pub fn lexeme(&self, token: &Token) -> &'src str {
+    &self.src[Range::from(token.span)]
+  }
+
+  #[inline]
+  pub fn bump(&mut self) {
+    std::mem::swap(&mut self.previous, &mut self.current);
+
+    self.current = self.next_token().unwrap_or(self.eof.clone());
+  }
+
+  fn next_token(&mut self) -> Option<Token> {
+    let lexer = &mut self.inner;
     while let Some(kind) = lexer.next() {
       let lexeme = lexer.slice();
       let span = lexer.span().into();
 
       match kind {
-        // Handle indentation
-        TokenKind::_Indentation => {
-          ws = Some(measure_indent(lexeme));
+        // Filter
+        TokenKind::_Tok_Whitespace | TokenKind::_Tok_Comment => continue,
+        // Measure indentation
+        TokenKind::_Tok_Indent => {
+          self.ws = Some(measure_indent(lexeme));
           continue;
         }
-        // Filter any other whitespace and comments
-        TokenKind::_Whitespace | TokenKind::_Comment => continue,
-        // Handle errors
-        TokenKind::_Error => {
-          errors.push(Error {
-            lexeme: lexeme.into(),
-            span,
-          });
-          continue;
-        }
-        // Any other token is stored with its preceding whitespace
+        // Return any other token
         _ => {
-          tokens.push(Token { ws, kind, span });
-          ws = None;
+          let token = Token {
+            ws: take(&mut self.ws),
+            kind,
+            span,
+          };
+          return Some(token);
         }
       }
     }
 
-    if !errors.is_empty() {
-      Err(errors)
-    } else {
-      Ok(Lexer { src, tokens, eof })
-    }
-  }
-
-  pub fn get(&self, pos: usize) -> Option<&Token> {
-    self.tokens.get(pos)
-  }
-
-  pub fn lexeme(&self, token: &Token) -> &'src str {
-    &self.src[Range::from(token.span)]
-  }
-
-  pub fn tokens(&self) -> &[Token] {
-    &self.tokens[..]
-  }
-}
-
-impl<'src> peg::Parse for Lexer<'src> {
-  type PositionRepr = Span;
-
-  fn start(&self) -> usize {
-    0
-  }
-
-  fn is_eof(&self, pos: usize) -> bool {
-    pos >= self.tokens.len()
-  }
-
-  fn position_repr(&self, pos: usize) -> Self::PositionRepr {
-    self
-      .tokens
-      .get(pos)
-      .map(|t| t.span)
-      .unwrap_or_else(|| self.eof)
-  }
-}
-
-impl<'src> peg::ParseElem<'src> for Lexer<'src> {
-  type Element = &'src TokenKind;
-
-  fn parse_elem(&'src self, pos: usize) -> peg::RuleResult<Self::Element> {
-    match self.tokens.get(pos) {
-      Some(token) => peg::RuleResult::Matched(pos + 1, &token.kind),
-      None => peg::RuleResult::Failed,
-    }
-  }
-}
-
-impl<'src> peg::ParseLiteral for Lexer<'src> {
-  fn parse_string_literal(&self, pos: usize, literal: &str) -> peg::RuleResult<()> {
-    let Some(token) = self.tokens.get(pos) else {
-      return peg::RuleResult::Failed;
-    };
-
-    if self.lexeme(token) == literal {
-      peg::RuleResult::Matched(pos + 1, ())
-    } else {
-      peg::RuleResult::Failed
-    }
+    None
   }
 }
 
 // When adding a token, if it is matched using `token` directive only,
 // then it should also be added to the `known` module below.
-#[derive(Clone, Copy, Debug, Logos)]
+#[derive(Clone, Copy, Debug, Logos, PartialEq)]
 pub enum TokenKind {
   // Keywords
   #[token("use")]
@@ -275,18 +253,89 @@ pub enum TokenKind {
 
   #[doc(hidden)]
   #[regex(r"(\r?\n)+[ ]*", priority = 10)]
-  _Indentation,
+  _Tok_Indent,
   #[doc(hidden)]
   #[regex(r"[ \n\r]+")]
-  _Whitespace,
+  _Tok_Whitespace,
   #[doc(hidden)]
   #[regex(r"#[^\n]*")]
-  _Comment,
+  _Tok_Comment,
 
-  /// Errors are filtered out before parsing
-  #[doc(hidden)]
   #[error]
-  _Error,
+  Tok_Error,
+  Tok_Eof,
+}
+
+impl TokenKind {
+  pub fn name(&self) -> &'static str {
+    match self {
+      TokenKind::Kw_Use => "use",
+      TokenKind::Kw_As => "as",
+      TokenKind::Kw_Pub => "pub",
+      TokenKind::Kw_Fn => "fn",
+      TokenKind::Kw_Yield => "yield",
+      TokenKind::Kw_Class => "class",
+      TokenKind::Kw_For => "for",
+      TokenKind::Kw_In => "in",
+      TokenKind::Kw_While => "while",
+      TokenKind::Kw_Loop => "loop",
+      TokenKind::Kw_Return => "return",
+      TokenKind::Kw_Break => "break",
+      TokenKind::Kw_Continue => "continue",
+      TokenKind::Kw_If => "if",
+      TokenKind::Kw_Elif => "elif",
+      TokenKind::Kw_Else => "else",
+      TokenKind::Kw_Pass => "pass",
+      TokenKind::Brk_CurlyL => "{",
+      TokenKind::Brk_CurlyR => "}",
+      TokenKind::Brk_ParenL => "(",
+      TokenKind::Brk_ParenR => ")",
+      TokenKind::Brk_SquareL => "[",
+      TokenKind::Brk_SquareR => "]",
+      TokenKind::Op_Dot => ".",
+      TokenKind::Tok_Comma => ",",
+      TokenKind::Tok_Semicolon => ";",
+      TokenKind::Tok_Colon => ":",
+      TokenKind::Tok_Question => "?",
+      TokenKind::Op_Equal => "=",
+      TokenKind::Op_EqualEqual => "==",
+      TokenKind::Op_PlusEqual => "+=",
+      TokenKind::Op_MinusEqual => "-=",
+      TokenKind::Op_SlashEqual => "/=",
+      TokenKind::Op_StarEqual => "*=",
+      TokenKind::Op_PercentEqual => "%=",
+      TokenKind::Op_StarStarEqual => "**=",
+      TokenKind::Op_QuestionQuestionEqual => "?=",
+      TokenKind::Op_BangEqual => "!=",
+      TokenKind::Op_ColonEqual => ":=",
+      TokenKind::Op_Plus => "+",
+      TokenKind::Op_Minus => "-",
+      TokenKind::Op_Slash => "/",
+      TokenKind::Op_Star => "*",
+      TokenKind::Op_Percent => "%",
+      TokenKind::Op_StarStar => "**",
+      TokenKind::Op_QuestionQuestion => "??",
+      TokenKind::Op_Bang => "!",
+      TokenKind::Op_More => ">",
+      TokenKind::Op_MoreEqual => ">=",
+      TokenKind::Op_Less => "<",
+      TokenKind::Op_LessEqual => "<=",
+      TokenKind::Op_PipePipe => "||",
+      TokenKind::Op_AndAnd => "&&",
+      TokenKind::Op_Range => "..",
+      TokenKind::Op_RangeInc => "..=",
+      TokenKind::Lit_Null => "null",
+      TokenKind::Lit_Number => "number",
+      TokenKind::Lit_Bool => "bool",
+      TokenKind::Lit_String => "string",
+      TokenKind::Lit_Ident => "identifier",
+      TokenKind::_Tok_Indent => "<indentation>",
+      TokenKind::_Tok_Whitespace => "<whitespace>",
+      TokenKind::_Tok_Comment => "<comment>",
+      TokenKind::Tok_Error => "<error>",
+      TokenKind::Tok_Eof => "<eof>",
+    }
+  }
 }
 
 fn measure_indent(s: &str) -> u64 {
@@ -294,40 +343,38 @@ fn measure_indent(s: &str) -> u64 {
   (s.len() - pos - 1) as u64
 }
 
-pub struct DebugToken<'src>(Token, &'src Lexer<'src>);
-impl<'src> fmt::Debug for DebugToken<'src> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let ws = self
-      .0
-      .indent()
-      .map(|v| v.to_string())
-      .unwrap_or_else(|| "_".to_owned());
-    let kind = self.0.kind;
-    let span = self.0.span;
-    if let TokenKind::Lit_Ident = self.0.kind {
-      let lexeme = self.1.lexeme(&self.0);
-      write!(f, "(>{ws} {kind:?} `{lexeme}` @{span})")
+pub struct Tokens<'src>(pub Lexer<'src>);
+
+impl<'src> Iterator for Tokens<'src> {
+  type Item = (&'src str, Token);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let token = self.0.current().clone();
+    self.0.bump();
+    if !token.is(TokenKind::Tok_Eof) {
+      Some((self.0.lexeme(&token), token))
     } else {
-      write!(f, "(>{ws} {kind:?} @{span})")
+      None
     }
   }
 }
 
-impl<'src> Lexer<'src> {
-  pub fn debug_tokens(&'src self) -> impl Iterator<Item = DebugToken<'src>> {
-    self.tokens().iter().map(|t| DebugToken(t.clone(), self))
-  }
-}
-
-impl<'src> fmt::Debug for Lexer<'src> {
+pub struct DebugToken<'src>(pub Token, pub &'src str);
+impl<'src> fmt::Debug for DebugToken<'src> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    self
-      .tokens
-      .clone()
-      .into_iter()
-      .map(|t| DebugToken(t, self))
-      .collect::<Vec<_>>()
-      .fmt(f)
+    let ws = self
+      .0
+      .ws
+      .map(|v| v.to_string())
+      .unwrap_or_else(|| "_".to_owned());
+    let kind = self.0.kind;
+    let span = self.0.span;
+    let lexeme = self.1;
+    if let TokenKind::Lit_Ident = self.0.kind {
+      write!(f, "(>{ws} {kind:?} `{lexeme}` @{span})")
+    } else {
+      write!(f, "(>{ws} {kind:?} @{span})")
+    }
   }
 }
 

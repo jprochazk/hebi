@@ -1,46 +1,30 @@
 use diag::Source;
 use indoc::indoc;
-use peg::error::ParseError;
-use span::Span;
 
 use super::*;
+use crate::lexer::Lexer;
+use crate::Error;
 
-fn report(source: &str, err: ParseError<Span>) -> String {
-  let message = if let Some(err) = err.expected.tokens().find(|&t| t.starts_with("@@")) {
-    err.strip_prefix("@@").unwrap_or(err).to_string()
-  } else {
-    err.expected.to_string()
-  };
-
+fn report(source: &str, err: Error) -> String {
   diag::Report::error()
     .source(Source::string(source))
-    .message(message)
-    .span(err.location)
+    .message(err.message)
+    .span(err.span)
     .build()
     .unwrap()
     .emit_to_string()
     .unwrap()
 }
 
-fn print_tokens(lex: &Lexer) {
-  for token in lex.debug_tokens() {
-    println!("{token:?}");
-  }
-  // let tokens = lex.debug_tokens().collect::<Vec<_>>();
-  // insta::assert_debug_snapshot!(tokens);
-}
-
 macro_rules! check_module {
-  ($input:literal) => {check_module!(__inner $input, false)};
-  (? $input:literal) => {check_module!(__inner $input, true)};
-  (__inner $input:literal , $print_tokens:expr) => {{
+  ($input:literal) => {{
     let input = indoc!($input);
-    let lex = Lexer::lex(input).unwrap();
-    if $print_tokens { print_tokens(&lex); }
-    match parse(&lex) {
+    match parse(input) {
       Ok(module) => insta::assert_debug_snapshot!(module),
       Err(e) => {
-        eprintln!("{}", report(input, e));
+        for err in e {
+          eprintln!("{}", report(input, err));
+        }
         panic!("Failed to parse source, see errors above.")
       }
     };
@@ -48,13 +32,9 @@ macro_rules! check_module {
 }
 
 macro_rules! check_expr {
-  ($input:literal) => {check_expr!(__inner $input, false)};
-  (? $input:literal) => {check_expr!(__inner $input, true)};
-  (__inner $input:literal , $print_tokens:expr) => {{
-    let input = indoc!($input);
-    let lex = Lexer::lex(input).unwrap();
-    if $print_tokens { print_tokens(&lex); }
-    match grammar::expr(&lex, &StateRef::new(&lex)) {
+  ($input:literal) => {{
+    let input = $input;
+    match Parser::new(Lexer::new(input)).expr() {
       Ok(module) => insta::assert_debug_snapshot!(module),
       Err(e) => {
         eprintln!("{}", report(input, e));
@@ -65,21 +45,24 @@ macro_rules! check_expr {
 }
 
 macro_rules! check_error {
-  ($input:literal) => {check_error!(__inner $input, false)};
-  (? $input:literal) => {check_error!(__inner $input, true)};
-  (__inner $input:literal , $print_tokens:expr) => {{
+  ($input:literal) => {{
     let input = indoc!($input);
-    let lex = Lexer::lex(input).unwrap();
-    if $print_tokens { print_tokens(&lex); }
-    match parse(&lex) {
+    match parse(input) {
       Ok(_) => panic!("module parsed successfully"),
-      Err(e) => insta::assert_snapshot!(report(input, e)),
+      Err(e) => {
+        let mut errors = String::new();
+        for err in e {
+          errors += &report(input, err);
+          errors += "\n";
+        }
+        insta::assert_snapshot!(errors);
+      }
     };
   }};
 }
 
 #[test]
-fn test_import_path() {
+fn import_stmt() {
   check_module! {
     r#"
       use a
@@ -143,18 +126,11 @@ fn binary_expr() {
         b
     "#
   }
-
-  check_error! {
-    r#"
-      a
-      + b
-    "#
-  }
 }
 
 #[test]
 fn unary_expr() {
-  // check_expr!(r#"+a"#);
+  check_expr!(r#"+a"#);
   check_expr!(r#"-a"#);
   check_expr!(r#"!a"#);
 }
@@ -190,9 +166,9 @@ fn call_expr() {
     r#"
       a(b, c, d=e, f=g)
       a(
-        b, 
+        b,
       c, d
-          =e, 
+          =e,
         f=
         g,
           )
@@ -217,7 +193,7 @@ fn simple_literal_expr() {
       0.1
       1.5e3
       3.14e-3
-      "\tas\\df\x2800\n"
+      "\tas\\df\u{2800}\x28\n"
     "#
   }
 }
@@ -342,6 +318,118 @@ fn assign_expr() {
 }
 
 #[test]
+fn if_stmt() {
+  check_module! {
+    r#"
+      if a: pass
+      elif b: pass
+      elif c: pass
+      else: pass
+    "#
+  }
+
+  check_module! {
+    r#"
+      if a:
+        pass
+      elif b:
+        pass
+      elif c:
+        pass
+      else:
+        pass
+    "#
+  }
+
+  check_module! {
+    r#"
+      if a:
+        a
+        b
+      elif b:
+        a
+        b
+      elif c:
+        a
+        b
+      else:
+        a
+        b
+    "#
+  }
+
+  check_module! {
+    r#"
+      if a:
+        if b:
+          pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a:
+        a
+          b
+      else: pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a
+        : pass
+      else: pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a: pass
+      elif b
+        : pass
+      else: pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a: pass
+      elif b: pass
+      else
+        : pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a: pass
+      elif b: pass
+        else: pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      if a: pass
+        elif b: pass
+      else: pass
+    "#
+  }
+
+  check_module! {
+    r#"
+      if (
+        some_very_long_condition &&
+        with_many_sub_expressions() ||
+        (which_are_complex.too())
+      ):
+        pass
+    "#
+  }
+}
+
+#[test]
 fn loop_stmts() {
   check_module! {
     r#"
@@ -430,7 +518,15 @@ fn ctrl_stmt() {
       break
       continue
       return v
+      return
       yield v
+    "#
+  }
+
+  check_error! {
+    r#"
+      yield
+        v
     "#
   }
 }
@@ -455,6 +551,54 @@ fn class_stmt() {
       class T(U):
         a = b
         f(v): pass
+      class T(U):
+        f(v):
+          pass
+        a = b
+      class T:
+        a
+      class T(U):
+        a
+    "#
+  }
+
+  check_error! {
+    r#"
+      class
+        T: pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T
+        : pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T: a = b
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T: fn(v): pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T
+        (U): pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T(U)
+        : pass
     "#
   }
 }

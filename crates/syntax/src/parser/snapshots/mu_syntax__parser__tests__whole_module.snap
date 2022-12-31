@@ -74,7 +74,7 @@ Module {
                     op: None,
                     value: Literal(
                         String(
-                            "\\tas\\\\df\\x2800\\n",
+                            "\tas\\df(00\n",
                         ),
                     ),
                 },
@@ -105,7 +105,7 @@ Module {
                                 ),
                                 Literal(
                                     String(
-                                        "\\tas\\\\df\\x2800\\n",
+                                        "\tas\\df(00\n",
                                     ),
                                 ),
                             ],
@@ -166,7 +166,7 @@ Module {
                                     ),
                                     Literal(
                                         String(
-                                            "\\tas\\\\df\\x2800\\n",
+                                            "\tas\\df(00\n",
                                         ),
                                     ),
                                 ),
@@ -228,7 +228,7 @@ Module {
                                     ),
                                     Literal(
                                         String(
-                                            "\\tas\\\\df\\x2800\\n",
+                                            "\tas\\df(00\n",
                                         ),
                                     ),
                                 ),
@@ -290,7 +290,7 @@ Module {
                                     ),
                                     Literal(
                                         String(
-                                            "\\tas\\\\df\\x2800\\n",
+                                            "\tas\\df(00\n",
                                         ),
                                     ),
                                 ),
@@ -1946,7 +1946,7 @@ Module {
                                 pos: [
                                     Literal(
                                         String(
-                                            "{\\\"a\\\":0, \\\"b\\\":1}",
+                                            "{\"a\":0, \"b\":1}",
                                         ),
                                     ),
                                 ],

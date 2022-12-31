@@ -3,9 +3,7 @@ use span::Span;
 
 pub mod ast;
 pub mod lexer;
-pub mod lexer2;
 pub mod parser;
-pub mod parser2;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 

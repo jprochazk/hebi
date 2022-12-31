@@ -140,5 +140,10 @@ v = json.parse("{\"a\":0, \"b\":1}")
 print(v) # { a: 0, b: 1 }
 "#;
 
-  insta::assert_debug_snapshot!(Lexer::lex(input))
+  let lexer = Lexer::new(input);
+  let tokens = Tokens(lexer)
+    .map(|(s, t)| DebugToken(t, s))
+    .collect::<Vec<_>>();
+
+  insta::assert_debug_snapshot!(tokens)
 }

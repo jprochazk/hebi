@@ -1,0 +1,102 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        body: [
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "a",
+                                    },
+                                ),
+                            ),
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: "b",
+                            },
+                        ),
+                        body: [
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "a",
+                                    },
+                                ),
+                            ),
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: "c",
+                            },
+                        ),
+                        body: [
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "a",
+                                    },
+                                ),
+                            ),
+                            Expr(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                ],
+                default: Some(
+                    [
+                        Expr(
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                        ),
+                        Expr(
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            },
+        ),
+    ],
+}

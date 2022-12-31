@@ -1,10 +1,9 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::collections::BTreeMap;
-use std::ops::Range;
 
 use beef::lean::Cow;
-use span::Spanned;
+use span::{Span, Spanned};
 
 pub type Ident<'src> = Spanned<Cow<'src, str>>;
 pub type Map<K, V> = BTreeMap<K, V>;
@@ -212,6 +211,7 @@ pub struct SetField<'src> {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone, Copy)]
 pub enum AssignOp {
   Add,
   Sub,
@@ -222,6 +222,7 @@ pub enum AssignOp {
   Maybe,
 }
 
+#[derive(Clone, Copy)]
 pub enum AssignKind {
   Op(Option<AssignOp>),
   Decl,
@@ -293,8 +294,8 @@ pub enum Ctrl<'src> {
   Break,
 }
 
-pub fn stmt_if<'src>(
-  s: Range<usize>,
+pub fn if_stmt<'src>(
+  s: impl Into<Span>,
   branches: Vec<Branch<'src>>,
   default: Option<Vec<Stmt<'src>>>,
 ) -> Stmt<'src> {
@@ -305,32 +306,28 @@ pub fn branch<'src>(cond: Expr<'src>, body: Vec<Stmt<'src>>) -> Branch<'src> {
   Branch { cond, body }
 }
 
-pub fn stmt_expr(e: Expr) -> Stmt {
-  Stmt::new(e.span, StmtKind::Expr(Box::new(e)))
-}
-
-pub fn stmt_return(s: Range<usize>, v: Option<Expr>) -> Stmt {
+pub fn return_stmt(s: impl Into<Span>, v: Option<Expr>) -> Stmt {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Return(v))))
 }
 
-pub fn stmt_yield(s: Range<usize>, v: Expr) -> Stmt {
+pub fn yield_stmt(s: impl Into<Span>, v: Expr) -> Stmt {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Yield(v))))
 }
 
-pub fn stmt_continue<'src>(s: Range<usize>) -> Stmt<'src> {
+pub fn continue_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Continue)))
 }
 
-pub fn stmt_break<'src>(s: Range<usize>) -> Stmt<'src> {
+pub fn break_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Break)))
 }
 
-pub fn stmt_pass<'src>(s: Range<usize>) -> Stmt<'src> {
+pub fn pass_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Pass)
 }
 
 pub fn expr_binary<'src>(
-  s: Range<usize>,
+  s: impl Into<Span>,
   op: BinaryOp,
   left: Expr<'src>,
   right: Expr<'src>,
@@ -338,19 +335,19 @@ pub fn expr_binary<'src>(
   Expr::new(s, ExprKind::Binary(Box::new(Binary { op, left, right })))
 }
 
-pub fn expr_unary(s: Range<usize>, op: UnaryOp, right: Expr) -> Expr {
+pub fn expr_unary(s: impl Into<Span>, op: UnaryOp, right: Expr) -> Expr {
   Expr::new(s, ExprKind::Unary(Box::new(Unary { op, right })))
 }
 
-pub fn expr_call<'src>(s: Range<usize>, target: Expr<'src>, args: Args<'src>) -> Expr<'src> {
+pub fn expr_call<'src>(s: impl Into<Span>, target: Expr<'src>, args: Args<'src>) -> Expr<'src> {
   Expr::new(s, ExprKind::Call(Box::new(Call { target, args })))
 }
 
-pub fn expr_index<'src>(s: Range<usize>, target: Expr<'src>, key: Expr<'src>) -> Expr<'src> {
+pub fn expr_index<'src>(s: impl Into<Span>, target: Expr<'src>, key: Expr<'src>) -> Expr<'src> {
   Expr::new(s, ExprKind::GetField(Box::new(GetField { target, key })))
 }
 
-pub fn expr_field<'src>(s: Range<usize>, target: Expr<'src>, key: Ident<'src>) -> Expr<'src> {
+pub fn expr_field<'src>(s: impl Into<Span>, target: Expr<'src>, key: Ident<'src>) -> Expr<'src> {
   expr_index(
     s,
     target,
@@ -361,7 +358,7 @@ pub fn expr_field<'src>(s: Range<usize>, target: Expr<'src>, key: Ident<'src>) -
   )
 }
 
-pub fn expr_array(s: Range<usize>, items: Vec<Expr>) -> Expr {
+pub fn expr_array(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
   Expr::new(s, ExprKind::Literal(Box::new(Literal::Array(items))))
 }
 
@@ -372,7 +369,7 @@ pub fn ident_key(v: Ident) -> Expr {
   )
 }
 
-pub fn expr_object<'src>(s: Range<usize>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
+pub fn expr_object<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
   Expr::new(s, ExprKind::Literal(Box::new(Literal::Object(items))))
 }
 
@@ -391,7 +388,7 @@ pub fn var_stmt<'src>(name: Ident<'src>, value: Expr<'src>) -> Stmt<'src> {
   )
 }
 
-pub fn func_stmt(s: Range<usize>, func: Func) -> Stmt {
+pub fn func_stmt(s: impl Into<Span>, func: Func) -> Stmt {
   Stmt::new(s, StmtKind::Func(Box::new(func)))
 }
 
@@ -404,7 +401,7 @@ pub fn func<'src>(
 }
 
 pub fn class_stmt<'src>(
-  s: Range<usize>,
+  s: impl Into<Span>,
   name: Ident<'src>,
   parent: Option<Ident<'src>>,
   fields: Vec<Field<'src>>,
@@ -421,19 +418,15 @@ pub fn class_stmt<'src>(
   )
 }
 
-pub fn assign<'src>(
-  target: Expr<'src>,
-  kind: AssignKind,
-  value: Expr<'src>,
-) -> Result<Stmt<'src>, &'static str> {
+pub fn assign<'src>(target: Expr<'src>, kind: AssignKind, value: Expr<'src>) -> Option<Stmt<'src>> {
   let span = target.span.start..value.span.end;
   match kind {
     AssignKind::Decl => {
       let name = match target.into_inner() {
         ExprKind::GetVar(target) => target.name,
-        _ => return Err("@@invalid variable declaration"),
+        _ => return None,
       };
-      Ok(var_stmt(name, value))
+      Some(var_stmt(name, value))
     }
     AssignKind::Op(op) => {
       let assign = match target.into_inner() {
@@ -447,29 +440,33 @@ pub fn assign<'src>(
           op,
           value,
         })),
-        _ => return Err("@@invalid assignment target"),
+        _ => return None,
       };
-      Ok(expr_stmt(Expr::new(span, assign)))
+      Some(expr_stmt(Expr::new(span, assign)))
     }
   }
 }
 
-pub fn loop_inf(s: Range<usize>, body: Vec<Stmt>) -> Stmt {
+pub fn loop_stmt(s: impl Into<Span>, body: Vec<Stmt>) -> Stmt {
   Stmt::new(
     s,
     StmtKind::Loop(Box::new(Loop::Infinite(Infinite { body }))),
   )
 }
 
-pub fn loop_while<'src>(s: Range<usize>, cond: Expr<'src>, body: Vec<Stmt<'src>>) -> Stmt<'src> {
+pub fn while_loop_stmt<'src>(
+  s: impl Into<Span>,
+  cond: Expr<'src>,
+  body: Vec<Stmt<'src>>,
+) -> Stmt<'src> {
   Stmt::new(
     s,
     StmtKind::Loop(Box::new(Loop::While(While { cond, body }))),
   )
 }
 
-pub fn loop_for<'src>(
-  s: Range<usize>,
+pub fn for_loop_stmt<'src>(
+  s: impl Into<Span>,
   item: Ident<'src>,
   iter: ForIter<'src>,
   body: Vec<Stmt<'src>>,
@@ -512,14 +509,91 @@ pub mod lit2 {
     ))
   }
 
-  pub fn str<'src>(s: impl Into<Span>, lexeme: &'src str) -> Expr<'src> {
+  pub fn str<'src>(s: impl Into<Span>, lexeme: &'src str) -> Option<Expr<'src>> {
     let s = s.into();
     let lexeme = lexeme.strip_prefix('"').unwrap_or(lexeme);
     let lexeme = lexeme.strip_suffix('"').unwrap_or(lexeme);
-    Expr::new(
+    let mut lexeme = lexeme.to_string();
+    unescape_in_place(&mut lexeme)?;
+    Some(Expr::new(
       s,
       ExprKind::Literal(Box::new(Literal::String(Cow::from(lexeme)))),
-    )
+    ))
+  }
+
+  // Adapted from https://docs.rs/snailquote/0.3.0/x86_64-pc-windows-msvc/src/snailquote/lib.rs.html.
+  /// Unescapes the given string in-place. Returns `None` if the string contains
+  /// an invalid escape sequence.
+  fn unescape_in_place(s: &mut String) -> Option<()> {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(ch) = chars.next() {
+      if ch == '\\' {
+        if let Some(next) = chars.next() {
+          let escape = match next {
+            'a' => Some('\u{07}'),
+            'b' => Some('\u{08}'),
+            'v' => Some('\u{0B}'),
+            'f' => Some('\u{0C}'),
+            'n' => Some('\n'),
+            'r' => Some('\r'),
+            't' => Some('\t'),
+            '\'' => Some('\''),
+            '"' => Some('"'),
+            '\\' => Some('\\'),
+            'e' | 'E' => Some('\u{1B}'),
+            'x' => Some(parse_hex_code(&mut chars)?),
+            'u' => Some(parse_unicode(&mut chars)?),
+            _ => None,
+          };
+          match escape {
+            Some(esc) => {
+              out.push(esc);
+            }
+            None => {
+              out.push(ch);
+              out.push(next);
+            }
+          }
+        }
+      } else {
+        out.push(ch);
+      }
+    }
+    *s = out;
+    Some(())
+  }
+
+  fn parse_hex_code<I>(chars: &mut I) -> Option<char>
+  where
+    I: Iterator<Item = char>,
+  {
+    let digits = [
+      u8::try_from(chars.next()?).ok()?,
+      u8::try_from(chars.next()?).ok()?,
+    ];
+    let digits = std::str::from_utf8(&digits[..]).ok()?;
+    let c = u32::from_str_radix(digits, 16).ok()?;
+    char::from_u32(c)
+  }
+
+  // Adapted from https://docs.rs/snailquote/0.3.0/x86_64-pc-windows-msvc/src/snailquote/lib.rs.html.
+  fn parse_unicode<I>(chars: &mut I) -> Option<char>
+  where
+    I: Iterator<Item = char>,
+  {
+    match chars.next() {
+      Some('{') => {}
+      _ => {
+        return None;
+      }
+    }
+
+    let unicode_seq: String = chars.take_while(|&c| c != '}').collect();
+
+    u32::from_str_radix(&unicode_seq, 16)
+      .ok()
+      .and_then(char::from_u32)
   }
 }
 

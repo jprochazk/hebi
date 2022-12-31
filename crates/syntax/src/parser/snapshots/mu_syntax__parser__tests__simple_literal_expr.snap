@@ -55,7 +55,7 @@ Module {
         Expr(
             Literal(
                 String(
-                    "\\tas\\\\df\\x2800\\n",
+                    "\tas\\df⠀(\n",
                 ),
             ),
         ),

@@ -11,32 +11,35 @@ impl IndentStack {
     }
   }
 
-  pub fn is_indent_eq(&self, n: u64) -> bool {
-    println!("{} == {}", self.level, n);
+  pub fn is_eq(&self, n: u64) -> bool {
     self.level == n
   }
 
-  pub fn is_indent_gt(&self, n: u64) -> bool {
-    println!("{} < {}", self.level, n);
+  pub fn is_gt(&self, n: u64) -> bool {
     self.level < n
   }
 
-  pub fn is_indent_lt(&self, n: u64) -> bool {
-    println!("{} > {}", self.level, n);
+  pub fn is_lt(&self, n: u64) -> bool {
     self.level > n
   }
 
-  pub fn push_indent(&mut self, n: u64) {
+  pub fn push(&mut self, n: u64) {
     self.stack.push(n);
     self.level = n;
   }
 
-  pub fn pop_indent(&mut self) {
+  pub fn pop(&mut self) {
     self.stack.pop().unwrap();
     self.level = self
       .stack
       .last()
       .cloned()
       .expect("pop_indent should not empty the indent stack");
+  }
+
+  pub fn reset(&mut self) {
+    self.stack.clear();
+    self.stack.push(0);
+    self.level = 0;
   }
 }

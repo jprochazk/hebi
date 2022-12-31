@@ -1,10 +1,10 @@
 ---
-source: crates/syntax/src/parser2/tests.rs
+source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
 Unary(
     Unary {
-        op: Plus,
+        op: Not,
         right: GetVar(
             GetVar {
                 name: "a",

@@ -140,5 +140,64 @@ Module {
                 ],
             },
         ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [
+                    Field {
+                        name: "a",
+                        default: Some(
+                            GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: [
+                            "v",
+                        ],
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [
+                    Field {
+                        name: "a",
+                        default: None,
+                    },
+                ],
+                funcs: [],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [
+                    Field {
+                        name: "a",
+                        default: None,
+                    },
+                ],
+                funcs: [],
+            },
+        ),
     ],
 }

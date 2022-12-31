@@ -1,0 +1,42 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                        body: [
+                            If(
+                                If {
+                                    branches: [
+                                        Branch {
+                                            cond: GetVar(
+                                                GetVar {
+                                                    name: "b",
+                                                },
+                                            ),
+                                            body: [
+                                                Pass,
+                                            ],
+                                        },
+                                    ],
+                                    default: None,
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: None,
+            },
+        ),
+    ],
+}

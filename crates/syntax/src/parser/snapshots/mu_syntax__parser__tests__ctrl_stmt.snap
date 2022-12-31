@@ -23,6 +23,11 @@ Module {
             ),
         ),
         Ctrl(
+            Return(
+                None,
+            ),
+        ),
+        Ctrl(
             Yield(
                 GetVar(
                     GetVar {
