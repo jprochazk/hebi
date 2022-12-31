@@ -133,6 +133,7 @@ fn unary_expr() {
   check_expr!(r#"+a"#);
   check_expr!(r#"-a"#);
   check_expr!(r#"!a"#);
+  check_expr!(r#"?a.b[c].d()"#);
 }
 
 #[test]
@@ -487,6 +488,15 @@ fn loop_stmts() {
       pass
     "#
   }
+
+  check_module! {
+    r#"
+      loop:
+        loop:
+          a
+          a
+    "#
+  }
 }
 
 #[test]
@@ -605,15 +615,6 @@ fn class_stmt() {
 
 #[test]
 fn whole_module() {
-  /* check_module! {?
-    r#"
-      loop:
-        loop:
-          a
-          a
-    "#
-  } */
-
   check_module! {
     r#"
       # variable declaration

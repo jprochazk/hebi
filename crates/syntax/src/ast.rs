@@ -133,7 +133,6 @@ pub enum ExprKind<'src> {
   GetField(Box<GetField<'src>>),
   SetField(Box<SetField<'src>>),
   Call(Box<Call<'src>>),
-  Opt(Box<Opt<'src>>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -183,6 +182,7 @@ pub enum UnaryOp {
   Plus,
   Minus,
   Not,
+  Opt,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -261,11 +261,6 @@ impl<'src> Default for Args<'src> {
   fn default() -> Self {
     Self::new()
   }
-}
-
-#[cfg_attr(test, derive(Debug))]
-pub struct Opt<'src> {
-  pub inner: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]

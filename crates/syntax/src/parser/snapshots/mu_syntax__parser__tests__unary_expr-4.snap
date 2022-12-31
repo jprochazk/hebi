@@ -1,0 +1,49 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Unary(
+    Unary {
+        op: Opt,
+        right: Call(
+            Call {
+                target: GetField(
+                    GetField {
+                        target: GetField(
+                            GetField {
+                                target: GetField(
+                                    GetField {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "a",
+                                            },
+                                        ),
+                                        key: Literal(
+                                            String(
+                                                "b",
+                                            ),
+                                        ),
+                                    },
+                                ),
+                                key: GetVar(
+                                    GetVar {
+                                        name: "c",
+                                    },
+                                ),
+                            },
+                        ),
+                        key: Literal(
+                            String(
+                                "d",
+                            ),
+                        ),
+                    },
+                ),
+                args: Args {
+                    pos: [],
+                    kw: [],
+                },
+            },
+        ),
+    },
+)

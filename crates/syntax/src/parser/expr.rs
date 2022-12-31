@@ -1,4 +1,3 @@
-
 use super::*;
 
 // TODO: expr_opt -> `?expr` -> high precedence
@@ -140,6 +139,7 @@ impl<'src> Parser<'src> {
       Op_Minus => ast::UnaryOp::Minus,
       Op_Plus => ast::UnaryOp::Plus,
       Op_Bang => ast::UnaryOp::Not,
+      Tok_Question => ast::UnaryOp::Opt,
       _ => return self.postfix_expr(),
     };
     self.bump(); // bump operator

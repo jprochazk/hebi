@@ -1,0 +1,39 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Loop(
+                            Infinite(
+                                Infinite {
+                                    body: [
+                                        Expr(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "a",
+                                                },
+                                            ),
+                                        ),
+                                        Expr(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "a",
+                                                },
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ],
+}
