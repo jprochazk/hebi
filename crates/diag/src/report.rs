@@ -17,38 +17,61 @@ use crate::source::Source;
 use crate::{style, util};
 
 #[derive(Clone)]
-pub struct ReportBuilder<'a> {
+pub struct ReportBuilder<'a, Src, Msg, Sp> {
   level: Level,
-  source: Option<Source<'a>>,
-  message: Option<Cow<'a, str>>,
-  span: Option<Span>,
+  source: Src,
+  message: Msg,
+  span: Sp,
   label: Option<Cow<'a, str>>,
   color: bool,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum BuilderError {
-  MissingSource,
-  MissingMessage,
-  MissingSpan,
+impl<'a, Msg, Sp> ReportBuilder<'a, (), Msg, Sp> {
+  pub fn source(self, source: impl Into<Source<'a>>) -> ReportBuilder<'a, Source<'a>, Msg, Sp> {
+    let source = source.into();
+    ReportBuilder {
+      level: self.level,
+      source,
+      message: self.message,
+      span: self.span,
+      label: self.label,
+      color: self.color,
+    }
+  }
 }
 
-impl<'a> ReportBuilder<'a> {
-  pub fn source(mut self, source: Source<'a>) -> Self {
-    self.source = Some(source);
-    self
+impl<'a, Src, Sp> ReportBuilder<'a, Src, (), Sp> {
+  pub fn message(
+    self,
+    message: impl Into<Cow<'a, str>>,
+  ) -> ReportBuilder<'a, Src, Cow<'a, str>, Sp> {
+    let message = message.into();
+    ReportBuilder {
+      level: self.level,
+      source: self.source,
+      message,
+      span: self.span,
+      label: self.label,
+      color: self.color,
+    }
   }
+}
 
-  pub fn message(mut self, message: impl Into<Cow<'a, str>>) -> Self {
-    self.message = Some(message.into());
-    self
+impl<'a, Src, Msg> ReportBuilder<'a, Src, Msg, ()> {
+  pub fn span(self, span: impl Into<Span>) -> ReportBuilder<'a, Src, Msg, Span> {
+    let span = span.into();
+    ReportBuilder {
+      level: self.level,
+      source: self.source,
+      message: self.message,
+      span,
+      label: self.label,
+      color: self.color,
+    }
   }
+}
 
-  pub fn span(mut self, span: Span) -> Self {
-    self.span = Some(span);
-    self
-  }
-
+impl<'a, Src, Msg, Sp> ReportBuilder<'a, Src, Msg, Sp> {
   pub fn label(mut self, label: impl Into<Cow<'a, str>>) -> Self {
     self.label = Some(label.into());
     self
@@ -58,17 +81,18 @@ impl<'a> ReportBuilder<'a> {
     self.color = enabled;
     self
   }
+}
 
-  pub fn build(self) -> Result<Report<'a>, BuilderError> {
-    use BuilderError::*;
-    Ok(Report {
+impl<'a> ReportBuilder<'a, Source<'a>, Cow<'a, str>, Span> {
+  pub fn build(self) -> Report<'a> {
+    Report {
       level: self.level,
-      source: self.source.ok_or(MissingSource)?,
-      message: self.message.ok_or(MissingMessage)?,
-      span: self.span.ok_or(MissingSpan)?,
+      source: self.source,
+      message: self.message,
+      span: self.span,
       label: self.label,
       color: self.color,
-    })
+    }
   }
 }
 
@@ -92,36 +116,36 @@ pub struct Report<'a> {
 
 impl<'a> Report<'a> {
   /// An `Info`-level report.
-  pub fn info() -> ReportBuilder<'a> {
+  pub fn info() -> ReportBuilder<'a, (), (), ()> {
     ReportBuilder {
       level: Level::Info,
-      source: None,
-      message: None,
-      span: None,
+      source: (),
+      message: (),
+      span: (),
       label: None,
       color: true,
     }
   }
 
   /// A `Warning`-level report.
-  pub fn warn() -> ReportBuilder<'a> {
+  pub fn warn() -> ReportBuilder<'a, (), (), ()> {
     ReportBuilder {
       level: Level::Warning,
-      source: None,
-      message: None,
-      span: None,
+      source: (),
+      message: (),
+      span: (),
       label: None,
       color: true,
     }
   }
 
   /// An `Error`-level report.
-  pub fn error() -> ReportBuilder<'a> {
+  pub fn error() -> ReportBuilder<'a, (), (), ()> {
     ReportBuilder {
       level: Level::Error,
-      source: None,
-      message: None,
-      span: None,
+      source: (),
+      message: (),
+      span: (),
       label: None,
       color: true,
     }

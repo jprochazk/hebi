@@ -906,8 +906,14 @@ Module {
             Func {
                 name: "add",
                 params: [
-                    "a",
-                    "b",
+                    Param {
+                        name: "a",
+                        default: None,
+                    },
+                    Param {
+                        name: "b",
+                        default: None,
+                    },
                 ],
                 body: [
                     Ctrl(
@@ -973,7 +979,10 @@ Module {
             Func {
                 name: "fib",
                 params: [
-                    "n",
+                    Param {
+                        name: "n",
+                        default: None,
+                    },
                 ],
                 body: [
                     If(
@@ -1069,7 +1078,10 @@ Module {
             Func {
                 name: "print_fib",
                 params: [
-                    "n",
+                    Param {
+                        name: "n",
+                        default: None,
+                    },
                 ],
                 body: [
                     Expr(
@@ -1160,9 +1172,18 @@ Module {
             Func {
                 name: "counter",
                 params: [
-                    "start",
-                    "step",
-                    "end",
+                    Param {
+                        name: "start",
+                        default: None,
+                    },
+                    Param {
+                        name: "step",
+                        default: None,
+                    },
+                    Param {
+                        name: "end",
+                        default: None,
+                    },
                 ],
                 body: [
                     Var(
@@ -1601,8 +1622,14 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
-                            "n",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
+                            Param {
+                                name: "n",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -1635,7 +1662,10 @@ Module {
                     Func {
                         name: "get_n",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Ctrl(
@@ -1664,7 +1694,10 @@ Module {
                     Func {
                         name: "test1",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2110,7 +2143,10 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Pass,
@@ -2205,7 +2241,10 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2317,7 +2356,10 @@ Module {
                     Func {
                         name: "inherited",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2432,7 +2474,10 @@ Module {
                     Func {
                         name: "inherited",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2505,7 +2550,10 @@ Module {
                     Func {
                         name: "inherited",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2600,7 +2648,10 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2644,7 +2695,10 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(
@@ -2688,8 +2742,14 @@ Module {
                     Func {
                         name: "init",
                         params: [
-                            "self",
-                            "v",
+                            Param {
+                                name: "self",
+                                default: None,
+                            },
+                            Param {
+                                name: "v",
+                                default: None,
+                            },
                         ],
                         body: [
                             Expr(

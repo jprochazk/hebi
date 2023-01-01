@@ -1,20 +1,7 @@
-use diag::Source;
 use indoc::indoc;
 
 use super::*;
 use crate::lexer::Lexer;
-use crate::Error;
-
-fn report(source: &str, err: Error) -> String {
-  diag::Report::error()
-    .source(Source::string(source))
-    .message(err.message)
-    .span(err.span)
-    .build()
-    .unwrap()
-    .emit_to_string()
-    .unwrap()
-}
 
 macro_rules! check_module {
   ($input:literal) => {{
@@ -23,7 +10,7 @@ macro_rules! check_module {
       Ok(module) => insta::assert_debug_snapshot!(module),
       Err(e) => {
         for err in e {
-          eprintln!("{}", report(input, err));
+          eprintln!("{}", err.report(input));
         }
         panic!("Failed to parse source, see errors above.")
       }
@@ -36,8 +23,8 @@ macro_rules! check_expr {
     let input = $input;
     match Parser::new(Lexer::new(input)).expr() {
       Ok(module) => insta::assert_debug_snapshot!(module),
-      Err(e) => {
-        eprintln!("{}", report(input, e));
+      Err(err) => {
+        eprintln!("{}", err.report(input));
         panic!("Failed to parse source, see errors above.")
       }
     };
@@ -52,7 +39,7 @@ macro_rules! check_error {
       Err(e) => {
         let mut errors = String::new();
         for err in e {
-          errors += &report(input, err);
+          errors += &err.report(input);
           errors += "\n";
         }
         insta::assert_snapshot!(errors);
@@ -157,6 +144,9 @@ fn postfix_expr() {
       a.b[c]
       .d
     "#
+  }
+  check_error! {
+    r#"a."#
   }
 }
 
@@ -517,6 +507,13 @@ fn func_stmt() {
     r#"
       fn f():
       pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      fn():
+        pass
     "#
   }
 }

@@ -7,7 +7,7 @@ use span::{Span, Spanned};
 use self::indent::IndentStack;
 use crate::lexer::TokenKind::*;
 use crate::lexer::{Lexer, Token, TokenKind};
-use crate::{ast, Error, Result};
+use crate::{ast, Error, ErrorContext, Result};
 
 // https://github.com/ezclap-tv/mu-lang/blob/v2/crates/syntax/src/parser.rs
 // https://github.com/ezclap-tv/mu-lang/blob/v2/crates/syntax/src/lexer.rs

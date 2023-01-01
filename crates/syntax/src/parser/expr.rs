@@ -1,7 +1,5 @@
 use super::*;
 
-// TODO: expr_opt -> `?expr` -> high precedence
-
 impl<'src> Parser<'src> {
   pub(super) fn expr(&mut self) -> Result<ast::Expr<'src>> {
     self.maybe_expr()
@@ -165,7 +163,7 @@ impl<'src> Parser<'src> {
         }
         Op_Dot => {
           self.bump(); // bump `.`
-          let key = self.ident()?;
+          let key = self.ident().context("field key")?;
           expr = ast::expr_field(expr.span.start..key.span.end, expr, key);
         }
         _ => break,

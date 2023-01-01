@@ -29,7 +29,10 @@ Module {
             Func {
                 name: "f",
                 params: [
-                    "a",
+                    Param {
+                        name: "a",
+                        default: None,
+                    },
                 ],
                 body: [
                     Pass,
@@ -41,7 +44,10 @@ Module {
             Func {
                 name: "f",
                 params: [
-                    "a",
+                    Param {
+                        name: "a",
+                        default: None,
+                    },
                 ],
                 body: [
                     Pass,
@@ -53,8 +59,14 @@ Module {
             Func {
                 name: "f",
                 params: [
-                    "a",
-                    "b",
+                    Param {
+                        name: "a",
+                        default: None,
+                    },
+                    Param {
+                        name: "b",
+                        default: None,
+                    },
                 ],
                 body: [
                     Pass,
@@ -66,8 +78,14 @@ Module {
             Func {
                 name: "f",
                 params: [
-                    "a",
-                    "b",
+                    Param {
+                        name: "a",
+                        default: None,
+                    },
+                    Param {
+                        name: "b",
+                        default: None,
+                    },
                 ],
                 body: [
                     Pass,
