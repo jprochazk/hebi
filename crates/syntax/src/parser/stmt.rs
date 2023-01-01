@@ -191,7 +191,7 @@ impl<'src> Parser<'src> {
     self.expect(Kw_Fn)?;
     let start = self.previous().span.start;
     self.no_indent()?;
-    let name = self.ident()?;
+    let name = self.ident().context("function name")?;
     self.no_indent()?; // func's opening paren must be unindented
     let func = self.func(name)?;
     let end = self.previous().span.end;
@@ -217,17 +217,33 @@ impl<'src> Parser<'src> {
 
   // TODO: default params
 
-  fn func_params(&mut self) -> Result<Vec<ast::Ident<'src>>> {
+  fn func_params(&mut self) -> Result<Vec<ast::Param<'src>>> {
     self.expect(Brk_ParenL)?;
     let mut params = vec![];
     if !self.current().is(Brk_ParenR) {
-      params.push(self.ident()?);
+      params.push(self.param()?);
       while self.bump_if(Tok_Comma) && !self.current().is(Brk_ParenR) {
-        params.push(self.ident()?);
+        params.push(self.param()?);
       }
     }
     self.expect(Brk_ParenR)?;
     Ok(params)
+  }
+
+  fn param(&mut self) -> Result<ast::Param<'src>> {
+    let name = self.ident()?;
+    if self.bump_if(Op_Equal) {
+      let default = self.expr()?;
+      Ok(ast::Param {
+        name,
+        default: Some(default),
+      })
+    } else {
+      Ok(ast::Param {
+        name,
+        default: None,
+      })
+    }
   }
 
   fn class_stmt(&mut self) -> Result<ast::Stmt<'src>> {

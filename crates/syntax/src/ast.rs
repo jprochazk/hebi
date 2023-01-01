@@ -65,9 +65,15 @@ pub enum StmtKind<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Func<'src> {
   pub name: Ident<'src>,
-  pub params: Vec<Ident<'src>>,
+  pub params: Vec<Param<'src>>,
   pub body: Vec<Stmt<'src>>,
   pub has_yield: bool,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Param<'src> {
+  pub name: Ident<'src>,
+  pub default: Option<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -390,7 +396,7 @@ pub fn func_stmt(s: impl Into<Span>, func: Func) -> Stmt {
 
 pub fn func<'src>(
   name: Ident<'src>,
-  params: Vec<Ident<'src>>,
+  params: Vec<Param<'src>>,
   body: Vec<Stmt<'src>>,
   has_yield: bool,
 ) -> Func<'src> {
