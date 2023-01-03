@@ -402,7 +402,7 @@ impl<'src> Parser<'src> {
       Kw_Return => self.return_stmt(),
       Kw_Continue => self.continue_stmt(),
       Kw_Break => self.break_stmt(),
-      Kw_Yield => self.yield_stmt(),
+      Kw_Yield => self.yield_().map(ast::yield_stmt),
       _ => self.expr_stmt(),
     }
   }
@@ -443,25 +443,6 @@ impl<'src> Parser<'src> {
 
     self.expect(Kw_Break)?;
     Ok(ast::break_stmt(self.previous().span))
-  }
-
-  fn yield_stmt(&mut self) -> Result<ast::Stmt<'src>> {
-    if self.ctx.current_func.is_none() {
-      return Err(Error::new("yield outside of function", self.current().span));
-    }
-
-    self.expect(Kw_Yield)?;
-    let start = self.previous().span.start;
-    self.no_indent()?;
-    let value = self.expr()?;
-    let current_func = self
-      .ctx
-      .current_func
-      .as_mut()
-      // TODO: improve `ctx` API to make this impossible?
-      .expect("`ctx.current_func` set to `None` by a mysterious force outside of `Parser::func`");
-    current_func.has_yield = true;
-    Ok(ast::yield_stmt(start..value.span.end, value))
   }
 
   fn expr_stmt(&mut self) -> Result<ast::Stmt<'src>> {

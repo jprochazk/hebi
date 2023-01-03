@@ -151,6 +151,7 @@ pub enum ExprKind<'src> {
   SetVar(Box<SetVar<'src>>),
   GetField(Box<GetField<'src>>),
   SetField(Box<SetField<'src>>),
+  Yield(Box<Yield<'src>>),
   Call(Box<Call<'src>>),
 }
 
@@ -248,6 +249,16 @@ pub enum AssignKind {
 }
 
 #[cfg_attr(test, derive(Debug))]
+pub struct Yield<'src> {
+  pub value: Option<Expr<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Return<'src> {
+  pub value: Option<Expr<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
 pub struct Call<'src> {
   pub target: Expr<'src>,
   pub args: Args<'src>,
@@ -302,8 +313,8 @@ pub struct Branch<'src> {
 
 #[cfg_attr(test, derive(Debug))]
 pub enum Ctrl<'src> {
-  Return(Option<Expr<'src>>),
-  Yield(Expr<'src>),
+  Return(Return<'src>),
+  Yield(Yield<'src>),
   Continue,
   Break,
 }
@@ -320,12 +331,19 @@ pub fn branch<'src>(cond: Expr<'src>, body: Vec<Stmt<'src>>) -> Branch<'src> {
   Branch { cond, body }
 }
 
-pub fn return_stmt(s: impl Into<Span>, v: Option<Expr>) -> Stmt {
-  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Return(v))))
+pub fn return_stmt(s: impl Into<Span>, value: Option<Expr>) -> Stmt {
+  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Return(Return { value }))))
 }
 
-pub fn yield_stmt(s: impl Into<Span>, v: Expr) -> Stmt {
-  Stmt::new(s, StmtKind::Ctrl(Box::new(Ctrl::Yield(v))))
+pub fn yield_expr(inner: Spanned<Yield>) -> Expr {
+  Expr::new(inner.span, ExprKind::Yield(Box::new(inner.into_inner())))
+}
+
+pub fn yield_stmt(inner: Spanned<Yield>) -> Stmt {
+  Stmt::new(
+    inner.span,
+    StmtKind::Ctrl(Box::new(Ctrl::Yield(inner.into_inner()))),
+  )
 }
 
 pub fn continue_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {

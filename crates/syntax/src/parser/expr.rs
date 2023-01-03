@@ -138,6 +138,7 @@ impl<'src> Parser<'src> {
       Op_Plus => ast::UnaryOp::Plus,
       Op_Bang => ast::UnaryOp::Not,
       Tok_Question => ast::UnaryOp::Opt,
+      Kw_Yield => return self.yield_().map(ast::yield_expr),
       _ => return self.postfix_expr(),
     };
     self.bump(); // bump operator

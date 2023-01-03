@@ -29,29 +29,80 @@ Module {
                     kwargs: None,
                 },
                 body: [
-                    Ctrl(
-                        Yield(
-                            GetVar(
-                                GetVar {
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
                                     name: "v",
                                 },
-                            ),
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            None,
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            Some(
-                                GetVar(
-                                    GetVar {
-                                        name: "v",
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: None,
                                     },
                                 ),
-                            ),
+                            },
+                        ),
+                    ),
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
+                                    name: "v",
+                                },
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: Some(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
                         ),
                     ),
                 ],
@@ -106,29 +157,80 @@ Module {
                                 kwargs: None,
                             },
                             body: [
-                                Ctrl(
-                                    Yield(
-                                        GetVar(
-                                            GetVar {
+                                Expr(
+                                    SetVar(
+                                        SetVar {
+                                            target: GetVar {
                                                 name: "v",
                                             },
-                                        ),
-                                    ),
-                                ),
-                                Ctrl(
-                                    Return(
-                                        None,
-                                    ),
-                                ),
-                                Ctrl(
-                                    Return(
-                                        Some(
-                                            GetVar(
-                                                GetVar {
-                                                    name: "v",
+                                            op: None,
+                                            value: Yield(
+                                                Yield {
+                                                    value: None,
                                                 },
                                             ),
-                                        ),
+                                        },
+                                    ),
+                                ),
+                                Expr(
+                                    SetVar(
+                                        SetVar {
+                                            target: GetVar {
+                                                name: "v",
+                                            },
+                                            op: None,
+                                            value: Yield(
+                                                Yield {
+                                                    value: Some(
+                                                        GetVar(
+                                                            GetVar {
+                                                                name: "v",
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Yield(
+                                        Yield {
+                                            value: None,
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Yield(
+                                        Yield {
+                                            value: Some(
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: None,
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
+                                            ),
+                                        },
                                     ),
                                 ),
                             ],
@@ -137,27 +239,42 @@ Module {
                     ),
                     Ctrl(
                         Yield(
-                            GetVar(
-                                GetVar {
-                                    name: "v",
-                                },
-                            ),
+                            Yield {
+                                value: None,
+                            },
                         ),
                     ),
                     Ctrl(
-                        Return(
-                            None,
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            Some(
-                                GetVar(
-                                    GetVar {
-                                        name: "v",
-                                    },
+                        Yield(
+                            Yield {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
                                 ),
-                            ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
                         ),
                     ),
                 ],
@@ -178,29 +295,80 @@ Module {
                                     kwargs: None,
                                 },
                                 body: [
-                                    Ctrl(
-                                        Yield(
-                                            GetVar(
-                                                GetVar {
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
                                                     name: "v",
                                                 },
-                                            ),
-                                        ),
-                                    ),
-                                    Ctrl(
-                                        Return(
-                                            None,
-                                        ),
-                                    ),
-                                    Ctrl(
-                                        Return(
-                                            Some(
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "v",
+                                                op: None,
+                                                value: Yield(
+                                                    Yield {
+                                                        value: None,
                                                     },
                                                 ),
-                                            ),
+                                            },
+                                        ),
+                                    ),
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
+                                                    name: "v",
+                                                },
+                                                op: None,
+                                                value: Yield(
+                                                    Yield {
+                                                        value: Some(
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: "v",
+                                                                },
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Yield(
+                                            Yield {
+                                                value: None,
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Yield(
+                                            Yield {
+                                                value: Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Return {
+                                                value: None,
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Return {
+                                                value: Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                ),
+                                            },
                                         ),
                                     ),
                                 ],
@@ -241,29 +409,80 @@ Module {
                             },
                         ),
                     ),
-                    Ctrl(
-                        Yield(
-                            GetVar(
-                                GetVar {
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
                                     name: "v",
                                 },
-                            ),
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            None,
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            Some(
-                                GetVar(
-                                    GetVar {
-                                        name: "v",
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: None,
                                     },
                                 ),
-                            ),
+                            },
+                        ),
+                    ),
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
+                                    name: "v",
+                                },
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: Some(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
                         ),
                     ),
                 ],
@@ -298,29 +517,80 @@ Module {
                                             },
                                         ),
                                     ),
-                                    Ctrl(
-                                        Yield(
-                                            GetVar(
-                                                GetVar {
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
                                                     name: "v",
                                                 },
-                                            ),
-                                        ),
-                                    ),
-                                    Ctrl(
-                                        Return(
-                                            None,
-                                        ),
-                                    ),
-                                    Ctrl(
-                                        Return(
-                                            Some(
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "v",
+                                                op: None,
+                                                value: Yield(
+                                                    Yield {
+                                                        value: None,
                                                     },
                                                 ),
-                                            ),
+                                            },
+                                        ),
+                                    ),
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
+                                                    name: "v",
+                                                },
+                                                op: None,
+                                                value: Yield(
+                                                    Yield {
+                                                        value: Some(
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: "v",
+                                                                },
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Yield(
+                                            Yield {
+                                                value: None,
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Yield(
+                                            Yield {
+                                                value: Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Return {
+                                                value: None,
+                                            },
+                                        ),
+                                    ),
+                                    Ctrl(
+                                        Return(
+                                            Return {
+                                                value: Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                ),
+                                            },
                                         ),
                                     ),
                                 ],
@@ -361,29 +631,80 @@ Module {
                                                 kwargs: None,
                                             },
                                             body: [
-                                                Ctrl(
-                                                    Yield(
-                                                        GetVar(
-                                                            GetVar {
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
                                                                 name: "v",
                                                             },
-                                                        ),
-                                                    ),
-                                                ),
-                                                Ctrl(
-                                                    Return(
-                                                        None,
-                                                    ),
-                                                ),
-                                                Ctrl(
-                                                    Return(
-                                                        Some(
-                                                            GetVar(
-                                                                GetVar {
-                                                                    name: "v",
+                                                            op: None,
+                                                            value: Yield(
+                                                                Yield {
+                                                                    value: None,
                                                                 },
                                                             ),
-                                                        ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
+                                                                name: "v",
+                                                            },
+                                                            op: None,
+                                                            value: Yield(
+                                                                Yield {
+                                                                    value: Some(
+                                                                        GetVar(
+                                                                            GetVar {
+                                                                                name: "v",
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Yield(
+                                                        Yield {
+                                                            value: None,
+                                                        },
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Yield(
+                                                        Yield {
+                                                            value: Some(
+                                                                GetVar(
+                                                                    GetVar {
+                                                                        name: "v",
+                                                                    },
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Return(
+                                                        Return {
+                                                            value: None,
+                                                        },
+                                                    ),
+                                                ),
+                                                Ctrl(
+                                                    Return(
+                                                        Return {
+                                                            value: Some(
+                                                                GetVar(
+                                                                    GetVar {
+                                                                        name: "v",
+                                                                    },
+                                                                ),
+                                                            ),
+                                                        },
                                                     ),
                                                 ),
                                             ],
@@ -400,29 +721,80 @@ Module {
                             },
                         ),
                     ),
-                    Ctrl(
-                        Yield(
-                            GetVar(
-                                GetVar {
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
                                     name: "v",
                                 },
-                            ),
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            None,
-                        ),
-                    ),
-                    Ctrl(
-                        Return(
-                            Some(
-                                GetVar(
-                                    GetVar {
-                                        name: "v",
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: None,
                                     },
                                 ),
-                            ),
+                            },
+                        ),
+                    ),
+                    Expr(
+                        SetVar(
+                            SetVar {
+                                target: GetVar {
+                                    name: "v",
+                                },
+                                op: None,
+                                value: Yield(
+                                    Yield {
+                                        value: Some(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Yield(
+                            Yield {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: None,
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: "v",
+                                        },
+                                    ),
+                                ),
+                            },
                         ),
                     ),
                 ],

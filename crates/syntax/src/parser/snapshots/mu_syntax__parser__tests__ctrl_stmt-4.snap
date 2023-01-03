@@ -2,10 +2,10 @@
 source: crates/syntax/src/parser/tests.rs
 expression: errors
 ---
-[31merror[0m: yield outside of function
+[31merror[0m: continue outside of loop
 [34m>[0m code:1
 [34m|[0m 
-[34m|[0m [31;4myield[0m v
+[34m|[0m [31;4mcontinue[0m
 [34m|[0m 
 
 

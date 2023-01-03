@@ -923,23 +923,25 @@ Module {
                 body: [
                     Ctrl(
                         Return(
-                            Some(
-                                Binary(
-                                    Binary {
-                                        op: Add,
-                                        left: GetVar(
-                                            GetVar {
-                                                name: "a",
-                                            },
-                                        ),
-                                        right: GetVar(
-                                            GetVar {
-                                                name: "b",
-                                            },
-                                        ),
-                                    },
+                            Return {
+                                value: Some(
+                                    Binary(
+                                        Binary {
+                                            op: Add,
+                                            left: GetVar(
+                                                GetVar {
+                                                    name: "a",
+                                                },
+                                            ),
+                                            right: GetVar(
+                                                GetVar {
+                                                    name: "b",
+                                                },
+                                            ),
+                                        },
+                                    ),
                                 ),
-                            ),
+                            },
                         ),
                     ),
                 ],
@@ -1017,13 +1019,15 @@ Module {
                                     body: [
                                         Ctrl(
                                             Return(
-                                                Some(
-                                                    GetVar(
-                                                        GetVar {
-                                                            name: "n",
-                                                        },
+                                                Return {
+                                                    value: Some(
+                                                        GetVar(
+                                                            GetVar {
+                                                                name: "n",
+                                                            },
+                                                        ),
                                                     ),
-                                                ),
+                                                },
                                             ),
                                         ),
                                     ],
@@ -1033,47 +1037,49 @@ Module {
                                 [
                                     Ctrl(
                                         Return(
-                                            Some(
-                                                Binary(
-                                                    Binary {
-                                                        op: Mul,
-                                                        left: GetVar(
-                                                            GetVar {
-                                                                name: "n",
-                                                            },
-                                                        ),
-                                                        right: Call(
-                                                            Call {
-                                                                target: GetVar(
-                                                                    GetVar {
-                                                                        name: "fib",
-                                                                    },
-                                                                ),
-                                                                args: Args {
-                                                                    pos: [
-                                                                        Binary(
-                                                                            Binary {
-                                                                                op: Sub,
-                                                                                left: GetVar(
-                                                                                    GetVar {
-                                                                                        name: "n",
-                                                                                    },
-                                                                                ),
-                                                                                right: Literal(
-                                                                                    Number(
-                                                                                        1.0,
-                                                                                    ),
-                                                                                ),
-                                                                            },
-                                                                        ),
-                                                                    ],
-                                                                    kw: [],
+                                            Return {
+                                                value: Some(
+                                                    Binary(
+                                                        Binary {
+                                                            op: Mul,
+                                                            left: GetVar(
+                                                                GetVar {
+                                                                    name: "n",
                                                                 },
-                                                            },
-                                                        ),
-                                                    },
+                                                            ),
+                                                            right: Call(
+                                                                Call {
+                                                                    target: GetVar(
+                                                                        GetVar {
+                                                                            name: "fib",
+                                                                        },
+                                                                    ),
+                                                                    args: Args {
+                                                                        pos: [
+                                                                            Binary(
+                                                                                Binary {
+                                                                                    op: Sub,
+                                                                                    left: GetVar(
+                                                                                        GetVar {
+                                                                                            name: "n",
+                                                                                        },
+                                                                                    ),
+                                                                                    right: Literal(
+                                                                                        Number(
+                                                                                            1.0,
+                                                                                        ),
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                        kw: [],
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
                                                 ),
-                                            ),
+                                            },
                                         ),
                                     ),
                                 ],
@@ -1222,11 +1228,15 @@ Module {
                                 body: [
                                     Ctrl(
                                         Yield(
-                                            GetVar(
-                                                GetVar {
-                                                    name: "n",
-                                                },
-                                            ),
+                                            Yield {
+                                                value: Some(
+                                                    GetVar(
+                                                        GetVar {
+                                                            name: "n",
+                                                        },
+                                                    ),
+                                                ),
+                                            },
                                         ),
                                     ),
                                     Expr(
@@ -1278,7 +1288,9 @@ Module {
                                                     body: [
                                                         Ctrl(
                                                             Return(
-                                                                None,
+                                                                Return {
+                                                                    value: None,
+                                                                },
                                                             ),
                                                         ),
                                                     ],
@@ -1700,22 +1712,24 @@ Module {
                         body: [
                             Ctrl(
                                 Return(
-                                    Some(
-                                        GetField(
-                                            GetField {
-                                                target: GetVar(
-                                                    GetVar {
-                                                        name: "self",
-                                                    },
-                                                ),
-                                                key: Literal(
-                                                    String(
-                                                        "n",
+                                    Return {
+                                        value: Some(
+                                            GetField(
+                                                GetField {
+                                                    target: GetVar(
+                                                        GetVar {
+                                                            name: "self",
+                                                        },
                                                     ),
-                                                ),
-                                            },
+                                                    key: Literal(
+                                                        String(
+                                                            "n",
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
                                         ),
-                                    ),
+                                    },
                                 ),
                             ),
                         ],

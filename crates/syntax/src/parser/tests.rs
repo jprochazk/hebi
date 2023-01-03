@@ -535,6 +535,9 @@ fn ctrl_stmt() {
         continue
       
       fn f():
+        v = yield
+        v = yield v
+        yield
         yield v
         return
         return v
@@ -549,15 +552,22 @@ fn ctrl_stmt() {
 
       fn g():
         fn h():
+          v = yield
+          v = yield v
+          yield
           yield v
           return
           return v
+        yield
         yield v
         return
         return v
       
       loop:
         fn i():
+          v = yield
+          v = yield v
+          yield
           yield v
           return
           return v
@@ -568,6 +578,9 @@ fn ctrl_stmt() {
         loop:
           break
           continue
+        v = yield
+        v = yield v
+        yield
         yield v
         return
         return v
@@ -577,6 +590,9 @@ fn ctrl_stmt() {
           loop:
             break
             continue
+          v = yield
+          v = yield v
+          yield
           yield v
           return
           return v
@@ -586,22 +602,20 @@ fn ctrl_stmt() {
       fn l():
         loop:
           fn m():
+            v = yield
+            v = yield v
+            yield
             yield v
             return
             return v
           break
           continue
+        v = yield
+        v = yield v
+        yield
         yield v
         return
         return v
-    "#
-  }
-
-  check_error! {
-    r#"
-      fn f():
-        yield
-          v
     "#
   }
 
