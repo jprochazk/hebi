@@ -2,10 +2,10 @@
 source: crates/syntax/src/parser/tests.rs
 expression: errors
 ---
-[31merror[0m: non-default argument follows default argument
+[31merror[0m: unexpected token
 [34m>[0m code:1
 [34m|[0m 
-[34m|[0m fn f(a, b=c, [31;4md[0m,): pass
+[34m|[0m fn f(a, b=[31;4m,[0m): pass
 [34m|[0m 
 
 

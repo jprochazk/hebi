@@ -29,12 +29,17 @@ Module {
                 funcs: [
                     Func {
                         name: "f",
-                        params: [
-                            Param {
-                                name: "v",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "v",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Pass,
                         ],
@@ -62,12 +67,17 @@ Module {
                 funcs: [
                     Func {
                         name: "f",
-                        params: [
-                            Param {
-                                name: "v",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "v",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Pass,
                         ],
@@ -138,12 +148,17 @@ Module {
                 funcs: [
                     Func {
                         name: "f",
-                        params: [
-                            Param {
-                                name: "v",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "v",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Pass,
                         ],
@@ -173,12 +188,17 @@ Module {
                 funcs: [
                     Func {
                         name: "f",
-                        params: [
-                            Param {
-                                name: "v",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "v",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Pass,
                         ],

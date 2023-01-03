@@ -292,8 +292,8 @@ impl<'src> Parser<'src> {
     if *parsing_kw {
       let expr_span = expr.span;
       let ast::ExprKind::GetVar(ident) = expr.into_inner() else {
-          return Err(Error::new("keyword argument", expr_span));
-        };
+        return Err(Error::new("positional argument follows keyword argument", expr_span));
+      };
       self.expect(Op_Equal)?;
       let value = self.expr()?;
       args.kw(ident.name, value);
@@ -301,8 +301,8 @@ impl<'src> Parser<'src> {
       *parsing_kw = true;
       let expr_span = expr.span;
       let ast::ExprKind::GetVar(ident) = expr.into_inner() else {
-          return Err(Error::new("keyword argument", expr_span));
-        };
+        return Err(Error::new("positional argument follows keyword argument", expr_span));
+      };
       let value = self.expr()?;
       args.kw(ident.name, value);
     } else {

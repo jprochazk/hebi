@@ -65,15 +65,27 @@ pub enum StmtKind<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Func<'src> {
   pub name: Ident<'src>,
-  pub params: Vec<Param<'src>>,
+  pub params: Params<'src>,
   pub body: Vec<Stmt<'src>>,
   pub has_yield: bool,
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct Param<'src> {
-  pub name: Ident<'src>,
-  pub default: Option<Expr<'src>>,
+#[derive(Default)]
+pub struct Params<'src> {
+  pub pos: Vec<(Ident<'src>, Option<Expr<'src>>)>,
+  pub argv: Option<Ident<'src>>,
+  pub kw: Vec<(Ident<'src>, Option<Expr<'src>>)>,
+  pub kwargs: Option<Ident<'src>>,
+}
+
+impl<'src> Params<'src> {
+  pub fn contains(&self, param: &Ident<'src>) -> bool {
+    self.pos.iter().any(|v| v.0.as_ref() == param.as_ref())
+      || self.argv.as_ref() == Some(param)
+      || self.kw.iter().any(|v| v.0.as_ref() == param.as_ref())
+      || self.kwargs.as_ref() == Some(param)
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -396,7 +408,7 @@ pub fn func_stmt(s: impl Into<Span>, func: Func) -> Stmt {
 
 pub fn func<'src>(
   name: Ident<'src>,
-  params: Vec<Param<'src>>,
+  params: Params<'src>,
   body: Vec<Stmt<'src>>,
   has_yield: bool,
 ) -> Func<'src> {

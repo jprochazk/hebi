@@ -12,8 +12,6 @@ use crate::{ast, Error, ErrorContext, Result};
 // https://github.com/ezclap-tv/mu-lang/blob/v2/crates/syntax/src/parser.rs
 // https://github.com/ezclap-tv/mu-lang/blob/v2/crates/syntax/src/lexer.rs
 
-// TODO: add the ability to contextualise errors
-
 pub fn parse(src: &str) -> Result<ast::Module, Vec<Error>> {
   let lexer = Lexer::new(src);
   let parser = Parser::new(lexer);

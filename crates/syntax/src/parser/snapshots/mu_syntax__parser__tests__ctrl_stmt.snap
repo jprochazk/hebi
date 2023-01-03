@@ -22,7 +22,12 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [],
+                params: Params {
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Ctrl(
                         Yield(
@@ -84,12 +89,22 @@ Module {
         Func(
             Func {
                 name: "g",
-                params: [],
+                params: Params {
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Func(
                         Func {
                             name: "h",
-                            params: [],
+                            params: Params {
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
                             body: [
                                 Ctrl(
                                     Yield(
@@ -156,7 +171,12 @@ Module {
                         Func(
                             Func {
                                 name: "i",
-                                params: [],
+                                params: Params {
+                                    pos: [],
+                                    argv: None,
+                                    kw: [],
+                                    kwargs: None,
+                                },
                                 body: [
                                     Ctrl(
                                         Yield(
@@ -200,7 +220,12 @@ Module {
         Func(
             Func {
                 name: "j",
-                params: [],
+                params: Params {
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Loop(
                         Infinite(
@@ -252,7 +277,12 @@ Module {
                         Func(
                             Func {
                                 name: "k",
-                                params: [],
+                                params: Params {
+                                    pos: [],
+                                    argv: None,
+                                    kw: [],
+                                    kwargs: None,
+                                },
                                 body: [
                                     Loop(
                                         Infinite(
@@ -310,7 +340,12 @@ Module {
         Func(
             Func {
                 name: "l",
-                params: [],
+                params: Params {
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Loop(
                         Infinite(
@@ -319,7 +354,12 @@ Module {
                                     Func(
                                         Func {
                                             name: "m",
-                                            params: [],
+                                            params: Params {
+                                                pos: [],
+                                                argv: None,
+                                                kw: [],
+                                                kwargs: None,
+                                            },
                                             body: [
                                                 Ctrl(
                                                     Yield(

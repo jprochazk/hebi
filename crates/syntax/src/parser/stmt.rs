@@ -215,35 +215,102 @@ impl<'src> Parser<'src> {
     Ok(ast::func(name, params, body, has_yield))
   }
 
-  // TODO: default params
-
-  fn func_params(&mut self) -> Result<Vec<ast::Param<'src>>> {
+  fn func_params(&mut self) -> Result<ast::Params<'src>> {
     self.expect(Brk_ParenL)?;
-    let mut params = vec![];
+
+    let mut params = ast::Params::default();
     if !self.current().is(Brk_ParenR) {
-      params.push(self.param()?);
+      let mut state = ParamState::Positional;
+      self.param(&mut params, &mut state)?;
       while self.bump_if(Tok_Comma) && !self.current().is(Brk_ParenR) {
-        params.push(self.param()?);
+        self.param(&mut params, &mut state)?;
+      }
+      if state == ParamState::KeywordOnly && params.argv.is_none() && params.kw.is_empty() {
+        return Err(Error::new(
+          "positional rest argument must be followed by at least one keyword argument",
+          self.current().span,
+        ));
       }
     }
     self.expect(Brk_ParenR)?;
     Ok(params)
   }
 
-  fn param(&mut self) -> Result<ast::Param<'src>> {
-    let name = self.ident()?;
-    if self.bump_if(Op_Equal) {
-      let default = self.expr()?;
-      Ok(ast::Param {
-        name,
-        default: Some(default),
-      })
-    } else {
-      Ok(ast::Param {
-        name,
-        default: None,
-      })
+  fn param(&mut self, params: &mut ast::Params<'src>, state: &mut ParamState) -> Result<()> {
+    // no arguments after `**`
+    if matches!(*state, ParamState::End) {
+      if [Op_Star, Lit_Ident, Op_StarStar].contains(&self.current().kind) {
+        return Err(Error::new(
+          "keyword rest argument followed by another argument",
+          self.current().span,
+        ));
+      }
+      return Err(Error::new("unexpected token", self.current().span));
     }
+
+    if self.bump_if(Op_StarStar) {
+      // **kwargs - must be named
+      let Ok(name) = self.ident() else {
+        return Err(Error::new("keyword rest argument must be named", self.previous().span));
+      };
+      if params.contains(&name) {
+        return Err(Error::new(
+          format!("duplicate argument `{name}`"),
+          name.span,
+        ));
+      }
+      params.kwargs = Some(name);
+      *state = ParamState::End;
+    } else if self.bump_if(Op_Star) {
+      // * / *argv
+      // note: bare `*` error is handled in `Parser::func_params`
+      if let Ok(name) = self.ident() {
+        if params.contains(&name) {
+          return Err(Error::new(
+            format!("duplicate argument `{name}`"),
+            name.span,
+          ));
+        }
+        params.argv = Some(name);
+      }
+      *state = ParamState::KeywordOnly;
+    } else {
+      // arg / arg = value
+      let name = self.ident()?;
+      if params.contains(&name) {
+        return Err(Error::new(
+          format!("duplicate argument `{name}`"),
+          name.span,
+        ));
+      }
+      let param = if self.bump_if(Op_Equal) {
+        // when parsing keyword arguments, a non-default argument
+        // may follow a default argument
+        if *state != ParamState::KeywordOnly {
+          *state = ParamState::PositionalDefaultOnly;
+        }
+        let default = self.expr()?;
+
+        (name, Some(default))
+      } else {
+        if *state == ParamState::PositionalDefaultOnly {
+          return Err(Error::new(
+            "non-default argument follows default argument",
+            self.previous().span,
+          ));
+        }
+
+        (name, None)
+      };
+
+      if *state == ParamState::KeywordOnly {
+        params.kw.push(param);
+      } else {
+        params.pos.push(param);
+      }
+    }
+
+    Ok(())
   }
 
   fn class_stmt(&mut self) -> Result<ast::Stmt<'src>> {
@@ -440,4 +507,12 @@ impl<'src> Parser<'src> {
     self.bump(); // bump operator
     Some(kind)
   }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ParamState {
+  Positional,
+  PositionalDefaultOnly,
+  KeywordOnly,
+  End,
 }

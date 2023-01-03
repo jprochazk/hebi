@@ -8,7 +8,25 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [],
+                params: Params {
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            None,
+                        ),
+                        (
+                            "c",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Pass,
                 ],
@@ -18,7 +36,31 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [],
+                params: Params {
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            None,
+                        ),
+                        (
+                            "c",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "d",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Pass,
                 ],
@@ -28,12 +70,14 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [
-                    Param {
-                        name: "a",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Pass,
                 ],
@@ -43,12 +87,14 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [
-                    Param {
-                        name: "a",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
                 body: [
                     Pass,
                 ],
@@ -58,16 +104,16 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [
-                    Param {
-                        name: "a",
-                        default: None,
-                    },
-                    Param {
-                        name: "b",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
                 body: [
                     Pass,
                 ],
@@ -77,16 +123,46 @@ Module {
         Func(
             Func {
                 name: "f",
-                params: [
-                    Param {
-                        name: "a",
-                        default: None,
-                    },
-                    Param {
-                        name: "b",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "c",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [
+                        (
+                            "d",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "f",
+                                    },
+                                ),
+                            ),
+                        ),
+                        (
+                            "g",
+                            None,
+                        ),
+                    ],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
                 body: [
                     Pass,
                 ],

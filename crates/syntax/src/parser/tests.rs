@@ -493,23 +493,30 @@ fn loop_stmts() {
 fn func_stmt() {
   check_module! {
     r#"
-      fn f(): pass
-      fn f():
-        pass
-      fn f(a): pass
-      fn f(a,): pass
-      fn f(a, b): pass
-      fn f(a, b,): pass
+      fn f(a, b, c,): pass
+      fn f(a, b, c=d): pass
+      fn f(*argv,): pass
+      fn f(**kwargs,): pass
+      fn f(*argv, **kwargs,): pass
+      fn f(a, b=c, *argv, d=f, g, **kwargs,): pass
     "#
   }
 
+  check_error!(r#"fn f(a, b=c, d,): pass"#);
+  check_error!(r#"fn f(*,): pass"#);
+  check_error!(r#"fn f(**,): pass"#);
+  check_error!(r#"fn f(**kwargs, a,): pass"#);
+  check_error!(r#"fn f(a, b=,): pass"#);
+  check_error!(r#"fn f(a, a): pass"#);
+  check_error!(r#"fn f(a, *a): pass"#);
+  check_error!(r#"fn f(a, *, a): pass"#);
+  check_error!(r#"fn f(a, **a): pass"#);
   check_error! {
     r#"
       fn f():
       pass
     "#
   }
-
   check_error! {
     r#"
       fn():

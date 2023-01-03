@@ -905,16 +905,21 @@ Module {
         Func(
             Func {
                 name: "add",
-                params: [
-                    Param {
-                        name: "a",
-                        default: None,
-                    },
-                    Param {
-                        name: "b",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Ctrl(
                         Return(
@@ -978,12 +983,17 @@ Module {
         Func(
             Func {
                 name: "fib",
-                params: [
-                    Param {
-                        name: "n",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [
+                        (
+                            "n",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     If(
                         If {
@@ -1077,12 +1087,17 @@ Module {
         Func(
             Func {
                 name: "print_fib",
-                params: [
-                    Param {
-                        name: "n",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [
+                        (
+                            "n",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Expr(
                         Call(
@@ -1171,20 +1186,25 @@ Module {
         Func(
             Func {
                 name: "counter",
-                params: [
-                    Param {
-                        name: "start",
-                        default: None,
-                    },
-                    Param {
-                        name: "step",
-                        default: None,
-                    },
-                    Param {
-                        name: "end",
-                        default: None,
-                    },
-                ],
+                params: Params {
+                    pos: [
+                        (
+                            "start",
+                            None,
+                        ),
+                        (
+                            "step",
+                            None,
+                        ),
+                        (
+                            "end",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
                 body: [
                     Var(
                         Var {
@@ -1621,16 +1641,21 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                            Param {
-                                name: "n",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                                (
+                                    "n",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 SetField(
@@ -1661,12 +1686,17 @@ Module {
                     },
                     Func {
                         name: "get_n",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Ctrl(
                                 Return(
@@ -1693,12 +1723,17 @@ Module {
                     },
                     Func {
                         name: "test1",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
@@ -1731,7 +1766,12 @@ Module {
                     },
                     Func {
                         name: "test0",
-                        params: [],
+                        params: Params {
+                            pos: [],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
@@ -2142,12 +2182,17 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Pass,
                         ],
@@ -2240,12 +2285,17 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 SetField(
@@ -2355,12 +2405,17 @@ Module {
                 funcs: [
                     Func {
                         name: "inherited",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
@@ -2473,12 +2528,17 @@ Module {
                 funcs: [
                     Func {
                         name: "inherited",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
@@ -2549,12 +2609,17 @@ Module {
                 funcs: [
                     Func {
                         name: "inherited",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
@@ -2647,12 +2712,17 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 SetField(
@@ -2694,12 +2764,17 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 SetField(
@@ -2741,16 +2816,21 @@ Module {
                 funcs: [
                     Func {
                         name: "init",
-                        params: [
-                            Param {
-                                name: "self",
-                                default: None,
-                            },
-                            Param {
-                                name: "v",
-                                default: None,
-                            },
-                        ],
+                        params: Params {
+                            pos: [
+                                (
+                                    "self",
+                                    None,
+                                ),
+                                (
+                                    "v",
+                                    None,
+                                ),
+                            ],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
                         body: [
                             Expr(
                                 Call(
