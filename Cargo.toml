@@ -1,7 +1,8 @@
 [workspace]
 members = [
-  "crates/span",
   "crates/diag",
+  "crates/op",
+  "crates/span",
   "crates/syntax",
 ]
 
