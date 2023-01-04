@@ -6,24 +6,30 @@
 
 /// An opcode represents a basic operation that the VM may perform.
 ///
-/// Each opcode may store a maximum of 24 bits as operands. For opcodes
-/// that require more than 24 bits of data, the additional data may be
-/// stored in the bytecode array as opaque bytes following the main opcode.
+/// ```text
+/// [tag : u8] [operands : [u8; 3]]
+/// ```
 ///
-/// Here's an example of the `GetField` opcode with an extra field for storing a
-/// pointer to an inline cache:
+/// ### Extended opcodes
+///
+/// An extended opcode begins with a tagged opcode, but it is also associated
+/// with a fixed amount of data slots that are only used to store extra
+/// information. Because the data slots do not require any tags, they are simply
+/// treated as opaque byte sequences that may be transmuted to any type.
+///
+/// **Example**: `GetField` opcode with an extra field for storing a pointer to
+/// an inline cache
+///
 /// ```text
 ///   index opcode   fields
-///   0     GetField (tag:u8), slot:u16, padding:u8
-///   1     Data     ic_ptr:u32
-///   2     Data           :u32
+///   0     GetField [tag : u8] [slot : u16] [padding : u8]
+///   1     Data     [ic_ptr : u64] # takes up two slots
+///   2     
 /// ```
-/// The `Data` opcodes are not real opcodes, as the `Opcode` enum does not
-/// contain a variant named `Data`. The byte normally used to store the enum
-/// discriminant is re-used to store an additional byte of data. Because the
-/// `data` is stored sequentially in the bytecode, the VM may use a `transmute`
-/// to reinterpret this data as a pointer to the instruction's inline cache
-/// with no overhead.
+///
+/// Because the data slots are stored sequentially in the bytecode array, and
+/// the tag field is unused, the VM may use a simple `transmute` to reinterpret
+/// this data as a pointer to the instruction's inline cache with no overhead.
 #[repr(u8)]
 pub enum Opcode {
   /// Push a value from the current function's constants pool onto the stack.
