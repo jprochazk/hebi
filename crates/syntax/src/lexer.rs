@@ -115,8 +115,8 @@ impl<'src> Lexer<'src> {
 #[derive(Clone, Copy, Debug, Logos, PartialEq)]
 pub enum TokenKind {
   // Keywords
-  #[token("use")]
-  Kw_Use,
+  #[token("import")]
+  Kw_Import,
   #[token("as")]
   Kw_As,
   #[token("pub")]
@@ -269,7 +269,7 @@ pub enum TokenKind {
 impl TokenKind {
   pub fn name(&self) -> &'static str {
     match self {
-      TokenKind::Kw_Use => "use",
+      TokenKind::Kw_Import => "import",
       TokenKind::Kw_As => "as",
       TokenKind::Kw_Pub => "pub",
       TokenKind::Kw_Fn => "fn",

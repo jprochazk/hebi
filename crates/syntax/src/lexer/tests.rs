@@ -128,13 +128,13 @@ panic("asdf")
 
 # modules
 # json_test.t
-use json
+import json
 # other ways to import:
-# use json.parse
-# use json.{parse}
-# use {json}
-# use {json.parse}
-# use {json.{parse}}
+# import json.parse
+# import json.{parse}
+# import {json}
+# import {json.parse}
+# import {json.{parse}}
 
 v = json.parse("{\"a\":0, \"b\":1}")
 print(v) # { a: 0, b: 1 }

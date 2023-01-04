@@ -52,32 +52,32 @@ macro_rules! check_error {
 fn import_stmt() {
   check_module! {
     r#"
-      use a
-      use a.b
-      use a.b.c
-      use a.{b, c}
-      use a.{b.{c}, d.{e}}
-      use {a.{b}, c.{d}}
-      use {a, b, c,}
+      import a
+      import a.b
+      import a.b.c
+      import a.{b, c}
+      import a.{b.{c}, d.{e}}
+      import {a.{b}, c.{d}}
+      import {a, b, c,}
     "#
   };
 
   check_module! {
     r#"
-      use a as x
-      use a.b as x
-      use a.b.c as x
-      use a.{b as x, c as y}
-      use a.{b.{c as x}, d.{e as y}}
-      use {a.{b as x}, c.{d as y}}
-      use {a as x, b as y, c as z,}
+      import a as x
+      import a.b as x
+      import a.b.c as x
+      import a.{b as x, c as y}
+      import a.{b.{c as x}, d.{e as y}}
+      import {a.{b as x}, c.{d as y}}
+      import {a as x, b as y, c as z,}
     "#
   };
 
   check_error! {
     r#"
-      use a
-        use b
+      import a
+        import b
     "#
   };
 }
@@ -848,13 +848,13 @@ fn whole_module() {
 
       # modules
       # json_test.t
-      use json
+      import json
       # other ways to import:
-      # use json.parse
-      # use json.{parse}
-      # use {json}
-      # use {json.parse}
-      # use {json.{parse}}
+      # import json.parse
+      # import json.{parse}
+      # import {json}
+      # import {json.parse}
+      # import {json.{parse}}
 
       v = json.parse("{\"a\":0, \"b\":1}")
       print(v) # { a: 0, b: 1 }

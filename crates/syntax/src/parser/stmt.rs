@@ -4,7 +4,7 @@ impl<'src> Parser<'src> {
   pub(super) fn top_level_stmt(&mut self, module: &mut ast::Module<'src>) -> Result<()> {
     self.indent_eq()?;
 
-    if self.bump_if(Kw_Use) {
+    if self.bump_if(Kw_Import) {
       self.import_stmt(module)?;
     } else {
       module.body.push(self.stmt()?)

@@ -201,7 +201,7 @@ impl<'src> Parser<'src> {
 
       match self.current().kind {
         // break on keywords that begin statements
-        Kw_Use | Kw_Fn | Kw_Class | Kw_For | Kw_While | Kw_Loop | Kw_If => break,
+        Kw_Import | Kw_Fn | Kw_Class | Kw_For | Kw_While | Kw_Loop | Kw_If => break,
         // handle any errors
         Tok_Error => self.errors.push(Error::new(
           format!("invalid token `{}`", self.lex.lexeme(self.current())),

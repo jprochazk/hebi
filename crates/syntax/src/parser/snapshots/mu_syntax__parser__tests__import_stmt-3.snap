@@ -5,7 +5,7 @@ expression: errors
 [31merror[0m: invalid indentation
 [34m>[0m code:2
 [34m|[0m 
-[34m|[0m   [31;4muse[0m b
+[34m|[0m   [31;4mimport[0m b
 [34m|[0m 
 
 
