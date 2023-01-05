@@ -127,19 +127,46 @@ pub enum Opcode {
   /// ```
   Op_SetField,
 
-  Op_CreateArray {
+  /// Create a list using information from `descriptor`.
+  ///
+  /// `descriptor` is an index into the constant pool.
+  Op_CreateList {
     descriptor: u16,
   },
-  Op_CreateObject {
+  /// Create a dictionary using information from `descriptor`.
+  ///
+  /// `descriptor` is an index into the constant pool.
+  Op_CreateDict {
     descriptor: u16,
   },
+  /// Create a closure using information from `descriptor`.
+  ///
+  /// `descriptor` is an index into the constant pool.
+  ///
+  /// Closures may reference symbols from their environment,
+  /// which are captured by value and stored inside the closure environment.
   Op_CreateClosure {
     descriptor: u16,
   },
+  /// Create a class using information from `descriptor`.
+  ///
+  /// `descriptor` is an index into the constant pool.
+  ///
+  /// Classes and their methods may reference symbols from their environment,
+  /// which are captured by value and stored inside the class environment.
   Op_CreateClass {
     descriptor: u16,
   },
 
+  /// Perform a call operation on a callable object.
+  ///
+  /// Callables are:
+  /// - Functions
+  /// - Generators
+  /// - Native functions
+  /// - Native generators
+  /// - Class constructors
+  /// - Native class constructors
   Op_Call,
 
   Op_Push,
@@ -164,11 +191,21 @@ pub enum Opcode {
   Op_Divide,
   Op_Remainder,
   Op_Power,
+
+  Op_AddAssign,
+  Op_SubtractAssign,
+  Op_MultiplyAssign,
+  Op_DivideAssign,
+  Op_RemainderAssign,
+  Op_PowerAssign,
+
   Op_Negate,
   Op_Not,
   Op_Equal,
-  Op_CompareLess,
-  Op_CompareMore,
+  Op_IsLess,
+  Op_IsMore,
+  Op_IsLessOrEqual,
+  Op_IsMoreOrEqual,
 }
 static_assertions::assert_eq_size!(Opcode, u32);
 
