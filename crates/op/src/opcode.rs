@@ -1,13 +1,18 @@
 use crate::u24::u24;
 
+#[derive(Clone, PartialEq)]
 pub struct Chunk<Value> {
   pub bytecode: Vec<Opcode>,
   pub const_pool: Vec<Value>,
 }
 
-#[derive(Clone, Copy, Debug)]
+// TODO: extended opcodes
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(u8)]
 pub enum Opcode {
+  Noop,
+
   LoadConst { index: u24 },
   LoadLocal { index: u24 },
   StoreLocal { index: u24 },
@@ -25,7 +30,10 @@ pub enum Opcode {
 
   Call,
 
-  Pop { n: u24 },
+  PushBool { v: bool },
+  // PushNumber,
+  Pop,
+  PopN { n: u24 },
   Jump { offset: u24 },
   JumpIfFalse { offset: u24 },
   Yield,

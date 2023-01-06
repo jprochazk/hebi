@@ -29,11 +29,9 @@ impl From<u8> for u24 {
 
 impl From<u16> for u24 {
   fn from(value: u16) -> Self {
-    Self([
-      0,
-      (value & 0x0000ff00 >> 8) as u8,
-      (value & 0x000000ff) as u8,
-    ])
+    // SAFETY: This is safe because `value` is always less than u24::MAX,
+    // so an `unwrap` would never panic.
+    unsafe { Self::try_from(value as u32).unwrap_unchecked() }
   }
 }
 
