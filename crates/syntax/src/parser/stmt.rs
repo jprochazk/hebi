@@ -459,12 +459,12 @@ impl<'src> Parser<'src> {
         self.no_indent()?;
         let value = self.expr()?;
         let Some(stmt) = ast::assign(target, kind, value) else {
-            let msg = match kind {
-              ast::AssignKind::Decl => "invalid variable declaration",
-              ast::AssignKind::Op(_) => "invalid assignment target",
-            };
-            return Err(Error::new(msg, error_span));
+          let msg = match kind {
+            ast::AssignKind::Decl => "invalid variable declaration",
+            ast::AssignKind::Op(_) => "invalid assignment target",
           };
+          return Err(Error::new(msg, error_span));
+        };
         return Ok(stmt);
       }
     }
