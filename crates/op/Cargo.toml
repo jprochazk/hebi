@@ -7,6 +7,4 @@ edition = "2021"
 
 [dependencies]
 beef = "0.5.2"
-paste = "1.0.11"
-static_assertions = "1.1.0"
 op_macros = { path = "../op_macros", package = "mu_op_macros" }

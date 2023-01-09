@@ -7,11 +7,11 @@ use quote::quote;
 use syn::ext::IdentExt;
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Attribute, Ident, Token};
+use syn::{Attribute, Ident, Token};
 
 /// Opcodes have the following format:
 ///
-/// ```
+/// ```text
 /// $name $(:$flag)* $(<$operand>)*
 /// ```
 ///
@@ -24,7 +24,7 @@ use syn::{parse_macro_input, Attribute, Ident, Token};
 ///
 /// For example:
 ///
-/// ```
+/// ```text
 /// jump_if_false :jump <offset>
 /// ```
 ///
