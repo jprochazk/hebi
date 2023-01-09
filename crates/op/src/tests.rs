@@ -9,7 +9,30 @@ use super::*;
 
 // write snapshots for all of the above
 
-type Builder = BytecodeBuilder<()>;
+#[derive(Clone, Hash, PartialEq, Eq)]
+enum Value {
+  String(String),
+  Number(u64),
+  Bool(bool),
+}
+
+impl std::fmt::Display for Value {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Value::String(v) => write!(f, "\"{v}\""),
+      Value::Number(v) => write!(f, "{v}"),
+      Value::Bool(v) => write!(f, "{v}"),
+    }
+  }
+}
+
+type Builder = BytecodeBuilder<Value>;
+
+macro_rules! check {
+  ($chunk:ident) => {{
+    insta::assert_snapshot!($chunk.disassemble());
+  }};
+}
 
 #[test]
 fn test_builder() {
@@ -23,6 +46,10 @@ fn test_builder() {
   // - print bytes as hex, left-aligned, space between bytes, min width = 6 bytes
   //   in this format
   // - don't put space between op name and operands
+
+  b.constant(Value::String("test".into()));
+  b.constant(Value::Number(123_456_789));
+  b.constant(Value::Bool(true));
 
   b.finish_label(start);
   b.op_nop();
@@ -44,11 +71,5 @@ fn test_builder() {
   b.op_suspend();
 
   let chunk = b.build();
-
-  let mut pc = 0;
-  while pc < chunk.bytecode.len() {
-    let instr = chunk.bytecode.disassemble(pc).unwrap();
-    pc += instr.size();
-    println!("{instr}");
-  }
+  check!(chunk);
 }

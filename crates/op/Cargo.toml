@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 beef = "0.5.2"
 op_macros = { path = "../op_macros", package = "mu_op_macros" }
+
+[dev-dependencies]
+indoc = "1.0.8"
+insta = "1.23.0"

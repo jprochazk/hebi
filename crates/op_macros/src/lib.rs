@@ -336,7 +336,7 @@ fn emit_bytecode_builder_impl(ops: &[Opcode]) -> TokenStream2 {
   }
 
   quote! {
-    impl<Value> BytecodeBuilder<Value> {
+    impl<Value: Hash + Eq> BytecodeBuilder<Value> {
       #[inline]
       fn _width_of(value: u32) -> Width {
         if value < u8::MAX as u32 {
@@ -407,6 +407,7 @@ fn emit_jump_patching(ops: &[Opcode]) -> TokenStream2 {
     }
 
     fn patch_jump_op(bc: &mut [u8], op: u8, pc: usize, offset: u32) {
+      bc[pc..pc+2+std::mem::size_of::<u32>()].copy_from_slice(&[0; 6]);
       if offset < u8::MAX as u32 {
         bc[pc] = op;
         bc[pc+1] = offset as u8;

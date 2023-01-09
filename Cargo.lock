@@ -121,6 +121,8 @@ name = "mu_op"
 version = "0.0.0"
 dependencies = [
  "beef",
+ "indoc",
+ "insta",
  "mu_op_macros",
 ]
 

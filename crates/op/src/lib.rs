@@ -29,13 +29,70 @@ define_bytecode! {
   ret,
 }
 
-pub struct Chunk<Value> {
+pub struct Chunk<Value: Hash + Eq> {
+  pub name: Cow<'static, str>,
   pub bytecode: BytecodeArray,
   /// Pool of constants referenced in the bytecode.
   pub const_pool: Vec<Value>,
 }
 
-pub struct BytecodeBuilder<Value> {
+impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
+  pub fn disassemble(&self) -> String {
+    use std::fmt::Write;
+
+    let mut output = String::new();
+
+    // name
+    writeln!(&mut output, "function <{}>:", self.name).unwrap();
+    writeln!(&mut output, "length = {}", self.bytecode.len()).unwrap();
+
+    // constants
+    if self.const_pool.is_empty() {
+      writeln!(&mut output, "const pool = <empty>").unwrap();
+    } else {
+      writeln!(
+        &mut output,
+        "const pool = (length={}) {{",
+        self.const_pool.len()
+      )
+      .unwrap();
+      for (i, value) in self.const_pool.iter().enumerate() {
+        writeln!(&mut output, "  {i} = {value}").unwrap();
+      }
+      writeln!(&mut output, "}}").unwrap();
+    }
+
+    // bytecode
+    writeln!(&mut output, "bytecode:").unwrap();
+    let offset_align = self.bytecode.len().to_string().len();
+    let mut pc = 0;
+    while pc < self.bytecode.len() {
+      let instr = self.bytecode.disassemble(pc).unwrap();
+      let size = instr.size();
+
+      write!(&mut output, " {pc:offset_align$} | ").unwrap();
+
+      let mut bytes = self.bytecode.inner[pc..pc + size].iter().peekable();
+      while let Some(byte) = bytes.next() {
+        write!(&mut output, "{byte:02x}").unwrap();
+        if bytes.peek().is_some() {
+          write!(&mut output, " ").unwrap();
+        }
+      }
+      if size < 6 {
+        for _ in 0..(6 - size) {
+          write!(&mut output, "   ").unwrap();
+        }
+      }
+      writeln!(&mut output, " {instr}").unwrap();
+
+      pc += size;
+    }
+    output
+  }
+}
+
+pub struct BytecodeBuilder<Value: Hash + Eq> {
   function_name: Cow<'static, str>,
 
   bytecode: BytecodeArray,
@@ -77,6 +134,11 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
 
   /// Reserve a jump label.
   ///
+  /// Each jump label must be finished using
+  /// [`finish_label`][`crate::BytecodeBuilder::finish_label`] before calling
+  /// [`build`][`crate::BytecodeBuilder::build`]. Failing to do so will result
+  /// in a panic.
+  ///
   /// Because we don't know what the offset of a jump will be when the jump
   /// opcode is first inserted into the bytecode, we store a temporary value
   /// (the label) in place of its `offset`. When the bytecode is finalized,
@@ -97,7 +159,7 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
 
   /// Reserve N jump labels.
   ///
-  /// See [`label`][`crate::builder::Builder::label`] for more information.
+  /// See [`label`][`crate::BytecodeBuilder::label`] for more information.
   pub fn labels<const N: usize, T: Into<Cow<'static, str>> + Clone>(
     &mut self,
     names: [T; N],
@@ -132,6 +194,18 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
     Some(index)
   }
 
+  /// Finalize the bytecode, and emit a [`Chunk`][`crate::Chunk`].
+  ///
+  /// Bytecode is finalized by:
+  /// - Ensuring every reserved label has been finalized,
+  /// - Patching control flow instructions (such as jumps) by replacing label
+  ///   IDs with final offset values
+  ///
+  /// ### Panics
+  ///
+  /// If any reserved label has not been finalized. This is a programmer error,
+  /// because a user should not be able to cause the compiler to emit invalid
+  /// bytecode.
   pub fn build(mut self) -> Chunk<Value> {
     patch_jumps(
       self.function_name.as_ref(),
@@ -140,6 +214,7 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
     );
 
     Chunk {
+      name: self.function_name,
       bytecode: self.bytecode,
       const_pool: self.const_pool,
     }
