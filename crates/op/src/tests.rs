@@ -40,13 +40,6 @@ fn test_builder() {
 
   let [start, end] = b.labels(["start", "end"]);
 
-  // TODO: fix jump patching by emitting patched instructions
-  // into a new BytecodeArray
-  // and maybe improve the output a bit:
-  // - print bytes as hex, left-aligned, space between bytes, min width = 6 bytes
-  //   in this format
-  // - don't put space between op name and operands
-
   b.constant(Value::String("test".into()));
   b.constant(Value::Number(123_456_789));
   b.constant(Value::Bool(true));
