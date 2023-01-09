@@ -1,3 +1,6 @@
+// opcode definition format (for cv-paste):
+// $(#[$meta:meta])* $name:ident $(: $flag:ident)* $(<$arg:ident>)*
+
 macro_rules! define_bytecode {
   (
     ($handler:ident, $run:ident, $builder:ident, $error:ident, $op:ident)
@@ -49,8 +52,7 @@ macro_rules! define_bytecode {
     define_bytecode!(__dispatch_handler $handler; $($tail)*);
 
     #[inline(never)]
-    pub fn $run<H: $handler>(vm: &mut H, bc: &mut BytecodeArray) -> Result<(), H::Error> {
-      let pc = &mut 0;
+    pub fn $run<H: $handler>(vm: &mut H, bc: &mut BytecodeArray, pc: &mut usize) -> Result<(), H::Error> {
       let opcode = &mut bc.fetch(*pc);
       let operand_size = &mut Width::_1;
       let mut result = Ok(());
@@ -62,6 +64,7 @@ macro_rules! define_bytecode {
     }
   };
 
+  // Emit a method on the `Handler` trait for each opcode.
   (__handler_method $error:ident;) => {};
   (__handler_method $error:ident; $(#[$meta:meta])* $name:ident $(<$arg:ident>)* , $($tail:tt)*) => {
     paste! {
@@ -71,22 +74,30 @@ macro_rules! define_bytecode {
     define_bytecode!(__handler_method $error; $($tail)*);
   };
 
+  // Emit each opcode byte as a constant.
   (__op_const $prev:ident;) => {};
   (__op_const $prev:ident; $(#[$meta:meta])* $name:ident $(<$arg:ident>)* , $($tail:tt)*) => {
     pub const $name : u8 = $prev + 1;
     define_bytecode!(__op_const $name; $($tail)*);
   };
 
+  // Count the number of opcodes.
   (__count) => { 0 };
   (__count $(#[$meta:meta])* $name:ident $(<$arg:ident>)* , $($tail:tt)*) => {
     1 + define_bytecode!(__count $($tail)*)
   };
 
+  // Count the number of arguments an opcode has.
   (__count_args) => { 0 };
   (__count_args $arg:ident, $($tail:tt)*) => {
     1 + define_bytecode!(__count_args $($tail)*)
   };
 
+  // Emit a dispatch handler for an opcode.
+  // The dispatch handler is responsible for:
+  // - fetching arguments,
+  // - calling the VM's handler,
+  // - fetching the next opcode
   (__dispatch_handler $handler:ident;) => {};
   (__dispatch_handler $handler:ident; $(#[$meta:meta])* $name:ident $(<$arg:ident>)*, $($tail:tt)*) => {
     paste! {
@@ -104,6 +115,8 @@ macro_rules! define_bytecode {
     define_bytecode!(__dispatch_handler $handler; $($tail)*);
   };
 
+  // Emit the dispatch loop match expression.
+  // This just matches on the opcode and calls the appropriate dispatch handler.
   (
     __dispatch_match $op:ident ($vm:ident, $bc:ident, $pc:ident, $opcode:ident, $operand_size:ident, $result:ident);
     $( $(#[$meta:meta])* $name:ident $(<$arg:ident>)* , )*

@@ -4,37 +4,35 @@
   clippy::needless_range_loop
 )]
 
-#[macro_use]
-mod macros;
+//#[macro_use]
+//mod macros;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use beef::lean::Cow;
-use paste::paste;
+//use paste::paste;
+use op_macros::define_bytecode;
 
 define_bytecode! {
-  (Handler, run, BytecodeBuilder, Error, op)
   /// Load a constant into the accumulator.
   load_const <slot>,
   /// Load a register into the accumulator.
   load_reg <reg>,
   /// Load the accumulator into a register.
   store_reg <reg>,
-  /// Jump forward by the given offset.
-  jump <offset>,
-  /// Jump forward by the given offset if the value in the accumulator is falsey.
-  jump_if_false <offset>,
+  /// Jump to the specified offset.
+  jump :jump <offset>,
+  /// Jump to the specified offset if the value in the accumulator is falsey.
+  jump_if_false :jump <offset>,
   /// Return from the current function call.
   ret,
 }
 
-// TODO: BytecodeBuilder
-
 pub struct Chunk<Value> {
-  bytecode: BytecodeArray,
+  pub bytecode: BytecodeArray,
   /// Pool of constants referenced in the bytecode.
-  const_pool: Vec<Value>,
+  pub const_pool: Vec<Value>,
 }
 
 pub struct BytecodeBuilder<Value> {
@@ -60,21 +58,10 @@ pub struct BytecodeBuilder<Value> {
 struct Label {
   id: u32,
   name: Cow<'static, str>,
-  jump_index: Option<u32>,
+  offset: Option<u32>,
 }
 
-// TODO: bytecode emit
-// - some common things are going to be defined outside of the macro: labels,
-//   basic blocks
-// - code is going to be emitted into basic blocks, which will form a control
-//   flow graph
-// - once all the code has been emitted, the basic blocks will be joined using
-//   jump instructions
-// - the reason this has to be done in two steps is because emitting a jump
-//   instruction with wide-enough operands to store the final jump offset is not
-//   possible until all the instructions have been emitted
-
-/* impl<Value: Hash + Eq> BytecodeBuilder<Value> {
+impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   pub fn new(function_name: impl Into<Cow<'static, str>>) -> Self {
     Self {
       function_name: function_name.into(),
@@ -101,7 +88,7 @@ struct Label {
       Label {
         id: temp,
         name,
-        jump_index: None,
+        offset: None,
       },
     );
     self.label_id += 1;
@@ -129,7 +116,7 @@ struct Label {
     let Some(entry) = self.label_map.get_mut(&label) else {
       panic!("invalid label ID: {label}");
     };
-    entry.jump_index = Some(jump_index);
+    entry.offset = Some(jump_index);
   }
 
   /// Inserts an entry into the constant pool, and returns the index.
@@ -140,7 +127,7 @@ struct Label {
       return Some(index);
     }
 
-    let index = u32::try_from(self.const_pool.len() as u32).ok()?;
+    let index = u32::try_from(self.const_pool.len()).ok()?;
     self.const_pool.push(value);
     Some(index)
   }
@@ -161,25 +148,26 @@ struct Label {
 
 fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &HashMap<u32, Label>) {
   let mut used_labels = HashSet::new();
-  let mut width = Width::_1;
   for pc in 0..bytecode.len() {
     let op = bytecode.fetch(pc);
     match op {
-      op::jump | op::jump_if_false => {
-        let [offset] = bytecode.get_args(op, pc, width);
+      op if is_jump_op(op) => {
+        // all jump instructions are emitted with `xwide` prefix by default,
+        // then narrowed based on the final offset value
+
+        let [label_id] = bytecode.get_args(op, pc, Width::_4);
         let label = label_map
-          .get(&offset)
-          .unwrap_or_else(|| panic!("unknown label ID {offset}"));
-        let jump_index = label
-          .jump_index
+          .get(&label_id)
+          .unwrap_or_else(|| panic!("unknown label ID {label_id}"));
+        let jump_offset = label
+          .offset
           .unwrap_or_else(|| panic!("unfinished label `{}` ({})", label.name, label.id));
         used_labels.insert(label.clone());
 
-        *offset = jump_index;
+        // pc = offset of width prefix
+        patch_jump_op(bytecode.get_buffer_mut(), op, pc - 1, jump_offset);
       }
-      op::__wide => width = Width::_2,
-      op::__xwide => width = Width::_4,
-      _ => width = Width::_1,
+      _ => {}
     }
   }
 
@@ -192,19 +180,15 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
     for label in unused_labels.iter() {
       eprintln!("unused label: {label:?}");
     }
-    panic!("bytecode in functon {function_name} had some unused labels");
+    panic!("bytecode in functon {function_name} had some unused labels (see above)");
   }
-} */
+}
 
 pub struct BytecodeArray {
   inner: Vec<u8>,
 }
 
 impl BytecodeArray {
-  fn new() -> Self {
-    Self { inner: Vec::new() }
-  }
-
   pub fn len(&self) -> usize {
     self.inner.len()
   }
@@ -218,7 +202,8 @@ impl BytecodeArray {
   }
 
   fn get_args<const N: usize>(&self, opcode: u8, pc: usize, width: Width) -> [u32; N] {
-    use Width::*;
+    // TODO: instead of using pointers, use slices and from_le_bytes
+    // should be zero-cost on little endian architectures
 
     let mut args = [0u32; N];
     for i in 0..N {
@@ -226,14 +211,20 @@ impl BytecodeArray {
       if offset + width as usize >= self.inner.len() {
         panic!("malformed bytecode: missing args for opcode {opcode} (pc={pc}, w={width})");
       }
-      let value = match width {
-        _1 => (unsafe { *(self.inner.get_unchecked(offset)) } as u32),
-        _2 => (unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u16) } as u32),
-        _4 => unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u32) },
-      };
-      args[i] = value;
+      args[i] = self.get_arg(pc, i, width);
     }
     args
+  }
+
+  fn get_arg(&self, pc: usize, i: usize, width: Width) -> u32 {
+    let offset = 1 + pc + i * width as usize;
+    match width {
+      Width::_1 => (unsafe { *(self.inner.get_unchecked(offset)) } as u32),
+      Width::_2 => {
+        (unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u16) } as u32)
+      }
+      Width::_4 => unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u32) },
+    }
   }
 
   pub fn get_buffer_mut(&mut self) -> &mut Vec<u8> {
@@ -262,3 +253,13 @@ impl std::fmt::Display for Width {
     )
   }
 }
+
+pub enum Jump {
+  /// Go to `offset`.
+  Goto { offset: u32 },
+  /// Skip this jump instruction.
+  Skip,
+}
+
+#[cfg(test)]
+mod tests;
