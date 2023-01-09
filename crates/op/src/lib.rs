@@ -277,28 +277,46 @@ impl BytecodeArray {
   }
 
   fn get_args<const N: usize>(&self, opcode: u8, pc: usize, width: Width) -> [u32; N] {
-    // TODO: instead of using pointers, use slices and from_le_bytes
-    // should be zero-cost on little endian architectures
+    let start = 1 + pc;
+    if start + N * width as usize >= self.inner.len() {
+      panic!(
+        "malformed bytecode: missing operands for opcode {opcode} (pc={pc}, w={width}, n={N})"
+      );
+    }
 
     let mut args = [0u32; N];
     for i in 0..N {
-      let offset = 1 + pc + i * width as usize;
-      if offset + width as usize >= self.inner.len() {
-        panic!("malformed bytecode: missing args for opcode {opcode} (pc={pc}, w={width})");
-      }
-      args[i] = self.get_arg(pc, i, width);
+      let offset = start + i * width as usize;
+      args[i] = unsafe { self._fetch_arg(offset, width) };
     }
     args
   }
 
-  fn get_arg(&self, pc: usize, i: usize, width: Width) -> u32 {
+  fn get_arg(&self, opcode: u8, pc: usize, i: usize, width: Width) -> u32 {
     let offset = 1 + pc + i * width as usize;
+    if offset + width as usize >= self.inner.len() {
+      panic!("malformed bytecode: missing operand for opcode {opcode} (pc={pc}, w={width}, i={i})");
+    }
+    unsafe { self._fetch_arg(offset, width) }
+  }
+
+  unsafe fn _fetch_arg(&self, offset: usize, width: Width) -> u32 {
     match width {
-      Width::_1 => (unsafe { *(self.inner.get_unchecked(offset)) } as u32),
-      Width::_2 => {
-        (unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u16) } as u32)
-      }
-      Width::_4 => unsafe { *(self.inner.get_unchecked(offset) as *const u8 as *const u32) },
+      Width::_1 => unsafe { *self.inner.get_unchecked(offset) as u32 },
+      Width::_2 => unsafe {
+        u16::from_le_bytes([
+          *self.inner.get_unchecked(offset),
+          *self.inner.get_unchecked(offset + 1),
+        ]) as u32
+      },
+      Width::_4 => unsafe {
+        u32::from_le_bytes([
+          *self.inner.get_unchecked(offset),
+          *self.inner.get_unchecked(offset + 1),
+          *self.inner.get_unchecked(offset + 2),
+          *self.inner.get_unchecked(offset + 3),
+        ])
+      },
     }
   }
 

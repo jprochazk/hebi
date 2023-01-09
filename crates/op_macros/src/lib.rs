@@ -513,7 +513,8 @@ fn emit_disassembler(ops: &[Opcode]) -> TokenStream2 {
         };
         write!(f, "{:w$}", "", w = align - name.len() - mod_align)?;
         for (i, operand) in operands.iter().enumerate() {
-          write!(f, " {}={}", operand, bc.get_arg(*pc, i, *width))?;
+          let value = bc.get_arg(bc.fetch(*pc), *pc, i, *width);
+          write!(f, " {}={}", operand, value)?;
         }
         Ok(())
       }
