@@ -1105,40 +1105,30 @@ Module {
                     kwargs: None,
                 },
                 body: [
-                    Expr(
-                        Call(
-                            Call {
-                                target: GetVar(
-                                    GetVar {
-                                        name: "print",
-                                    },
-                                ),
-                                args: Args {
-                                    pos: [
-                                        Call(
-                                            Call {
-                                                target: GetVar(
-                                                    GetVar {
-                                                        name: "fib",
-                                                    },
-                                                ),
-                                                args: Args {
-                                                    pos: [
-                                                        GetVar(
-                                                            GetVar {
-                                                                name: "n",
-                                                            },
-                                                        ),
-                                                    ],
-                                                    kw: [],
-                                                },
+                    Print(
+                        Print {
+                            values: [
+                                Call(
+                                    Call {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "fib",
                                             },
                                         ),
-                                    ],
-                                    kw: [],
-                                },
-                            },
-                        ),
+                                        args: Args {
+                                            pos: [
+                                                GetVar(
+                                                    GetVar {
+                                                        name: "n",
+                                                    },
+                                                ),
+                                            ],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            ],
+                        },
                     ),
                 ],
                 has_yield: false,
@@ -1164,26 +1154,16 @@ Module {
                         },
                     ),
                     body: [
-                        Expr(
-                            Call(
-                                Call {
-                                    target: GetVar(
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
                                         GetVar {
-                                            name: "print",
+                                            name: "i",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            GetVar(
-                                                GetVar {
-                                                    name: "i",
-                                                },
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
-                                },
-                            ),
+                                ],
+                            },
                         ),
                     ],
                 },
@@ -1343,26 +1323,16 @@ Module {
                         ),
                     ),
                     body: [
-                        Expr(
-                            Call(
-                                Call {
-                                    target: GetVar(
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
                                         GetVar {
-                                            name: "print",
+                                            name: "n",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            GetVar(
-                                                GetVar {
-                                                    name: "n",
-                                                },
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
-                                },
-                            ),
+                                ],
+                            },
                         ),
                     ],
                 },
@@ -1402,26 +1372,16 @@ Module {
                         },
                     ),
                     body: [
-                        Expr(
-                            Call(
-                                Call {
-                                    target: GetVar(
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
                                         GetVar {
-                                            name: "print",
+                                            name: "v",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            GetVar(
-                                                GetVar {
-                                                    name: "v",
-                                                },
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
-                                },
-                            ),
+                                ],
+                            },
                         ),
                         Expr(
                             SetVar(
@@ -1492,26 +1452,16 @@ Module {
                                 default: None,
                             },
                         ),
-                        Expr(
-                            Call(
-                                Call {
-                                    target: GetVar(
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
                                         GetVar {
-                                            name: "print",
+                                            name: "v",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            GetVar(
-                                                GetVar {
-                                                    name: "v",
-                                                },
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
-                                },
-                            ),
+                                ],
+                            },
                         ),
                         Expr(
                             SetVar(
@@ -1554,26 +1504,16 @@ Module {
                             },
                         ),
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
-                                            GetVar {
-                                                name: "print",
-                                            },
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "less than 10",
+                                            ),
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "less than 10",
-                                                    ),
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                     },
@@ -1594,52 +1534,32 @@ Module {
                             },
                         ),
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
-                                            GetVar {
-                                                name: "print",
-                                            },
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "less than 20",
+                                            ),
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "less than 20",
-                                                    ),
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                     },
                 ],
                 default: Some(
                     [
-                        Expr(
-                            Call(
-                                Call {
-                                    target: GetVar(
-                                        GetVar {
-                                            name: "print",
-                                        },
+                        Print(
+                            Print {
+                                values: [
+                                    Literal(
+                                        String(
+                                            "very large",
+                                        ),
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            Literal(
-                                                String(
-                                                    "very large",
-                                                ),
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
-                                },
-                            ),
+                                ],
+                            },
                         ),
                     ],
                 ),
@@ -1749,31 +1669,21 @@ Module {
                             kwargs: None,
                         },
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "instance",
+                                            ),
+                                        ),
+                                        GetVar(
                                             GetVar {
-                                                name: "print",
+                                                name: "self",
                                             },
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "instance",
-                                                    ),
-                                                ),
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "self",
-                                                    },
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                         has_yield: false,
@@ -1787,31 +1697,21 @@ Module {
                             kwargs: None,
                         },
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "static",
+                                            ),
+                                        ),
+                                        GetVar(
                                             GetVar {
-                                                name: "print",
+                                                name: "Test",
                                             },
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "static",
-                                                    ),
-                                                ),
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "Test",
-                                                    },
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                         has_yield: false,
@@ -1842,76 +1742,66 @@ Module {
                 },
             ),
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            Binary(
-                                Binary {
-                                    op: Eq,
-                                    left: Call(
-                                        Call {
-                                            target: GetField(
-                                                GetField {
-                                                    target: GetVar(
-                                                        GetVar {
-                                                            name: "v",
-                                                        },
-                                                    ),
-                                                    key: Literal(
-                                                        String(
-                                                            "get_n",
-                                                        ),
-                                                    ),
+        Print(
+            Print {
+                values: [
+                    Binary(
+                        Binary {
+                            op: Eq,
+                            left: Call(
+                                Call {
+                                    target: GetField(
+                                        GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "v",
                                                 },
                                             ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
-                                        },
-                                    ),
-                                    right: Call(
-                                        Call {
-                                            target: GetField(
-                                                GetField {
-                                                    target: GetVar(
-                                                        GetVar {
-                                                            name: "Test",
-                                                        },
-                                                    ),
-                                                    key: Literal(
-                                                        String(
-                                                            "get_n",
-                                                        ),
-                                                    ),
-                                                },
+                                            key: Literal(
+                                                String(
+                                                    "get_n",
+                                                ),
                                             ),
-                                            args: Args {
-                                                pos: [
-                                                    GetVar(
-                                                        GetVar {
-                                                            name: "v",
-                                                        },
-                                                    ),
-                                                ],
-                                                kw: [],
-                                            },
                                         },
                                     ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            right: Call(
+                                Call {
+                                    target: GetField(
+                                        GetField {
+                                            target: GetVar(
+                                                GetVar {
+                                                    name: "Test",
+                                                },
+                                            ),
+                                            key: Literal(
+                                                String(
+                                                    "get_n",
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                        ],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                ],
+            },
         ),
         Expr(
             SetVar(
@@ -2052,26 +1942,16 @@ Module {
                 },
             ),
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
+        Print(
+            Print {
+                values: [
+                    GetVar(
                         GetVar {
-                            name: "print",
+                            name: "v",
                         },
                     ),
-                    args: Args {
-                        pos: [
-                            GetVar(
-                                GetVar {
-                                    name: "v",
-                                },
-                            ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                ],
+            },
         ),
         Class(
             Class {
@@ -2092,90 +1972,70 @@ Module {
                 funcs: [],
             },
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            GetField(
-                                GetField {
-                                    target: Call(
-                                        Call {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "A",
-                                                },
-                                            ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
+        Print(
+            Print {
+                values: [
+                    GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "A",
                                         },
                                     ),
-                                    key: Literal(
-                                        String(
-                                            "a",
-                                        ),
-                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            key: Literal(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                        },
+                    ),
+                ],
+            },
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            GetField(
-                                GetField {
-                                    target: Call(
-                                        Call {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "A",
-                                                },
-                                            ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [
-                                                    (
-                                                        "a",
-                                                        Literal(
-                                                            Number(
-                                                                10.0,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ],
-                                            },
+        Print(
+            Print {
+                values: [
+                    GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "A",
                                         },
                                     ),
-                                    key: Literal(
-                                        String(
-                                            "a",
-                                        ),
-                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [
+                                            (
+                                                "a",
+                                                Literal(
+                                                    Number(
+                                                        10.0,
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            key: Literal(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                        },
+                    ),
+                ],
+            },
         ),
         Class(
             Class {
@@ -2215,55 +2075,12 @@ Module {
                 ],
             },
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            GetField(
-                                GetField {
-                                    target: Call(
-                                        Call {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "B",
-                                                },
-                                            ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
-                                        },
-                                    ),
-                                    key: Literal(
-                                        String(
-                                            "a",
-                                        ),
-                                    ),
-                                },
-                            ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
-        ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            Call(
+        Print(
+            Print {
+                values: [
+                    GetField(
+                        GetField {
+                            target: Call(
                                 Call {
                                     target: GetVar(
                                         GetVar {
@@ -2272,24 +2089,47 @@ Module {
                                     ),
                                     args: Args {
                                         pos: [],
-                                        kw: [
-                                            (
-                                                "a",
-                                                Literal(
-                                                    Number(
-                                                        10.0,
-                                                    ),
-                                                ),
-                                            ),
-                                        ],
+                                        kw: [],
                                     },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            key: Literal(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: "B",
+                                },
+                            ),
+                            args: Args {
+                                pos: [],
+                                kw: [
+                                    (
+                                        "a",
+                                        Literal(
+                                            Number(
+                                                10.0,
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                        },
+                    ),
+                ],
+            },
         ),
         Class(
             Class {
@@ -2341,43 +2181,33 @@ Module {
                 ],
             },
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            GetField(
-                                GetField {
-                                    target: Call(
-                                        Call {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "C",
-                                                },
-                                            ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
+        Print(
+            Print {
+                values: [
+                    GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "C",
                                         },
                                     ),
-                                    key: Literal(
-                                        String(
-                                            "a",
-                                        ),
-                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            key: Literal(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                        },
+                    ),
+                ],
+            },
         ),
         Expr(
             SetField(
@@ -2431,26 +2261,16 @@ Module {
                             kwargs: None,
                         },
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
-                                            GetVar {
-                                                name: "print",
-                                            },
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "test 0",
+                                            ),
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "test 0",
-                                                    ),
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                         has_yield: false,
@@ -2554,26 +2374,16 @@ Module {
                             kwargs: None,
                         },
                         body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
-                                            GetVar {
-                                                name: "print",
-                                            },
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "test 1",
+                                            ),
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "test 1",
-                                                    ),
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                         has_yield: false,
@@ -2659,26 +2469,16 @@ Module {
                                     },
                                 ),
                             ),
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetVar(
-                                            GetVar {
-                                                name: "print",
-                                            },
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            String(
+                                                "test 2",
+                                            ),
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                Literal(
-                                                    String(
-                                                        "test 2",
-                                                    ),
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
+                                    ],
+                                },
                             ),
                         ],
                         has_yield: false,
@@ -2908,52 +2708,42 @@ Module {
                 ],
             },
         ),
-        Expr(
-            Call(
-                Call {
-                    target: GetVar(
-                        GetVar {
-                            name: "print",
-                        },
-                    ),
-                    args: Args {
-                        pos: [
-                            GetField(
-                                GetField {
-                                    target: Call(
-                                        Call {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "Z",
-                                                },
-                                            ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [
-                                                    (
-                                                        "v",
-                                                        Literal(
-                                                            Number(
-                                                                15.0,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ],
-                                            },
+        Print(
+            Print {
+                values: [
+                    GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "Z",
                                         },
                                     ),
-                                    key: Literal(
-                                        String(
-                                            "v",
-                                        ),
-                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [
+                                            (
+                                                "v",
+                                                Literal(
+                                                    Number(
+                                                        15.0,
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
                                 },
                             ),
-                        ],
-                        kw: [],
-                    },
-                },
-            ),
+                            key: Literal(
+                                String(
+                                    "v",
+                                ),
+                            ),
+                        },
+                    ),
+                ],
+            },
         ),
     ],
 }

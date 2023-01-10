@@ -60,6 +60,7 @@ pub enum StmtKind<'src> {
   Class(Box<Class<'src>>),
   Expr(Box<Expr<'src>>),
   Pass,
+  Print(Box<Print<'src>>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -138,6 +139,11 @@ pub struct While<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Infinite<'src> {
   pub body: Vec<Stmt<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Print<'src> {
+  pub values: Vec<Expr<'src>>,
 }
 
 pub type Expr<'src> = Spanned<ExprKind<'src>>;
@@ -356,6 +362,10 @@ pub fn break_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {
 
 pub fn pass_stmt<'src>(s: impl Into<Span>) -> Stmt<'src> {
   Stmt::new(s, StmtKind::Pass)
+}
+
+pub fn print_stmt(s: impl Into<Span>, values: Vec<Expr>) -> Stmt {
+  Stmt::new(s, StmtKind::Print(Box::new(Print { values })))
 }
 
 pub fn expr_binary<'src>(

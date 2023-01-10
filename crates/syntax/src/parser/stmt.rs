@@ -403,6 +403,7 @@ impl<'src> Parser<'src> {
       Kw_Continue => self.continue_stmt(),
       Kw_Break => self.break_stmt(),
       Kw_Yield => self.yield_().map(ast::yield_stmt),
+      Kw_Print => self.print_stmt(),
       _ => self.expr_stmt(),
     }
   }
@@ -443,6 +444,25 @@ impl<'src> Parser<'src> {
 
     self.expect(Kw_Break)?;
     Ok(ast::break_stmt(self.previous().span))
+  }
+
+  fn print_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    self.expect(Kw_Print)?;
+    let start = self.previous().span;
+    self.no_indent()?;
+    let has_parens = self.bump_if(Brk_ParenL);
+    let mut values = vec![self.expr()?];
+    while self.bump_if(Tok_Comma) {
+      if !has_parens {
+        self.no_indent()?;
+      }
+      values.push(self.expr()?);
+    }
+    if has_parens {
+      self.expect(Brk_ParenR)?;
+    }
+    let end = self.previous().span;
+    Ok(ast::print_stmt(start.join(end), values))
   }
 
   fn expr_stmt(&mut self) -> Result<ast::Stmt<'src>> {

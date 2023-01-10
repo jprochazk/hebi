@@ -141,6 +141,8 @@ pub enum TokenKind {
   Kw_Break,
   #[token("continue")]
   Kw_Continue,
+  #[token("print")]
+  Kw_Print,
   #[token("if")]
   Kw_If,
   #[token("elif")]
@@ -282,6 +284,7 @@ impl TokenKind {
       TokenKind::Kw_Return => "return",
       TokenKind::Kw_Break => "break",
       TokenKind::Kw_Continue => "continue",
+      TokenKind::Kw_Print => "print",
       TokenKind::Kw_If => "if",
       TokenKind::Kw_Elif => "elif",
       TokenKind::Kw_Else => "else",

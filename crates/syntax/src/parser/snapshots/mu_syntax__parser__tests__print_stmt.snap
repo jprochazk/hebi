@@ -1,0 +1,51 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    imports: [],
+    body: [
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                    Literal(
+                        Number(
+                            0.0,
+                        ),
+                    ),
+                    Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                    Literal(
+                        Number(
+                            0.0,
+                        ),
+                    ),
+                    Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                ],
+            },
+        ),
+    ],
+}

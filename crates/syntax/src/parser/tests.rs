@@ -645,6 +645,23 @@ fn ctrl_stmt() {
 }
 
 #[test]
+fn print_stmt() {
+  check_module! {
+    r#"
+      print "a", 0, true
+      print "a", 0, true
+    "#
+  }
+
+  check_error! {
+    r#"
+      print
+        "a"
+    "#
+  }
+}
+
+#[test]
 fn class_stmt() {
   check_module! {
     r#"
