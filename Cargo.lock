@@ -117,6 +117,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mu_emit"
+version = "0.0.0"
+dependencies = [
+ "beef",
+ "indoc",
+ "insta",
+ "mu_op",
+ "mu_syntax",
+]
+
+[[package]]
 name = "mu_op"
 version = "0.0.0"
 dependencies = [
@@ -149,8 +160,15 @@ dependencies = [
  "logos",
  "mu_diag",
  "mu_span",
- "peg",
  "stacker",
+]
+
+[[package]]
+name = "mu_value"
+version = "0.0.0"
+dependencies = [
+ "indoc",
+ "insta",
 ]
 
 [[package]]
@@ -158,33 +176,6 @@ name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
-
-[[package]]
-name = "peg"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a07f2cafdc3babeebc087e499118343442b742cc7c31b4d054682cc598508554"
-dependencies = [
- "peg-macros",
- "peg-runtime",
-]
-
-[[package]]
-name = "peg-macros"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a90084dc05cf0428428e3d12399f39faad19b0909f64fb9170c9fdd6d9cd49b"
-dependencies = [
- "peg-runtime",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
-name = "peg-runtime"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fa00462b37ead6d11a82c9d568b26682d78e0477dc02d1966c013af80969739"
 
 [[package]]
 name = "proc-macro2"

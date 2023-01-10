@@ -12,7 +12,6 @@ edition = "2021"
 [dependencies]
 beef = "0.5.2"
 logos = "0.12.1"
-peg = "0.8.1"
 
 span = { path = "../span", package = "mu_span" }
 diag = { path = "../diag", package = "mu_diag" }

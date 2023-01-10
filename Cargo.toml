@@ -1,10 +1,12 @@
 [workspace]
 members = [
   "crates/diag",
+  "crates/emit",
   "crates/op",
   "crates/op_macros",
   "crates/span",
   "crates/syntax",
+  "crates/value",
 ]
 
 [profile.dev.package.insta]

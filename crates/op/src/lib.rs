@@ -11,7 +11,6 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use beef::lean::Cow;
-//use paste::paste;
 use op_macros::define_bytecode;
 
 // Do not re-order instructions, unless you absolutely have to!

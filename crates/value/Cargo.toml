@@ -1,16 +1,11 @@
 [package]
-name = "mu_op"
+name = "mu_value"
 version = "0.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-disassembly = []
-
 [dependencies]
-beef = "0.5.2"
-op_macros = { path = "../op_macros", package = "mu_op_macros" }
 
 [dev-dependencies]
 indoc = "1.0.8"
