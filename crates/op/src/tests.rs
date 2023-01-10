@@ -1,14 +1,4 @@
 use super::*;
-// Things to test:
-
-// TODO
-// 1. bytecode emit + disassembly
-// 2. `run` loop
-//   - jumps
-//   - suspend
-//   - errors
-
-// write snapshots for all of the above
 
 macro_rules! check {
   ($chunk:ident) => {{
