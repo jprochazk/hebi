@@ -1,0 +1,15 @@
+---
+source: crates/op/src/tests.rs
+expression: stdout
+---
+123
+123
+123
+123
+123
+123
+123
+123
+123
+123
+

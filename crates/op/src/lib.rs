@@ -14,6 +14,8 @@ use beef::lean::Cow;
 //use paste::paste;
 use op_macros::define_bytecode;
 
+// Do not re-order instructions, unless you absolutely have to!
+// If you want to add new instructions, add them to the end of the list.
 define_bytecode! {
   /// Load a constant into the accumulator.
   load_const <slot>,
@@ -25,6 +27,10 @@ define_bytecode! {
   jump :jump <offset>,
   /// Jump to the specified offset if the value in the accumulator is falsey.
   jump_if_false :jump <offset>,
+  /// Subtract `b` from `a` and store the result in `dest`.
+  sub <dest> <a> <b>,
+  /// Print a value in a register.
+  print <reg>,
   /// Return from the current function call.
   ret,
 }
@@ -184,14 +190,14 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   /// Inserts an entry into the constant pool, and returns the index.
   ///
   /// If `value` is already in the constant pool, this just returns its index.
-  pub fn constant(&mut self, value: Value) -> Option<u32> {
+  pub fn constant(&mut self, value: Value) -> u32 {
     if let Some(index) = self.const_index_map.get(&value).cloned() {
-      return Some(index);
+      return index;
     }
 
-    let index = u32::try_from(self.const_pool.len()).ok()?;
+    let index = self.const_pool.len() as u32;
     self.const_pool.push(value);
-    Some(index)
+    index
   }
 
   /// Finalize the bytecode, and emit a [`Chunk`][`crate::Chunk`].
@@ -207,6 +213,12 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   /// because a user should not be able to cause the compiler to emit invalid
   /// bytecode.
   pub fn build(mut self) -> Chunk<Value> {
+    // ensure bytecode is terminated by `op_suspend`,
+    // so that the dispatch loop stops
+    if self.bytecode.fetch(self.bytecode.len() - 1) != op::__suspend {
+      self.op_suspend();
+    };
+
     patch_jumps(
       self.function_name.as_ref(),
       &mut self.bytecode,

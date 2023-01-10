@@ -40,6 +40,6 @@ bytecode:
  58 | 00                nop                
  59 | 00                nop                
  60 | 00                nop                
- 61 | 08                ret                
+ 61 | 0a                ret                
  62 | ff                suspend            
 

@@ -182,7 +182,9 @@ fn emit_dispatch_handlers(ops: &[Opcode]) -> TokenStream2 {
     };
 
     let action = if skip_vm_call {
-      quote! {}
+      quote! {
+        *pc += 1 + #argc * (*operand_size) as usize;
+      }
     } else if is_jump {
       quote! {
         let _jump = match vm. #name (#(#operands),*) {
@@ -214,6 +216,9 @@ fn emit_dispatch_handlers(ops: &[Opcode]) -> TokenStream2 {
         operand_size: &mut Width,
         result: &mut Result<(), H::Error>,
       ) {
+        if cfg!(feature = "disassembly") {
+          println!("{}", bc.disassemble(*pc).unwrap());
+        }
         #get_args
         #action
         *operand_size = #next_operand_size;
