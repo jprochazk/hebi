@@ -30,6 +30,8 @@ define_bytecode! {
   sub <dest> <a> <b>,
   /// Print a value in a register.
   print <reg>,
+  /// Push an integer into the accumulator
+  push_small_int <value:i16>,
   /// Return from the current function call.
   ret,
 }
@@ -200,7 +202,7 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   pub fn build(mut self) -> Chunk<Value> {
     // ensure bytecode is terminated by `op_suspend`,
     // so that the dispatch loop stops
-    if self.bytecode.fetch(self.bytecode.len() - 1) != op::__suspend {
+    if self.bytecode.fetch(self.bytecode.len() - 1) != op::suspend {
       self.op_suspend();
     };
 
@@ -227,7 +229,7 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
         // all jump instructions are emitted with `xwide` prefix by default,
         // then narrowed based on the final offset value
 
-        let [label_id] = bytecode.get_args(op, pc, Width::_4);
+        let [label_id] = bytecode.get_operands_u32(op, pc, Width::_4);
         let label = label_map
           .get(&label_id)
           .unwrap_or_else(|| panic!("unknown label ID {label_id}"));
@@ -260,6 +262,60 @@ pub struct BytecodeArray {
   inner: Vec<u8>,
 }
 
+impl<Value: Hash + Eq> BytecodeBuilder<Value> {
+  #[inline]
+  fn _width_of(value: u32) -> Width {
+    if value < u8::MAX as u32 {
+      Width::_1
+    } else if value < u16::MAX as u32 {
+      Width::_2
+    } else {
+      Width::_4
+    }
+  }
+
+  #[inline]
+  fn _push_op_prefix(&mut self, width: Width, is_jump: bool) {
+    if is_jump {
+      self.bytecode.inner.push(op::xwide);
+    } else {
+      match width {
+        Width::_1 => {}
+        Width::_2 => self.bytecode.inner.push(op::wide),
+        Width::_4 => self.bytecode.inner.push(op::xwide),
+      }
+    }
+  }
+
+  unsafe fn _push_values(&mut self, values: &[u32], width: Width, is_jump: bool) {
+    if is_jump {
+      for value in values {
+        self.bytecode.inner.extend_from_slice(&value.to_le_bytes())
+      }
+    } else {
+      match width {
+        Width::_1 => {
+          for value in values {
+            let value = unsafe { u8::try_from(*value).unwrap_unchecked() };
+            self.bytecode.inner.push(value);
+          }
+        }
+        Width::_2 => {
+          for value in values {
+            let value = unsafe { u16::try_from(*value).unwrap_unchecked() };
+            self.bytecode.inner.extend_from_slice(&value.to_le_bytes());
+          }
+        }
+        Width::_4 => {
+          for value in values {
+            self.bytecode.inner.extend_from_slice(&value.to_le_bytes());
+          }
+        }
+      }
+    }
+  }
+}
+
 impl BytecodeArray {
   pub fn len(&self) -> usize {
     self.inner.len()
@@ -269,11 +325,15 @@ impl BytecodeArray {
     self.inner.is_empty()
   }
 
+  #[inline]
   pub fn fetch(&self, pc: usize) -> u8 {
     self.inner[pc]
   }
 
-  fn get_args<const N: usize>(&self, opcode: u8, pc: usize, width: Width) -> [u32; N] {
+  /// This should only be used to fetch
+  /// variable-width encoded instruction operands
+  #[inline]
+  fn get_operands_u32<const N: usize>(&self, opcode: u8, pc: usize, width: Width) -> [u32; N] {
     let start = 1 + pc;
     if start + N * width as usize >= self.inner.len() {
       panic!(
@@ -287,14 +347,6 @@ impl BytecodeArray {
       args[i] = unsafe { self._fetch_arg(offset, width) };
     }
     args
-  }
-
-  fn get_arg(&self, opcode: u8, pc: usize, i: usize, width: Width) -> u32 {
-    let offset = 1 + pc + i * width as usize;
-    if offset + width as usize >= self.inner.len() {
-      panic!("malformed bytecode: missing operand for opcode {opcode} (pc={pc}, w={width}, i={i})");
-    }
-    unsafe { self._fetch_arg(offset, width) }
   }
 
   unsafe fn _fetch_arg(&self, offset: usize, width: Width) -> u32 {
@@ -323,7 +375,7 @@ impl BytecodeArray {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Width {
   _1 = 1,
   _2 = 2,
@@ -351,58 +403,146 @@ pub enum Jump {
   Skip,
 }
 
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+enum OperandType {
+  U8,
+  U16,
+  U32,
+  I8,
+  I16,
+  I32,
+}
+
+impl OperandType {
+  fn size(&self) -> usize {
+    match self {
+      OperandType::U8 => 1,
+      OperandType::U16 => 2,
+      OperandType::U32 => 4,
+      OperandType::I8 => 1,
+      OperandType::I16 => 2,
+      OperandType::I32 => 4,
+    }
+  }
+}
+
+enum DisassemblyOperands {
+  Variable(&'static [&'static str], Width),
+  Fixed(&'static [(&'static str, OperandType)]),
+}
+
+impl DisassemblyOperands {
+  fn size(&self) -> usize {
+    match self {
+      DisassemblyOperands::Variable(o, w) => o.len() * *w as usize,
+      DisassemblyOperands::Fixed(o) => o.iter().map(|o| o.1.size()).sum(),
+    }
+  }
+
+  fn len(&self) -> usize {
+    match self {
+      DisassemblyOperands::Variable(o, _) => o.len(),
+      DisassemblyOperands::Fixed(o) => o.len(),
+    }
+  }
+
+  fn iter(&self, start: usize) -> DisassemblyOperandsIter {
+    DisassemblyOperandsIter {
+      operands: self,
+      index: 0,
+      offset: start,
+    }
+  }
+}
+
+struct DisassemblyOperandsIter<'a> {
+  operands: &'a DisassemblyOperands,
+  index: usize,
+  offset: usize,
+}
+
+impl<'a> Iterator for DisassemblyOperandsIter<'a> {
+  type Item = (&'static str, usize, OperandType);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.index >= self.operands.len() {
+      return None;
+    }
+
+    let offset = self.offset;
+    let value = match self.operands {
+      DisassemblyOperands::Variable(o, w) => {
+        let name = o[self.index];
+        let size = *w as usize;
+        let ty = match w {
+          Width::_1 => OperandType::U8,
+          Width::_2 => OperandType::U16,
+          Width::_4 => OperandType::U32,
+        };
+
+        self.offset += size;
+        (name, offset, ty)
+      }
+      DisassemblyOperands::Fixed(o) => {
+        let current = o[self.index];
+        let name = current.0;
+        let size = current.1.size();
+        let ty = current.1;
+
+        self.offset += size;
+        (name, offset, ty)
+      }
+    };
+    self.index += 1;
+    Some(value)
+  }
+}
+
 pub struct Disassembly<'bc> {
   name: &'static str,
   bc: &'bc BytecodeArray,
   pc: usize,
-  operands: &'static [&'static str],
-  width: Width,
+  has_prefix: bool,
+  operands: DisassemblyOperands,
   align: usize,
 }
+
 impl<'bc> Disassembly<'bc> {
   fn new(
     name: &'static str,
     bc: &'bc BytecodeArray,
     pc: usize,
-    operands: &'static [&'static str],
-    width: Width,
+    has_prefix: bool,
+    operands: DisassemblyOperands,
     align: usize,
   ) -> Self {
     Self {
       name,
       bc,
       pc,
+      has_prefix,
       operands,
-      width,
       align,
     }
   }
   pub fn size(&self) -> usize {
-    let prefix = if self.width as usize > 1 { 1 } else { 0 };
-    prefix + 1 + self.operands.len() * self.width as usize
+    let prefix = if self.has_prefix { 1 } else { 0 };
+    prefix + 1 + self.operands.size()
   }
 }
 
 impl<'bc> ::std::fmt::Display for Disassembly<'bc> {
   fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-    let Self {
-      name,
-      bc,
-      pc,
-      operands,
-      width,
-      align,
-    } = self;
-
     {
       // print bytes
       let size = self.size();
-      let start = if self.width as usize > 1 {
-        *pc - 1
+      let start = if self.has_prefix {
+        self.pc - 1
       } else {
-        *pc
+        self.pc
       };
-      let mut bytes = bc.inner[start..start + size].iter().peekable();
+      let mut bytes = self.bc.inner[start..start + size].iter().peekable();
       while let Some(byte) = bytes.next() {
         write!(f, "{byte:02x}").unwrap();
         if bytes.peek().is_some() {
@@ -417,28 +557,64 @@ impl<'bc> ::std::fmt::Display for Disassembly<'bc> {
     }
 
     // print opcode + prefix
-    write!(f, " {name}")?;
-    let mod_align = match width {
-      Width::_1 => 0,
-      Width::_2 => {
-        write!(f, ".wide")?;
-        ".wide".len()
-      }
-      Width::_4 => {
-        write!(f, ".xwide")?;
-        ".xwide".len()
+    write!(f, " {}", self.name)?;
+    let mod_align = if !self.has_prefix {
+      0
+    } else {
+      match self.bc.fetch(self.pc - 1) {
+        op::wide => {
+          write!(f, ".wide")?;
+          ".wide".len()
+        }
+        op::xwide => {
+          write!(f, ".xwide")?;
+          ".xwide".len()
+        }
+        _ => 0,
       }
     };
 
     // print operands
-    write!(f, "{:w$}", "", w = align - name.len() - mod_align)?;
-    for (i, operand) in operands.iter().enumerate() {
-      let value = bc.get_arg(bc.fetch(*pc), *pc, i, *width);
-      write!(f, " {operand}={value}")?;
+    write!(f, "{:w$}", "", w = self.align - self.name.len() - mod_align)?;
+    let start = 1 + self.pc;
+    for (name, offset, ty) in self.operands.iter(start) {
+      write!(f, " {name}=")?;
+      match ty {
+        OperandType::U8 => write!(f, "{}", u8::from_le_slice(&self.bc.inner[offset..]))?,
+        OperandType::U16 => write!(f, "{}", u16::from_le_slice(&self.bc.inner[offset..]))?,
+        OperandType::U32 => write!(f, "{}", u32::from_le_slice(&self.bc.inner[offset..]))?,
+        OperandType::I8 => write!(f, "{}", i8::from_le_slice(&self.bc.inner[offset..]))?,
+        OperandType::I16 => write!(f, "{}", i16::from_le_slice(&self.bc.inner[offset..]))?,
+        OperandType::I32 => write!(f, "{}", i32::from_le_slice(&self.bc.inner[offset..]))?,
+      };
     }
     Ok(())
   }
 }
+
+trait FromLeSlice {
+  fn from_le_slice(slice: &[u8]) -> Self;
+}
+
+macro_rules! from_le_slice {
+  ($ty:ty) => {
+    impl FromLeSlice for $ty {
+      fn from_le_slice(slice: &[u8]) -> Self {
+        const SIZE: usize = std::mem::size_of::<$ty>();
+        let mut bytes = [0u8; SIZE];
+        bytes.copy_from_slice(&slice[..SIZE]);
+        Self::from_le_bytes(bytes)
+      }
+    }
+  };
+}
+
+from_le_slice!(u8);
+from_le_slice!(u16);
+from_le_slice!(u32);
+from_le_slice!(i8);
+from_le_slice!(i16);
+from_le_slice!(i32);
 
 #[cfg(test)]
 mod tests;

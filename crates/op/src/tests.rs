@@ -48,6 +48,9 @@ fn test_builder() {
   b.op_jump(end);
   b.op_jump_if_false(start);
   b.op_jump_if_false(end);
+  b.op_push_small_int(0);
+  b.op_push_small_int(i16::MAX);
+  b.op_push_small_int(i16::MIN);
   b.op_ret();
   b.finish_label(end);
   b.op_suspend();
@@ -58,7 +61,7 @@ fn test_builder() {
 
 #[test]
 fn dispatch() {
-  type Value = u32;
+  type Value = i32;
 
   struct VM {
     stdout: Vec<u8>,
@@ -111,6 +114,11 @@ fn dispatch() {
       Ok(())
     }
 
+    fn op_push_small_int(&mut self, value: i16) -> Result<(), Self::Error> {
+      self.a = value as i32;
+      Ok(())
+    }
+
     fn op_ret(&mut self) -> Result<(), Self::Error> {
       Ok(())
     }
@@ -125,43 +133,41 @@ fn dispatch() {
   //
   // c0 = 123 (v)
   // c1 = 10  (start)
-  // c2 = 1   (decrement)
   // r0 = printed value (v)
   // r1 = loop index (i)
-  // r2 = 1 (dec)
   //
   let [l_loop, l_break] = b.labels(["loop", "break"]);
-  let [c0, c1, c2] = [b.constant(123), b.constant(10), b.constant(1)];
+  let [c0, c1] = [b.constant(123), b.constant(10)];
   let [r0, r1, r2] = [0, 1, 2];
 
-  //   load_const offset=0       // a = v
-  //   store_reg  reg=0          // r0 = a
-  //   load_const offset=1       // a = start
-  //   store_reg  reg=1          // r1 = a
-  //   load_const offset=2       // a = 1
-  //   load_reg   reg=2          // r2 = a
-  // @loop:
-  //   load_reg   reg=1          // a = i
-  //   jump_if_false @break      // if (i == 0) goto @break
-  //   print      reg=0          // print v
-  //   sub        dest=1 a=1 b=2 // r1 = r1 - r2
-  //   jump       @loop          // goto @loop
-  // @break:
-  //   ret                       // return
-  //   suspend                   // suspend
+  //   load_const     offset=0       // a = v
+  //   store_reg      reg=0          // r0 = a
+  //   load_const     offset=1       // a = start
+  //   store_reg      reg=1          // r1 = a
+  // @loop:                          //
+  //   load_reg       reg=1          // a = i
+  //   jump_if_false  @break         // if (i == 0) goto @break
+  //   print          reg=0          // print v
+  //   push_small_int value=1        //
+  //   store_reg      reg=2          // r2 = 1
+  //   sub            dest=1 a=1 b=2 // r1 = r1 - r2
+  //   jump           @loop          // goto @loop
+  // @break:                         //
+  //   ret                           // return
+  //   suspend                       // suspend
 
   b.op_load_const(c0);
   b.op_store_reg(r0);
   b.op_load_const(c1);
   b.op_store_reg(r1);
-  b.op_load_const(c2);
-  b.op_store_reg(r2);
 
   b.finish_label(l_loop);
 
   b.op_load_reg(r1);
   b.op_jump_if_false(l_break);
   b.op_print(r0);
+  b.op_push_small_int(1);
+  b.op_store_reg(r2);
   b.op_sub(r1, r1, r2);
   b.op_jump(l_loop);
 
@@ -223,6 +229,10 @@ fn vm_error() {
     }
 
     fn op_print(&mut self, _: u32) -> Result<(), Self::Error> {
+      Err("test")
+    }
+
+    fn op_push_small_int(&mut self, _: i16) -> Result<(), Self::Error> {
       Err("test")
     }
 

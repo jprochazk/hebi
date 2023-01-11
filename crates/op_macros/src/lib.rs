@@ -3,16 +3,167 @@ use std::str::FromStr;
 
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
-use syn::{Attribute, Ident, Token};
+use syn::{Attribute, Ident, Token, Type};
+
+// TODO: see if you can get rid of some `.collect()` calls, because quote!
+// handles iterators
+
+struct VariableWidthOpcode {
+  meta: Vec<Attribute>,
+  name: Ident,
+  flags: HashSet<String>,
+  operands: Vec<Ident>,
+}
+
+struct FixedWidthOpcode {
+  meta: Vec<Attribute>,
+  name: Ident,
+  flags: HashSet<String>,
+  operands: Vec<TypedOperand>,
+}
+
+#[derive(Clone, Copy)]
+enum FixedOperandType {
+  U8,
+  U16,
+  U32,
+  I8,
+  I16,
+  I32,
+}
+
+impl FixedOperandType {
+  fn size(&self) -> usize {
+    match self {
+      FixedOperandType::U8 => 1,
+      FixedOperandType::U16 => 2,
+      FixedOperandType::U32 => 4,
+      FixedOperandType::I8 => 1,
+      FixedOperandType::I16 => 2,
+      FixedOperandType::I32 => 4,
+    }
+  }
+
+  fn width(&self) -> Width {
+    match self {
+      FixedOperandType::U8 => Width::_1,
+      FixedOperandType::U16 => Width::_2,
+      FixedOperandType::U32 => Width::_4,
+      FixedOperandType::I8 => Width::_1,
+      FixedOperandType::I16 => Width::_2,
+      FixedOperandType::I32 => Width::_4,
+    }
+  }
+
+  fn unsigned(&self) -> FixedOperandType {
+    match self {
+      FixedOperandType::U8 => FixedOperandType::U8,
+      FixedOperandType::U16 => FixedOperandType::U16,
+      FixedOperandType::U32 => FixedOperandType::U32,
+      FixedOperandType::I8 => FixedOperandType::U8,
+      FixedOperandType::I16 => FixedOperandType::U16,
+      FixedOperandType::I32 => FixedOperandType::U32,
+    }
+  }
+
+  fn is_signed(&self) -> bool {
+    match self {
+      FixedOperandType::U8 => false,
+      FixedOperandType::U16 => false,
+      FixedOperandType::U32 => false,
+      FixedOperandType::I8 => true,
+      FixedOperandType::I16 => true,
+      FixedOperandType::I32 => true,
+    }
+  }
+
+  fn fetch(&self, offset: usize) -> TokenStream2 {
+    match self {
+      FixedOperandType::U8 => quote!(unsafe { *bc.inner.get_unchecked(*pc + #offset) }),
+      FixedOperandType::U16 => quote!(unsafe {
+        u16::from_le_bytes([
+          *bc.inner.get_unchecked(*pc + #offset),
+          *bc.inner.get_unchecked(*pc + #offset + 1)
+        ])
+      }),
+      FixedOperandType::U32 => quote!(unsafe {
+        u32::from_le_bytes([
+          *bc.inner.get_unchecked(*pc + #offset),
+          *bc.inner.get_unchecked(*pc + #offset + 1),
+          *bc.inner.get_unchecked(*pc + #offset + 2),
+          *bc.inner.get_unchecked(*pc + #offset + 3)
+        ])
+      }),
+      FixedOperandType::I8 => quote!(unsafe {
+        ::std::mem::transmute::<_, i8>(
+          *bc.inner.get_unchecked(*pc + #offset)
+        )
+      }),
+      FixedOperandType::I16 => quote!(unsafe {
+        i16::from_le_bytes([
+          *bc.inner.get_unchecked(*pc + #offset),
+          *bc.inner.get_unchecked(*pc + #offset + 1)
+        ])
+      }),
+      FixedOperandType::I32 => quote!(unsafe {
+        i32::from_le_bytes([
+          *bc.inner.get_unchecked(*pc + #offset),
+          *bc.inner.get_unchecked(*pc + #offset + 1),
+          *bc.inner.get_unchecked(*pc + #offset + 2),
+          *bc.inner.get_unchecked(*pc + #offset + 3)
+        ])
+      }),
+    }
+  }
+}
+
+struct Raw(FixedOperandType);
+impl ToTokens for Raw {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    match self.0 {
+      FixedOperandType::U8 => tokens.extend(TokenStream2::from_str("OperandType::U8")),
+      FixedOperandType::U16 => tokens.extend(TokenStream2::from_str("OperandType::U16")),
+      FixedOperandType::U32 => tokens.extend(TokenStream2::from_str("OperandType::U32")),
+      FixedOperandType::I8 => tokens.extend(TokenStream2::from_str("OperandType::I8")),
+      FixedOperandType::I16 => tokens.extend(TokenStream2::from_str("OperandType::I16")),
+      FixedOperandType::I32 => tokens.extend(TokenStream2::from_str("OperandType::I32")),
+    }
+  }
+}
+
+impl ToTokens for FixedOperandType {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    match self {
+      FixedOperandType::U8 => tokens.extend(TokenStream2::from_str("u8")),
+      FixedOperandType::U16 => tokens.extend(TokenStream2::from_str("u16")),
+      FixedOperandType::U32 => tokens.extend(TokenStream2::from_str("u32")),
+      FixedOperandType::I8 => tokens.extend(TokenStream2::from_str("i8")),
+      FixedOperandType::I16 => tokens.extend(TokenStream2::from_str("i16")),
+      FixedOperandType::I32 => tokens.extend(TokenStream2::from_str("i32")),
+    }
+  }
+}
+
+struct TypedOperand {
+  name: Ident,
+  ty: FixedOperandType,
+}
+
+impl ToTokens for TypedOperand {
+  fn to_tokens(&self, tokens: &mut TokenStream2) {
+    let Self { name, ty } = self;
+    tokens.extend(quote!(#name : #ty))
+  }
+}
 
 /// Opcodes have the following format:
 ///
 /// ```text
-/// $name $(:$flag)* $(<$operand>)*
+/// $name $(:$flag)* $(<$operand $(:$type)?>)*
 /// ```
 ///
 /// - `name` is the name of the opcode, sometimes prefixed by `op_`
@@ -33,11 +184,134 @@ use syn::{Attribute, Ident, Token};
 /// implementation, and the VM returns back the control-flow `Jump` enum, which
 /// determines if the jump should be skipped, or if it should not be skipped,
 /// what the final offset should be.
-struct Opcode {
-  meta: Vec<Attribute>,
-  name: Ident,
-  flags: HashSet<String>,
-  operands: Vec<Ident>,
+enum Opcode {
+  Variable(VariableWidthOpcode),
+  Fixed(FixedWidthOpcode),
+}
+
+impl Opcode {
+  fn new(
+    meta: Vec<Attribute>,
+    name: Ident,
+    flags: HashSet<String>,
+    operands: Vec<(Ident, Option<FixedOperandType>)>,
+  ) -> Self {
+    let is_fixed_width = operands.is_empty() || operands.iter().any(|o| o.1.is_some());
+
+    if is_fixed_width {
+      let operands = operands
+        .into_iter()
+        .map(|(name, ty)| TypedOperand {
+          name,
+          ty: ty.unwrap_or(FixedOperandType::U8),
+        })
+        .collect();
+      Opcode::Fixed(FixedWidthOpcode {
+        meta,
+        name,
+        flags,
+        operands,
+      })
+    } else {
+      let operands = operands.into_iter().map(|(name, _)| name).collect();
+      Opcode::Variable(VariableWidthOpcode {
+        meta,
+        name,
+        flags,
+        operands,
+      })
+    }
+  }
+
+  fn name(&self) -> &Ident {
+    match self {
+      Opcode::Variable(v) => &v.name,
+      Opcode::Fixed(v) => &v.name,
+    }
+  }
+
+  fn meta(&self) -> &Vec<Attribute> {
+    match self {
+      Opcode::Variable(v) => &v.meta,
+      Opcode::Fixed(v) => &v.meta,
+    }
+  }
+
+  fn flags(&self) -> &HashSet<String> {
+    match self {
+      Opcode::Variable(v) => &v.flags,
+      Opcode::Fixed(v) => &v.flags,
+    }
+  }
+
+  fn is_jump_op(&self) -> bool {
+    self.flags().contains("jump")
+  }
+
+  fn is_fixed_width(&self) -> bool {
+    match self {
+      Opcode::Fixed(_) => true,
+      Opcode::Variable(_) => false,
+    }
+  }
+
+  fn operands(&self) -> Vec<Ident> {
+    match self {
+      Opcode::Variable(v) => v.operands.clone(),
+      Opcode::Fixed(v) => v
+        .operands
+        .iter()
+        .map(|operand| operand.name.clone())
+        .collect(),
+    }
+  }
+
+  fn num_operands(&self) -> usize {
+    match self {
+      Opcode::Variable(v) => v.operands.len(),
+      Opcode::Fixed(v) => v.operands.len(),
+    }
+  }
+}
+
+impl Parse for FixedOperandType {
+  fn parse(input: ParseStream) -> Result<Self> {
+    use syn::spanned::Spanned;
+
+    let ty = Type::parse(input)?;
+
+    'bad: {
+      let Type::Path(p) = &ty else { break 'bad };
+      if p.qself.is_some() {
+        break 'bad;
+      };
+      if p.path.leading_colon.is_some() {
+        break 'bad;
+      };
+      if p.path.segments.len() != 1 {
+        break 'bad;
+      };
+      let Some(s) = p.path.segments.first() else { break 'bad };
+      if !s.arguments.is_empty() {
+        break 'bad;
+      };
+      let ty = match s.ident.to_string().as_str() {
+        "u8" => FixedOperandType::U8,
+        "u16" => FixedOperandType::U16,
+        "u32" => FixedOperandType::U32,
+        "i8" => FixedOperandType::I8,
+        "i16" => FixedOperandType::I16,
+        "i32" => FixedOperandType::I32,
+        _ => break 'bad,
+      };
+      return Ok(ty);
+    }
+
+    Err(Error::new(
+      ty.span(),
+      "invalid operand type. valid operand types are: u8, u16, u32, i8, i16, i32",
+    ))
+  }
 }
 
 impl Parse for Opcode {
@@ -57,20 +331,21 @@ impl Parse for Opcode {
     while input.peek(Token![<]) {
       let _ = <Token![<]>::parse(input)?;
       let operand = Ident::parse_any(input)?;
+      let ty = if input.peek(Token![:]) {
+        let _ = <Token![:]>::parse(input)?;
+        Some(FixedOperandType::parse(input)?)
+      } else {
+        None
+      };
       let _ = <Token![>]>::parse(input)?;
-      operands.push(operand);
+      operands.push((operand, ty));
     }
 
     if !input.peek(Token![,]) && !input.cursor().eof() {
       return Err(Error::new(input.span(), "unexpected token"));
     }
 
-    Ok(Opcode {
-      meta,
-      name,
-      flags,
-      operands,
-    })
+    Ok(Opcode::new(meta, name, flags, operands))
   }
 }
 
@@ -91,28 +366,34 @@ impl Parse for Input {
 fn emit_handler_trait(ops: &[Opcode]) -> TokenStream2 {
   let methods: Vec<_> = ops
     .iter()
-    .map(
-      |Opcode {
-         meta,
-         name,
-         flags,
-         operands,
-       }| {
-        let name = quote::format_ident!("op_{name}");
+    .map(|op| {
+      let name = op.name();
+      let meta = op.meta();
 
-        if flags.contains("jump") {
-          quote! {
-            #(#meta)*
-            fn #name (&mut self, #(#operands : u32),*) -> Result<Jump, Self::Error>;
-          }
-        } else {
-          quote! {
-            #(#meta)*
-            fn #name (&mut self, #(#operands : u32),*) -> Result<(), Self::Error>;
-          }
+      let name = quote::format_ident!("op_{name}");
+
+      let result = if op.is_jump_op() {
+        quote!(Result<Jump, Self::Error>)
+      } else {
+        quote!(Result<(), Self::Error>)
+      };
+
+      let operands = match op {
+        Opcode::Variable(op) => {
+          let operands = &op.operands;
+          quote!(#(#operands : u32),*)
         }
-      },
-    )
+        Opcode::Fixed(op) => {
+          let operands = &op.operands;
+          quote!(#(#operands),*)
+        }
+      };
+
+      quote! {
+        #(#meta)*
+        fn #name (&mut self, #operands) -> #result;
+      }
+    })
     .collect();
 
   quote! {
@@ -126,14 +407,15 @@ fn emit_handler_trait(ops: &[Opcode]) -> TokenStream2 {
 /// Emit the module containing opcode constants.
 fn emit_op_mod(ops: &[Opcode]) -> TokenStream2 {
   let mut consts = vec![];
-  consts.push(quote! {pub const __nop: u8 = 0;});
-  consts.push(quote! {pub const __wide: u8 = 1;});
-  consts.push(quote! {pub const __xwide: u8 = 2;});
-  consts.extend(ops.iter().enumerate().map(|(i, Opcode { name, .. })| {
+  consts.push(quote! {pub const nop: u8 = 0;});
+  consts.push(quote! {pub const wide: u8 = 1;});
+  consts.push(quote! {pub const xwide: u8 = 2;});
+  consts.extend(ops.iter().enumerate().map(|(i, op)| {
+    let name = op.name();
     let value = TokenStream2::from_str(&format!("{}", 3 + i)).unwrap();
     quote! {pub const #name : u8 = #value;}
   }));
-  consts.push(quote! {pub const __suspend: u8 = 255;});
+  consts.push(quote! {pub const suspend: u8 = 255;});
 
   quote! {
     pub mod op {
@@ -166,62 +448,115 @@ impl quote::ToTokens for Width {
 ///   - If the instruction is a jump, this step is also delegated to the VM
 /// - Fetch the next opcode
 fn emit_dispatch_handlers(ops: &[Opcode]) -> TokenStream2 {
-  let emit_one = |name: &Ident,
-                  operands: &[Ident],
-                  skip_vm_call: bool,
-                  is_jump: bool,
-                  next_operand_size: Width| {
-    let name = quote::format_ident!("op_{name}");
-    let argc = operands.len();
-    let get_args = if operands.is_empty() {
-      quote! {}
-    } else {
-      quote! {
-        let [#(#operands),*] = bc.get_args::<#argc>(*opcode, *pc, *operand_size);
-      }
-    };
-
-    let action = if skip_vm_call {
-      quote! {
-        *pc += 1 + #argc * (*operand_size) as usize;
-      }
-    } else if is_jump {
-      quote! {
-        let _jump = match vm. #name (#(#operands),*) {
-          Ok(jump) => jump,
-          Err(e) => {
-            *result = Err(e);
-            Jump::Skip
-          },
+  let emit_one = |op: &Opcode, skip_vm_call: bool, next_width: Width| {
+    let op_name = quote::format_ident!("op_{}", op.name());
+    let is_jump = op.is_jump_op();
+    let (get_args, vm_call) = match op {
+      Opcode::Variable(op) => {
+        let operands = &op.operands;
+        let argc = operands.len();
+        let get_args = if argc != 0 {
+          quote! {
+            let [#(#operands),*] = bc.get_operands_u32::<#argc>(*opcode, *pc, *width);
+          }
+        } else {
+          quote! {}
         };
-        match _jump {
-          Jump::Skip => *pc += 1 + #argc * (*operand_size) as usize,
-          Jump::Goto { offset } => *pc = offset as usize,
-        }
+
+        let vm_call = if skip_vm_call {
+          quote! {
+            *pc += 1 + #argc * (*width) as usize;
+          }
+        } else if is_jump {
+          quote! {
+            let _jump = match vm. #op_name (#(#operands),*) {
+              Ok(jump) => jump,
+              Err(e) => {
+                *result = Err(e);
+                Jump::Skip
+              },
+            };
+            match _jump {
+              Jump::Skip => *pc += 1 + #argc * (*width) as usize,
+              Jump::Goto { offset } => *pc = offset as usize,
+            }
+          }
+        } else {
+          quote! {
+            *result = vm. #op_name (#(#operands),*);
+            *pc += 1 + #argc * (*width) as usize;
+          }
+        };
+
+        (get_args, vm_call)
       }
-    } else {
-      quote! {
-        *result = vm. #name (#(#operands),*);
-        *pc += 1 + #argc * (*operand_size) as usize;
+      Opcode::Fixed(op) => {
+        let operands_size = op.operands.iter().map(|op| op.ty.size()).sum::<usize>();
+
+        let get_args = if !skip_vm_call {
+          let mut fetch = vec![];
+          let mut offset = 1usize;
+          for operand in op.operands.iter() {
+            let name = &operand.name;
+            let get = operand.ty.fetch(offset);
+            fetch.push(quote! {
+              let #name = #get;
+            });
+            offset += operand.ty.size();
+          }
+
+          quote! {
+            let start = 1 + *pc;
+            if start + #operands_size >= bc.len() {
+              panic!(
+                "malformed bytecode: missing operands for opcode {} (pc={}, w={})",
+                *opcode,
+                *pc,
+                #operands_size,
+              );
+            }
+            #(#fetch)*
+          }
+        } else {
+          quote! {}
+        };
+
+        let vm_call = if !skip_vm_call {
+          let operands = op
+            .operands
+            .iter()
+            .map(|op| op.name.clone())
+            .collect::<Vec<_>>();
+          quote! {
+            *result = vm. #op_name (#(#operands),*);
+            *pc += 1 + #operands_size;
+          }
+        } else {
+          quote! {
+            *pc += 1 + #operands_size;
+          }
+        };
+
+        (get_args, vm_call)
       }
     };
 
     quote! {
       #[inline]
-      fn #name <H: Handler> (
+      fn #op_name <H: Handler> (
         vm: &mut H,
         bc: &mut BytecodeArray,
         pc: &mut usize,
         opcode: &mut u8,
-        operand_size: &mut Width,
+        width: &mut Width,
         result: &mut Result<(), H::Error>,
       ) {
         if cfg!(feature = "disassembly") {
           println!("{}", bc.disassemble(*pc).unwrap());
         }
         #get_args
-        #action
-        *operand_size = #next_operand_size;
+        #vm_call
+        *width = #next_width;
         *opcode = bc.fetch(*pc);
       }
     }
@@ -229,34 +564,37 @@ fn emit_dispatch_handlers(ops: &[Opcode]) -> TokenStream2 {
 
   let mut handlers = vec![];
   handlers.push(emit_one(
-    &Ident::new("nop", Span::call_site()),
-    &[],
+    &Opcode::Fixed(FixedWidthOpcode {
+      meta: vec![],
+      name: Ident::new("nop", Span::call_site()),
+      flags: HashSet::new(),
+      operands: vec![],
+    }),
     true,
-    false,
     Width::_1,
   ));
   handlers.push(emit_one(
-    &Ident::new("wide", Span::call_site()),
-    &[],
+    &Opcode::Fixed(FixedWidthOpcode {
+      meta: vec![],
+      name: Ident::new("wide", Span::call_site()),
+      flags: HashSet::new(),
+      operands: vec![],
+    }),
     true,
-    false,
     Width::_2,
   ));
   handlers.push(emit_one(
-    &Ident::new("xwide", Span::call_site()),
-    &[],
+    &Opcode::Fixed(FixedWidthOpcode {
+      meta: vec![],
+      name: Ident::new("xwide", Span::call_site()),
+      flags: HashSet::new(),
+      operands: vec![],
+    }),
     true,
-    false,
     Width::_4,
   ));
   for op in ops {
-    handlers.push(emit_one(
-      &op.name,
-      &op.operands,
-      false,
-      op.flags.contains("jump"),
-      Width::_1,
-    ));
+    handlers.push(emit_one(op, false, Width::_1));
   }
 
   quote! {
@@ -267,14 +605,15 @@ fn emit_dispatch_handlers(ops: &[Opcode]) -> TokenStream2 {
 /// Emit the main dispatch loop function
 fn emit_run_fn(ops: &[Opcode]) -> TokenStream2 {
   let mut arms = vec![];
-  arms.push(quote! {op::__nop => op_nop(vm, bc, pc, opcode, operand_size, result),});
-  arms.push(quote! {op::__wide => op_wide(vm, bc, pc, opcode, operand_size, result),});
-  arms.push(quote! {op::__xwide => op_xwide(vm, bc, pc, opcode, operand_size, result),});
-  arms.extend(ops.iter().map(|Opcode { name, .. }| {
+  arms.push(quote! {op::nop => op_nop(vm, bc, pc, opcode, width, result),});
+  arms.push(quote! {op::wide => op_wide(vm, bc, pc, opcode, width, result),});
+  arms.push(quote! {op::xwide => op_xwide(vm, bc, pc, opcode, width, result),});
+  arms.extend(ops.iter().map(|op| {
+    let name = op.name();
     let f = quote::format_ident!("op_{name}");
-    quote! {op::#name => #f(vm, bc, pc, opcode, operand_size, result),}
+    quote! {op::#name => #f(vm, bc, pc, opcode, width, result),}
   }));
-  arms.push(quote! {op::__suspend => break,});
+  arms.push(quote! {op::suspend => break,});
 
   quote! {
     #[inline(never)]
@@ -284,7 +623,7 @@ fn emit_run_fn(ops: &[Opcode]) -> TokenStream2 {
       pc: &mut usize
     ) -> Result<(), H::Error> {
       let opcode = &mut bc.fetch(*pc);
-      let operand_size = &mut Width::_1;
+      let width = &mut Width::_1;
       let mut result = Ok(());
       while !result.is_err() {
         let result = &mut result;
@@ -303,97 +642,65 @@ fn emit_run_fn(ops: &[Opcode]) -> TokenStream2 {
 /// The methods accept operands which are written into the bytecode using
 /// variable-width encoding.
 fn emit_bytecode_builder_impl(ops: &[Opcode]) -> TokenStream2 {
-  let emit_one = |fn_name: &Ident, op_name: &Ident, operands: &[Ident], is_jump: bool| {
-    quote! {
-      pub fn #fn_name (&mut self, #(#operands : u32),*) -> &mut Self {
-        let values = [#(#operands),*];
-        let max_value = values.iter().fold(0, |a,b| a.max(*b));
-        let width = Self::_width_of(max_value);
+  let emit_one = |op: &Opcode| {
+    let is_jump = op.is_jump_op();
+    match op {
+      Opcode::Variable(op) => {
+        let op_name = &op.name;
+        let fn_name = quote::format_ident!("op_{}", op_name);
+        let operands = &op.operands;
+        quote! {
+          pub fn #fn_name (&mut self, #(#operands : u32),*) -> &mut Self {
+            let values = [#(#operands),*];
+            let max_value = values.iter().fold(0, |a,b| a.max(*b));
+            let width = Self::_width_of(max_value);
 
-        self._push_op_prefix(width, #is_jump);
-        self.bytecode.inner.push(op::#op_name);
-        unsafe { self._push_values(&values[..], width, #is_jump) };
-        self
+            self._push_op_prefix(width, #is_jump);
+            self.bytecode.inner.push(op::#op_name);
+            unsafe { self._push_values(&values[..], width, #is_jump) };
+            self
+          }
+        }
+      }
+      Opcode::Fixed(op) => {
+        let op_name = &op.name;
+        let fn_name = quote::format_ident!("op_{}", op_name);
+        let operands = &op.operands;
+        let operand_names = operands.iter().map(|op| op.name.clone());
+
+        quote! {
+          pub fn #fn_name (&mut self, #(#operands),*) -> &mut Self {
+            self.bytecode.inner.push(op::#op_name);
+            #(
+              self.bytecode.inner.extend_from_slice(&#operand_names.to_le_bytes()[..]);
+            )*
+            self
+          }
+        }
       }
     }
   };
 
   let mut methods = vec![];
-  methods.push(emit_one(
-    &Ident::new("op_nop", Span::call_site()),
-    &Ident::new("__nop", Span::call_site()),
-    &[],
-    false,
-  ));
-  methods.push(emit_one(
-    &Ident::new("op_suspend", Span::call_site()),
-    &Ident::new("__suspend", Span::call_site()),
-    &[],
-    false,
-  ));
+  methods.push(emit_one(&Opcode::Fixed(FixedWidthOpcode {
+    meta: vec![],
+    name: Ident::new("nop", Span::call_site()),
+    flags: HashSet::new(),
+    operands: vec![],
+  })));
+  methods.push(emit_one(&Opcode::Fixed(FixedWidthOpcode {
+    meta: vec![],
+    name: Ident::new("suspend", Span::call_site()),
+    flags: HashSet::new(),
+    operands: vec![],
+  })));
+
   for op in ops {
-    methods.push(emit_one(
-      &quote::format_ident!("op_{}", op.name),
-      &op.name,
-      &op.operands,
-      op.flags.contains("jump"),
-    ));
+    methods.push(emit_one(op));
   }
 
   quote! {
     impl<Value: Hash + Eq> BytecodeBuilder<Value> {
-      #[inline]
-      fn _width_of(value: u32) -> Width {
-        if value < u8::MAX as u32 {
-          Width::_1
-        } else if value < u16::MAX as u32 {
-          Width::_2
-        } else {
-          Width::_4
-        }
-      }
-
-      #[inline]
-      fn _push_op_prefix(&mut self, width: Width, is_jump: bool) {
-        if is_jump {
-          self.bytecode.inner.push(op::__xwide);
-        } else {
-          match width {
-            Width::_1 => {},
-            Width::_2 => self.bytecode.inner.push(op::__wide),
-            Width::_4 => self.bytecode.inner.push(op::__xwide),
-          }
-        }
-      }
-
-      unsafe fn _push_values(&mut self, values: &[u32], width: Width, is_jump: bool) {
-        if is_jump {
-          for value in values {
-            self.bytecode.inner.extend_from_slice(&value.to_le_bytes())
-          }
-        } else {
-          match width {
-            Width::_1 => {
-              for value in values {
-                let value = unsafe { u8::try_from(*value).unwrap_unchecked() };
-                self.bytecode.inner.push(value);
-              }
-            }
-            Width::_2 => {
-              for value in values {
-                let value = unsafe { u16::try_from(*value).unwrap_unchecked() };
-                self.bytecode.inner.extend_from_slice(&value.to_le_bytes());
-              }
-            }
-            Width::_4 => {
-              for value in values {
-                self.bytecode.inner.extend_from_slice(&value.to_le_bytes());
-              }
-            }
-          }
-        }
-      }
-
       #(#methods)*
     }
   }
@@ -403,8 +710,8 @@ fn emit_bytecode_builder_impl(ops: &[Opcode]) -> TokenStream2 {
 fn emit_jump_patching(ops: &[Opcode]) -> TokenStream2 {
   let jump_ops = ops
     .iter()
-    .filter(|op| op.flags.contains("jump"))
-    .map(|op| &op.name)
+    .filter(|op| op.is_jump_op())
+    .map(|op| op.name())
     .collect::<Vec<_>>();
   quote! {
     fn is_jump_op(op: u8) -> bool {
@@ -418,11 +725,11 @@ fn emit_jump_patching(ops: &[Opcode]) -> TokenStream2 {
         bc[pc+1] = offset as u8;
       } else if offset < u16::MAX as u32 {
         let offset = (unsafe { u16::try_from(offset).unwrap_unchecked() });
-        bc[pc] = op::__wide;
+        bc[pc] = op::wide;
         bc[pc+1] = op;
         bc[pc+2..pc+2+std::mem::size_of::<u16>()].copy_from_slice(&offset.to_le_bytes());
       } else {
-        bc[pc] = op::__xwide;
+        bc[pc] = op::xwide;
         bc[pc+1] = op;
         bc[pc+2..pc+2+std::mem::size_of::<u32>()].copy_from_slice(&offset.to_le_bytes());
       }
@@ -431,37 +738,77 @@ fn emit_jump_patching(ops: &[Opcode]) -> TokenStream2 {
 }
 
 fn emit_disassembler(ops: &[Opcode]) -> TokenStream2 {
-  let emit_arm = |op_name: &Ident, print_name: &str, operands: &[Ident], name_align: usize| {
-    let name_align = name_align + ".xwide".len();
-    let operands = operands.iter().map(|v| v.to_string()).collect::<Vec<_>>();
-    quote! {
-      op::#op_name => Some(Disassembly::new(#print_name, self, pc, &[#(#operands),*], width, #name_align)),
+  let emit_arm = |op: &Opcode, name_align: usize| {
+    let op_name = op.name();
+    let print_name = op.name().to_string();
+    match op {
+      Opcode::Variable(op) => {
+        let operands = op
+          .operands
+          .iter()
+          .map(|v| v.to_string())
+          .collect::<Vec<_>>();
+        quote! {
+          op::#op_name => Some(Disassembly::new(
+            #print_name,
+            self,
+            pc,
+            width as usize > 1,
+            DisassemblyOperands::Variable(&[#(#operands),*], width),
+            #name_align
+          )),
+        }
+      }
+      Opcode::Fixed(op) => {
+        let operands = op
+          .operands
+          .iter()
+          .map(|o| {
+            let name = o.name.to_string();
+            let ty = Raw(o.ty);
+            quote! {(#name, #ty)}
+          })
+          .collect::<Vec<_>>();
+        quote! {
+          op::#op_name => Some(Disassembly::new(
+            #print_name,
+            self,
+            pc,
+            width as usize > 1,
+            DisassemblyOperands::Fixed(&[#(#operands),*]),
+            #name_align
+          )),
+        }
+      }
     }
   };
 
   let name_align = ops
     .iter()
-    .map(|v| v.name.to_string().len())
+    .map(|v| v.name().to_string().len())
     .chain(["suspend".len()])
     .max()
-    .unwrap();
+    .unwrap()
+    + ".xwide".len();
 
   let mut arms = vec![];
   arms.push(emit_arm(
-    &Ident::new("__nop", Span::call_site()),
-    "nop",
-    &[],
+    &Opcode::Fixed(FixedWidthOpcode {
+      meta: vec![],
+      name: Ident::new("nop", Span::call_site()),
+      flags: HashSet::new(),
+      operands: vec![],
+    }),
     name_align,
   ));
-  arms.extend(
-    ops
-      .iter()
-      .map(|op| emit_arm(&op.name, &op.name.to_string(), &op.operands, name_align)),
-  );
+  arms.extend(ops.iter().map(|op| emit_arm(op, name_align)));
   arms.push(emit_arm(
-    &Ident::new("__suspend", Span::call_site()),
-    "suspend",
-    &[],
+    &Opcode::Fixed(FixedWidthOpcode {
+      meta: vec![],
+      name: Ident::new("suspend", Span::call_site()),
+      flags: HashSet::new(),
+      operands: vec![],
+    }),
     name_align,
   ));
 
@@ -473,8 +820,8 @@ fn emit_disassembler(ops: &[Opcode]) -> TokenStream2 {
       ) -> Option<Disassembly<'_>> {
         let mut width = Width::_1;
         match self.fetch(pc) {
-          op::__wide => self.disassemble_inner(self.fetch(pc+1), pc+1, Width::_2),
-          op::__xwide => self.disassemble_inner(self.fetch(pc+1), pc+1, Width::_4),
+          op::wide => self.disassemble_inner(self.fetch(pc+1), pc+1, Width::_2),
+          op::xwide => self.disassemble_inner(self.fetch(pc+1), pc+1, Width::_4),
           op => self.disassemble_inner(op, pc, Width::_1),
         }
       }
@@ -493,33 +840,72 @@ fn emit_disassembler(ops: &[Opcode]) -> TokenStream2 {
   }
 }
 
-#[proc_macro]
-pub fn define_bytecode(input: TokenStream) -> TokenStream {
-  let input = syn::parse_macro_input!(input as Input);
+fn check_input(input: &Input) -> Result<()> {
+  // TODO: check that nothing uses reserved opcode names
+  // check for duplicates
 
-  // 4 predefined opcodes (nop, wide, xwide, suspend)
+  // check max number of opcodes
+  // an opcode is u8, so there are 255 possible values
+  // we use 4 of them for predefined opcodes:
+  //   0x00 = nop
+  //   0x01 = wide
+  //   0x02 = xwide
+  //   0xFF = suspend
   const MAX_OPCODES: usize = (u8::MAX - 4) as usize;
   if input.opcodes.len() > MAX_OPCODES {
-    return Error::new(
+    return Err(Error::new(
       Span::call_site(),
       format!("too many opcodes, maximum is {MAX_OPCODES}"),
-    )
-    .to_compile_error()
-    .into();
+    ));
   }
 
+  // check max number of operands (3)
   const MAX_OPERANDS: usize = 3;
   if let Some(op) = input
     .opcodes
     .iter()
-    .find(|o| o.operands.len() > MAX_OPERANDS)
+    .find(|o| o.num_operands() > MAX_OPERANDS)
   {
-    return Error::new(
-      op.name.span(),
+    return Err(Error::new(
+      op.name().span(),
       format!("too many operands, maximum is {MAX_OPERANDS}"),
-    )
-    .to_compile_error()
-    .into();
+    ));
+  }
+
+  // jump instructions may not be fixed width
+  let bad_jump_ops = input
+    .opcodes
+    .iter()
+    .filter(|op| op.is_jump_op() && op.is_fixed_width())
+    .collect::<Vec<_>>();
+  if !bad_jump_ops.is_empty() {
+    if bad_jump_ops.len() == 1 {
+      return Err(Error::new(
+        bad_jump_ops[0].name().span(),
+        "an opcode flagged :jump may not have fixed-width operands".to_string(),
+      ));
+    } else {
+      let name_list = bad_jump_ops
+        .iter()
+        .map(|op| format!("- {}", op.name()))
+        .collect::<Vec<_>>()
+        .join("\n");
+      return Err(Error::new(
+        Span::call_site(),
+        format!("opcodes flagged :jump may not have fixed-width operands, but the following opcodes do:\n{name_list}")
+      ));
+    }
+  }
+
+  Ok(())
+}
+
+#[proc_macro]
+pub fn define_bytecode(input: TokenStream) -> TokenStream {
+  let input = syn::parse_macro_input!(input as Input);
+
+  if let Err(e) = check_input(&input) {
+    return e.into_compile_error().into();
   }
 
   let handler_trait = emit_handler_trait(&input.opcodes);
