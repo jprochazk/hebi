@@ -48,39 +48,6 @@ impl FixedOperandType {
     }
   }
 
-  fn width(&self) -> Width {
-    match self {
-      FixedOperandType::U8 => Width::_1,
-      FixedOperandType::U16 => Width::_2,
-      FixedOperandType::U32 => Width::_4,
-      FixedOperandType::I8 => Width::_1,
-      FixedOperandType::I16 => Width::_2,
-      FixedOperandType::I32 => Width::_4,
-    }
-  }
-
-  fn unsigned(&self) -> FixedOperandType {
-    match self {
-      FixedOperandType::U8 => FixedOperandType::U8,
-      FixedOperandType::U16 => FixedOperandType::U16,
-      FixedOperandType::U32 => FixedOperandType::U32,
-      FixedOperandType::I8 => FixedOperandType::U8,
-      FixedOperandType::I16 => FixedOperandType::U16,
-      FixedOperandType::I32 => FixedOperandType::U32,
-    }
-  }
-
-  fn is_signed(&self) -> bool {
-    match self {
-      FixedOperandType::U8 => false,
-      FixedOperandType::U16 => false,
-      FixedOperandType::U32 => false,
-      FixedOperandType::I8 => true,
-      FixedOperandType::I16 => true,
-      FixedOperandType::I32 => true,
-    }
-  }
-
   fn fetch(&self, offset: usize) -> TokenStream2 {
     match self {
       FixedOperandType::U8 => quote!(unsafe { *bc.inner.get_unchecked(*pc + #offset) }),
@@ -252,17 +219,6 @@ impl Opcode {
     match self {
       Opcode::Fixed(_) => true,
       Opcode::Variable(_) => false,
-    }
-  }
-
-  fn operands(&self) -> Vec<Ident> {
-    match self {
-      Opcode::Variable(v) => v.operands.clone(),
-      Opcode::Fixed(v) => v
-        .operands
-        .iter()
-        .map(|operand| operand.name.clone())
-        .collect(),
     }
   }
 
