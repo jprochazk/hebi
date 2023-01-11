@@ -77,15 +77,15 @@
 //! ### Int
 //!
 //! A quiet NaN with all free bits zeroed represents an integer. This makes
-//! integers slightly more expensive to use, as the high 16 bits (except the
-//! sign bit) need to be cleared after a type check. It also means that integers
-//! may only hold up to 48 bits.
+//! integers slightly more expensive to use, as the high 16 bits need to be
+//! cleared after a type check. Because integers are encoded using two's
+//! complement, we can store at most a 32-bit signed integer.
 //!
 //! ```text,ignore
 //!   Tag = 000
 //!  ┌┴─────────────┬┐
 //! ┌▼──────────────▼▼──────────────────────────────────────────────────────┐
-//! │s1111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000│
+//! │01111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000│
 //! └───────────────────────────────────────────────────────────────────────┘
 //! ```
 //!
@@ -95,9 +95,9 @@
 //!
 //! ```text,ignore
 //!   Tag = 001
-//!  ┌┴─────────────┬┐
-//! ┌▼──────────────▼▼──────────────────────────────────────────────────────┐
-//! │01111111_11111101_00000000_00000000_00000000_00000000_00000000_00000000│
+//!  ┌┴─────────────┬┐                                      Value (0 or 1) ┐
+//! ┌▼──────────────▼▼─────────────────────────────────────────────────────▼┐
+//! │01111111_11111101_00000000_00000000_00000000_00000000_00000000_0000000v│
 //! └───────────────────────────────────────────────────────────────────────┘
 //! ```
 //!
@@ -107,15 +107,15 @@
 //!
 //! ```text,ignore
 //!   Tag = 010
-//!  ┌┴─────────────┬┐                                                Value┐
-//! ┌▼──────────────▼▼─────────────────────────────────────────────────────▼┐
-//! │01111111_11111110_00000000_00000000_00000000_00000000_00000000_0000000X│
+//!  ┌┴─────────────┬┐
+//! ┌▼──────────────▼▼──────────────────────────────────────────────────────┐
+//! │01111111_11111110_00000000_00000000_00000000_00000000_00000000_0000000=│
 //! └───────────────────────────────────────────────────────────────────────┘
 //! ```
 //!
 //! ### Object
 //!
-//! A quiet NaN with the free bit pattern `100` represents an `Object` pointer.
+//! A quiet NaN with the free bit pattern `011` represents an `Object` pointer.
 //!
 //! ```text,ignore
 //!   Tag = 011
@@ -133,11 +133,13 @@
 // maybe just a trait?
 
 pub mod object;
+pub mod ptr;
 
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::rc::Rc;
 
-use object::Ptr;
+use object::Object;
+use ptr::Ptr;
 
 mod mask {
   //! Generic mask bits
@@ -170,9 +172,25 @@ enum PhantomValue {
   Int(i32),
   Bool(bool),
   None,
-  Object(Ptr),
+  Object(Ptr<Object>),
 }
 
+/// Mu's core `Value` type.
+///
+/// See the [index][`crate`] for more about the different value types and their
+/// encodings.
+///
+/// ### Equality
+///
+/// Two `Value`s are considered equal if:
+/// - they are both `NaN` floats, or
+/// - they are both floats with an absolute value of `0`, or
+/// - their underlying bit values are the same
+///
+/// Objects are compared by reference, not by value. This is because an object
+/// may override the equality operation with arbitrary code which may even
+/// require executing bytecode via the VM. If you need value equality, you have
+/// to go through the VM.
 pub struct Value {
   bits: u64,
   _p: PhantomData<PhantomValue>,
@@ -196,7 +214,8 @@ impl Value {
   }
 
   pub fn int(v: i32) -> Self {
-    let bits = v as u32 as u64;
+    // We want the bits of `v`, not for it to be reinterpreted as an unsigned int.
+    let bits = unsafe { std::mem::transmute::<_, u32>(v) } as u64;
     let bits = bits | ty::INT;
     Self::new(bits)
   }
@@ -214,10 +233,8 @@ impl Value {
     Self::new(bits)
   }
 
-  pub fn object(v: Ptr) -> Self {
-    let ptr = Rc::into_raw(v.0);
-    println!("{ptr:#p}");
-    let ptr = ptr as u64;
+  pub fn object(v: Ptr<Object>) -> Self {
+    let ptr = Ptr::into_addr(v) as u64;
     let bits = (ptr & mask::VALUE) | ty::OBJECT;
     Self::new(bits)
   }
@@ -291,14 +308,39 @@ impl Value {
     Some(())
   }
 
-  pub fn to_object(self) -> Option<Ptr> {
+  pub fn to_object(self) -> Option<Ptr<Object>> {
     if !self.is_object() {
       return None;
     }
-    let ptr = self.value() as *const object::Temp;
-    println!("{ptr:#p}");
+    let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
     std::mem::forget(self);
-    Some(Ptr(unsafe { Rc::from_raw(ptr) }))
+    Some(ptr)
+  }
+}
+
+impl PartialEq<Value> for Value {
+  fn eq(&self, other: &Value) -> bool {
+    if self.is_float() && other.is_float() {
+      f64::from_bits(self.bits) == f64::from_bits(other.bits)
+    } else {
+      self.bits == other.bits
+    }
+  }
+}
+// Note: NaNs are not reflexive, but we close our eyes,
+// and pray that this doesn't break things too badly.
+// We do this to be able to store `Value` as a key in a `HashMap`.
+impl Eq for Value {}
+
+impl Hash for Value {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    let value = if self.is_float() && f64::from_bits(self.bits).is_nan() {
+      // all NaNs have the same hash
+      mask::QNAN
+    } else {
+      self.bits
+    };
+    value.hash(state)
   }
 }
 
@@ -322,14 +364,10 @@ impl Value {
 impl Clone for Value {
   fn clone(&self) -> Self {
     if self.is_object() {
-      let ptr = self.value() as *const object::Temp;
-      debug_assert!(!ptr.is_null());
-      println!("{ptr:#p}");
-      // Then reconstruct the pointer
-      let ptr = unsafe { Rc::from_raw(ptr) };
-      let value = Value::object(Ptr(ptr.clone()));
-      let _ = std::mem::ManuallyDrop::new(ptr);
-      value
+      let addr = self.value() as usize;
+      unsafe { Ptr::increment_strong_count(addr) }
+      let ptr = unsafe { Ptr::from_addr(addr) };
+      Value::object(ptr)
     } else {
       // SAFETY: this is not an object, so we don't need to increment the reference
       // count.
@@ -345,8 +383,7 @@ impl Drop for Value {
   fn drop(&mut self) {
     if self.is_object() {
       // Decrement the reference count of `self`
-      let ptr = self.value() as *const object::Temp;
-      unsafe { Rc::decrement_strong_count(ptr) }
+      unsafe { Ptr::decrement_strong_count(self.value() as usize) }
     }
   }
 }

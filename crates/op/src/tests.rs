@@ -1,9 +1,9 @@
 use super::*;
 
 macro_rules! check {
-  ($chunk:ident) => {{
+  ($chunk:ident) => {
     insta::assert_snapshot!($chunk.disassemble());
-  }};
+  };
 }
 
 #[test]

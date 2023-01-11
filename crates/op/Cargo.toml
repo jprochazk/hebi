@@ -7,6 +7,7 @@ edition = "2021"
 
 [features]
 disassembly = []
+disable_snapshot_tests = []
 
 [dependencies]
 beef = "0.5.2"

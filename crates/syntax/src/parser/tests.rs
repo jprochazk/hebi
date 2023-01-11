@@ -4,7 +4,7 @@ use super::*;
 use crate::lexer::Lexer;
 
 macro_rules! check_module {
-  ($input:literal) => {{
+  ($input:literal) => {
     let input = indoc!($input);
     match parse(input) {
       Ok(module) => insta::assert_debug_snapshot!(module),
@@ -15,11 +15,11 @@ macro_rules! check_module {
         panic!("Failed to parse source, see errors above.")
       }
     };
-  }};
+  };
 }
 
 macro_rules! check_expr {
-  ($input:literal) => {{
+  ($input:literal) => {
     let input = $input;
     match Parser::new(Lexer::new(input)).expr() {
       Ok(module) => insta::assert_debug_snapshot!(module),
@@ -28,11 +28,11 @@ macro_rules! check_expr {
         panic!("Failed to parse source, see errors above.")
       }
     };
-  }};
+  };
 }
 
 macro_rules! check_error {
-  ($input:literal) => {{
+  ($input:literal) => {
     let input = indoc!($input);
     match parse(input) {
       Ok(_) => panic!("module parsed successfully"),
@@ -45,7 +45,7 @@ macro_rules! check_error {
         insta::assert_snapshot!(errors);
       }
     };
-  }};
+  };
 }
 
 #[test]

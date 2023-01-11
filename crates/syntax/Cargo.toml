@@ -9,6 +9,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+disable_snapshot_tests = []
+
 [dependencies]
 beef = "0.5.2"
 logos = "0.12.1"

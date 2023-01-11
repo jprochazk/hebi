@@ -1,4 +1,3 @@
-
 use super::*;
 
 impl<'src> Parser<'src> {
@@ -6,9 +5,7 @@ impl<'src> Parser<'src> {
     let mut module = ast::Module::new();
 
     while !self.current().is(Tok_Eof) {
-      eprintln!("{:?}", self.current());
       if let Err(e) = self.top_level_stmt(&mut module) {
-        self.indent.reset();
         self.errors.push(e);
         self.sync();
       }
