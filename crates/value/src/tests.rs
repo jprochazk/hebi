@@ -65,3 +65,10 @@ fn clone_and_drop_object_value() {
   drop(b);
   assert_eq!(Ptr::strong_count(&ptr), 1);
 }
+
+#[test]
+#[should_panic]
+fn create_value_from_qnan() {
+  // TODO: how else do you create a quiet nan?
+  Value::float(f64::from_bits(super::mask::QNAN)); // quiet nans will panic
+}
