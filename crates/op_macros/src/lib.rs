@@ -466,65 +466,6 @@ fn emit_disassembler(ops: &[Opcode]) -> TokenStream2 {
   ));
 
   quote! {
-    pub struct Disassembly<'bc> {
-      name: &'static str,
-      bc: &'bc BytecodeArray,
-      pc: usize,
-      operands: &'static [&'static str],
-      width: Width,
-      align: usize,
-    }
-    impl<'bc> Disassembly<'bc> {
-      fn new(
-        name: &'static str,
-        bc: &'bc BytecodeArray,
-        pc: usize,
-        operands: &'static [&'static str],
-        width: Width,
-        align: usize,
-      ) -> Self {
-        Self {
-          name,
-          bc,
-          pc,
-          operands,
-          width,
-          align,
-        }
-      }
-      pub fn size(&self) -> usize {
-        let prefix = if self.width as usize > 1 {
-          1
-        } else {
-          0
-        };
-        prefix + 1 + self.operands.len() * self.width as usize
-      }
-    }
-    impl<'bc> ::std::fmt::Display for Disassembly<'bc> {
-      fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        let Self { name, bc, pc, operands, width, align } = self;
-        write!(f, "{}", name)?;
-        let mod_align = match width {
-          Width::_1 => { 0 },
-          Width::_2 => {
-            write!(f, ".wide")?;
-            ".wide".len()
-          },
-          Width::_4 => {
-            write!(f, ".xwide")?;
-            ".xwide".len()
-          },
-        };
-        write!(f, "{:w$}", "", w = align - name.len() - mod_align)?;
-        for (i, operand) in operands.iter().enumerate() {
-          let value = bc.get_arg(bc.fetch(*pc), *pc, i, *width);
-          write!(f, " {}={}", operand, value)?;
-        }
-        Ok(())
-      }
-    }
-
     impl BytecodeArray {
       pub fn disassemble(
         &self,

@@ -75,21 +75,7 @@ impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
       let instr = self.bytecode.disassemble(pc).unwrap();
       let size = instr.size();
 
-      write!(&mut output, " {pc:offset_align$} | ").unwrap();
-
-      let mut bytes = self.bytecode.inner[pc..pc + size].iter().peekable();
-      while let Some(byte) = bytes.next() {
-        write!(&mut output, "{byte:02x}").unwrap();
-        if bytes.peek().is_some() {
-          write!(&mut output, " ").unwrap();
-        }
-      }
-      if size < 6 {
-        for _ in 0..(6 - size) {
-          write!(&mut output, "   ").unwrap();
-        }
-      }
-      writeln!(&mut output, " {instr}").unwrap();
+      writeln!(&mut output, " {pc:offset_align$} | {instr}").unwrap();
 
       pc += size;
     }
@@ -363,6 +349,95 @@ pub enum Jump {
   Goto { offset: u32 },
   /// Skip this jump instruction.
   Skip,
+}
+
+pub struct Disassembly<'bc> {
+  name: &'static str,
+  bc: &'bc BytecodeArray,
+  pc: usize,
+  operands: &'static [&'static str],
+  width: Width,
+  align: usize,
+}
+impl<'bc> Disassembly<'bc> {
+  fn new(
+    name: &'static str,
+    bc: &'bc BytecodeArray,
+    pc: usize,
+    operands: &'static [&'static str],
+    width: Width,
+    align: usize,
+  ) -> Self {
+    Self {
+      name,
+      bc,
+      pc,
+      operands,
+      width,
+      align,
+    }
+  }
+  pub fn size(&self) -> usize {
+    let prefix = if self.width as usize > 1 { 1 } else { 0 };
+    prefix + 1 + self.operands.len() * self.width as usize
+  }
+}
+
+impl<'bc> ::std::fmt::Display for Disassembly<'bc> {
+  fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    let Self {
+      name,
+      bc,
+      pc,
+      operands,
+      width,
+      align,
+    } = self;
+
+    {
+      // print bytes
+      let size = self.size();
+      let start = if self.width as usize > 1 {
+        *pc - 1
+      } else {
+        *pc
+      };
+      let mut bytes = bc.inner[start..start + size].iter().peekable();
+      while let Some(byte) = bytes.next() {
+        write!(f, "{byte:02x}").unwrap();
+        if bytes.peek().is_some() {
+          write!(f, " ").unwrap();
+        }
+      }
+      if size < 6 {
+        for _ in 0..(6 - size) {
+          write!(f, "   ").unwrap();
+        }
+      }
+    }
+
+    // print opcode + prefix
+    write!(f, " {name}")?;
+    let mod_align = match width {
+      Width::_1 => 0,
+      Width::_2 => {
+        write!(f, ".wide")?;
+        ".wide".len()
+      }
+      Width::_4 => {
+        write!(f, ".xwide")?;
+        ".xwide".len()
+      }
+    };
+
+    // print operands
+    write!(f, "{:w$}", "", w = align - name.len() - mod_align)?;
+    for (i, operand) in operands.iter().enumerate() {
+      let value = bc.get_arg(bc.fetch(*pc), *pc, i, *width);
+      write!(f, " {operand}={value}")?;
+    }
+    Ok(())
+  }
 }
 
 #[cfg(test)]
