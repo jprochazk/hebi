@@ -407,7 +407,7 @@ pub fn expr_array(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
 pub fn ident_key(v: Ident) -> Expr {
   Expr::new(
     v.span,
-    ExprKind::Literal(Box::new(Literal::String(v.into_inner().clone()))),
+    ExprKind::Literal(Box::new(Literal::String(v.into_inner()))),
   )
 }
 

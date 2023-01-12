@@ -380,6 +380,7 @@ impl<'src> Parser<'src> {
   }
 
   fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
+    // TODO: should `pass` cause a block to end?
     check_recursion_limit(self.current().span)?;
     if self.no_indent().is_ok() {
       Ok(vec![self.simple_stmt()?])

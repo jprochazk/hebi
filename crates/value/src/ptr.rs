@@ -21,11 +21,11 @@ impl<T> Ptr<T> {
     Rc::into_raw(this.0) as usize
   }
 
-  pub(crate) fn strong_count(this: &Ptr<T>) -> usize {
+  pub fn strong_count(this: &Ptr<T>) -> usize {
     Rc::strong_count(&this.0)
   }
 
-  pub(crate) fn weak_count(this: &Ptr<T>) -> usize {
+  pub fn weak_count(this: &Ptr<T>) -> usize {
     Rc::weak_count(&this.0)
   }
 }

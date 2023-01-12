@@ -1,6 +1,10 @@
 use super::*;
 use crate::object::Object;
 
+fn object() -> Object {
+  Object::string("test")
+}
+
 #[test]
 fn create_value() {
   let values = [
@@ -8,14 +12,14 @@ fn create_value() {
     Value::int(-1_000_000),
     Value::bool(true),
     Value::none(),
-    Value::object(Ptr::new(Object(0))),
+    Value::object(Ptr::new(object())),
   ];
   insta::assert_debug_snapshot!(values);
 }
 
 #[test]
 fn drop_object_value() {
-  Value::object(Ptr::new(Object(0)));
+  Value::object(Ptr::new(object()));
 }
 
 #[test]
@@ -35,7 +39,7 @@ fn clone_and_drop_values() {
 #[test]
 fn clone_and_drop_object_value() {
   // refcount = 1
-  let ptr = Ptr::new(Object(0u64));
+  let ptr = Ptr::new(object());
   assert_eq!(Ptr::strong_count(&ptr), 1);
 
   // create a value from the pointer

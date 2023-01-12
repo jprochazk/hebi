@@ -9,8 +9,11 @@ use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
 use syn::{Attribute, Ident, Token, Type};
 
-// TODO: see if you can get rid of some `.collect()` calls, because quote!
-// handles iterators
+// TODO: refactor
+// - get rid of unnecessary `.collect()` calls
+// - unify builtins and user-defined instructions
+// - impl ToTokens over `emit_xyz` functions
+// - unify fixed vs variable width instructions
 
 struct VariableWidthOpcode {
   meta: Vec<Attribute>,
@@ -27,7 +30,7 @@ struct FixedWidthOpcode {
 }
 
 #[derive(Clone, Copy)]
-enum FixedOperandType {
+enum OperandType {
   U8,
   U16,
   U32,
@@ -36,28 +39,28 @@ enum FixedOperandType {
   I32,
 }
 
-impl FixedOperandType {
+impl OperandType {
   fn size(&self) -> usize {
     match self {
-      FixedOperandType::U8 => 1,
-      FixedOperandType::U16 => 2,
-      FixedOperandType::U32 => 4,
-      FixedOperandType::I8 => 1,
-      FixedOperandType::I16 => 2,
-      FixedOperandType::I32 => 4,
+      OperandType::U8 => 1,
+      OperandType::U16 => 2,
+      OperandType::U32 => 4,
+      OperandType::I8 => 1,
+      OperandType::I16 => 2,
+      OperandType::I32 => 4,
     }
   }
 
   fn fetch(&self, offset: usize) -> TokenStream2 {
     match self {
-      FixedOperandType::U8 => quote!(unsafe { *bc.inner.get_unchecked(*pc + #offset) }),
-      FixedOperandType::U16 => quote!(unsafe {
+      OperandType::U8 => quote!(unsafe { *bc.inner.get_unchecked(*pc + #offset) }),
+      OperandType::U16 => quote!(unsafe {
         u16::from_le_bytes([
           *bc.inner.get_unchecked(*pc + #offset),
           *bc.inner.get_unchecked(*pc + #offset + 1)
         ])
       }),
-      FixedOperandType::U32 => quote!(unsafe {
+      OperandType::U32 => quote!(unsafe {
         u32::from_le_bytes([
           *bc.inner.get_unchecked(*pc + #offset),
           *bc.inner.get_unchecked(*pc + #offset + 1),
@@ -65,18 +68,18 @@ impl FixedOperandType {
           *bc.inner.get_unchecked(*pc + #offset + 3)
         ])
       }),
-      FixedOperandType::I8 => quote!(unsafe {
+      OperandType::I8 => quote!(unsafe {
         ::std::mem::transmute::<_, i8>(
           *bc.inner.get_unchecked(*pc + #offset)
         )
       }),
-      FixedOperandType::I16 => quote!(unsafe {
+      OperandType::I16 => quote!(unsafe {
         i16::from_le_bytes([
           *bc.inner.get_unchecked(*pc + #offset),
           *bc.inner.get_unchecked(*pc + #offset + 1)
         ])
       }),
-      FixedOperandType::I32 => quote!(unsafe {
+      OperandType::I32 => quote!(unsafe {
         i32::from_le_bytes([
           *bc.inner.get_unchecked(*pc + #offset),
           *bc.inner.get_unchecked(*pc + #offset + 1),
@@ -88,36 +91,36 @@ impl FixedOperandType {
   }
 }
 
-struct Raw(FixedOperandType);
+struct Raw(OperandType);
 impl ToTokens for Raw {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     match self.0 {
-      FixedOperandType::U8 => tokens.extend(TokenStream2::from_str("OperandType::U8")),
-      FixedOperandType::U16 => tokens.extend(TokenStream2::from_str("OperandType::U16")),
-      FixedOperandType::U32 => tokens.extend(TokenStream2::from_str("OperandType::U32")),
-      FixedOperandType::I8 => tokens.extend(TokenStream2::from_str("OperandType::I8")),
-      FixedOperandType::I16 => tokens.extend(TokenStream2::from_str("OperandType::I16")),
-      FixedOperandType::I32 => tokens.extend(TokenStream2::from_str("OperandType::I32")),
+      OperandType::U8 => tokens.extend(TokenStream2::from_str("OperandType::U8")),
+      OperandType::U16 => tokens.extend(TokenStream2::from_str("OperandType::U16")),
+      OperandType::U32 => tokens.extend(TokenStream2::from_str("OperandType::U32")),
+      OperandType::I8 => tokens.extend(TokenStream2::from_str("OperandType::I8")),
+      OperandType::I16 => tokens.extend(TokenStream2::from_str("OperandType::I16")),
+      OperandType::I32 => tokens.extend(TokenStream2::from_str("OperandType::I32")),
     }
   }
 }
 
-impl ToTokens for FixedOperandType {
+impl ToTokens for OperandType {
   fn to_tokens(&self, tokens: &mut TokenStream2) {
     match self {
-      FixedOperandType::U8 => tokens.extend(TokenStream2::from_str("u8")),
-      FixedOperandType::U16 => tokens.extend(TokenStream2::from_str("u16")),
-      FixedOperandType::U32 => tokens.extend(TokenStream2::from_str("u32")),
-      FixedOperandType::I8 => tokens.extend(TokenStream2::from_str("i8")),
-      FixedOperandType::I16 => tokens.extend(TokenStream2::from_str("i16")),
-      FixedOperandType::I32 => tokens.extend(TokenStream2::from_str("i32")),
+      OperandType::U8 => tokens.extend(TokenStream2::from_str("u8")),
+      OperandType::U16 => tokens.extend(TokenStream2::from_str("u16")),
+      OperandType::U32 => tokens.extend(TokenStream2::from_str("u32")),
+      OperandType::I8 => tokens.extend(TokenStream2::from_str("i8")),
+      OperandType::I16 => tokens.extend(TokenStream2::from_str("i16")),
+      OperandType::I32 => tokens.extend(TokenStream2::from_str("i32")),
     }
   }
 }
 
 struct TypedOperand {
   name: Ident,
-  ty: FixedOperandType,
+  ty: OperandType,
 }
 
 impl ToTokens for TypedOperand {
@@ -161,7 +164,7 @@ impl Opcode {
     meta: Vec<Attribute>,
     name: Ident,
     flags: HashSet<String>,
-    operands: Vec<(Ident, Option<FixedOperandType>)>,
+    operands: Vec<(Ident, Option<OperandType>)>,
   ) -> Self {
     let is_fixed_width = operands.is_empty() || operands.iter().any(|o| o.1.is_some());
 
@@ -170,7 +173,7 @@ impl Opcode {
         .into_iter()
         .map(|(name, ty)| TypedOperand {
           name,
-          ty: ty.unwrap_or(FixedOperandType::U8),
+          ty: ty.unwrap_or(OperandType::U8),
         })
         .collect();
       Opcode::Fixed(FixedWidthOpcode {
@@ -230,7 +233,7 @@ impl Opcode {
   }
 }
 
-impl Parse for FixedOperandType {
+impl Parse for OperandType {
   fn parse(input: ParseStream) -> Result<Self> {
     use syn::spanned::Spanned;
 
@@ -252,12 +255,12 @@ impl Parse for FixedOperandType {
         break 'bad;
       };
       let ty = match s.ident.to_string().as_str() {
-        "u8" => FixedOperandType::U8,
-        "u16" => FixedOperandType::U16,
-        "u32" => FixedOperandType::U32,
-        "i8" => FixedOperandType::I8,
-        "i16" => FixedOperandType::I16,
-        "i32" => FixedOperandType::I32,
+        "u8" => OperandType::U8,
+        "u16" => OperandType::U16,
+        "u32" => OperandType::U32,
+        "i8" => OperandType::I8,
+        "i16" => OperandType::I16,
+        "i32" => OperandType::I32,
         _ => break 'bad,
       };
       return Ok(ty);
@@ -289,7 +292,7 @@ impl Parse for Opcode {
       let operand = Ident::parse_any(input)?;
       let ty = if input.peek(Token![:]) {
         let _ = <Token![:]>::parse(input)?;
-        Some(FixedOperandType::parse(input)?)
+        Some(OperandType::parse(input)?)
       } else {
         None
       };

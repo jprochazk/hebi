@@ -1,5 +1,5 @@
 ---
-source: crates/value/src/tests.rs
+source: crates/value/src/value/tests.rs
 expression: values
 ---
 [
@@ -28,7 +28,7 @@ expression: values
     Value {
         type: "object",
         value: Some(
-            <object>,
+            "test",
         ),
     },
 ]
