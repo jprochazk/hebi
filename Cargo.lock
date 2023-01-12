@@ -123,8 +123,11 @@ dependencies = [
  "beef",
  "indoc",
  "insta",
+ "mu_diag",
  "mu_op",
+ "mu_span",
  "mu_syntax",
+ "mu_value",
 ]
 
 [[package]]
