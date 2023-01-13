@@ -11,7 +11,6 @@ disable_snapshot_tests = []
 
 [dependencies]
 beef = "0.5.2"
-op_macros = { path = "../op_macros", package = "mu_op_macros" }
 
 [dev-dependencies]
 indoc = "1.0.8"

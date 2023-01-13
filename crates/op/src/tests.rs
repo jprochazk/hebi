@@ -1,4 +1,4 @@
-use super::*;
+use crate::prelude::*;
 
 macro_rules! check {
   ($chunk:ident) => {
@@ -49,8 +49,8 @@ fn test_builder() {
   b.op_jump_if_false(start);
   b.op_jump_if_false(end);
   b.op_push_small_int(0);
-  b.op_push_small_int(i16::MAX);
-  b.op_push_small_int(i16::MIN);
+  b.op_push_small_int(i32::MAX);
+  b.op_push_small_int(i32::MIN);
   b.op_ret();
   b.finish_label(end);
   b.op_suspend();
@@ -61,7 +61,46 @@ fn test_builder() {
 
 #[test]
 fn dispatch() {
-  type Value = i32;
+  #[derive(Clone, Hash, PartialEq, Eq, Debug)]
+  enum Value {
+    Number(i32),
+    List(Vec<Value>),
+  }
+
+  impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+        Value::Number(v) => write!(f, "{v}"),
+        Value::List(v) => f.debug_list().entries(v).finish(),
+      }
+    }
+  }
+
+  impl Value {
+    fn as_number(&self) -> Option<&i32> {
+      if let Self::Number(v) = self {
+        Some(v)
+      } else {
+        None
+      }
+    }
+
+    fn as_list(&self) -> Option<&Vec<Value>> {
+      if let Self::List(v) = self {
+        Some(v)
+      } else {
+        None
+      }
+    }
+
+    fn as_list_mut(&mut self) -> Option<&mut Vec<Value>> {
+      if let Self::List(v) = self {
+        Some(v)
+      } else {
+        None
+      }
+    }
+  }
 
   struct VM {
     stdout: Vec<u8>,
@@ -73,17 +112,17 @@ fn dispatch() {
   impl Handler for VM {
     type Error = ();
     fn op_load_const(&mut self, slot: u32) -> Result<(), Self::Error> {
-      self.a = self.c[slot as usize];
+      self.a = self.c[slot as usize].clone();
       Ok(())
     }
 
     fn op_load_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-      self.a = self.r[reg as usize];
+      self.a = self.r[reg as usize].clone();
       Ok(())
     }
 
     fn op_store_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-      self.r[reg as usize] = self.a;
+      self.r[reg as usize] = self.a.clone();
       Ok(())
     }
 
@@ -92,7 +131,8 @@ fn dispatch() {
     }
 
     fn op_jump_if_false(&mut self, offset: u32) -> Result<Jump, Self::Error> {
-      Ok(if self.a > 0 {
+      let value = *self.a.as_number().ok_or(())?;
+      Ok(if value > 0 {
         Jump::Skip
       } else {
         Jump::Goto { offset }
@@ -101,34 +141,54 @@ fn dispatch() {
 
     fn op_print(&mut self, reg: u32) -> Result<(), Self::Error> {
       use std::io::Write;
-      writeln!(&mut self.stdout, "{}", self.r[reg as usize]).map_err(|_| ())?;
+
+      let mut list = self.r[reg as usize].as_list().ok_or(())?.iter().peekable();
+
+      while let Some(v) = list.next() {
+        write!(&mut self.stdout, "{v}").map_err(|_| ())?;
+        if list.peek().is_some() {
+          write!(&mut self.stdout, " ").map_err(|_| ())?;
+        }
+      }
+      writeln!(&mut self.stdout).map_err(|_| ())?;
       Ok(())
     }
 
-    fn op_sub(&mut self, dest: u32, a: u32, b: u32) -> Result<(), Self::Error> {
-      println!(
-        "r{dest} = r{a}({}) - r{b}({})",
-        self.r[a as usize], self.r[b as usize]
-      );
-      self.r[dest as usize] = self.r[a as usize] - self.r[b as usize];
+    fn op_sub(&mut self, lhs: u32) -> Result<(), Self::Error> {
+      let lhs = *self.r[lhs as usize].as_number().ok_or(())?;
+      let rhs = *self.a.as_number().ok_or(())?;
+      self.a = Value::Number(lhs - rhs);
       Ok(())
     }
 
-    fn op_push_small_int(&mut self, value: i16) -> Result<(), Self::Error> {
-      self.a = value as i32;
+    fn op_push_small_int(&mut self, value: i32) -> Result<(), Self::Error> {
+      self.a = Value::Number(value);
       Ok(())
     }
 
-    fn op_ret(&mut self) -> Result<(), Self::Error> {
+    fn op_create_empty_list(&mut self, _: ()) -> Result<(), Self::Error> {
+      self.a = Value::List(vec![]);
+      Ok(())
+    }
+
+    fn op_list_push(&mut self, list: u32) -> Result<(), Self::Error> {
+      let list = self.r[list as usize].as_list_mut().ok_or(())?;
+      list.push(self.a.clone());
+      Ok(())
+    }
+
+    fn op_ret(&mut self, _: ()) -> Result<(), Self::Error> {
       Ok(())
     }
   }
 
   let mut b = BytecodeBuilder::<Value>::new("test");
 
+  // v := 10
   // loop:
   //   if v == 0: break
-  //   print(123)
+  //   print 123
+  //   v -= 1
 
   //
   // c0 = 123 (v)
@@ -137,42 +197,41 @@ fn dispatch() {
   // r1 = loop index (i)
   //
   let [l_loop, l_break] = b.labels(["loop", "break"]);
-  let [c0, c1] = [b.constant(123), b.constant(10)];
-  let [r0, r1, r2] = [0, 1, 2];
+  let [r0, r1] = [0, 1];
 
-  //   load_const     offset=0       // a = v
-  //   store_reg      reg=0          // r0 = a
-  //   load_const     offset=1       // a = start
-  //   store_reg      reg=1          // r1 = a
-  // @loop:                          //
-  //   load_reg       reg=1          // a = i
-  //   jump_if_false  @break         // if (i == 0) goto @break
-  //   print          reg=0          // print v
-  //   push_small_int value=1        //
-  //   store_reg      reg=2          // r2 = 1
-  //   sub            dest=1 a=1 b=2 // r1 = r1 - r2
-  //   jump           @loop          // goto @loop
-  // @break:                         //
-  //   ret                           // return
-  //   suspend                       // suspend
+  //   push_small_int    value=10       //
+  //   store_reg         reg=r0         // v := 10
+  // @loop:                             // loop:
+  //   load_reg          reg=r0         //
+  //   jump_if_false     @break         //   if (i == 0): break
+  //   create_empty_list                //
+  //   store_reg         reg=1          //
+  //   push_small_int    value=123      //
+  //   list_push         list=r1        //
+  //   print             reg=r1         //   print 123
+  //   push_small_int    value=1        //
+  //   sub               lhs=r0         //
+  //   store_reg         reg=r0         //   v -= 1
+  //   jump              @loop          //
+  // @break:                            //
+  //   ret                              //
+  //   suspend                          //
 
-  b.op_load_const(c0);
+  b.op_push_small_int(10);
   b.op_store_reg(r0);
-  b.op_load_const(c1);
-  b.op_store_reg(r1);
-
   b.finish_label(l_loop);
-
-  b.op_load_reg(r1);
+  b.op_load_reg(r0);
   b.op_jump_if_false(l_break);
-  b.op_print(r0);
+  b.op_create_empty_list();
+  b.op_store_reg(r1);
+  b.op_push_small_int(123);
+  b.op_list_push(r1);
+  b.op_print(r1);
   b.op_push_small_int(1);
-  b.op_store_reg(r2);
-  b.op_sub(r1, r1, r2);
+  b.op_sub(r0);
+  b.op_store_reg(r0);
   b.op_jump(l_loop);
-
   b.finish_label(l_break);
-
   b.op_ret();
 
   let chunk = b.build();
@@ -185,8 +244,8 @@ fn dispatch() {
   } = chunk;
   let mut vm = VM {
     stdout: Vec::new(),
-    a: 0,
-    r: vec![0; 3],
+    a: Value::Number(0),
+    r: vec![Value::Number(0); 2],
     c: const_pool,
   };
 
@@ -224,7 +283,7 @@ fn vm_error() {
       Err("test")
     }
 
-    fn op_sub(&mut self, _: u32, _: u32, _: u32) -> Result<(), Self::Error> {
+    fn op_sub(&mut self, _: u32) -> Result<(), Self::Error> {
       Err("test")
     }
 
@@ -232,11 +291,19 @@ fn vm_error() {
       Err("test")
     }
 
-    fn op_push_small_int(&mut self, _: i16) -> Result<(), Self::Error> {
+    fn op_push_small_int(&mut self, _: i32) -> Result<(), Self::Error> {
       Err("test")
     }
 
-    fn op_ret(&mut self) -> Result<(), Self::Error> {
+    fn op_create_empty_list(&mut self, _: ()) -> Result<(), Self::Error> {
+      Err("test")
+    }
+
+    fn op_list_push(&mut self, _: u32) -> Result<(), Self::Error> {
+      Err("test")
+    }
+
+    fn op_ret(&mut self, _: ()) -> Result<(), Self::Error> {
       Err("test")
     }
   }

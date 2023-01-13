@@ -3,31 +3,30 @@ source: crates/op/src/tests.rs
 expression: chunk.disassemble()
 ---
 function <test>:
-length = 35
-const pool = (length=2) {
-  0 = 123
-  1 = 10
-}
+length = 44
+const pool = <empty>
 bytecode:
-  0 | 03 00             load_const           slot=0
-  2 | 05 00             store_reg            reg=0
-  4 | 03 01             load_const           slot=1
-  6 | 05 01             store_reg            reg=1
-  8 | 04 01             load_reg             reg=1
- 10 | 07 21             jump_if_false        offset=33
- 12 | 00                nop                 
- 13 | 00                nop                 
- 14 | 00                nop                 
- 15 | 00                nop                 
- 16 | 09 00             print                reg=0
- 18 | 0a 01 00          push_small_int       value=1
- 21 | 05 02             store_reg            reg=2
- 23 | 08 01 01 02       sub                  dest=1 a=1 b=2
- 27 | 06 08             jump                 offset=8
- 29 | 00                nop                 
- 30 | 00                nop                 
- 31 | 00                nop                 
- 32 | 00                nop                 
- 33 | 0b                ret                 
- 34 | ff                suspend             
+  0 | 0a 0a 00 00 00    push_small_int    value=10
+  5 | 05 00             store_reg         reg=0
+  7 | 04 00             load_reg          reg=0
+  9 | 07 2a             jump_if_false     offset=42
+ 11 | 00                nop              
+ 12 | 00                nop              
+ 13 | 00                nop              
+ 14 | 00                nop              
+ 15 | 0b                create_empty_list
+ 16 | 05 01             store_reg         reg=1
+ 18 | 0a 7b 00 00 00    push_small_int    value=123
+ 23 | 0c 01             list_push         list=1
+ 25 | 09 01             print             args=1
+ 27 | 0a 01 00 00 00    push_small_int    value=1
+ 32 | 08 00             sub               lhs=0
+ 34 | 05 00             store_reg         reg=0
+ 36 | 06 07             jump              offset=7
+ 38 | 00                nop              
+ 39 | 00                nop              
+ 40 | 00                nop              
+ 41 | 00                nop              
+ 42 | fe                ret              
+ 43 | ff                suspend          
 

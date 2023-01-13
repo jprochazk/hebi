@@ -1,7 +1,8 @@
 use std::ops::Deref;
 
 use beef::lean::Cow;
-use op::BytecodeBuilder;
+use op::builder::BytecodeBuilder;
+use op::chunk::Chunk;
 use syntax::ast;
 use value::Value;
 
@@ -20,7 +21,7 @@ impl<'src> Emitter<'src> {
     }
   }
 
-  fn emit_chunk(&mut self, f: impl FnOnce(&mut Self) -> Result<()>) -> Result<op::Chunk<Value>> {
+  fn emit_chunk(&mut self, f: impl FnOnce(&mut Self) -> Result<()>) -> Result<Chunk<Value>> {
     let next = State::new(self.state.name.clone(), None);
     let parent = std::mem::replace(&mut self.state, next);
     self.state.parent = Some(Box::new(parent));
