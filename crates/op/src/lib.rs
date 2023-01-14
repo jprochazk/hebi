@@ -11,12 +11,13 @@
 // - in `mod opcode`:
 //   - Declare it using `instruction!(...)`
 //   - Add it to `extra!{...}` list
-//   - in `mod disassembly`:
-//     - Add a branch for it in `disassemble`
-// 3. Add disassembly in opcode::disassembly::disassemble
-// 4. Add a method for it to `handler::Handler`
-// 5. Create a dispatch handler for it in `dispatch` using `dispatch_handler!`
-// 6. Add it to the match in `dispatch::run`
+// - in `mod disassembly`:
+//   - Add a branch for it in `disassemble`
+// - in `mod handler`:
+//   - Add a method for it to the `Handler` trait
+// - in `mod dispatch`:
+//   - Add a dispatch handler for it using the `dispatch_handler!` macro
+//   - Add it to the match in `fn run`
 
 pub mod builder;
 pub mod chunk;
