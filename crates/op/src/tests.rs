@@ -34,26 +34,26 @@ fn test_builder() {
   b.constant(Value::Bool(true));
 
   b.finish_label(start);
-  b.op_nop();
-  b.op_load_const(0u32);
-  b.op_load_const(u8::MAX as u32 + 1);
-  b.op_load_const(u16::MAX as u32 + 1);
-  b.op_load_reg(0);
-  b.op_load_reg(u8::MAX as u32 + 1);
-  b.op_load_reg(u16::MAX as u32 + 1);
-  b.op_store_reg(0);
-  b.op_store_reg(u8::MAX as u32 + 1);
-  b.op_store_reg(u16::MAX as u32 + 1);
-  b.op_jump(start);
-  b.op_jump(end);
-  b.op_jump_if_false(start);
-  b.op_jump_if_false(end);
-  b.op_push_small_int(0);
-  b.op_push_small_int(i32::MAX);
-  b.op_push_small_int(i32::MIN);
-  b.op_ret();
+  b.op(Nop, ());
+  b.op(LoadConst, 0u32);
+  b.op(LoadConst, u8::MAX as u32 + 1);
+  b.op(LoadConst, u16::MAX as u32 + 1);
+  b.op(LoadReg, 0);
+  b.op(LoadReg, u8::MAX as u32 + 1);
+  b.op(LoadReg, u16::MAX as u32 + 1);
+  b.op(StoreReg, 0);
+  b.op(StoreReg, u8::MAX as u32 + 1);
+  b.op(StoreReg, u16::MAX as u32 + 1);
+  b.op(Jump, start);
+  b.op(Jump, end);
+  b.op(JumpIfFalse, start);
+  b.op(JumpIfFalse, end);
+  b.op(PushSmallInt, 0);
+  b.op(PushSmallInt, i32::MAX);
+  b.op(PushSmallInt, i32::MIN);
+  b.op(Ret, ());
   b.finish_label(end);
-  b.op_suspend();
+  b.op(Suspend, ());
 
   let chunk = b.build();
   check!(chunk);
@@ -126,16 +126,16 @@ fn dispatch() {
       Ok(())
     }
 
-    fn op_jump(&mut self, offset: u32) -> Result<Jump, Self::Error> {
-      Ok(Jump::Goto { offset })
+    fn op_jump(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
+      Ok(ControlFlow::Goto(offset))
     }
 
-    fn op_jump_if_false(&mut self, offset: u32) -> Result<Jump, Self::Error> {
+    fn op_jump_if_false(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
       let value = *self.a.as_number().ok_or(())?;
-      Ok(if value > 0 {
-        Jump::Skip
+      Ok(if value == 0 {
+        ControlFlow::Goto(offset)
       } else {
-        Jump::Goto { offset }
+        ControlFlow::Next
       })
     }
 
@@ -217,22 +217,22 @@ fn dispatch() {
   //   ret                              //
   //   suspend                          //
 
-  b.op_push_small_int(10);
-  b.op_store_reg(r0);
+  b.op(PushSmallInt, 10);
+  b.op(StoreReg, r0);
   b.finish_label(l_loop);
-  b.op_load_reg(r0);
-  b.op_jump_if_false(l_break);
-  b.op_create_empty_list();
-  b.op_store_reg(r1);
-  b.op_push_small_int(123);
-  b.op_list_push(r1);
-  b.op_print(r1);
-  b.op_push_small_int(1);
-  b.op_sub(r0);
-  b.op_store_reg(r0);
-  b.op_jump(l_loop);
+  b.op(LoadReg, r0);
+  b.op(JumpIfFalse, l_break);
+  b.op(CreateEmptyList, ());
+  b.op(StoreReg, r1);
+  b.op(PushSmallInt, 123);
+  b.op(ListPush, r1);
+  b.op(Print, r1);
+  b.op(PushSmallInt, 1);
+  b.op(Sub, r0);
+  b.op(StoreReg, r0);
+  b.op(Jump, l_loop);
   b.finish_label(l_break);
-  b.op_ret();
+  b.op(Ret, ());
 
   let chunk = b.build();
   check!(chunk);
@@ -275,11 +275,11 @@ fn vm_error() {
       Err("test")
     }
 
-    fn op_jump(&mut self, _: u32) -> Result<Jump, Self::Error> {
+    fn op_jump(&mut self, _: u32) -> Result<ControlFlow, Self::Error> {
       Err("test")
     }
 
-    fn op_jump_if_false(&mut self, _: u32) -> Result<Jump, Self::Error> {
+    fn op_jump_if_false(&mut self, _: u32) -> Result<ControlFlow, Self::Error> {
       Err("test")
     }
 
@@ -309,7 +309,7 @@ fn vm_error() {
   }
 
   let mut b = BytecodeBuilder::<()>::new("test");
-  b.op_ret();
+  b.op(Ret, ());
   let Chunk { mut bytecode, .. } = b.build();
   let Err(e) = run(&mut VM, &mut bytecode, &mut 0) else {
     panic!("VM did not return error");

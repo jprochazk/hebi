@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use beef::lean::Cow;
 
-use crate::opcode::disassembly::disassemble;
+use crate::disassembly::disassemble;
 
 pub type BytecodeArray = Vec<u8>;
 

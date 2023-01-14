@@ -5,7 +5,7 @@ use beef::lean::Cow;
 
 use crate::chunk::{BytecodeArray, Chunk};
 use crate::opcode::ty::Width;
-use crate::opcode::{self as op, ops, Decode, Encode, Opcode};
+use crate::opcode::*;
 
 pub struct BytecodeBuilder<Value: Hash + Eq> {
   function_name: Cow<'static, str>,
@@ -109,6 +109,11 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
     index
   }
 
+  pub fn op<Op: Encode>(&mut self, _: Op, operands: Op::Operands) -> &mut Self {
+    Op::encode(&mut self.bytecode, operands);
+    self
+  }
+
   /// Finalize the bytecode, and emit a [`Chunk`][`crate::Chunk`].
   ///
   /// Bytecode is finalized by:
@@ -124,8 +129,8 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   pub fn build(mut self) -> Chunk<Value> {
     // ensure bytecode is terminated by `op_suspend`,
     // so that the dispatch loop stops
-    if self.bytecode[self.bytecode.len() - 1] != op::Suspend::BYTE {
-      self.op_suspend();
+    if self.bytecode[self.bytecode.len() - 1] != ops::Suspend {
+      self.op(Suspend, ());
     };
 
     patch_jumps(
@@ -142,10 +147,15 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   }
 }
 
-fn patch_jump<T: Opcode + Encode<Operands = u32>>(buf: &mut [u8], offset: usize, jump_offset: u32) {
+fn patch_jump<T: Opcode + Encode<Operands = u32>>(
+  _: T,
+  buf: &mut [u8],
+  offset: usize,
+  jump_offset: u32,
+) {
   assert!(T::IS_JUMP && matches!(buf[offset], ops::ExtraWide));
   // clear it first, so that all the unused bytes become `nop` instructions
-  buf[offset..offset + 2 + T::operand_size(Width::Quad)].copy_from_slice(&[0u8; 6]);
+  buf[offset..offset + 2 + T::size_of_operands(Width::Quad)].copy_from_slice(&[0u8; 6]);
   T::encode_into(buf, offset, jump_offset)
 }
 
@@ -153,7 +163,7 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
   let mut used_labels = HashSet::new();
   for pc in 0..bytecode.len() {
     let op = bytecode[pc];
-    if op::is_jump(op) {
+    if is_jump(op) {
       let prefix_pc = pc - 1;
       // all jump instructions are emitted with `xwide` prefix by default,
       // then narrowed based on the final offset value
@@ -161,8 +171,8 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
 
       // read the label id stored as offset
       let label_id = match op {
-        ops::Jump => op::Jump::decode(&bytecode[..], pc + 1, Width::Quad),
-        ops::JumpIfFalse => op::JumpIfFalse::decode(&bytecode[..], pc + 1, Width::Quad),
+        ops::Jump => Jump::decode(&bytecode[..], pc + 1, Width::Quad),
+        ops::JumpIfFalse => JumpIfFalse::decode(&bytecode[..], pc + 1, Width::Quad),
         _ => unreachable!("op::is_jump(0x{op:02x}) is true, but label_id is not being decoded"),
       };
 
@@ -177,8 +187,8 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
 
       // patch the instruction
       match op {
-        ops::Jump => patch_jump::<op::Jump>(bytecode, prefix_pc, jump_offset),
-        ops::JumpIfFalse => patch_jump::<op::JumpIfFalse>(bytecode, prefix_pc, jump_offset),
+        ops::Jump => patch_jump(Jump, bytecode, prefix_pc, jump_offset),
+        ops::JumpIfFalse => patch_jump(JumpIfFalse, bytecode, prefix_pc, jump_offset),
         _ => unreachable!(
           "op::is_jump(0x{op:02x}) is true, and `op` was a jump instruction, but now it isn't"
         ),
@@ -199,7 +209,7 @@ fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &Ha
   }
 }
 
-impl<Value: Hash + Eq> BytecodeBuilder<Value> {
+/* impl<Value: Hash + Eq> BytecodeBuilder<Value> {
   pub fn op_nop(&mut self) -> &mut Self {
     op::Nop::encode(&mut self.bytecode, ());
     self
@@ -252,4 +262,4 @@ impl<Value: Hash + Eq> BytecodeBuilder<Value> {
     op::Ret::encode(&mut self.bytecode, ());
     self
   }
-}
+} */

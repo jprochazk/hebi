@@ -3,7 +3,7 @@
 use ty::*;
 
 use crate::chunk::BytecodeArray;
-use crate::opcode::disassembly::Disassembly;
+use crate::disassembly::Disassembly;
 
 pub trait Opcode: private::Sealed {
   const BYTE: u8;
@@ -19,7 +19,7 @@ pub trait Opcode: private::Sealed {
 
   /// Return the size of operands of `Self`, scaling up variable-width operands
   /// by `width` as needed.
-  fn operand_size(width: Width) -> usize;
+  fn size_of_operands(width: Width) -> usize;
 
   fn disassemble(operands: &[u8], width: Width) -> Disassembly;
 }
@@ -36,6 +36,8 @@ pub trait Encode: Decode + private::Sealed {
   fn encode(buf: &mut BytecodeArray, operands: Self::Operands);
   fn encode_into(buf: &mut [u8], offset: usize, operands: Self::Operands);
 }
+
+// TODO: unify `instruction` and `extra`
 
 macro_rules! instruction {
   (
@@ -59,7 +61,7 @@ macro_rules! instruction {
 
       #[allow(unused_variables)]
       #[inline]
-      fn operand_size(width: Width) -> usize {
+      fn size_of_operands(width: Width) -> usize {
         0 $( + <$operand_type as Operand>::size(width) )*
       }
 
@@ -68,7 +70,7 @@ macro_rules! instruction {
         let mut operands = vec![];
         let mut offset = 0;
         $(
-          operands.push(disassembly::Operand {
+          operands.push(crate::disassembly::Operand {
             name: stringify!($operand_name),
             value: Box::new(unsafe {
               <$operand_type as Operand>::decode(data, offset, width)
@@ -92,7 +94,7 @@ macro_rules! instruction {
       #[allow(unused_mut, unused_assignments)]
       #[inline]
       fn decode(bytecode: &[u8], mut offset: usize, width: Width) -> Self::Operands {
-        assert!(bytecode.len() > offset + Self::operand_size(width));
+        assert!(bytecode.len() > offset + Self::size_of_operands(width));
         $(
           let $operand_name = unsafe { <$operand_type as Operand>::decode(bytecode, offset, width) };
           offset += <$operand_type as Operand>::size(width);
@@ -468,90 +470,4 @@ mod private {
   pub trait Sealed {}
 }
 
-pub mod disassembly {
-  use super::*;
-
-  pub fn disassemble(bytecode: &[u8], offset: usize) -> Disassembly {
-    fn inner(bytecode: &[u8], offset: usize, width: Width) -> Disassembly {
-      macro_rules! d {
-        ($name:ident, $bytecode:ident, $offset:ident, $width:ident) => {
-          <$name>::disassemble(
-            &$bytecode[$offset + 1..$offset + 1 + <$name>::operand_size($width)],
-            $width,
-          )
-        };
-      }
-
-      let opcode = bytecode[offset];
-      match opcode {
-        Nop::BYTE => Nop::disassemble(&[], width),
-        Wide::BYTE => inner(bytecode, offset + 1, Width::Double),
-        ExtraWide::BYTE => inner(bytecode, offset + 1, Width::Quad),
-        LoadConst::BYTE => d!(LoadConst, bytecode, offset, width),
-        LoadReg::BYTE => d!(LoadReg, bytecode, offset, width),
-        StoreReg::BYTE => d!(StoreReg, bytecode, offset, width),
-        Jump::BYTE => d!(Jump, bytecode, offset, width),
-        JumpIfFalse::BYTE => d!(JumpIfFalse, bytecode, offset, width),
-        Sub::BYTE => d!(Sub, bytecode, offset, width),
-        Print::BYTE => d!(Print, bytecode, offset, width),
-        PushSmallInt::BYTE => d!(PushSmallInt, bytecode, offset, width),
-        CreateEmptyList::BYTE => d!(CreateEmptyList, bytecode, offset, width),
-        ListPush::BYTE => d!(ListPush, bytecode, offset, width),
-        Ret::BYTE => d!(Ret, bytecode, offset, width),
-        Suspend::BYTE => d!(Suspend, bytecode, offset, width),
-        _ => panic!("malformed bytecode: invalid opcode 0x{opcode:02x}"),
-      }
-    }
-
-    inner(bytecode, offset, Width::Single)
-  }
-
-  fn align() -> usize {
-    super::NAMES.iter().map(|v| v.len()).max().unwrap_or(0)
-  }
-
-  pub(super) struct Operand {
-    pub(super) name: &'static str,
-    pub(super) value: Box<dyn std::fmt::Display>,
-  }
-
-  pub struct Disassembly {
-    pub(super) name: &'static str,
-    pub(super) width: Width,
-    pub(super) operands: Vec<Operand>,
-    pub(super) size: usize,
-  }
-
-  impl Disassembly {
-    pub fn has_prefix(&self) -> bool {
-      matches!(self.width, Width::Double | Width::Quad)
-    }
-
-    pub fn size(&self) -> usize {
-      if self.has_prefix() {
-        1 + self.size
-      } else {
-        self.size
-      }
-    }
-  }
-
-  impl ::std::fmt::Display for Disassembly {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-      // print opcode + prefix
-      write!(f, "{}{}", self.width.as_str(), self.name)?;
-
-      // print operands
-      write!(
-        f,
-        "{:w$}",
-        "",
-        w = align() - self.width.as_str().len() - self.name.len()
-      )?;
-      for Operand { name, value } in self.operands.iter() {
-        write!(f, " {name}={value}")?;
-      }
-      Ok(())
-    }
-  }
-}
+pub mod disassembly {}

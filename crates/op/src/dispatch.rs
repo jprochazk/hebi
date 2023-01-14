@@ -1,7 +1,7 @@
 use crate::chunk::BytecodeArray;
+use crate::disassembly::disassemble;
 use crate::handler;
 use crate::handler::Handler;
-use crate::opcode::disassembly::disassemble;
 use crate::opcode::ty::Width;
 use crate::opcode::{self as op, ops, Decode, Opcode};
 
@@ -35,21 +35,21 @@ pub fn run<H: Handler>(vm: &mut H, bc: &mut BytecodeArray, pc: &mut usize) -> Re
 }
 
 fn handle_jump<E>(
-  value: Result<handler::Jump, E>,
+  value: Result<handler::ControlFlow, E>,
   pc: &mut usize,
-  operand_size: usize,
+  size_of_operands: usize,
   result: &mut Result<(), E>,
 ) {
   let _jump = match value {
     Ok(jump) => jump,
     Err(e) => {
       *result = Err(e);
-      handler::Jump::Skip
+      handler::ControlFlow::Next
     }
   };
   match _jump {
-    handler::Jump::Skip => *pc += 1 + operand_size,
-    handler::Jump::Goto { offset } => *pc = offset as usize,
+    handler::ControlFlow::Next => *pc += 1 + size_of_operands,
+    handler::ControlFlow::Goto(offset) => *pc = offset as usize,
   }
 }
 
@@ -84,7 +84,7 @@ macro_rules! dispatch_handler {
       handle_jump(
         vm.$name(op::$op::decode(bc, *pc + 1, *width)),
         pc,
-        op::$op::operand_size(*width),
+        op::$op::size_of_operands(*width),
         result
       );
       *width = Width::Single;
@@ -109,7 +109,7 @@ macro_rules! dispatch_handler {
     ) {
       disassemble!(bc, pc);
       *result = vm.$name(op::$op::decode(bc, *pc + 1, *width));
-      *pc += 1 + op::$op::operand_size(*width);
+      *pc += 1 + op::$op::size_of_operands(*width);
       *width = Width::$next_width;
       *opcode = bc[*pc];
     }
@@ -125,7 +125,7 @@ macro_rules! dispatch_handler {
       _: &mut Result<(), H::Error>,
     ) {
       disassemble!(bc, pc);
-      *pc += 1 + op::$op::operand_size(*width);
+      *pc += 1 + op::$op::size_of_operands(*width);
       *width = Width::$next_width;
       *opcode = bc[*pc];
     }

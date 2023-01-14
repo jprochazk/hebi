@@ -1,8 +1,13 @@
-pub enum Jump {
-  /// Go to `offset`.
-  Goto { offset: u32 },
-  /// Skip this jump instruction.
-  Skip,
+pub enum ControlFlow {
+  /// Jump to some `offset` in the bytecode.
+  ///
+  /// Note: This must land the dispatch loop on a valid opcode.
+  Goto(u32),
+  /// Go to the next instruction.
+  ///
+  /// This is equivalent to
+  /// `ControlFlow::Goto(pc + 1 + size_of_operands(opcode))`.
+  Next,
 }
 
 pub trait Handler {
@@ -17,10 +22,10 @@ pub trait Handler {
   fn op_store_reg(&mut self, reg: u32) -> Result<(), Self::Error>;
 
   /// Jump to the specified offset.
-  fn op_jump(&mut self, offset: u32) -> Result<Jump, Self::Error>;
+  fn op_jump(&mut self, offset: u32) -> Result<ControlFlow, Self::Error>;
 
   /// Jump to the specified offset if the value in the accumulator is falsey.
-  fn op_jump_if_false(&mut self, offset: u32) -> Result<Jump, Self::Error>;
+  fn op_jump_if_false(&mut self, offset: u32) -> Result<ControlFlow, Self::Error>;
 
   /// Subtract `b` from `a` and store the result in `dest`.
   fn op_sub(&mut self, lhs: u32) -> Result<(), Self::Error>;
