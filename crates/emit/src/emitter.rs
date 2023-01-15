@@ -3,9 +3,11 @@ use std::ops::Deref;
 use beef::lean::Cow;
 use op::builder::BytecodeBuilder;
 use op::chunk::Chunk;
+use op::opcode::*;
 use syntax::ast;
 use value::Value;
 
+use crate::regalloc::RegAlloc;
 use crate::{Error, Result};
 
 struct Emitter<'src> {
@@ -39,12 +41,21 @@ impl<'src> Emitter<'src> {
 
     Ok(next.builder.build())
   }
+
+  fn b(&mut self) -> &mut BytecodeBuilder<Value> {
+    &mut self.state.builder
+  }
+
+  fn r(&mut self) -> &mut RegAlloc {
+    &mut self.state.regalloc
+  }
 }
 
 struct State<'src> {
   builder: BytecodeBuilder<Value>,
   name: Cow<'src, str>,
   parent: Option<Box<State<'src>>>,
+  regalloc: RegAlloc,
 }
 
 impl<'src> State<'src> {
@@ -54,6 +65,7 @@ impl<'src> State<'src> {
       builder: BytecodeBuilder::new(name.to_string()),
       name,
       parent,
+      regalloc: RegAlloc::new(),
     }
   }
 }
@@ -76,42 +88,50 @@ mod stmt {
       }
     }
 
-    fn emit_var_stmt(&mut self, v: &ast::Var) -> Result<()> {
+    fn emit_var_stmt(&mut self, stmt: &ast::Var) -> Result<()> {
       todo!()
     }
 
-    fn emit_if_stmt(&mut self, v: &ast::If) -> Result<()> {
+    fn emit_if_stmt(&mut self, stmt: &ast::If) -> Result<()> {
       todo!()
     }
 
-    fn emit_loop_stmt(&mut self, v: &ast::Loop) -> Result<()> {
+    fn emit_loop_stmt(&mut self, stmt: &ast::Loop) -> Result<()> {
       todo!()
     }
 
-    fn emit_ctrl_stmt(&mut self, v: &ast::Ctrl) -> Result<()> {
+    fn emit_ctrl_stmt(&mut self, stmt: &ast::Ctrl) -> Result<()> {
       todo!()
     }
 
-    fn emit_func_stmt(&mut self, v: &ast::Func) -> Result<()> {
+    fn emit_func_stmt(&mut self, stmt: &ast::Func) -> Result<()> {
       todo!()
     }
 
-    fn emit_class_stmt(&mut self, v: &ast::Class) -> Result<()> {
+    fn emit_class_stmt(&mut self, stmt: &ast::Class) -> Result<()> {
       todo!()
     }
 
-    fn emit_expr_stmt(&mut self, v: &ast::Expr) -> Result<()> {
-      self.emit_expr(v)
+    fn emit_expr_stmt(&mut self, expr: &ast::Expr) -> Result<()> {
+      self.emit_expr(expr)
     }
 
     fn emit_pass_stmt(&mut self) -> Result<()> {
       Ok(())
     }
 
-    fn emit_print_stmt(&mut self, v: &ast::Print) -> Result<()> {
-      // 1. create an empty list (reg=list)
-      // 2. emit all `v.values` into the list
-      // 3. emit op_print with reg=list
+    fn emit_print_stmt(&mut self, stmt: &ast::Print) -> Result<()> {
+      // #for n=1
+      //   emit_expr(values[0])
+      //   op(Print) // prints accumulator
+      // #for n>1
+      //   temp = alloc_temp_register()
+      //   op(CreateEmptyList, capacity=values.len())
+      //   op(StoreReg, temp)
+      //   #each value in values
+      //     emit_expr(value)
+      //     list_push(temp)
+      //   op(PrintList, temp)
 
       todo!()
     }
@@ -122,7 +142,90 @@ mod expr {
   use super::*;
 
   impl<'src> Emitter<'src> {
-    pub(crate) fn emit_expr(&mut self, v: &ast::Expr) -> Result<()> {
+    /// Emit a single expression.
+    ///
+    /// Expressions may allocate temporary registers, but the result is always
+    /// stored in the accumulator.
+    pub(crate) fn emit_expr(&mut self, expr: &ast::Expr) -> Result<()> {
+      match expr.deref() {
+        ast::ExprKind::Literal(v) => self.emit_literal_expr(v),
+        ast::ExprKind::Binary(v) => self.emit_binary_expr(v),
+        ast::ExprKind::Unary(v) => self.emit_unary_expr(v),
+        ast::ExprKind::GetVar(v) => self.emit_get_var_expr(v),
+        ast::ExprKind::SetVar(v) => self.emit_set_var_expr(v),
+        ast::ExprKind::GetField(v) => self.emit_get_field_expr(v),
+        ast::ExprKind::SetField(v) => self.emit_set_field_expr(v),
+        ast::ExprKind::Yield(v) => self.emit_yield_expr(v),
+        ast::ExprKind::Call(v) => self.emit_call_expr(v),
+      }
+    }
+
+    fn emit_literal_expr(&mut self, expr: &ast::Literal) -> Result<()> {
+      todo!()
+      /* match expr {
+        ast::Literal::Null => {
+          self.b().op(PushNull, ());
+        }
+        ast::Literal::Number(v) => {
+          todo!()
+        }
+        ast::Literal::Bool(v) => {
+          self.b().op(PushBool, v);
+        }
+        ast::Literal::String(v) => {
+          let str = self.b().constant(v);
+          self.b().op(LoadConst, str);
+        }
+        ast::Literal::Array(list) => {
+          // a := None     // a: r0
+          // a = [0, 1, 2] // list: r1
+          // a = [0, 1, 2] // list: r1 <-- re-used register
+
+          // TODO: from descriptor
+          let temp = self.r().temp();
+          self.b().op(CreateEmptyList, ());
+          self.b().op(StoreReg, temp);
+          for v in list {
+            self.emit_expr(v)?;
+            self.b().op(ListPush, temp);
+          }
+          self.b().op(LoadReg, temp);
+          // `temp` should end here
+        }
+        ast::Literal::Object(_) => todo!(),
+      }
+      Ok(()) */
+    }
+
+    fn emit_binary_expr(&mut self, expr: &ast::Binary) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_unary_expr(&mut self, expr: &ast::Unary) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_get_var_expr(&mut self, expr: &ast::GetVar) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_set_var_expr(&mut self, expr: &ast::SetVar) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_get_field_expr(&mut self, expr: &ast::GetField) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_set_field_expr(&mut self, expr: &ast::SetField) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_yield_expr(&mut self, expr: &ast::Yield) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_call_expr(&mut self, expr: &ast::Call) -> Result<()> {
       todo!()
     }
   }

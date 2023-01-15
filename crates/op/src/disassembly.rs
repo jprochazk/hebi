@@ -1,6 +1,11 @@
 use crate::opcode::ty::Width;
 use crate::opcode::*;
 
+// TODO:
+// - accumulator usage
+// - operand usage instead of name e.g. to print `r0` instead of `reg=0`, `[0]`
+//   instead of `slot=0`, etc.
+
 pub fn disassemble(bytecode: &[u8], offset: usize) -> Disassembly {
   fn inner(bytecode: &[u8], offset: usize, width: Width) -> Disassembly {
     macro_rules! d {

@@ -1,4 +1,5 @@
 mod emitter;
+mod regalloc;
 
 use beef::lean::Cow;
 use span::Span;

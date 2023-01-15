@@ -159,6 +159,9 @@ fn patch_jump<T: Opcode + Encode<Operands = u32>>(
   T::encode_into(buf, offset, jump_offset)
 }
 
+// TODO: patching API instead of this
+// (will be used for both jumps and load/store registers)
+
 fn patch_jumps(function_name: &str, bytecode: &mut BytecodeArray, label_map: &HashMap<u32, Label>) {
   let mut used_labels = HashSet::new();
   for pc in 0..bytecode.len() {

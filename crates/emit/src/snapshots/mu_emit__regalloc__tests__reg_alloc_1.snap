@@ -1,0 +1,5 @@
+---
+source: crates/emit/src/regalloc.rs
+expression: "format!(\"{}\", regalloc.0.borrow())"
+---
+<empty>
