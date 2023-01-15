@@ -37,7 +37,9 @@ pub trait Encode: Decode + private::Sealed {
   fn encode_into(buf: &mut [u8], offset: usize, operands: Self::Operands);
 }
 
-// TODO: unify `instruction` and `extra`
+// TODO: instruction_list instead of individual instructions
+// - instruction enum for emit and patching, then deprecate encode_into
+// - enum should be used to define `BYTE`
 
 macro_rules! instruction {
   (
@@ -65,6 +67,7 @@ macro_rules! instruction {
         0 $( + <$operand_type as Operand>::size(width) )*
       }
 
+      // TODO: make this a trait
       #[allow(unused_mut, unused_variables)]
       fn disassemble(data: &[u8], width: Width) -> Disassembly {
         let mut operands = vec![];
@@ -140,6 +143,7 @@ macro_rules! instruction {
   };
 }
 
+// TODO: more instructions
 instruction!(Nop, "nop", 0x00, (), is_prefix:false, is_jump:false);
 instruction!(Wide, "<illegal (wide)>", 0x01, (), is_prefix:true, is_jump:false);
 instruction!(ExtraWide, "<illegal (xwide)>", 0x02, (), is_prefix:true, is_jump:false);
@@ -147,13 +151,39 @@ instruction!(LoadConst, "load_const", 0x03, (slot: uv), is_prefix:false, is_jump
 instruction!(LoadReg, "load_reg", 0x04, (reg: uv), is_prefix:false, is_jump:false);
 instruction!(StoreReg, "store_reg", 0x05, (reg: uv), is_prefix:false, is_jump:false);
 instruction!(Jump, "jump", 0x06, (offset: uv), is_prefix:false, is_jump:true);
+// JumpBack
 instruction!(JumpIfFalse, "jump_if_false", 0x07, (offset: uv), is_prefix:false, is_jump:true);
+// Add
 instruction!(Sub, "sub", 0x08, (lhs: uv), is_prefix:false, is_jump:false);
+// Mul
+// Div
+// Rem
+// Pow
+// Eq
+// Neq
+// Gt
+// Ge
+// Lt
+// Le
+// Invert
+// TODO: see how V8 handles `??` and `a?.b`
 instruction!(Print, "print", 0x09, (args: uv), is_prefix:false, is_jump:false);
+// PrintList
+// PushNone
+// PushTrue
+// PushFalse
+// float, bigint??, string -> constants
 instruction!(PushSmallInt, "push_small_int", 0x0A, (value: sf32), is_prefix:false, is_jump:false);
 instruction!(CreateEmptyList, "create_empty_list", 0x0B, (), is_prefix: false, is_jump: false);
 instruction!(ListPush, "list_push", 0x0C, (list: uv), is_prefix: false, is_jump: false);
+// CreateEmptyDict
+// DictInsert
+// Call
+// TODO: calling convention
+// TODO: fast call? (speed up keyword args) - maybe IC is enough?
+// TODO: What does V8 do with call ICs?
 instruction!(Ret, "ret", 0xFE, (), is_prefix:false, is_jump:false);
+// ret -> return
 instruction!(Suspend, "suspend", 0xFF, (), is_prefix:false, is_jump:false);
 
 macro_rules! extra {

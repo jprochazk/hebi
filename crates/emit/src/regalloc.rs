@@ -134,6 +134,7 @@ fn linear_scan(intervals: &[Interval]) -> (u32, HashMap<u32, u32>) {
   let mut mapping = HashMap::new();
 
   let mut free = VecDeque::new();
+  // TODO: use indexmap instead of this
   let mut active = Active::new();
   let mut registers = 0u32;
 
