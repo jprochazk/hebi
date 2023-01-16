@@ -1,9 +1,7 @@
 use std::ops::Deref;
 
 use beef::lean::Cow;
-use op::builder::BytecodeBuilder;
-use op::chunk::Chunk;
-use op::opcode::*;
+use op::instruction::*;
 use syntax::ast;
 use value::Value;
 
@@ -42,7 +40,7 @@ impl<'src> Emitter<'src> {
     Ok(next.builder.build())
   }
 
-  fn b(&mut self) -> &mut BytecodeBuilder<Value> {
+  fn b(&mut self) -> &mut Builder<Value> {
     &mut self.state.builder
   }
 
@@ -52,7 +50,7 @@ impl<'src> Emitter<'src> {
 }
 
 struct State<'src> {
-  builder: BytecodeBuilder<Value>,
+  builder: Builder<Value>,
   name: Cow<'src, str>,
   parent: Option<Box<State<'src>>>,
   regalloc: RegAlloc,
@@ -62,7 +60,7 @@ impl<'src> State<'src> {
   fn new(name: impl Into<Cow<'src, str>>, parent: Option<Box<State<'src>>>) -> Self {
     let name = name.into();
     Self {
-      builder: BytecodeBuilder::new(name.to_string()),
+      builder: Builder::new(name.to_string()),
       name,
       parent,
       regalloc: RegAlloc::new(),

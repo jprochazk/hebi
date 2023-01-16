@@ -25,24 +25,24 @@ bytecode:
  40 | 00                nop              
  41 | 00                nop              
  42 | 00                nop              
- 43 | 06 4d             jump              offset=77
+ 43 | 06 4c             jump              offset=76
  45 | 00                nop              
  46 | 00                nop              
  47 | 00                nop              
  48 | 00                nop              
- 49 | 07 00             jump_if_false     offset=0
+ 49 | 08 00             jump_if_false     offset=0
  51 | 00                nop              
  52 | 00                nop              
  53 | 00                nop              
  54 | 00                nop              
- 55 | 07 4d             jump_if_false     offset=77
+ 55 | 08 4c             jump_if_false     offset=76
  57 | 00                nop              
  58 | 00                nop              
  59 | 00                nop              
  60 | 00                nop              
- 61 | 0a 00 00 00 00    push_small_int    value=0
- 66 | 0a ff ff ff 7f    push_small_int    value=2147483647
- 71 | 0a 00 00 00 80    push_small_int    value=-2147483648
- 76 | fe                ret              
+ 61 | 1a 00 00 00 00    push_small_int    value=0
+ 66 | 1a ff ff ff 7f    push_small_int    value=2147483647
+ 71 | 1a 00 00 00 80    push_small_int    value=-2147483648
+ 76 | 1f                ret              
  77 | ff                suspend          
 
