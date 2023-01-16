@@ -11,51 +11,6 @@ use beef::lean::Cow;
 use paste::paste;
 use ty::*;
 
-pub trait Opcode: private::Sealed {
-  /// Returns the name of the operand for the purpose of `Display`.
-  const NAME: &'static str;
-}
-
-pub trait Decode: private::Sealed {
-  type Operands: Size;
-  type Decoded: Sized;
-
-  /// Decodes operands from `bytecode` at the given `offset`, scaling up
-  /// variable-width operands by `width` as needed.
-  fn decode(bytecode: &[u8], offset: usize, width: Width) -> Self::Decoded;
-}
-
-pub trait Encode: private::Sealed {
-  /// Encode `self` in variable-width encoding.
-  ///
-  /// This emits a prefix byte, the opcode byte, and the operands in
-  /// little-endian byte order.
-  fn encode(&self, buf: &mut Vec<u8>, force_max_width: bool);
-}
-
-pub trait EncodeInto: Decode + private::Sealed {
-  fn encode_into(buf: &mut [u8], operands: Self::Decoded);
-}
-
-fn handle_jump<E>(
-  value: Result<ControlFlow, E>,
-  pc: &mut usize,
-  size_of_operands: usize,
-  result: &mut Result<(), E>,
-) {
-  let _jump = match value {
-    Ok(jump) => jump,
-    Err(e) => {
-      *result = Err(e);
-      ControlFlow::Next
-    }
-  };
-  match _jump {
-    ControlFlow::Next => *pc += 1 + size_of_operands,
-    ControlFlow::Goto(offset) => *pc = offset as usize,
-  }
-}
-
 instructions! {
   Instruction, ops,
   Handler, run,
@@ -138,6 +93,51 @@ instructions! {
 // Call
 // Ret
 // Suspend
+
+pub trait Opcode: private::Sealed {
+  /// Returns the name of the operand for the purpose of `Display`.
+  const NAME: &'static str;
+}
+
+pub trait Decode: private::Sealed {
+  type Operands: Size;
+  type Decoded: Sized;
+
+  /// Decodes operands from `bytecode` at the given `offset`, scaling up
+  /// variable-width operands by `width` as needed.
+  fn decode(bytecode: &[u8], offset: usize, width: Width) -> Self::Decoded;
+}
+
+pub trait Encode: private::Sealed {
+  /// Encode `self` in variable-width encoding.
+  ///
+  /// This emits a prefix byte, the opcode byte, and the operands in
+  /// little-endian byte order.
+  fn encode(&self, buf: &mut Vec<u8>, force_max_width: bool);
+}
+
+pub trait EncodeInto: Decode + private::Sealed {
+  fn encode_into(buf: &mut [u8], operands: Self::Decoded);
+}
+
+fn handle_jump<E>(
+  value: Result<ControlFlow, E>,
+  pc: &mut usize,
+  size_of_operands: usize,
+  result: &mut Result<(), E>,
+) {
+  let _jump = match value {
+    Ok(jump) => jump,
+    Err(e) => {
+      *result = Err(e);
+      ControlFlow::Next
+    }
+  };
+  match _jump {
+    ControlFlow::Next => *pc += 1 + size_of_operands,
+    ControlFlow::Goto(offset) => *pc = offset as usize,
+  }
+}
 
 pub enum ControlFlow {
   /// Jump to some `offset` in the bytecode.
