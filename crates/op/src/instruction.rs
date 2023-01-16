@@ -11,10 +11,6 @@ use beef::lean::Cow;
 use paste::paste;
 use ty::*;
 
-// TODO: instruction_list instead of individual instructions
-// - instruction enum for emit and patching, then deprecate encode_into
-// - enum should be used to define `BYTE`
-
 pub trait Opcode: private::Sealed {
   /// Returns the name of the operand for the purpose of `Display`.
   const NAME: &'static str;
@@ -398,60 +394,6 @@ fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [
   std::mem::forget(array);
   out
 }
-
-/* fn patch_jump<T: Opcode + Encode<Operands = u32>>(
-  _: T,
-  buf: &mut [u8],
-  offset: usize,
-  jump_offset: u32,
-) {
-  assert!(T::IS_JUMP && matches!(buf[offset], ops::ExtraWide));
-  // clear it first, so that all the unused bytes become `nop` instructions
-  buf[offset..offset + 2 + T::size_of_operands(Width::Quad)].copy_from_slice(&[0u8; 6]);
-  T::encode_into(buf, offset, jump_offset)
-}
-
-// TODO: patching API instead of this
-// (will be used for both jumps and load/store registers)
-
-fn patch_jumps(function_name: &str, bytecode: &mut Vec<u8>, label_map: &HashMap<u32, Label>) {
-  let mut used_labels = HashSet::new();
-  for pc in 0..bytecode.len() {
-    let op = bytecode[pc];
-    if is_jump(op) {
-      let prefix_pc = pc - 1;
-      // all jump instructions are emitted with `xwide` prefix by default,
-      // then narrowed based on the final offset value
-      assert!(matches!(bytecode[prefix_pc], ops::ExtraWide));
-
-      // read the label id stored as offset
-      let label_id = match op {
-        ops::Jump => Jump::decode(&bytecode[..], pc + 1, Width::Quad),
-        ops::JumpIfFalse => JumpIfFalse::decode(&bytecode[..], pc + 1, Width::Quad),
-        _ => unreachable!("op::is_jump(0x{op:02x}) is true, but label_id is not being decoded"),
-      };
-
-      // find the label and get its final offset
-      let label = label_map
-        .get(&label_id)
-        .unwrap_or_else(|| panic!("unknown label ID {label_id}"));
-      let jump_offset = label
-        .offset
-        .unwrap_or_else(|| panic!("unfinished label `{}` ({})", label.name, label.id));
-      used_labels.insert(label.clone());
-
-      // patch the instruction
-      match op {
-        ops::Jump => patch_jump(Jump, bytecode, prefix_pc, jump_offset),
-        ops::JumpIfFalse => patch_jump(JumpIfFalse, bytecode, prefix_pc, jump_offset),
-        _ => unreachable!(
-          "op::is_jump(0x{op:02x}) is true, and `op` was a jump instruction, but now it isn't"
-        ),
-      }
-    }
-  }
-
-} */
 
 pub struct Chunk<Value: Hash + Eq> {
   pub name: Cow<'static, str>,
