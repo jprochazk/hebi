@@ -149,19 +149,23 @@ pub struct Print<'src> {
 pub type Expr<'src> = Spanned<ExprKind<'src>>;
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub enum ExprKind<'src> {
   Literal(Box<Literal<'src>>),
   Binary(Box<Binary<'src>>),
   Unary(Box<Unary<'src>>),
   GetVar(Box<GetVar<'src>>),
   SetVar(Box<SetVar<'src>>),
-  GetField(Box<GetField<'src>>),
-  SetField(Box<SetField<'src>>),
+  GetNamed(Box<GetNamed<'src>>),
+  SetNamed(Box<SetNamed<'src>>),
+  GetKeyed(Box<GetKeyed<'src>>),
+  SetKeyed(Box<SetKeyed<'src>>),
   Yield(Box<Yield<'src>>),
   Call(Box<Call<'src>>),
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub enum Literal<'src> {
   None,
   Int(i32),
@@ -173,6 +177,7 @@ pub enum Literal<'src> {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Binary<'src> {
   pub op: BinaryOp,
   pub left: Expr<'src>,
@@ -180,6 +185,7 @@ pub struct Binary<'src> {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone, Copy)]
 pub enum BinaryOp {
   Add,
   Sub,
@@ -199,12 +205,14 @@ pub enum BinaryOp {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Unary<'src> {
   pub op: UnaryOp,
   pub right: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone, Copy)]
 pub enum UnaryOp {
   Plus,
   Minus,
@@ -213,27 +221,43 @@ pub enum UnaryOp {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct GetVar<'src> {
   pub name: Ident<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct SetVar<'src> {
   pub target: GetVar<'src>,
-  pub op: Option<AssignOp>,
   pub value: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct GetField<'src> {
+#[derive(Clone)]
+pub struct GetNamed<'src> {
+  pub target: Expr<'src>,
+  pub name: Ident<'src>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
+pub struct SetNamed<'src> {
+  pub target: GetNamed<'src>,
+  pub value: Expr<'src>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
+pub struct GetKeyed<'src> {
   pub target: Expr<'src>,
   pub key: Expr<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct SetField<'src> {
-  pub target: GetField<'src>,
-  pub op: Option<AssignOp>,
+#[derive(Clone)]
+pub struct SetKeyed<'src> {
+  pub target: GetKeyed<'src>,
   pub value: Expr<'src>,
 }
 
@@ -249,6 +273,20 @@ pub enum AssignOp {
   Maybe,
 }
 
+impl From<AssignOp> for BinaryOp {
+  fn from(value: AssignOp) -> Self {
+    match value {
+      AssignOp::Add => BinaryOp::Add,
+      AssignOp::Sub => BinaryOp::Sub,
+      AssignOp::Div => BinaryOp::Div,
+      AssignOp::Mul => BinaryOp::Mul,
+      AssignOp::Rem => BinaryOp::Rem,
+      AssignOp::Pow => BinaryOp::Pow,
+      AssignOp::Maybe => BinaryOp::Maybe,
+    }
+  }
+}
+
 #[derive(Clone, Copy)]
 pub enum AssignKind {
   Op(Option<AssignOp>),
@@ -256,22 +294,26 @@ pub enum AssignKind {
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Yield<'src> {
   pub value: Option<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Return<'src> {
   pub value: Option<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Call<'src> {
   pub target: Expr<'src>,
   pub args: Args<'src>,
 }
 
 #[cfg_attr(test, derive(Debug))]
+#[derive(Clone)]
 pub struct Args<'src> {
   pub pos: Vec<Expr<'src>>,
   pub kw: Vec<(Ident<'src>, Expr<'src>)>,
@@ -386,19 +428,16 @@ pub fn expr_call<'src>(s: impl Into<Span>, target: Expr<'src>, args: Args<'src>)
   Expr::new(s, ExprKind::Call(Box::new(Call { target, args })))
 }
 
-pub fn expr_index<'src>(s: impl Into<Span>, target: Expr<'src>, key: Expr<'src>) -> Expr<'src> {
-  Expr::new(s, ExprKind::GetField(Box::new(GetField { target, key })))
+pub fn expr_get_named<'src>(
+  s: impl Into<Span>,
+  target: Expr<'src>,
+  name: Ident<'src>,
+) -> Expr<'src> {
+  Expr::new(s, ExprKind::GetNamed(Box::new(GetNamed { target, name })))
 }
 
-pub fn expr_field<'src>(s: impl Into<Span>, target: Expr<'src>, key: Ident<'src>) -> Expr<'src> {
-  expr_index(
-    s,
-    target,
-    Expr::new(
-      key.span,
-      ExprKind::Literal(Box::new(Literal::String(key.into_inner()))),
-    ),
-  )
+pub fn expr_get_keyed<'src>(s: impl Into<Span>, target: Expr<'src>, key: Expr<'src>) -> Expr<'src> {
+  Expr::new(s, ExprKind::GetKeyed(Box::new(GetKeyed { target, key })))
 }
 
 pub fn expr_list(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
@@ -468,7 +507,7 @@ pub fn class_stmt<'src>(
 }
 
 pub fn assign<'src>(target: Expr<'src>, kind: AssignKind, value: Expr<'src>) -> Option<Stmt<'src>> {
-  let span = target.span.start..value.span.end;
+  let span = Span::from(target.span.start..value.span.end);
   match kind {
     AssignKind::Decl => {
       let name = match target.into_inner() {
@@ -480,19 +519,61 @@ pub fn assign<'src>(target: Expr<'src>, kind: AssignKind, value: Expr<'src>) -> 
     AssignKind::Op(op) => {
       let assign = match target.into_inner() {
         ExprKind::GetVar(target) => ExprKind::SetVar(Box::new(SetVar {
+          value: desugar_assign(span, &*target, op, value),
           target: *target,
-          op,
-          value,
         })),
-        ExprKind::GetField(target) => ExprKind::SetField(Box::new(SetField {
+        ExprKind::GetNamed(target) => ExprKind::SetNamed(Box::new(SetNamed {
+          value: desugar_assign(span, &*target, op, value),
           target: *target,
-          op,
-          value,
+        })),
+        ExprKind::GetKeyed(target) => ExprKind::SetKeyed(Box::new(SetKeyed {
+          value: desugar_assign(span, &*target, op, value),
+          target: *target,
         })),
         _ => return None,
       };
       Some(expr_stmt(Expr::new(span, assign)))
     }
+  }
+}
+
+fn desugar_assign<'src, T>(
+  span: impl Into<Span>,
+  target: &T,
+  op: Option<AssignOp>,
+  value: Expr<'src>,
+) -> Expr<'src>
+where
+  T: Clone,
+  ExprKind<'src>: From<T>,
+{
+  let span = span.into();
+  match op {
+    Some(op) => expr_binary(
+      span,
+      op.into(),
+      Expr::new(span, ExprKind::from(target.clone())),
+      value,
+    ),
+    None => value,
+  }
+}
+
+impl<'src> From<GetVar<'src>> for ExprKind<'src> {
+  fn from(value: GetVar<'src>) -> Self {
+    ExprKind::GetVar(Box::new(value))
+  }
+}
+
+impl<'src> From<GetNamed<'src>> for ExprKind<'src> {
+  fn from(value: GetNamed<'src>) -> Self {
+    ExprKind::GetNamed(Box::new(value))
+  }
+}
+
+impl<'src> From<GetKeyed<'src>> for ExprKind<'src> {
+  fn from(value: GetKeyed<'src>) -> Self {
+    ExprKind::GetKeyed(Box::new(value))
   }
 }
 

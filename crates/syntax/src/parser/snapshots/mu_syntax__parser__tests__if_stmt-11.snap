@@ -37,18 +37,14 @@ Module {
                                 ),
                                 right: Call(
                                     Call {
-                                        target: GetField(
-                                            GetField {
+                                        target: GetNamed(
+                                            GetNamed {
                                                 target: GetVar(
                                                     GetVar {
                                                         name: "which_are_complex",
                                                     },
                                                 ),
-                                                key: Literal(
-                                                    String(
-                                                        "too",
-                                                    ),
-                                                ),
+                                                name: "too",
                                             },
                                         ),
                                         args: Args {

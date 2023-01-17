@@ -1,0 +1,38 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+v := { a: 0 }
+print v["a"]
+v["a"] = 1
+
+
+# Chunk:
+function <test>:
+length = 45
+const pool = (length=1) {
+  0 = "a"
+}
+bytecode:
+  0 | 14                create_empty_dict
+  1 | 05 00             store_reg         reg=0
+  3 | 03 00             load_const        slot=0
+  5 | 05 01             store_reg         reg=1
+  7 | 11 00 00 00 00    push_small_int    value=0
+ 12 | 15 01 00          insert_to_dict    key=1 dict=0
+ 15 | 04 00             load_reg          reg=0
+ 17 | 05 00             store_reg         reg=0
+ 19 | 03 00             load_const        slot=0
+ 21 | 05 01             store_reg         reg=1
+ 23 | 04 00             load_reg          reg=0
+ 25 | 0c 01             load_keyed        key=1
+ 27 | 28                print            
+ 28 | 03 00             load_const        slot=0
+ 30 | 05 03             store_reg         reg=3
+ 32 | 04 00             load_reg          reg=0
+ 34 | 05 02             store_reg         reg=2
+ 36 | 11 01 00 00 00    push_small_int    value=1
+ 41 | 0d 03 02          store_keyed       key=3 obj=2
+ 44 | ff                suspend          
+

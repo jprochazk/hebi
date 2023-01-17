@@ -126,6 +126,7 @@ impl RegAlloc {
   /// 0. The total number of used registers
   /// 1. A mapping from each register index to a final register slot
   pub fn scan(self) -> (u32, HashMap<u32, u32>) {
+    println!("{}", DisplayTracking(&self.0.borrow()));
     linear_scan(&self.0.borrow().intervals)
   }
 }

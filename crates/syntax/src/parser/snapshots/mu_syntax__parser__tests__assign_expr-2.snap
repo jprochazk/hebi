@@ -6,21 +6,16 @@ Module {
     imports: [],
     body: [
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: None,
                     value: GetVar(
                         GetVar {
                             name: "b",
@@ -30,182 +25,238 @@ Module {
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Add,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Add,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Sub,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Sub,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Div,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Div,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Mul,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Mul,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Rem,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Rem,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Pow,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Pow,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
             ),
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: Some(
-                        Maybe,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Maybe,
+                            left: GetNamed(
+                                GetNamed {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "a",
+                                        },
+                                    ),
+                                    name: "b",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },

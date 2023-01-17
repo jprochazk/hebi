@@ -199,29 +199,12 @@ impl Eq for Value {}
 
 impl Hash for Value {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    let value = if self.is_float() && f64::from_bits(self.bits).is_nan() {
+    if self.is_float() && f64::from_bits(self.bits).is_nan() {
       // all NaNs have the same hash
-      mask::QNAN
+      mask::QNAN.hash(state)
     } else {
-      self.bits
-    };
-    value.hash(state)
-  }
-}
-
-impl Value {
-  /// Checks if `self` and `other` hold the same value.
-  ///
-  /// Note that in case both values are objects, this only checks for reference
-  /// equality. This is because classes in user scripts may overload the
-  /// equality operation, in which case the VM must call a method in order to
-  /// determine whether two objects are equal according to the user's
-  /// definition.
-  pub fn is_eq(&self, other: &Value) -> bool {
-    if self.is_float() && other.is_float() {
-      f64::from_bits(self.bits) == f64::from_bits(other.bits)
-    } else {
-      self.type_tag() == other.type_tag() && self.bits == other.bits
+      // everything else is hashed as bits
+      self.bits.hash(state)
     }
   }
 }
@@ -249,6 +232,45 @@ impl Drop for Value {
     if self.is_object() {
       // Decrement the reference count of `self`
       unsafe { Ptr::decrement_strong_count(self.value() as usize) }
+    }
+  }
+}
+
+// Object-specific type checks
+impl Value {
+  pub fn as_object(&self) -> Option<&Object> {
+    if self.is_object() {
+      let addr = self.value() as usize;
+      let ptr = addr as *const Object;
+      Some(unsafe { &*ptr })
+    } else {
+      None
+    }
+  }
+
+  pub fn as_object_mut(&mut self) -> Option<&mut Object> {
+    if self.is_object() {
+      let addr = self.value() as usize;
+      let ptr = addr as *mut Object;
+      Some(unsafe { &mut *ptr })
+    } else {
+      None
+    }
+  }
+
+  pub fn as_string<'a>(&'a self) -> Option<&'a crate::object::String> {
+    if let Some(this) = self.as_object() {
+      this.as_string()
+    } else {
+      None
+    }
+  }
+
+  pub fn is_string(&self) -> bool {
+    if let Some(this) = self.as_object() {
+      this.is_string()
+    } else {
+      false
     }
   }
 }

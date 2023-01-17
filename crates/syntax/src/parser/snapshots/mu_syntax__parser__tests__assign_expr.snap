@@ -11,7 +11,6 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: None,
                     value: GetVar(
                         GetVar {
                             name: "b",
@@ -36,12 +35,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Add,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -53,12 +59,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Sub,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Sub,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -70,12 +83,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Div,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Div,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -87,12 +107,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Mul,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Mul,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -104,12 +131,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Rem,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Rem,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -121,12 +155,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Pow,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Pow,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },
@@ -138,12 +179,19 @@ Module {
                     target: GetVar {
                         name: "a",
                     },
-                    op: Some(
-                        Maybe,
-                    ),
-                    value: GetVar(
-                        GetVar {
-                            name: "b",
+                    value: Binary(
+                        Binary {
+                            op: Maybe,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
                         },
                     ),
                 },

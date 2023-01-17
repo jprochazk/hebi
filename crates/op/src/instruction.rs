@@ -18,57 +18,186 @@ instructions! {
   disassemble;
 
   // loads/stores
+  /// Load constant into the accumulator.
+  ///
+  /// ### Operands
+  /// - `slot` - index of value in the constant pool.
   LoadConst (slot:uv) = 3,
+  /// Load register into the accumulator.
+  ///
+  /// ### Operands
+  /// - `reg` - register index.
   LoadReg (reg:uv),
+  /// Store the accumulator in a register.
+  ///
+  /// ### Operands
+  /// - `reg` - register index.
   StoreReg (reg:uv),
+  /// Load capture into the accumulator.
+  ///
+  /// ### Operands
+  /// - `slot` - capture list index.
   LoadCapture (slot:uv),
+  /// Store the accumulator in a capture.
+  ///
+  /// ### Operands
+  /// - `slot` - capture list index.
   StoreCapture (slot:uv),
+  /// Load a global into the accumulator.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
   LoadGlobal (name:uv),
+  /// Store the accumulator in a global.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
   StoreGlobal (name:uv),
+  /// Load a field by name into the accumulator.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
+  LoadNamed (name:uv),
+  /// Store the accumulator in a field by name.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
+  /// - `obj` - register index of target object.
+  StoreNamed (name:uv, obj:uv),
+  /// Load a field by key into the accumulator.
+  ///
+  /// ### Operands
+  /// - `key` - register index of key.
+  LoadKeyed (key:uv),
+  /// Store the accumulator in a field by key.
+  ///
+  /// ### Operands
+  /// - `key` - register index of key.
+  /// - `obj` - register index of target object.
+  StoreKeyed (key:uv, obj:uv),
 
   // values
+  /// Push a `None` value into the accumulator.
   PushNone (),
+  /// Push a boolean `true` value into the accumulator.
   PushTrue (),
+  /// Push a boolean `false` value into the accumulator.
   PushFalse (),
+  /// Push a 32-bit signed integer into the accumulator.
+  ///
+  /// ### Operands
+  /// - `value` - integer value.
   PushSmallInt (value:sf32),
+  /// Push an empty list into the accumulator.
   CreateEmptyList (),
+  /// Push the value stored in the accumulator into a list.
+  ///
+  /// ### Operands
+  /// - `list` - register index of list.
   PushToList (list:uv),
+  /// Push an empty dictionary into the accumulator.
   CreateEmptyDict (),
+  /// Push the value stored in the accumulator into a dictionary.
+  ///
+  /// ### Operands
+  /// - `key` - register index of the key.
+  /// - `dict` - register index of dict.
   InsertToDict (key:uv, dict:uv),
 
   // jumps
+  /// Jump forward by `offset`.
   Jump :jump (offset:uv),
+  /// Jump backwards by `offset`.
   JumpBack :jump (offset:uv),
+  /// Jump forward by `offset` if value stored in the accumulator is truthy.
   JumpIfFalse :jump (offset:uv),
 
   // arithmetic (binary)
+  /// Add `lhs` to value stored in the accumulator, and store the result in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Add (lhs:uv),
+  /// Subtract value stored in the accumulator from `lhs`, and store the result in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Sub (lhs:uv),
+  /// Multiply `lhs` by value stored in the accumulator, and store the result in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Mul (lhs:uv),
+  /// Divide `lhs` by value stored in the accumulator, and store the result in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Div (lhs:uv),
+  /// Divide `lhs` by value stored in the accumulator, and store the remainder of the division in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Rem (lhs:uv),
+  /// Raise `lhs` to the power of N, where N is the value stored in the accumulator, and store the result in the accumulator.
+  ///
+  /// ### Operands
+  /// - `lhs` - register index of the left-hand side expression.
   Pow (lhs:uv),
 
   // unary
+  // TODO: `value_of` override?
+  /// Get the numerical value of the accumulator, and store it in the accumulator.
   UnaryPlus (),
+  /// Get the numerical value of the accumulator, negate it, then store it in the accumulator.
   UnaryMinus (),
+  /// Get the boolean value of the accumulator, negate it, then store it in the accumulator.
   UnaryNot (),
 
   // comparison
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is equal to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpEq (lhs:uv),
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is not equal to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpNeq (lhs:uv),
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is greater than to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpGt (lhs:uv),
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is greater than or equal to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpGe (lhs:uv),
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is less than to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpLt (lhs:uv),
+  /// Compare `lhs` to the accumulator.
+  ///
+  /// If `lhs` is less than or equal to the accumulator, store `true` in the accumulator.
+  /// Otherwise, store `false`.
   CmpLe (lhs:uv),
   // Invert (),
 
   // print
+  /// Print the value in the accumulator.
   Print (),
+  /// Print a list of values.
+  ///
+  /// ### Operands
+  /// - `list` - register index of value list.
   PrintList (list:uv),
 
-  // call frame work
+  // TODO: call frames
   // Call (),
+  /// Pop a call frame off the stack.
   Ret (),
 }
 
@@ -301,6 +430,7 @@ impl<Value: Hash + Eq> Builder<Value> {
     offsets.push(bytecode.len());
 
     // pass 2: patch jumps
+    // TODO: jumps should be relative
     let mut ip = 0;
     while ip < bytecode.len() {
       match (bytecode.get(ip), bytecode.get(ip + 1)) {

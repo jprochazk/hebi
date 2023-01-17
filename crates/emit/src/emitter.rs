@@ -1,6 +1,4 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::ops::Deref;
 
 use beef::lean::Cow;
@@ -21,6 +19,8 @@ use crate::{Error, Result};
 struct Emitter<'src> {
   state: State<'src>,
   module: &'src ast::Module<'src>,
+  /// String interning
+  strings: HashMap<String, u32>,
 }
 
 impl<'src> Emitter<'src> {
@@ -28,6 +28,7 @@ impl<'src> Emitter<'src> {
     Self {
       state: State::new(name, None),
       module,
+      strings: HashMap::new(),
     }
   }
 
@@ -52,14 +53,39 @@ impl<'src> Emitter<'src> {
       .parent
       .take()
       .expect("`self.state.parent` was set to `None` inside of callback passed to `emit_chunk`");
-    let next = std::mem::replace(&mut self.state, *parent);
+    let mut next = std::mem::replace(&mut self.state, *parent);
 
     result?;
+
+    // TODO: store num_registers in emitted Function
+    let (_num_registers, register_map) = next.regalloc.scan();
+
+    next
+      .builder
+      .patch(|instructions| patch_registers(instructions, &register_map));
 
     Ok(next.builder.build())
   }
 
   fn const_(&mut self, value: impl Into<Value>) -> u32 {
+    let value: Value = value.into();
+
+    // intern strings
+    if value.is_string() {
+      if let Some(slot) = self
+        .strings
+        .get(value.as_string().unwrap().as_str())
+        .cloned()
+      {
+        return slot;
+      }
+
+      let key = value.as_string().unwrap().clone();
+      let slot = self.state.builder.constant(value);
+      self.strings.insert(key, slot);
+      return slot;
+    }
+
     self.state.builder.constant(value)
   }
 
@@ -96,6 +122,8 @@ struct Capture {
   /// Capture slot
   slot: u32,
   /// Captured register from enclosing scope
+  ///
+  /// Used to emit `Capture` instructions after emitting closures
   register: Register,
 }
 
@@ -175,6 +203,63 @@ impl<'src> State<'src> {
     });
 
     Some(capture.slot)
+  }
+}
+
+fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u32, u32>) {
+  // TODO: some kind of trait that is automatically implemented by `instructions!`
+  // macro
+  for instruction in instructions.iter_mut() {
+    match instruction {
+      Instruction::Nop(_) => {}
+      Instruction::LoadConst(_) => {}
+      Instruction::LoadReg(v) => v.reg = register_map[&v.reg],
+      Instruction::StoreReg(v) => v.reg = register_map[&v.reg],
+      Instruction::LoadCapture(_) => {}
+      Instruction::StoreCapture(_) => {}
+      Instruction::LoadGlobal(_) => {}
+      Instruction::StoreGlobal(_) => {}
+      Instruction::LoadNamed(_) => {}
+      Instruction::StoreNamed(v) => v.obj = register_map[&v.obj],
+      Instruction::LoadKeyed(v) => v.key = register_map[&v.key],
+      Instruction::StoreKeyed(v) => {
+        v.key = register_map[&v.key];
+        v.obj = register_map[&v.obj];
+      }
+      Instruction::PushNone(_) => {}
+      Instruction::PushTrue(_) => {}
+      Instruction::PushFalse(_) => {}
+      Instruction::PushSmallInt(_) => {}
+      Instruction::CreateEmptyList(_) => {}
+      Instruction::PushToList(v) => v.list = register_map[&v.list],
+      Instruction::CreateEmptyDict(_) => {}
+      Instruction::InsertToDict(v) => {
+        v.key = register_map[&v.key];
+        v.dict = register_map[&v.dict];
+      }
+      Instruction::Jump(_) => {}
+      Instruction::JumpBack(_) => {}
+      Instruction::JumpIfFalse(_) => {}
+      Instruction::Add(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Sub(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Mul(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Div(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Rem(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Pow(v) => v.lhs = register_map[&v.lhs],
+      Instruction::UnaryPlus(_) => {}
+      Instruction::UnaryMinus(_) => {}
+      Instruction::UnaryNot(_) => {}
+      Instruction::CmpEq(v) => v.lhs = register_map[&v.lhs],
+      Instruction::CmpNeq(v) => v.lhs = register_map[&v.lhs],
+      Instruction::CmpGt(v) => v.lhs = register_map[&v.lhs],
+      Instruction::CmpGe(v) => v.lhs = register_map[&v.lhs],
+      Instruction::CmpLt(v) => v.lhs = register_map[&v.lhs],
+      Instruction::CmpLe(v) => v.lhs = register_map[&v.lhs],
+      Instruction::Print(_) => {}
+      Instruction::PrintList(v) => v.list = register_map[&v.list],
+      Instruction::Ret(_) => {}
+      Instruction::Suspend(_) => {}
+    }
   }
 }
 
@@ -279,8 +364,10 @@ mod expr {
         ast::ExprKind::Unary(v) => self.emit_unary_expr(v),
         ast::ExprKind::GetVar(v) => self.emit_get_var_expr(v),
         ast::ExprKind::SetVar(v) => self.emit_set_var_expr(v),
-        ast::ExprKind::GetField(v) => self.emit_get_field_expr(v),
-        ast::ExprKind::SetField(v) => self.emit_set_field_expr(v),
+        ast::ExprKind::GetNamed(v) => self.emit_get_named_expr(v),
+        ast::ExprKind::SetNamed(v) => self.emit_set_named_expr(v),
+        ast::ExprKind::GetKeyed(v) => self.emit_get_keyed_expr(v),
+        ast::ExprKind::SetKeyed(v) => self.emit_set_keyed_expr(v),
         ast::ExprKind::Yield(v) => self.emit_yield_expr(v),
         ast::ExprKind::Call(v) => self.emit_call_expr(v),
       }
@@ -301,7 +388,7 @@ mod expr {
           false => self.emit_op(PushFalse),
         },
         ast::Literal::String(v) => {
-          // `constant` interns the string
+          // `const_` interns the string
           let str = self.const_(v.clone());
           self.emit_op(LoadConst { slot: str });
         }
@@ -412,12 +499,52 @@ mod expr {
       Ok(())
     }
 
-    fn emit_get_field_expr(&mut self, expr: &'src ast::GetField<'src>) -> Result<()> {
-      todo!()
+    fn emit_get_named_expr(&mut self, expr: &'src ast::GetNamed<'src>) -> Result<()> {
+      let name = self.const_(expr.name.deref().clone());
+      self.emit_expr(&expr.target)?;
+      self.emit_op(LoadNamed { name });
+
+      Ok(())
     }
 
-    fn emit_set_field_expr(&mut self, expr: &'src ast::SetField<'src>) -> Result<()> {
-      todo!()
+    fn emit_set_named_expr(&mut self, expr: &'src ast::SetNamed<'src>) -> Result<()> {
+      let obj = self.reg();
+      let name = self.const_(expr.target.name.deref().clone());
+      self.emit_expr(&expr.target.target)?;
+      self.emit_op(StoreReg { reg: obj.index() });
+      self.emit_expr(&expr.value)?;
+      self.emit_op(StoreNamed {
+        name,
+        obj: obj.index(),
+      });
+
+      Ok(())
+    }
+
+    fn emit_get_keyed_expr(&mut self, expr: &'src ast::GetKeyed<'src>) -> Result<()> {
+      let key = self.reg();
+      self.emit_expr(&expr.key)?;
+      self.emit_op(StoreReg { reg: key.index() });
+      self.emit_expr(&expr.target)?;
+      self.emit_op(LoadKeyed { key: key.index() });
+
+      Ok(())
+    }
+
+    fn emit_set_keyed_expr(&mut self, expr: &'src ast::SetKeyed<'src>) -> Result<()> {
+      let obj = self.reg();
+      let key = self.reg();
+      self.emit_expr(&expr.target.key)?;
+      self.emit_op(StoreReg { reg: key.index() });
+      self.emit_expr(&expr.target.target)?;
+      self.emit_op(StoreReg { reg: obj.index() });
+      self.emit_expr(&expr.value)?;
+      self.emit_op(StoreKeyed {
+        key: key.index(),
+        obj: obj.index(),
+      });
+
+      Ok(())
     }
 
     fn emit_yield_expr(&mut self, expr: &'src ast::Yield<'src>) -> Result<()> {

@@ -85,6 +85,10 @@ impl Object {
     }
   }
 
+  pub fn is_string(&self) -> bool {
+    matches!(self.repr, Repr::String(..))
+  }
+
   pub fn as_list(&self) -> Option<&List> {
     if let Repr::List(ref v) = self.repr {
       Some(v)
@@ -101,6 +105,10 @@ impl Object {
     }
   }
 
+  pub fn is_list(&self) -> bool {
+    matches!(self.repr, Repr::List(..))
+  }
+
   pub fn as_dict(&self) -> Option<&Dict> {
     if let Repr::Dict(ref v) = self.repr {
       Some(v)
@@ -115,6 +123,10 @@ impl Object {
     } else {
       None
     }
+  }
+
+  pub fn is_dict(&self) -> bool {
+    matches!(self.repr, Repr::Dict(..))
   }
 }
 

@@ -39,11 +39,29 @@ fn print_variable() {
       v := 0
       print v # load_reg
     "#
-  };
+  }
   // TODO: capture + nested capture
   check! {
     r#"
       print v # load_global
+    "#
+  }
+}
+
+#[test]
+fn print_field() {
+  check! {
+    r#"
+      v := { a: 0 }
+      print v.a
+      v.a = 1
+    "#
+  }
+  check! {
+    r#"
+      v := { a: 0 }
+      print v["a"]
+      v["a"] = 1
     "#
   }
 }

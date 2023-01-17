@@ -7,22 +7,18 @@ Unary(
         op: Opt,
         right: Call(
             Call {
-                target: GetField(
-                    GetField {
-                        target: GetField(
-                            GetField {
-                                target: GetField(
-                                    GetField {
+                target: GetNamed(
+                    GetNamed {
+                        target: GetKeyed(
+                            GetKeyed {
+                                target: GetNamed(
+                                    GetNamed {
                                         target: GetVar(
                                             GetVar {
                                                 name: "a",
                                             },
                                         ),
-                                        key: Literal(
-                                            String(
-                                                "b",
-                                            ),
-                                        ),
+                                        name: "b",
                                     },
                                 ),
                                 key: GetVar(
@@ -32,11 +28,7 @@ Unary(
                                 ),
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "d",
-                            ),
-                        ),
+                        name: "d",
                     },
                 ),
                 args: Args {

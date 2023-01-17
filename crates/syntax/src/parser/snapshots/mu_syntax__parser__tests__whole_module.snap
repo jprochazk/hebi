@@ -28,7 +28,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         None,
                     ),
@@ -41,7 +40,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Float(
                             0.1,
@@ -56,7 +54,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Bool(
                             true,
@@ -71,7 +68,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         String(
                             "\tas\\df(00\n",
@@ -86,7 +82,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         List(
                             [
@@ -120,7 +115,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Dict(
                             [
@@ -182,7 +176,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Dict(
                             [
@@ -244,7 +237,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Dict(
                             [
@@ -306,7 +298,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Add,
@@ -331,7 +322,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Sub,
@@ -356,7 +346,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Div,
@@ -381,7 +370,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Mul,
@@ -406,7 +394,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Rem,
@@ -431,7 +418,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Pow,
@@ -456,7 +442,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Eq,
@@ -481,7 +466,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Neq,
@@ -506,7 +490,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: More,
@@ -531,7 +514,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: MoreEq,
@@ -556,7 +538,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Less,
@@ -581,7 +562,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: LessEq,
@@ -606,7 +586,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Unary(
                         Unary {
                             op: Minus,
@@ -626,7 +605,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Unary(
                         Unary {
                             op: Not,
@@ -646,7 +624,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: And,
@@ -671,7 +648,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Or,
@@ -696,7 +672,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Binary(
                         Binary {
                             op: Maybe,
@@ -721,7 +696,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Int(
                             1,
@@ -736,30 +710,20 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: Some(
-                        Add,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
-                    ),
-                },
-            ),
-        ),
-        Expr(
-            SetVar(
-                SetVar {
-                    target: GetVar {
-                        name: "v",
-                    },
-                    op: Some(
-                        Sub,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
+                    value: Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
                     ),
                 },
             ),
@@ -770,30 +734,20 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: Some(
-                        Div,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
-                    ),
-                },
-            ),
-        ),
-        Expr(
-            SetVar(
-                SetVar {
-                    target: GetVar {
-                        name: "v",
-                    },
-                    op: Some(
-                        Mul,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
+                    value: Binary(
+                        Binary {
+                            op: Sub,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
                     ),
                 },
             ),
@@ -804,30 +758,20 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: Some(
-                        Rem,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
-                    ),
-                },
-            ),
-        ),
-        Expr(
-            SetVar(
-                SetVar {
-                    target: GetVar {
-                        name: "v",
-                    },
-                    op: Some(
-                        Pow,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
+                    value: Binary(
+                        Binary {
+                            op: Div,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
                     ),
                 },
             ),
@@ -838,36 +782,111 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: Some(
-                        Maybe,
-                    ),
-                    value: Literal(
-                        Int(
-                            1,
-                        ),
+                    value: Binary(
+                        Binary {
+                            op: Mul,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
                     ),
                 },
             ),
         ),
         Expr(
-            GetField(
-                GetField {
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Rem,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Pow,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "v",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Maybe,
+                            left: GetVar(
+                                GetVar {
+                                    name: "v",
+                                },
+                            ),
+                            right: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetNamed(
+                GetNamed {
                     target: GetVar(
                         GetVar {
                             name: "v",
                         },
                     ),
-                    key: Literal(
-                        String(
-                            "a",
-                        ),
-                    ),
+                    name: "a",
                 },
             ),
         ),
         Expr(
-            GetField(
-                GetField {
+            GetKeyed(
+                GetKeyed {
                     target: GetVar(
                         GetVar {
                             name: "v",
@@ -954,7 +973,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Call(
                         Call {
                             target: GetVar(
@@ -1225,12 +1243,19 @@ Module {
                                                 target: GetVar {
                                                     name: "n",
                                                 },
-                                                op: Some(
-                                                    Add,
-                                                ),
-                                                value: GetVar(
-                                                    GetVar {
-                                                        name: "step",
+                                                value: Binary(
+                                                    Binary {
+                                                        op: Add,
+                                                        left: GetVar(
+                                                            GetVar {
+                                                                name: "n",
+                                                            },
+                                                        ),
+                                                        right: GetVar(
+                                                            GetVar {
+                                                                name: "step",
+                                                            },
+                                                        ),
                                                     },
                                                 ),
                                             },
@@ -1344,7 +1369,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Int(
                             0,
@@ -1389,13 +1413,20 @@ Module {
                                     target: GetVar {
                                         name: "v",
                                     },
-                                    op: Some(
-                                        Add,
-                                    ),
-                                    value: Literal(
-                                        Int(
-                                            1,
-                                        ),
+                                    value: Binary(
+                                        Binary {
+                                            op: Add,
+                                            left: GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                            right: Literal(
+                                                Int(
+                                                    1,
+                                                ),
+                                            ),
+                                        },
                                     ),
                                 },
                             ),
@@ -1410,7 +1441,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Literal(
                         Int(
                             0,
@@ -1469,13 +1499,20 @@ Module {
                                     target: GetVar {
                                         name: "v",
                                     },
-                                    op: Some(
-                                        Add,
-                                    ),
-                                    value: Literal(
-                                        Int(
-                                            1,
-                                        ),
+                                    value: Binary(
+                                        Binary {
+                                            op: Add,
+                                            left: GetVar(
+                                                GetVar {
+                                                    name: "v",
+                                                },
+                                            ),
+                                            right: Literal(
+                                                Int(
+                                                    1,
+                                                ),
+                                            ),
+                                        },
                                     ),
                                 },
                             ),
@@ -1590,21 +1627,16 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
+                                SetNamed(
+                                    SetNamed {
+                                        target: GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "self",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "n",
-                                                ),
-                                            ),
+                                            name: "n",
                                         },
-                                        op: None,
                                         value: GetVar(
                                             GetVar {
                                                 name: "n",
@@ -1634,18 +1666,14 @@ Module {
                                 Return(
                                     Return {
                                         value: Some(
-                                            GetField(
-                                                GetField {
+                                            GetNamed(
+                                                GetNamed {
                                                     target: GetVar(
                                                         GetVar {
                                                             name: "self",
                                                         },
                                                     ),
-                                                    key: Literal(
-                                                        String(
-                                                            "n",
-                                                        ),
-                                                    ),
+                                                    name: "n",
                                                 },
                                             ),
                                         ),
@@ -1725,7 +1753,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Call(
                         Call {
                             target: GetVar(
@@ -1750,18 +1777,14 @@ Module {
                             op: Eq,
                             left: Call(
                                 Call {
-                                    target: GetField(
-                                        GetField {
+                                    target: GetNamed(
+                                        GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "v",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "get_n",
-                                                ),
-                                            ),
+                                            name: "get_n",
                                         },
                                     ),
                                     args: Args {
@@ -1772,18 +1795,14 @@ Module {
                             ),
                             right: Call(
                                 Call {
-                                    target: GetField(
-                                        GetField {
+                                    target: GetNamed(
+                                        GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "Test",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "get_n",
-                                                ),
-                                            ),
+                                            name: "get_n",
                                         },
                                     ),
                                     args: Args {
@@ -1809,7 +1828,6 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Call(
                         Call {
                             target: GetVar(
@@ -1838,18 +1856,14 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: GetVar(
                                 GetVar {
                                     name: "Test",
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "test0",
-                                ),
-                            ),
+                            name: "test0",
                         },
                     ),
                     args: Args {
@@ -1862,18 +1876,14 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: GetVar(
                                 GetVar {
                                     name: "v",
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "test1",
-                                ),
-                            ),
+                            name: "test1",
                         },
                     ),
                     args: Args {
@@ -1910,21 +1920,16 @@ Module {
                     target: GetVar {
                         name: "v",
                     },
-                    op: None,
                     value: Call(
                         Call {
-                            target: GetField(
-                                GetField {
+                            target: GetNamed(
+                                GetNamed {
                                     target: GetVar(
                                         GetVar {
                                             name: "json",
                                         },
                                     ),
-                                    key: Literal(
-                                        String(
-                                            "parse",
-                                        ),
-                                    ),
+                                    name: "parse",
                                 },
                             ),
                             args: Args {
@@ -1975,8 +1980,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetField(
-                        GetField {
+                    GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -1990,11 +1995,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "a",
-                                ),
-                            ),
+                            name: "a",
                         },
                     ),
                 ],
@@ -2003,8 +2004,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetField(
-                        GetField {
+                    GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2027,11 +2028,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "a",
-                                ),
-                            ),
+                            name: "a",
                         },
                     ),
                 ],
@@ -2078,8 +2075,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetField(
-                        GetField {
+                    GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2093,11 +2090,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "a",
-                                ),
-                            ),
+                            name: "a",
                         },
                     ),
                 ],
@@ -2152,21 +2145,16 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
+                                SetNamed(
+                                    SetNamed {
+                                        target: GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "self",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "a",
-                                                ),
-                                            ),
+                                            name: "a",
                                         },
-                                        op: None,
                                         value: Literal(
                                             Int(
                                                 10,
@@ -2184,8 +2172,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetField(
-                        GetField {
+                    GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2199,20 +2187,16 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "a",
-                                ),
-                            ),
+                            name: "a",
                         },
                     ),
                 ],
             },
         ),
         Expr(
-            SetField(
-                SetField {
-                    target: GetField {
+            SetNamed(
+                SetNamed {
+                    target: GetNamed {
                         target: Call(
                             Call {
                                 target: GetVar(
@@ -2226,13 +2210,8 @@ Module {
                                 },
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
-                    op: None,
                     value: Literal(
                         Int(
                             10,
@@ -2291,8 +2270,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2306,11 +2285,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "inherited",
-                                ),
-                            ),
+                            name: "inherited",
                         },
                     ),
                     args: Args {
@@ -2323,8 +2298,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2338,11 +2313,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "inherited",
-                                ),
-                            ),
+                            name: "inherited",
                         },
                     ),
                     args: Args {
@@ -2394,8 +2365,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2409,11 +2380,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "inherited",
-                                ),
-                            ),
+                            name: "inherited",
                         },
                     ),
                     args: Args {
@@ -2448,18 +2415,14 @@ Module {
                             Expr(
                                 Call(
                                     Call {
-                                        target: GetField(
-                                            GetField {
+                                        target: GetNamed(
+                                            GetNamed {
                                                 target: GetVar(
                                                     GetVar {
                                                         name: "super",
                                                     },
                                                 ),
-                                                key: Literal(
-                                                    String(
-                                                        "inherited",
-                                                    ),
-                                                ),
+                                                name: "inherited",
                                             },
                                         ),
                                         args: Args {
@@ -2489,8 +2452,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetField(
-                        GetField {
+                    target: GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2504,11 +2467,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "inherited",
-                                ),
-                            ),
+                            name: "inherited",
                         },
                     ),
                     args: Args {
@@ -2539,21 +2498,16 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
+                                SetNamed(
+                                    SetNamed {
+                                        target: GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "self",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "v",
-                                                ),
-                                            ),
+                                            name: "v",
                                         },
-                                        op: None,
                                         value: Literal(
                                             Int(
                                                 10,
@@ -2591,21 +2545,16 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
+                                SetNamed(
+                                    SetNamed {
+                                        target: GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "self",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "v",
-                                                ),
-                                            ),
+                                            name: "v",
                                         },
-                                        op: None,
                                         value: Literal(
                                             Int(
                                                 10,
@@ -2649,18 +2598,14 @@ Module {
                             Expr(
                                 Call(
                                     Call {
-                                        target: GetField(
-                                            GetField {
+                                        target: GetNamed(
+                                            GetNamed {
                                                 target: GetVar(
                                                     GetVar {
                                                         name: "super",
                                                     },
                                                 ),
-                                                key: Literal(
-                                                    String(
-                                                        "init",
-                                                    ),
-                                                ),
+                                                name: "init",
                                             },
                                         ),
                                         args: Args {
@@ -2677,26 +2622,34 @@ Module {
                                 ),
                             ),
                             Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
+                                SetNamed(
+                                    SetNamed {
+                                        target: GetNamed {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "self",
                                                 },
                                             ),
-                                            key: Literal(
-                                                String(
-                                                    "v",
-                                                ),
-                                            ),
+                                            name: "v",
                                         },
-                                        op: Some(
-                                            Add,
-                                        ),
-                                        value: GetVar(
-                                            GetVar {
-                                                name: "v",
+                                        value: Binary(
+                                            Binary {
+                                                op: Add,
+                                                left: GetNamed(
+                                                    GetNamed {
+                                                        target: GetVar(
+                                                            GetVar {
+                                                                name: "self",
+                                                            },
+                                                        ),
+                                                        name: "v",
+                                                    },
+                                                ),
+                                                right: GetVar(
+                                                    GetVar {
+                                                        name: "v",
+                                                    },
+                                                ),
                                             },
                                         ),
                                     },
@@ -2711,8 +2664,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetField(
-                        GetField {
+                    GetNamed(
+                        GetNamed {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2735,11 +2688,7 @@ Module {
                                     },
                                 },
                             ),
-                            key: Literal(
-                                String(
-                                    "v",
-                                ),
-                            ),
+                            name: "v",
                         },
                     ),
                 ],

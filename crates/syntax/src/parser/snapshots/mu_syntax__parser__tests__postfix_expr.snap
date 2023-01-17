@@ -2,22 +2,18 @@
 source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
-GetField(
-    GetField {
-        target: GetField(
-            GetField {
-                target: GetField(
-                    GetField {
+GetNamed(
+    GetNamed {
+        target: GetKeyed(
+            GetKeyed {
+                target: GetNamed(
+                    GetNamed {
                         target: GetVar(
                             GetVar {
                                 name: "a",
                             },
                         ),
-                        key: Literal(
-                            String(
-                                "b",
-                            ),
-                        ),
+                        name: "b",
                     },
                 ),
                 key: GetVar(
@@ -27,10 +23,6 @@ GetField(
                 ),
             },
         ),
-        key: Literal(
-            String(
-                "d",
-            ),
-        ),
+        name: "d",
     },
 )

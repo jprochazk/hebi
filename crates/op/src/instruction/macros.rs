@@ -195,9 +195,10 @@ macro_rules! instruction_dispatch {
 }
 
 macro_rules! handler_method {
-  (:jump $name:ident, ($( $operand:ident : $ty:ty ),*)) => {
+  (:jump $(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ty ),*)) => {
     paste! {
       #[allow(unused_variables)]
+      $(#[$meta])*
       fn [<op_ $name:snake>](
         &mut self,
         $($operand : <$ty as Operand>::Decoded),*
@@ -206,9 +207,10 @@ macro_rules! handler_method {
       }
     }
   };
-  ($name:ident, ($( $operand:ident : $ty:ty ),*)) => {
+  ($(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ty ),*)) => {
     paste! {
       #[allow(unused_variables)]
+      $(#[$meta])*
       fn [<op_ $name:snake>](
         &mut self,
         $($operand : <$ty as Operand>::Decoded),*
@@ -225,7 +227,7 @@ macro_rules! instructions {
     $Handler:ident, $run:ident,
     $Nop:ident, $Wide:ident, $ExtraWide:ident, $Suspend:ident,
     $disassemble:ident;
-    $( $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ty ),*) $(= $index:literal)? ),* $(,)?
+    $( $(#[$meta:meta])* $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ty ),*) $(= $index:literal)? ),* $(,)?
   ) => {
 
     #[repr(u8)]
@@ -238,8 +240,10 @@ macro_rules! instructions {
     #[derive(Debug, Clone)]
     #[repr(u8)]
     pub enum $Instruction {
+      /// Do nothing.
       $Nop($Nop) = _Kind::$Nop as u8,
-      $( $name($name) = _Kind::$name as u8 ),*,
+      $( $(#[$meta])* $name($name) = _Kind::$name as u8 ),*,
+      /// Suspend the dispatch loop.
       $Suspend($Suspend) = _Kind::$Suspend as u8,
     }
 
@@ -266,12 +270,20 @@ macro_rules! instructions {
       #![allow(non_upper_case_globals)]
       use super::_Kind;
 
+      /// Do nothing.
       pub const $Nop: u8 = _Kind::$Nop as u8;
+      /// Variable-width encoding prefix marker.
+      ///
+      /// Scales variable-width operands to 2x (1 byte -> 2 bytes).
       pub const $Wide: u8 = 0x01;
+      /// Variable-width encoding prefix marker.
+      ///
+      /// Scales variable-width operands to 4x (1 byte -> 4 bytes).
       pub const $ExtraWide: u8 = 0x02;
 
-      $( pub const $name: u8 = _Kind::$name as u8; )*
+      $( $(#[$meta])* pub const $name: u8 = _Kind::$name as u8; )*
 
+      /// Suspend the dispatch loop.
       pub const $Suspend: u8 = _Kind::$Suspend as u8;
     }
 
@@ -339,7 +351,7 @@ macro_rules! instructions {
       pub trait $Handler {
         type Error;
 
-        $( handler_method!($(:$jump)? $name, ($($operand : $ty),*)); )*
+        $( handler_method!($(:$jump)? $(#[$meta])* $name, ($($operand : $ty),*)); )*
       }
     }
 

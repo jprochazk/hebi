@@ -1,7 +1,8 @@
-mod emitter;
+pub mod emitter;
 mod regalloc;
 
 use beef::lean::Cow;
+pub use emitter::emit;
 use span::Span;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

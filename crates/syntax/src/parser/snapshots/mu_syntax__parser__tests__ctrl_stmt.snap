@@ -35,7 +35,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: None,
@@ -50,7 +49,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: Some(
@@ -163,7 +161,6 @@ Module {
                                             target: GetVar {
                                                 name: "v",
                                             },
-                                            op: None,
                                             value: Yield(
                                                 Yield {
                                                     value: None,
@@ -178,7 +175,6 @@ Module {
                                             target: GetVar {
                                                 name: "v",
                                             },
-                                            op: None,
                                             value: Yield(
                                                 Yield {
                                                     value: Some(
@@ -301,7 +297,6 @@ Module {
                                                 target: GetVar {
                                                     name: "v",
                                                 },
-                                                op: None,
                                                 value: Yield(
                                                     Yield {
                                                         value: None,
@@ -316,7 +311,6 @@ Module {
                                                 target: GetVar {
                                                     name: "v",
                                                 },
-                                                op: None,
                                                 value: Yield(
                                                     Yield {
                                                         value: Some(
@@ -415,7 +409,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: None,
@@ -430,7 +423,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: Some(
@@ -523,7 +515,6 @@ Module {
                                                 target: GetVar {
                                                     name: "v",
                                                 },
-                                                op: None,
                                                 value: Yield(
                                                     Yield {
                                                         value: None,
@@ -538,7 +529,6 @@ Module {
                                                 target: GetVar {
                                                     name: "v",
                                                 },
-                                                op: None,
                                                 value: Yield(
                                                     Yield {
                                                         value: Some(
@@ -637,7 +627,6 @@ Module {
                                                             target: GetVar {
                                                                 name: "v",
                                                             },
-                                                            op: None,
                                                             value: Yield(
                                                                 Yield {
                                                                     value: None,
@@ -652,7 +641,6 @@ Module {
                                                             target: GetVar {
                                                                 name: "v",
                                                             },
-                                                            op: None,
                                                             value: Yield(
                                                                 Yield {
                                                                     value: Some(
@@ -727,7 +715,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: None,
@@ -742,7 +729,6 @@ Module {
                                 target: GetVar {
                                     name: "v",
                                 },
-                                op: None,
                                 value: Yield(
                                     Yield {
                                         value: Some(
