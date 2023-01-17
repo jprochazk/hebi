@@ -7,7 +7,7 @@ Module {
     body: [
         Expr(
             Literal(
-                Array(
+                List(
                     [
                         Literal(
                             Int(
@@ -30,7 +30,7 @@ Module {
         ),
         Expr(
             Literal(
-                Array(
+                List(
                     [
                         Literal(
                             Int(
@@ -53,7 +53,7 @@ Module {
         ),
         Expr(
             Literal(
-                Array(
+                List(
                     [
                         Literal(
                             Int(

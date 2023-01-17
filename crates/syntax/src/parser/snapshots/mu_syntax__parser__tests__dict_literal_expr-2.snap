@@ -7,13 +7,13 @@ Module {
     body: [
         Expr(
             Literal(
-                Object(
+                Dict(
                     [
                         (
-                            Literal(
-                                String(
-                                    "a",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -22,10 +22,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "c",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -34,10 +34,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "e",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -51,13 +51,13 @@ Module {
         ),
         Expr(
             Literal(
-                Object(
+                Dict(
                     [
                         (
-                            Literal(
-                                String(
-                                    "a",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -66,10 +66,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "c",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -78,10 +78,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "e",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -95,13 +95,13 @@ Module {
         ),
         Expr(
             Literal(
-                Object(
+                Dict(
                     [
                         (
-                            Literal(
-                                String(
-                                    "a",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -110,10 +110,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "c",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "c",
+                                },
                             ),
                             GetVar(
                                 GetVar {
@@ -122,10 +122,10 @@ Module {
                             ),
                         ),
                         (
-                            Literal(
-                                String(
-                                    "e",
-                                ),
+                            GetVar(
+                                GetVar {
+                                    name: "e",
+                                },
                             ),
                             GetVar(
                                 GetVar {

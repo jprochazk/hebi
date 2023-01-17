@@ -1,3 +1,5 @@
+use beef::lean::Cow;
+
 use crate::Value;
 
 pub type String = std::string::String;
@@ -54,6 +56,22 @@ impl From<String> for Object {
   fn from(v: String) -> Self {
     Object {
       repr: Repr::String(v),
+    }
+  }
+}
+
+impl<'a> From<&'a str> for Object {
+  fn from(value: &'a str) -> Self {
+    Object {
+      repr: Repr::String(value.to_string()),
+    }
+  }
+}
+
+impl<'a> From<Cow<'a, str>> for Object {
+  fn from(value: Cow<'a, str>) -> Self {
+    Object {
+      repr: Repr::String(value.to_string()),
     }
   }
 }

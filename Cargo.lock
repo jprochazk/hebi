@@ -161,6 +161,7 @@ dependencies = [
 name = "mu_value"
 version = "0.0.0"
 dependencies = [
+ "beef",
  "indoc",
  "insta",
 ]

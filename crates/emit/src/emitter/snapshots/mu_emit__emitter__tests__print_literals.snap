@@ -1,0 +1,16 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+print 0
+
+# Chunk:
+function <test>:
+length = 7
+const pool = <empty>
+bytecode:
+ 0 | 1a 00 00 00 00    push_small_int    value=0
+ 5 | 15                print            
+ 6 | ff                suspend          
+

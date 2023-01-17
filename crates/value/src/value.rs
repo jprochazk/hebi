@@ -253,6 +253,51 @@ impl Drop for Value {
   }
 }
 
+impl From<f64> for Value {
+  fn from(value: f64) -> Self {
+    Value::float(value)
+  }
+}
+
+impl From<i32> for Value {
+  fn from(value: i32) -> Self {
+    Value::int(value)
+  }
+}
+
+impl From<bool> for Value {
+  fn from(value: bool) -> Self {
+    Value::bool(value)
+  }
+}
+
+impl From<()> for Value {
+  fn from(_: ()) -> Self {
+    Value::none()
+  }
+}
+
+impl<T> From<T> for Value
+where
+  Object: From<T>,
+{
+  fn from(value: T) -> Self {
+    Value::object(Ptr::new(Object::from(value)))
+  }
+}
+
+impl<T> From<Option<T>> for Value
+where
+  Value: From<T>,
+{
+  fn from(value: Option<T>) -> Self {
+    match value {
+      Some(value) => Self::from(value),
+      None => Self::none(),
+    }
+  }
+}
+
 impl std::fmt::Display for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let v = self.clone();

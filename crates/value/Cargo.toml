@@ -9,6 +9,7 @@ edition = "2021"
 disable_snapshot_tests = []
 
 [dependencies]
+beef = "0.5.2"
 
 [dev-dependencies]
 indoc = "1.0.8"

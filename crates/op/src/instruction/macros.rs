@@ -22,7 +22,7 @@ macro_rules! instruction_struct {
 }
 
 macro_rules! impl_encode_into_for_jump {
-  ( :jump $name:ident ($( $operand:ident : $ty:ty )*) ) => {
+  ( :jump $name:ident ($( $operand:ident : $ty:ty ),*) ) => {
     impl EncodeInto for $name {
       #[inline]
       fn encode_into(buf: &mut [u8], ($($operand),*): <$name as Decode>::Decoded) {
@@ -39,7 +39,7 @@ macro_rules! impl_encode_into_for_jump {
       }
     }
   };
-  ( $name:ident ($( $operand:ident : $ty:ty )*) ) => {};
+  ( $name:ident ($( $operand:ident : $ty:ty ),*) ) => {};
 }
 
 macro_rules! instruction_base {
@@ -158,7 +158,8 @@ macro_rules! instruction_dispatch {
           println!("{}", disassemble(bc, *pc));
         }
 
-        *result = vm.[<op_ $name:snake>](<$name>::decode(bc, *pc + 1, *width));
+        let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
+        *result = vm.[<op_ $name:snake>]($($operand),*);
         *pc += 1 + <$name as Decode>::Operands::size(*width);
         *width = Width::Single;
         *opcode = bc[*pc];
@@ -179,8 +180,9 @@ macro_rules! instruction_dispatch {
           println!("{}", disassemble(bc, *pc));
         }
 
+        let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
         handle_jump(
-          vm.[<op_ $name:snake>](<$name>::decode(bc, *pc + 1, *width)),
+          vm.[<op_ $name:snake>]($($operand),*),
           pc,
           <$name as Decode>::Operands::size(*width),
           result

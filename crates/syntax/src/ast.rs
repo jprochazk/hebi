@@ -168,8 +168,8 @@ pub enum Literal<'src> {
   Float(f64),
   Bool(bool),
   String(Cow<'src, str>),
-  Array(Vec<Expr<'src>>),
-  Object(Vec<(Expr<'src>, Expr<'src>)>),
+  List(Vec<Expr<'src>>),
+  Dict(Vec<(Expr<'src>, Expr<'src>)>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -401,8 +401,8 @@ pub fn expr_field<'src>(s: impl Into<Span>, target: Expr<'src>, key: Ident<'src>
   )
 }
 
-pub fn expr_array(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
-  Expr::new(s, ExprKind::Literal(Box::new(Literal::Array(items))))
+pub fn expr_list(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
+  Expr::new(s, ExprKind::Literal(Box::new(Literal::List(items))))
 }
 
 pub fn ident_key(v: Ident) -> Expr {
@@ -412,8 +412,8 @@ pub fn ident_key(v: Ident) -> Expr {
   )
 }
 
-pub fn expr_object<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
-  Expr::new(s, ExprKind::Literal(Box::new(Literal::Object(items))))
+pub fn expr_dict<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
+  Expr::new(s, ExprKind::Literal(Box::new(Literal::Dict(items))))
 }
 
 pub fn expr_get_var(name: Ident) -> Expr {

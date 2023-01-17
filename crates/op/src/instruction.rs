@@ -45,7 +45,7 @@ instructions! {
   CreateEmptyList (),
   PushToList (list:uv),
   CreateEmptyDict (),
-  InsertToDict (dict:uv),
+  InsertToDict (key:uv, dict:uv),
   // Call (),
   Ret (),
 }
@@ -211,7 +211,8 @@ impl<Value: Hash + Eq> Builder<Value> {
   /// Inserts an entry into the constant pool, and returns the index.
   ///
   /// If `value` is already in the constant pool, this just returns its index.
-  pub fn constant(&mut self, value: Value) -> u32 {
+  pub fn constant(&mut self, value: impl Into<Value>) -> u32 {
+    let value = value.into();
     if let Some(index) = self.const_index_map.get(&value).cloned() {
       return index;
     }

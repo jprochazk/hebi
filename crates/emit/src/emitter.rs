@@ -5,6 +5,13 @@ use op::instruction::*;
 use syntax::ast;
 use value::Value;
 
+pub fn emit<'src>(
+  name: impl Into<Cow<'src, str>>,
+  module: &'src ast::Module<'src>,
+) -> Result<Chunk<Value>> {
+  Emitter::new(name, module).emit()
+}
+
 use crate::regalloc::RegAlloc;
 use crate::{Error, Result};
 
@@ -19,6 +26,15 @@ impl<'src> Emitter<'src> {
       state: State::new(name, None),
       module,
     }
+  }
+
+  fn emit(&mut self) -> Result<Chunk<Value>> {
+    self.emit_chunk(|this| {
+      for stmt in this.module.body.iter() {
+        this.emit_stmt(stmt)?;
+      }
+      Ok(())
+    })
   }
 
   fn emit_chunk(&mut self, f: impl FnOnce(&mut Self) -> Result<()>) -> Result<Chunk<Value>> {
@@ -131,7 +147,21 @@ mod stmt {
       //     list_push(temp)
       //   op(PrintList, temp)
 
-      todo!()
+      if stmt.values.len() == 1 {
+        self.emit_expr(&stmt.values[0])?;
+        self.b().op(Print);
+      } else {
+        let temp = self.r().alloc();
+        self.b().op(CreateEmptyList);
+        self.b().op(StoreReg { reg: temp.index() });
+        for value in stmt.values.iter() {
+          self.emit_expr(value)?;
+          self.b().op(PushToList { list: temp.index() });
+        }
+        self.b().op(PrintList { list: temp.index() });
+      }
+
+      Ok(())
     }
   }
 }
@@ -159,40 +189,56 @@ mod expr {
     }
 
     fn emit_literal_expr(&mut self, expr: &ast::Literal) -> Result<()> {
-      todo!()
-      /* match expr {
-        ast::Literal::None => {
-          self.b().op(PushNone);
-        }
+      match expr {
+        ast::Literal::None => self.b().op(PushNone),
+        ast::Literal::Int(v) => self.b().op(PushSmallInt { value: *v }),
         ast::Literal::Float(v) => {
-          todo!()
+          // float is 64 bits so cannot be stored inline,
+          // but it is interned
+          let num = self.b().constant(*v);
+          self.b().op(LoadConst { slot: num })
         }
-        ast::Literal::Bool(v) => {
-          self.b().op(PushBool, v);
-        }
+        ast::Literal::Bool(v) => match v {
+          true => self.b().op(PushTrue),
+          false => self.b().op(PushFalse),
+        },
         ast::Literal::String(v) => {
-          let str = self.b().constant(v);
-          self.b().op(LoadConst, str);
+          // `constant` interns the string
+          let str = self.b().constant(v.clone());
+          self.b().op(LoadConst { slot: str })
         }
-        ast::Literal::Array(list) => {
-          // a := None     // a: r0
-          // a = [0, 1, 2] // list: r1
-          // a = [0, 1, 2] // list: r1 <-- re-used register
-
+        ast::Literal::List(list) => {
           // TODO: from descriptor
-          let temp = self.r().temp();
-          self.b().op(CreateEmptyList, ());
-          self.b().op(StoreReg, temp);
+          let temp = self.r().alloc();
+          self.b().op(CreateEmptyList);
+          self.b().op(StoreReg { reg: temp.index() });
           for v in list {
             self.emit_expr(v)?;
-            self.b().op(ListPush, temp);
+            self.b().op(PushToList { list: temp.index() });
           }
-          self.b().op(LoadReg, temp);
-          // `temp` should end here
+          self.b().op(LoadReg { reg: temp.index() })
         }
-        ast::Literal::Object(_) => todo!(),
-      }
-      Ok(()) */
+        ast::Literal::Dict(obj) => {
+          // TODO: from descriptor
+          let temp = self.r().alloc();
+          self.b().op(CreateEmptyDict);
+          self.b().op(StoreReg { reg: temp.index() });
+          for (k, v) in obj {
+            let key_reg = self.r().alloc();
+            self.emit_expr(k)?;
+            self.b().op(StoreReg {
+              reg: key_reg.index(),
+            });
+            self.emit_expr(v)?;
+            self.b().op(InsertToDict {
+              key: key_reg.index(),
+              dict: temp.index(),
+            });
+          }
+          self.b().op(LoadReg { reg: temp.index() })
+        }
+      };
+      Ok(())
     }
 
     fn emit_binary_expr(&mut self, expr: &ast::Binary) -> Result<()> {
@@ -228,3 +274,6 @@ mod expr {
     }
   }
 }
+
+#[cfg(test)]
+mod tests;

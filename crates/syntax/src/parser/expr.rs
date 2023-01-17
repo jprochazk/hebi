@@ -216,7 +216,7 @@ impl<'src> Parser<'src> {
 
       self.expect(Brk_SquareR)?;
       let end = self.previous().span.end;
-      return Ok(ast::expr_array(start..end, items));
+      return Ok(ast::expr_list(start..end, items));
     }
 
     if self.bump_if(Brk_CurlyL) {
@@ -224,15 +224,15 @@ impl<'src> Parser<'src> {
 
       let mut items = vec![];
       if !self.current().is(Brk_CurlyR) {
-        items.push(self.object_field()?);
+        items.push(self.dict_field()?);
         while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
-          items.push(self.object_field()?);
+          items.push(self.dict_field()?);
         }
       }
 
       self.expect(Brk_CurlyR)?;
       let end = self.previous().span.end;
-      return Ok(ast::expr_object(start..end, items));
+      return Ok(ast::expr_dict(start..end, items));
     }
 
     if self.current().is(Lit_Ident) {
@@ -252,14 +252,14 @@ impl<'src> Parser<'src> {
     Err(Error::new("unexpected token", self.current().span))
   }
 
-  fn object_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
-    let key = self.object_key()?;
+  fn dict_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
+    let key = self.dict_key()?;
     self.expect(Tok_Colon)?;
     let value = self.expr()?;
     Ok((key, value))
   }
 
-  fn object_key(&mut self) -> Result<ast::Expr<'src>> {
+  fn dict_key(&mut self) -> Result<ast::Expr<'src>> {
     if self.bump_if(Brk_SquareL) {
       let key = self.expr()?;
       self.expect(Brk_SquareR)?;

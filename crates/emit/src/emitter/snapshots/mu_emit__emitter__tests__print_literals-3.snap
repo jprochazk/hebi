@@ -1,0 +1,18 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+print "test"
+
+# Chunk:
+function <test>:
+length = 4
+const pool = (length=1) {
+  0 = "test"
+}
+bytecode:
+ 0 | 03 00             load_const        slot=0
+ 2 | 15                print            
+ 3 | ff                suspend          
+
