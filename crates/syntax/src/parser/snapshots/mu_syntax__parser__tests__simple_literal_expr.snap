@@ -7,7 +7,7 @@ Module {
     body: [
         Expr(
             Literal(
-                Null,
+                None,
             ),
         ),
         Expr(
@@ -26,28 +26,28 @@ Module {
         ),
         Expr(
             Literal(
-                Number(
-                    1.0,
+                Int(
+                    1,
                 ),
             ),
         ),
         Expr(
             Literal(
-                Number(
+                Float(
                     0.1,
                 ),
             ),
         ),
         Expr(
             Literal(
-                Number(
+                Float(
                     1500.0,
                 ),
             ),
         ),
         Expr(
             Literal(
-                Number(
+                Float(
                     0.00314,
                 ),
             ),

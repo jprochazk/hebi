@@ -16,8 +16,8 @@ Module {
             Var {
                 name: "v",
                 value: Literal(
-                    Number(
-                        0.0,
+                    Int(
+                        0,
                     ),
                 ),
             },
@@ -30,7 +30,7 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Null,
+                        None,
                     ),
                 },
             ),
@@ -43,7 +43,7 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Number(
+                        Float(
                             0.1,
                         ),
                     ),
@@ -91,10 +91,10 @@ Module {
                         Array(
                             [
                                 Literal(
-                                    Null,
+                                    None,
                                 ),
                                 Literal(
-                                    Number(
+                                    Float(
                                         0.1,
                                     ),
                                 ),
@@ -131,7 +131,7 @@ Module {
                                         ),
                                     ),
                                     Literal(
-                                        Null,
+                                        None,
                                     ),
                                 ),
                                 (
@@ -141,7 +141,7 @@ Module {
                                         ),
                                     ),
                                     Literal(
-                                        Number(
+                                        Float(
                                             0.1,
                                         ),
                                     ),
@@ -193,7 +193,7 @@ Module {
                                         ),
                                     ),
                                     Literal(
-                                        Null,
+                                        None,
                                     ),
                                 ),
                                 (
@@ -203,7 +203,7 @@ Module {
                                         ),
                                     ),
                                     Literal(
-                                        Number(
+                                        Float(
                                             0.1,
                                         ),
                                     ),
@@ -250,30 +250,30 @@ Module {
                             [
                                 (
                                     Literal(
-                                        Number(
-                                            0.0,
+                                        Int(
+                                            0,
                                         ),
                                     ),
                                     Literal(
-                                        Null,
+                                        None,
                                     ),
                                 ),
                                 (
                                     Literal(
-                                        Number(
-                                            1.0,
+                                        Int(
+                                            1,
                                         ),
                                     ),
                                     Literal(
-                                        Number(
+                                        Float(
                                             0.1,
                                         ),
                                     ),
                                 ),
                                 (
                                     Literal(
-                                        Number(
-                                            2.0,
+                                        Int(
+                                            2,
                                         ),
                                     ),
                                     Literal(
@@ -284,8 +284,8 @@ Module {
                                 ),
                                 (
                                     Literal(
-                                        Number(
-                                            3.0,
+                                        Int(
+                                            3,
                                         ),
                                     ),
                                     Literal(
@@ -311,13 +311,13 @@ Module {
                         Binary {
                             op: Add,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -336,13 +336,13 @@ Module {
                         Binary {
                             op: Sub,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -361,13 +361,13 @@ Module {
                         Binary {
                             op: Div,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -386,13 +386,13 @@ Module {
                         Binary {
                             op: Mul,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -411,13 +411,13 @@ Module {
                         Binary {
                             op: Rem,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -436,13 +436,13 @@ Module {
                         Binary {
                             op: Pow,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -461,13 +461,13 @@ Module {
                         Binary {
                             op: Eq,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -486,13 +486,13 @@ Module {
                         Binary {
                             op: Neq,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -511,13 +511,13 @@ Module {
                         Binary {
                             op: More,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -536,13 +536,13 @@ Module {
                         Binary {
                             op: MoreEq,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -561,13 +561,13 @@ Module {
                         Binary {
                             op: Less,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -586,13 +586,13 @@ Module {
                         Binary {
                             op: LessEq,
                             left: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -611,8 +611,8 @@ Module {
                         Unary {
                             op: Minus,
                             right: Literal(
-                                Number(
-                                    2.0,
+                                Int(
+                                    2,
                                 ),
                             ),
                         },
@@ -723,8 +723,8 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -740,8 +740,8 @@ Module {
                         Add,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -757,8 +757,8 @@ Module {
                         Sub,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -774,8 +774,8 @@ Module {
                         Div,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -791,8 +791,8 @@ Module {
                         Mul,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -808,8 +808,8 @@ Module {
                         Rem,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -825,8 +825,8 @@ Module {
                         Pow,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -842,8 +842,8 @@ Module {
                         Maybe,
                     ),
                     value: Literal(
-                        Number(
-                            1.0,
+                        Int(
+                            1,
                         ),
                     ),
                 },
@@ -965,13 +965,13 @@ Module {
                             args: Args {
                                 pos: [
                                     Literal(
-                                        Number(
-                                            0.0,
+                                        Int(
+                                            0,
                                         ),
                                     ),
                                     Literal(
-                                        Number(
-                                            1.0,
+                                        Int(
+                                            1,
                                         ),
                                     ),
                                 ],
@@ -1010,8 +1010,8 @@ Module {
                                                 },
                                             ),
                                             right: Literal(
-                                                Number(
-                                                    2.0,
+                                                Int(
+                                                    2,
                                                 ),
                                             ),
                                         },
@@ -1065,8 +1065,8 @@ Module {
                                                                                         },
                                                                                     ),
                                                                                     right: Literal(
-                                                                                        Number(
-                                                                                            1.0,
+                                                                                        Int(
+                                                                                            1,
                                                                                         ),
                                                                                     ),
                                                                                 },
@@ -1141,13 +1141,13 @@ Module {
                     iter: Range(
                         IterRange {
                             start: Literal(
-                                Number(
-                                    0.0,
+                                Int(
+                                    0,
                                 ),
                             ),
                             end: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                             inclusive: false,
@@ -1302,18 +1302,18 @@ Module {
                                 args: Args {
                                     pos: [
                                         Literal(
-                                            Number(
-                                                0.0,
+                                            Int(
+                                                0,
                                             ),
                                         ),
                                         Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                         Literal(
-                                            Number(
-                                                100.0,
+                                            Int(
+                                                100,
                                             ),
                                         ),
                                     ],
@@ -1346,8 +1346,8 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Number(
-                            0.0,
+                        Int(
+                            0,
                         ),
                     ),
                 },
@@ -1365,8 +1365,8 @@ Module {
                                 },
                             ),
                             right: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                         },
@@ -1393,8 +1393,8 @@ Module {
                                         Add,
                                     ),
                                     value: Literal(
-                                        Number(
-                                            1.0,
+                                        Int(
+                                            1,
                                         ),
                                     ),
                                 },
@@ -1412,8 +1412,8 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Number(
-                            0.0,
+                        Int(
+                            0,
                         ),
                     ),
                 },
@@ -1436,8 +1436,8 @@ Module {
                                                     },
                                                 ),
                                                 right: Literal(
-                                                    Number(
-                                                        10.0,
+                                                    Int(
+                                                        10,
                                                     ),
                                                 ),
                                             },
@@ -1473,8 +1473,8 @@ Module {
                                         Add,
                                     ),
                                     value: Literal(
-                                        Number(
-                                            1.0,
+                                        Int(
+                                            1,
                                         ),
                                     ),
                                 },
@@ -1497,8 +1497,8 @@ Module {
                                     },
                                 ),
                                 right: Literal(
-                                    Number(
-                                        10.0,
+                                    Int(
+                                        10,
                                     ),
                                 ),
                             },
@@ -1527,8 +1527,8 @@ Module {
                                     },
                                 ),
                                 right: Literal(
-                                    Number(
-                                        20.0,
+                                    Int(
+                                        20,
                                     ),
                                 ),
                             },
@@ -1823,8 +1823,8 @@ Module {
                                     (
                                         "n",
                                         Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                     ),
@@ -1962,8 +1962,8 @@ Module {
                         name: "a",
                         default: Some(
                             Literal(
-                                Number(
-                                    100.0,
+                                Int(
+                                    100,
                                 ),
                             ),
                         ),
@@ -2018,8 +2018,8 @@ Module {
                                             (
                                                 "a",
                                                 Literal(
-                                                    Number(
-                                                        10.0,
+                                                    Int(
+                                                        10,
                                                     ),
                                                 ),
                                             ),
@@ -2046,8 +2046,8 @@ Module {
                         name: "a",
                         default: Some(
                             Literal(
-                                Number(
-                                    100.0,
+                                Int(
+                                    100,
                                 ),
                             ),
                         ),
@@ -2119,8 +2119,8 @@ Module {
                                     (
                                         "a",
                                         Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                     ),
@@ -2168,8 +2168,8 @@ Module {
                                         },
                                         op: None,
                                         value: Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                     },
@@ -2234,8 +2234,8 @@ Module {
                     },
                     op: None,
                     value: Literal(
-                        Number(
-                            10.0,
+                        Int(
+                            10,
                         ),
                     ),
                 },
@@ -2555,8 +2555,8 @@ Module {
                                         },
                                         op: None,
                                         value: Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                     },
@@ -2607,8 +2607,8 @@ Module {
                                         },
                                         op: None,
                                         value: Literal(
-                                            Number(
-                                                10.0,
+                                            Int(
+                                                10,
                                             ),
                                         ),
                                     },
@@ -2726,8 +2726,8 @@ Module {
                                             (
                                                 "v",
                                                 Literal(
-                                                    Number(
-                                                        15.0,
+                                                    Int(
+                                                        15,
                                                     ),
                                                 ),
                                             ),

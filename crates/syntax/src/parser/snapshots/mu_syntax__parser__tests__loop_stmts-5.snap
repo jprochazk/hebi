@@ -62,13 +62,13 @@ Module {
                     iter: Range(
                         IterRange {
                             start: Literal(
-                                Number(
-                                    0.0,
+                                Int(
+                                    0,
                                 ),
                             ),
                             end: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                             inclusive: false,
@@ -87,13 +87,13 @@ Module {
                     iter: Range(
                         IterRange {
                             start: Literal(
-                                Number(
-                                    0.0,
+                                Int(
+                                    0,
                                 ),
                             ),
                             end: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                             inclusive: false,
@@ -194,13 +194,13 @@ Module {
                     iter: Range(
                         IterRange {
                             start: Literal(
-                                Number(
-                                    0.0,
+                                Int(
+                                    0,
                                 ),
                             ),
                             end: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                             inclusive: true,
@@ -219,13 +219,13 @@ Module {
                     iter: Range(
                         IterRange {
                             start: Literal(
-                                Number(
-                                    0.0,
+                                Int(
+                                    0,
                                 ),
                             ),
                             end: Literal(
-                                Number(
-                                    10.0,
+                                Int(
+                                    10,
                                 ),
                             ),
                             inclusive: true,

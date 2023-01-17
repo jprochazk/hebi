@@ -176,23 +176,28 @@ impl<'src> Parser<'src> {
   fn primary_expr(&mut self) -> Result<ast::Expr<'src>> {
     check_recursion_limit(self.current().span)?;
 
-    if self.bump_if(Lit_Null) {
-      return Ok(ast::lit2::null(self.previous().span));
+    if self.bump_if(Lit_None) {
+      return Ok(ast::lit::none(self.previous().span));
     }
 
     if self.bump_if(Lit_Bool) {
       let token = self.previous();
-      return Ok(ast::lit2::bool(token.span, self.lex.lexeme(token)));
+      return Ok(ast::lit::bool(token.span, self.lex.lexeme(token)));
     }
 
-    if self.bump_if(Lit_Number) {
+    if self.bump_if(Lit_Int) {
       let token = self.previous();
-      return ast::lit2::num(token.span, self.lex.lexeme(token));
+      return ast::lit::int(token.span, self.lex.lexeme(token));
+    }
+
+    if self.bump_if(Lit_Float) {
+      let token = self.previous();
+      return ast::lit::float(token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_String) {
       let token = self.previous();
-      match ast::lit2::str(token.span, self.lex.lexeme(token)) {
+      match ast::lit::str(token.span, self.lex.lexeme(token)) {
         Some(str) => return Ok(str),
         None => return Err(Error::new("invalid escape sequence", token.span)),
       }

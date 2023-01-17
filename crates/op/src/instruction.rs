@@ -48,7 +48,6 @@ instructions! {
   InsertToDict (dict:uv),
   // Call (),
   Ret (),
-  // Suspend (),
 }
 
 // TODO: more instructions
@@ -57,42 +56,6 @@ instructions! {
 // TODO: calling convention
 // TODO: fast call? (speed up keyword args) - maybe IC is enough?
 // TODO: What does V8 do with call ICs?
-
-// Nop
-// Wide
-// ExtraWide
-// LoadConst
-// LoadReg
-// StoreReg
-// Jump
-// JumpBack
-// JumpIfFalse
-// Add
-// Sub
-// Mul
-// Div
-// Rem
-// Pow
-// Eq
-// Neq
-// Gt
-// Ge
-// Lt
-// Le
-// Invert
-// Print
-// PrintList
-// PushNone
-// PushTrue
-// PushFalse
-// PushSmallInt
-// CreateEmptyList
-// ListPush
-// CreateEmptyDict
-// DictInsert
-// Call
-// Ret
-// Suspend
 
 pub trait Opcode: private::Sealed {
   /// Returns the name of the operand for the purpose of `Display`.

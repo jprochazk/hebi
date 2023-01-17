@@ -237,12 +237,14 @@ pub enum TokenKind {
   Op_RangeInc,
 
   // Literals
-  /// `null`
-  #[token("null")]
-  Lit_Null,
+  /// `none`
+  #[token("none")]
+  Lit_None,
+  #[regex("[0-9]([0-9_]*[0-9])?", priority = 10)]
+  Lit_Int,
   /// `0`, `1.0`, `5e10`, etc.
   #[regex(r"[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?")]
-  Lit_Number,
+  Lit_Float,
   /// `true` or `false`
   #[token("true")]
   #[token("false")]
@@ -327,8 +329,9 @@ impl TokenKind {
       TokenKind::Op_AndAnd => "&&",
       TokenKind::Op_Range => "..",
       TokenKind::Op_RangeInc => "..=",
-      TokenKind::Lit_Null => "null",
-      TokenKind::Lit_Number => "number",
+      TokenKind::Lit_None => "none",
+      TokenKind::Lit_Int => "int",
+      TokenKind::Lit_Float => "float",
       TokenKind::Lit_Bool => "bool",
       TokenKind::Lit_String => "string",
       TokenKind::Lit_Ident => "identifier",

@@ -177,7 +177,7 @@ fn call_expr() {
 fn simple_literal_expr() {
   check_module! {
     r#"
-      null
+      none
       true
       false
       1
@@ -741,15 +741,15 @@ fn whole_module() {
       v := 0
 
       # values
-      v = null # null
+      v = none # none
       v = 0.1 # number
       v = true # bool
       v = "\tas\\df\x2800\n" # string
-      v = [null, 0.1, true, "\tas\\df\x2800\n"] # array
+      v = [none, 0.1, true, "\tas\\df\x2800\n"] # array
       # object
-      v = {a: null, b: 0.1, c: true, d: "\tas\\df\x2800\n"}
-      v = {["a"]: null, ["b"]: 0.1, ["c"]: true, ["d"]: "\tas\\df\x2800\n"}
-      v = {[0]: null, [1]: 0.1, [2]: true, [3]: "\tas\\df\x2800\n"}
+      v = {a: none, b: 0.1, c: true, d: "\tas\\df\x2800\n"}
+      v = {["a"]: none, ["b"]: 0.1, ["c"]: true, ["d"]: "\tas\\df\x2800\n"}
+      v = {[0]: none, [1]: 0.1, [2]: true, [3]: "\tas\\df\x2800\n"}
 
       # operators
       v = 2 + 2
@@ -807,7 +807,7 @@ fn whole_module() {
 
       # `yield` inside `fn` makes it an iterator
       # when called, iterators return an object with a `next` method
-      # an iterator is done when its `next` method returns null
+      # an iterator is done when its `next` method returns none
       fn counter(start, step, end):
         n := start
         loop:

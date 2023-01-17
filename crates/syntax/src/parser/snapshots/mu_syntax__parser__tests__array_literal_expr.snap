@@ -10,41 +10,18 @@ Module {
                 Array(
                     [
                         Literal(
-                            Number(
-                                0.0,
+                            Int(
+                                0,
                             ),
                         ),
                         Literal(
-                            Number(
-                                1.0,
+                            Int(
+                                1,
                             ),
                         ),
                         Literal(
-                            Number(
-                                2.0,
-                            ),
-                        ),
-                    ],
-                ),
-            ),
-        ),
-        Expr(
-            Literal(
-                Array(
-                    [
-                        Literal(
-                            Number(
-                                0.0,
-                            ),
-                        ),
-                        Literal(
-                            Number(
-                                1.0,
-                            ),
-                        ),
-                        Literal(
-                            Number(
-                                2.0,
+                            Int(
+                                2,
                             ),
                         ),
                     ],
@@ -56,18 +33,41 @@ Module {
                 Array(
                     [
                         Literal(
-                            Number(
-                                0.0,
+                            Int(
+                                0,
                             ),
                         ),
                         Literal(
-                            Number(
-                                1.0,
+                            Int(
+                                1,
                             ),
                         ),
                         Literal(
-                            Number(
-                                2.0,
+                            Int(
+                                2,
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Array(
+                    [
+                        Literal(
+                            Int(
+                                0,
+                            ),
+                        ),
+                        Literal(
+                            Int(
+                                1,
+                            ),
+                        ),
+                        Literal(
+                            Int(
+                                2,
                             ),
                         ),
                     ],

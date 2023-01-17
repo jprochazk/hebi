@@ -14,8 +14,8 @@ Module {
                         ),
                     ),
                     Literal(
-                        Number(
-                            0.0,
+                        Int(
+                            0,
                         ),
                     ),
                     Literal(
@@ -35,8 +35,8 @@ Module {
                         ),
                     ),
                     Literal(
-                        Number(
-                            0.0,
+                        Int(
+                            0,
                         ),
                     ),
                     Literal(

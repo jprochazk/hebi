@@ -161,10 +161,10 @@ mod expr {
     fn emit_literal_expr(&mut self, expr: &ast::Literal) -> Result<()> {
       todo!()
       /* match expr {
-        ast::Literal::Null => {
-          self.b().op(PushNull, ());
+        ast::Literal::None => {
+          self.b().op(PushNone);
         }
-        ast::Literal::Number(v) => {
+        ast::Literal::Float(v) => {
           todo!()
         }
         ast::Literal::Bool(v) => {

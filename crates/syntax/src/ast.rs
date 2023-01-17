@@ -163,8 +163,9 @@ pub enum ExprKind<'src> {
 
 #[cfg_attr(test, derive(Debug))]
 pub enum Literal<'src> {
-  Null,
-  Number(f64),
+  None,
+  Int(i32),
+  Float(f64),
   Bool(bool),
   String(Cow<'src, str>),
   Array(Vec<Expr<'src>>),
@@ -525,15 +526,15 @@ pub fn for_loop_stmt<'src>(
   )
 }
 
-pub mod lit2 {
+pub mod lit {
   use span::Span;
 
   use super::*;
   use crate::{Error, Result};
 
-  pub fn null<'src>(s: impl Into<Span>) -> Expr<'src> {
+  pub fn none<'src>(s: impl Into<Span>) -> Expr<'src> {
     let s = s.into();
-    Expr::new(s, ExprKind::Literal(Box::new(Literal::Null)))
+    Expr::new(s, ExprKind::Literal(Box::new(Literal::None)))
   }
 
   pub fn bool<'src>(s: impl Into<Span>, lexeme: &str) -> Expr<'src> {
@@ -546,14 +547,28 @@ pub mod lit2 {
     Expr::new(s, ExprKind::Literal(Box::new(Literal::Bool(v))))
   }
 
-  pub fn num<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
+  pub fn int<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
+    let s = s.into();
+    let value = lexeme
+      .parse::<i64>()
+      .map_err(|e| Error::new(format!("invalid number {e}"), s))?;
+    let lit = if value < (i32::MIN as i64) || (i32::MAX as i64) < value {
+      // TODO: bigint?
+      Literal::Float(value as f64)
+    } else {
+      Literal::Int(value as i32)
+    };
+    Ok(Expr::new(s, ExprKind::Literal(Box::new(lit))))
+  }
+
+  pub fn float<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
     let s = s.into();
     let value = lexeme
       .parse()
       .map_err(|e| Error::new(format!("invalid number {e}"), s))?;
     Ok(Expr::new(
       s,
-      ExprKind::Literal(Box::new(Literal::Number(value))),
+      ExprKind::Literal(Box::new(Literal::Float(value))),
     ))
   }
 
@@ -642,32 +657,5 @@ pub mod lit2 {
     u32::from_str_radix(&unicode_seq, 16)
       .ok()
       .and_then(char::from_u32)
-  }
-}
-
-pub mod lit {
-  use super::*;
-
-  pub fn null<'src>(_: &str) -> Literal<'src> {
-    Literal::Null
-  }
-
-  pub fn bool(lexeme: &str) -> Literal {
-    let v = match lexeme {
-      "true" => true,
-      "false" => false,
-      _ => unreachable!("bool is only ever `true` or `false`"),
-    };
-    Literal::Bool(v)
-  }
-
-  pub fn num(lexeme: &str) -> Option<Literal> {
-    Some(Literal::Number(lexeme.parse().ok()?))
-  }
-
-  pub fn str(lexeme: &str) -> Literal {
-    let lexeme = lexeme.strip_prefix('"').unwrap_or(lexeme);
-    let lexeme = lexeme.strip_suffix('"').unwrap_or(lexeme);
-    Literal::String(Cow::from(lexeme))
   }
 }
