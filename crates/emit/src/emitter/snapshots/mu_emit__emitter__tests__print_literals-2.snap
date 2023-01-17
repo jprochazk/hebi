@@ -13,6 +13,6 @@ const pool = (length=1) {
 }
 bytecode:
  0 | 03 00             load_const        slot=0
- 2 | 15                print            
+ 2 | 24                print            
  3 | ff                suspend          
 

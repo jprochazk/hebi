@@ -1,3 +1,6 @@
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::ops::Deref;
 
 use beef::lean::Cow;
@@ -12,7 +15,7 @@ pub fn emit<'src>(
   Emitter::new(name, module).emit()
 }
 
-use crate::regalloc::RegAlloc;
+use crate::regalloc::{RegAlloc, Register};
 use crate::{Error, Result};
 
 struct Emitter<'src> {
@@ -56,13 +59,44 @@ impl<'src> Emitter<'src> {
     Ok(next.builder.build())
   }
 
-  fn b(&mut self) -> &mut Builder<Value> {
-    &mut self.state.builder
+  fn const_(&mut self, value: impl Into<Value>) -> u32 {
+    self.state.builder.constant(value)
   }
 
-  fn r(&mut self) -> &mut RegAlloc {
-    &mut self.state.regalloc
+  fn emit_op(&mut self, op: impl Into<Instruction>) {
+    self.state.builder.op(op)
   }
+
+  fn reg(&mut self) -> Register {
+    self.state.regalloc.alloc()
+  }
+
+  fn resolve_var(&mut self, name: impl Into<Cow<'src, str>>) -> Get {
+    let name = name.into();
+
+    if let Some(reg) = self.state.local(&name) {
+      return Get::Local(reg);
+    }
+
+    if let Some(reg) = self.state.capture(name) {
+      return Get::Capture(reg);
+    }
+
+    Get::Global
+  }
+}
+
+enum Get {
+  Local(Register),
+  Capture(u32),
+  Global,
+}
+
+struct Capture {
+  /// Capture slot
+  slot: u32,
+  /// Captured register from enclosing scope
+  register: Register,
 }
 
 struct State<'src> {
@@ -70,6 +104,21 @@ struct State<'src> {
   name: Cow<'src, str>,
   parent: Option<Box<State<'src>>>,
   regalloc: RegAlloc,
+
+  /// Map of variable name to register.
+  ///
+  /// Because locals may shadow other locals, the register is actually a stack
+  /// of registers, and only the last one is active.
+  ///
+  /// Invariants:
+  /// - Register stacks may not be empty.If a stack is about to be emptied, the
+  ///   local should be removed instead.
+  locals: HashMap<Cow<'src, str>, Vec<Register>>,
+  /// List of variables captured from an enclosing scope.
+  ///
+  /// These may be shadowed by a local.
+  captures: HashMap<Cow<'src, str>, Capture>,
+  capture_slot: u32,
 }
 
 impl<'src> State<'src> {
@@ -80,7 +129,52 @@ impl<'src> State<'src> {
       name,
       parent,
       regalloc: RegAlloc::new(),
+      locals: HashMap::new(),
+      captures: HashMap::new(),
+      capture_slot: 0,
     }
+  }
+
+  // TODO: remove variables at the end of a block
+
+  fn declare(&mut self, name: impl Into<Cow<'src, str>>, reg: Register) {
+    let name = name.into();
+    if let Some(stack) = self.locals.get_mut(&name) {
+      stack.push(reg);
+    } else {
+      self.locals.insert(name, vec![reg]);
+    }
+  }
+
+  fn local(&self, name: &str) -> Option<Register> {
+    let Some(stack) = self.locals.get(name) else {
+      return None;
+    };
+    let Some(reg) = stack.last() else {
+      panic!("local {name} register stack is empty");
+    };
+    Some(reg.clone())
+  }
+
+  fn capture(&mut self, name: impl Into<Cow<'src, str>>) -> Option<u32> {
+    let name = name.into();
+    let Some(parent) = self.parent.as_deref_mut() else {
+      return None;
+    };
+    let Some(reg) = parent.local(&name) else {
+      return parent.capture(name);
+    };
+
+    let capture = self.captures.entry(name).or_insert_with(|| {
+      let slot = self.capture_slot;
+      self.capture_slot += 1;
+      Capture {
+        slot,
+        register: reg,
+      }
+    });
+
+    Some(capture.slot)
   }
 }
 
@@ -102,31 +196,35 @@ mod stmt {
       }
     }
 
-    fn emit_var_stmt(&mut self, stmt: &ast::Var) -> Result<()> {
+    fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>) -> Result<()> {
+      self.emit_expr(&stmt.value)?;
+      let reg = self.reg();
+      self.emit_op(StoreReg { reg: reg.index() });
+      self.state.declare(stmt.name.deref().clone(), reg);
+      Ok(())
+    }
+
+    fn emit_if_stmt(&mut self, stmt: &'src ast::If<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_if_stmt(&mut self, stmt: &ast::If) -> Result<()> {
+    fn emit_loop_stmt(&mut self, stmt: &'src ast::Loop<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_loop_stmt(&mut self, stmt: &ast::Loop) -> Result<()> {
+    fn emit_ctrl_stmt(&mut self, stmt: &'src ast::Ctrl<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_ctrl_stmt(&mut self, stmt: &ast::Ctrl) -> Result<()> {
+    fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_func_stmt(&mut self, stmt: &ast::Func) -> Result<()> {
+    fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_class_stmt(&mut self, stmt: &ast::Class) -> Result<()> {
-      todo!()
-    }
-
-    fn emit_expr_stmt(&mut self, expr: &ast::Expr) -> Result<()> {
+    fn emit_expr_stmt(&mut self, expr: &'src ast::Expr<'src>) -> Result<()> {
       self.emit_expr(expr)
     }
 
@@ -134,7 +232,7 @@ mod stmt {
       Ok(())
     }
 
-    fn emit_print_stmt(&mut self, stmt: &ast::Print) -> Result<()> {
+    fn emit_print_stmt(&mut self, stmt: &'src ast::Print<'src>) -> Result<()> {
       // #for n=1
       //   emit_expr(values[0])
       //   op(Print) // prints accumulator
@@ -149,16 +247,16 @@ mod stmt {
 
       if stmt.values.len() == 1 {
         self.emit_expr(&stmt.values[0])?;
-        self.b().op(Print);
+        self.emit_op(Print);
       } else {
-        let temp = self.r().alloc();
-        self.b().op(CreateEmptyList);
-        self.b().op(StoreReg { reg: temp.index() });
+        let temp = self.reg();
+        self.emit_op(CreateEmptyList);
+        self.emit_op(StoreReg { reg: temp.index() });
         for value in stmt.values.iter() {
           self.emit_expr(value)?;
-          self.b().op(PushToList { list: temp.index() });
+          self.emit_op(PushToList { list: temp.index() });
         }
-        self.b().op(PrintList { list: temp.index() });
+        self.emit_op(PrintList { list: temp.index() });
       }
 
       Ok(())
@@ -174,7 +272,7 @@ mod expr {
     ///
     /// Expressions may allocate temporary registers, but the result is always
     /// stored in the accumulator.
-    pub(crate) fn emit_expr(&mut self, expr: &ast::Expr) -> Result<()> {
+    pub(crate) fn emit_expr(&mut self, expr: &'src ast::Expr<'src>) -> Result<()> {
       match expr.deref() {
         ast::ExprKind::Literal(v) => self.emit_literal_expr(v),
         ast::ExprKind::Binary(v) => self.emit_binary_expr(v),
@@ -188,88 +286,145 @@ mod expr {
       }
     }
 
-    fn emit_literal_expr(&mut self, expr: &ast::Literal) -> Result<()> {
+    fn emit_literal_expr(&mut self, expr: &'src ast::Literal<'src>) -> Result<()> {
       match expr {
-        ast::Literal::None => self.b().op(PushNone),
-        ast::Literal::Int(v) => self.b().op(PushSmallInt { value: *v }),
+        ast::Literal::None => self.emit_op(PushNone),
+        ast::Literal::Int(v) => self.emit_op(PushSmallInt { value: *v }),
         ast::Literal::Float(v) => {
           // float is 64 bits so cannot be stored inline,
           // but it is interned
-          let num = self.b().constant(*v);
-          self.b().op(LoadConst { slot: num })
+          let num = self.const_(*v);
+          self.emit_op(LoadConst { slot: num });
         }
         ast::Literal::Bool(v) => match v {
-          true => self.b().op(PushTrue),
-          false => self.b().op(PushFalse),
+          true => self.emit_op(PushTrue),
+          false => self.emit_op(PushFalse),
         },
         ast::Literal::String(v) => {
           // `constant` interns the string
-          let str = self.b().constant(v.clone());
-          self.b().op(LoadConst { slot: str })
+          let str = self.const_(v.clone());
+          self.emit_op(LoadConst { slot: str });
         }
         ast::Literal::List(list) => {
           // TODO: from descriptor
-          let temp = self.r().alloc();
-          self.b().op(CreateEmptyList);
-          self.b().op(StoreReg { reg: temp.index() });
+          let temp = self.reg();
+          self.emit_op(CreateEmptyList);
+          self.emit_op(StoreReg { reg: temp.index() });
           for v in list {
             self.emit_expr(v)?;
-            self.b().op(PushToList { list: temp.index() });
+            self.emit_op(PushToList { list: temp.index() });
           }
-          self.b().op(LoadReg { reg: temp.index() })
+          self.emit_op(LoadReg { reg: temp.index() });
         }
         ast::Literal::Dict(obj) => {
           // TODO: from descriptor
-          let temp = self.r().alloc();
-          self.b().op(CreateEmptyDict);
-          self.b().op(StoreReg { reg: temp.index() });
+          let temp = self.reg();
+          self.emit_op(CreateEmptyDict);
+          self.emit_op(StoreReg { reg: temp.index() });
           for (k, v) in obj {
-            let key_reg = self.r().alloc();
+            let key_reg = self.reg();
             self.emit_expr(k)?;
-            self.b().op(StoreReg {
+            self.emit_op(StoreReg {
               reg: key_reg.index(),
             });
             self.emit_expr(v)?;
-            self.b().op(InsertToDict {
+            self.emit_op(InsertToDict {
               key: key_reg.index(),
               dict: temp.index(),
             });
           }
-          self.b().op(LoadReg { reg: temp.index() })
+          self.emit_op(LoadReg { reg: temp.index() });
         }
-      };
+      }
       Ok(())
     }
 
-    fn emit_binary_expr(&mut self, expr: &ast::Binary) -> Result<()> {
+    fn emit_binary_expr(&mut self, expr: &'src ast::Binary<'src>) -> Result<()> {
+      // binary expressions store lhs in a register,
+      // and rhs in the accumulator
+
+      let lhs = self.reg();
+      self.emit_expr(&expr.left)?;
+      self.emit_op(StoreReg { reg: lhs.index() });
+      self.emit_expr(&expr.right)?;
+
+      let lhs = lhs.index();
+      match expr.op {
+        ast::BinaryOp::Add => self.emit_op(Add { lhs }),
+        ast::BinaryOp::Sub => self.emit_op(Sub { lhs }),
+        ast::BinaryOp::Div => self.emit_op(Div { lhs }),
+        ast::BinaryOp::Mul => self.emit_op(Mul { lhs }),
+        ast::BinaryOp::Rem => self.emit_op(Rem { lhs }),
+        ast::BinaryOp::Pow => self.emit_op(Pow { lhs }),
+        ast::BinaryOp::Eq => self.emit_op(CmpEq { lhs }),
+        ast::BinaryOp::Neq => self.emit_op(CmpNeq { lhs }),
+        ast::BinaryOp::More => self.emit_op(CmpGt { lhs }),
+        ast::BinaryOp::MoreEq => self.emit_op(CmpGe { lhs }),
+        ast::BinaryOp::Less => self.emit_op(CmpLt { lhs }),
+        ast::BinaryOp::LessEq => self.emit_op(CmpLe { lhs }),
+        ast::BinaryOp::And => todo!("short-circuiting and"),
+        ast::BinaryOp::Or => todo!("short-circuiting or"),
+        ast::BinaryOp::Maybe => todo!("short-circuiting maybe"),
+      }
+
+      Ok(())
+    }
+
+    fn emit_unary_expr(&mut self, expr: &'src ast::Unary<'src>) -> Result<()> {
+      // unary expressions only use the accumulator
+
+      self.emit_expr(&expr.right)?;
+
+      match expr.op {
+        ast::UnaryOp::Plus => self.emit_op(UnaryPlus),
+        ast::UnaryOp::Minus => self.emit_op(UnaryMinus),
+        ast::UnaryOp::Not => self.emit_op(UnaryNot),
+        ast::UnaryOp::Opt => todo!("optional access"),
+      }
+
+      Ok(())
+    }
+
+    fn emit_get_var_expr(&mut self, expr: &'src ast::GetVar<'src>) -> Result<()> {
+      match self.resolve_var(expr.name.deref().clone()) {
+        Get::Local(reg) => self.emit_op(LoadReg { reg: reg.index() }),
+        Get::Capture(slot) => self.emit_op(LoadCapture { slot }),
+        Get::Global => {
+          let name = self.const_(expr.name.deref().clone());
+          self.emit_op(LoadGlobal { name })
+        }
+      }
+
+      Ok(())
+    }
+
+    fn emit_set_var_expr(&mut self, expr: &'src ast::SetVar<'src>) -> Result<()> {
+      self.emit_expr(&expr.value)?;
+      match self.resolve_var(expr.target.name.deref().clone()) {
+        Get::Local(reg) => self.emit_op(StoreReg { reg: reg.index() }),
+        Get::Capture(slot) => self.emit_op(StoreCapture { slot }),
+        Get::Global => {
+          let name = self.const_(expr.target.name.deref().clone());
+          self.emit_op(StoreGlobal { name });
+        }
+      }
+
+      Ok(())
+    }
+
+    fn emit_get_field_expr(&mut self, expr: &'src ast::GetField<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_unary_expr(&mut self, expr: &ast::Unary) -> Result<()> {
+    fn emit_set_field_expr(&mut self, expr: &'src ast::SetField<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_get_var_expr(&mut self, expr: &ast::GetVar) -> Result<()> {
+    fn emit_yield_expr(&mut self, expr: &'src ast::Yield<'src>) -> Result<()> {
       todo!()
     }
 
-    fn emit_set_var_expr(&mut self, expr: &ast::SetVar) -> Result<()> {
-      todo!()
-    }
-
-    fn emit_get_field_expr(&mut self, expr: &ast::GetField) -> Result<()> {
-      todo!()
-    }
-
-    fn emit_set_field_expr(&mut self, expr: &ast::SetField) -> Result<()> {
-      todo!()
-    }
-
-    fn emit_yield_expr(&mut self, expr: &ast::Yield) -> Result<()> {
-      todo!()
-    }
-
-    fn emit_call_expr(&mut self, expr: &ast::Call) -> Result<()> {
+    fn emit_call_expr(&mut self, expr: &'src ast::Call<'src>) -> Result<()> {
       todo!()
     }
   }

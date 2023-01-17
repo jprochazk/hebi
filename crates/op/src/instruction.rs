@@ -17,27 +17,16 @@ instructions! {
   Nop, Wide, ExtraWide, Suspend,
   disassemble;
 
+  // loads/stores
   LoadConst (slot:uv) = 3,
   LoadReg (reg:uv),
   StoreReg (reg:uv),
-  Jump :jump (offset:uv),
-  JumpBack :jump (offset:uv),
-  JumpIfFalse :jump (offset:uv),
-  Add (lhs:uv),
-  Sub (lhs:uv),
-  Mul (lhs:uv),
-  Div (lhs:uv),
-  Rem (lhs:uv),
-  Pow (lhs:uv),
-  CmpEq (lhs:uv),
-  CmpNeq (lhs:uv),
-  CmpGt (lhs:uv),
-  CmpGe (lhs:uv),
-  CmpLt (lhs:uv),
-  CmpLe (lhs:uv),
-  // Invert (),
-  Print (),
-  PrintList (list:uv),
+  LoadCapture (slot:uv),
+  StoreCapture (slot:uv),
+  LoadGlobal (name:uv),
+  StoreGlobal (name:uv),
+
+  // values
   PushNone (),
   PushTrue (),
   PushFalse (),
@@ -46,6 +35,39 @@ instructions! {
   PushToList (list:uv),
   CreateEmptyDict (),
   InsertToDict (key:uv, dict:uv),
+
+  // jumps
+  Jump :jump (offset:uv),
+  JumpBack :jump (offset:uv),
+  JumpIfFalse :jump (offset:uv),
+
+  // arithmetic (binary)
+  Add (lhs:uv),
+  Sub (lhs:uv),
+  Mul (lhs:uv),
+  Div (lhs:uv),
+  Rem (lhs:uv),
+  Pow (lhs:uv),
+
+  // unary
+  UnaryPlus (),
+  UnaryMinus (),
+  UnaryNot (),
+
+  // comparison
+  CmpEq (lhs:uv),
+  CmpNeq (lhs:uv),
+  CmpGt (lhs:uv),
+  CmpGe (lhs:uv),
+  CmpLt (lhs:uv),
+  CmpLe (lhs:uv),
+  // Invert (),
+
+  // print
+  Print (),
+  PrintList (list:uv),
+
+  // call frame work
   // Call (),
   Ret (),
 }
@@ -222,9 +244,8 @@ impl<Value: Hash + Eq> Builder<Value> {
     index
   }
 
-  pub fn op(&mut self, op: impl Into<Instruction>) -> &mut Self {
+  pub fn op(&mut self, op: impl Into<Instruction>) {
     self.instructions.push(op.into());
-    self
   }
 
   pub fn patch(&mut self, f: impl FnOnce(&mut Vec<Instruction>)) {

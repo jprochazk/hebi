@@ -10,7 +10,7 @@ function <test>:
 length = 7
 const pool = <empty>
 bytecode:
- 0 | 1a 00 00 00 00    push_small_int    value=0
- 5 | 15                print            
+ 0 | 0d 00 00 00 00    push_small_int    value=0
+ 5 | 24                print            
  6 | ff                suspend          
 

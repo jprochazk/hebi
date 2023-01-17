@@ -6,24 +6,24 @@ function <test>:
 length = 38
 const pool = <empty>
 bytecode:
-  0 | 1a 0a 00 00 00    push_small_int    value=10
+  0 | 0d 0a 00 00 00    push_small_int    value=10
   5 | 05 00             store_reg         reg=0
   7 | 04 00             load_reg          reg=0
-  9 | 08 24             jump_if_false     offset=36
+  9 | 14 24             jump_if_false     offset=36
  11 | 00                nop              
  12 | 00                nop              
  13 | 00                nop              
  14 | 00                nop              
- 15 | 1a 7b 00 00 00    push_small_int    value=123
- 20 | 15                print            
- 21 | 1a 01 00 00 00    push_small_int    value=1
- 26 | 0a 00             sub               lhs=0
+ 15 | 0d 7b 00 00 00    push_small_int    value=123
+ 20 | 24                print            
+ 21 | 0d 01 00 00 00    push_small_int    value=1
+ 26 | 16 00             sub               lhs=0
  28 | 05 00             store_reg         reg=0
- 30 | 06 07             jump              offset=7
+ 30 | 12 07             jump              offset=7
  32 | 00                nop              
  33 | 00                nop              
  34 | 00                nop              
  35 | 00                nop              
- 36 | 1f                ret              
+ 36 | 26                ret              
  37 | ff                suspend          
 

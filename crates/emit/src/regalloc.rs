@@ -229,6 +229,7 @@ impl Tracking {
   }
 }
 
+#[derive(Clone)]
 pub struct Register {
   index: u32,
   tracking: Rc<RefCell<Tracking>>,

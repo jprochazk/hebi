@@ -10,15 +10,15 @@ function <test>:
 length = 28
 const pool = <empty>
 bytecode:
-  0 | 1b                create_empty_list
+  0 | 0e                create_empty_list
   1 | 05 00             store_reg         reg=0
-  3 | 1a 00 00 00 00    push_small_int    value=0
-  8 | 1c 00             push_to_list      list=0
- 10 | 1a 01 00 00 00    push_small_int    value=1
- 15 | 1c 00             push_to_list      list=0
- 17 | 1a 02 00 00 00    push_small_int    value=2
- 22 | 1c 00             push_to_list      list=0
+  3 | 0d 00 00 00 00    push_small_int    value=0
+  8 | 0f 00             push_to_list      list=0
+ 10 | 0d 01 00 00 00    push_small_int    value=1
+ 15 | 0f 00             push_to_list      list=0
+ 17 | 0d 02 00 00 00    push_small_int    value=2
+ 22 | 0f 00             push_to_list      list=0
  24 | 04 00             load_reg          reg=0
- 26 | 15                print            
+ 26 | 24                print            
  27 | ff                suspend          
 

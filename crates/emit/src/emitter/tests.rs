@@ -1,7 +1,7 @@
 use super::*;
 
 macro_rules! check {
-  ($input:literal) => {
+  ($input:literal) => {{
     let input = indoc::indoc!($input);
     let module = match syntax::parse(input) {
       Ok(module) => module,
@@ -20,7 +20,7 @@ macro_rules! check {
     };
     let snapshot = format!("# Input:\n{input}\n\n# Chunk:\n{}", chunk.disassemble());
     insta::assert_snapshot!(snapshot);
-  };
+  }};
 }
 
 #[test]
@@ -30,4 +30,20 @@ fn print_literals() {
   check!(r#"print "test""#);
   check!(r#"print [0, 1, 2]"#);
   check!(r#"print { a: 0, b: 1, c: 2 }"#);
+}
+
+#[test]
+fn print_variable() {
+  check! {
+    r#"
+      v := 0
+      print v # load_reg
+    "#
+  };
+  // TODO: capture + nested capture
+  check! {
+    r#"
+      print v # load_global
+    "#
+  }
 }

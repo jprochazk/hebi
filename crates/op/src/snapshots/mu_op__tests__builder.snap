@@ -20,29 +20,29 @@ bytecode:
  25 | 05 00             store_reg         reg=0
  27 | 01 05 00 01       (w)store_reg      reg=256
  31 | 02 05 00 00 01 00 (x)store_reg      reg=65536
- 37 | 06 00             jump              offset=0
+ 37 | 12 00             jump              offset=0
  39 | 00                nop              
  40 | 00                nop              
  41 | 00                nop              
  42 | 00                nop              
- 43 | 06 4c             jump              offset=76
+ 43 | 12 4c             jump              offset=76
  45 | 00                nop              
  46 | 00                nop              
  47 | 00                nop              
  48 | 00                nop              
- 49 | 08 00             jump_if_false     offset=0
+ 49 | 14 00             jump_if_false     offset=0
  51 | 00                nop              
  52 | 00                nop              
  53 | 00                nop              
  54 | 00                nop              
- 55 | 08 4c             jump_if_false     offset=76
+ 55 | 14 4c             jump_if_false     offset=76
  57 | 00                nop              
  58 | 00                nop              
  59 | 00                nop              
  60 | 00                nop              
- 61 | 1a 00 00 00 00    push_small_int    value=0
- 66 | 1a ff ff ff 7f    push_small_int    value=2147483647
- 71 | 1a 00 00 00 80    push_small_int    value=-2147483648
- 76 | 1f                ret              
+ 61 | 0d 00 00 00 00    push_small_int    value=0
+ 66 | 0d ff ff ff 7f    push_small_int    value=2147483647
+ 71 | 0d 00 00 00 80    push_small_int    value=-2147483648
+ 76 | 26                ret              
  77 | ff                suspend          
 
