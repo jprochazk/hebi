@@ -196,6 +196,7 @@ instructions! {
   PrintList (list:uv),
 
   // TODO: call frames
+  /// Call
   // Call (),
   /// Pop a call frame off the stack.
   Ret (),

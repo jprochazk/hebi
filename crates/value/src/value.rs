@@ -1,10 +1,11 @@
 #![allow(clippy::unusual_byte_groupings)]
 
+use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
-use crate::object::Object;
-use crate::ptr::Ptr;
+use crate::object;
+use crate::ptr::*;
 
 mod mask {
   //! Generic mask bits
@@ -37,7 +38,7 @@ enum PhantomValue {
   Int(i32),
   Bool(bool),
   None,
-  Object(Ptr<Object>),
+  Object(Ptr<object::Object>),
 }
 
 /// Mu's core `Value` type.
@@ -98,7 +99,7 @@ impl Value {
     Self::new(bits)
   }
 
-  pub fn object(v: Ptr<Object>) -> Self {
+  pub fn object(v: Ptr<object::Object>) -> Self {
     let ptr = Ptr::into_addr(v) as u64;
     let bits = (ptr & mask::VALUE) | ty::OBJECT;
     Self::new(bits)
@@ -173,13 +174,33 @@ impl Value {
     Some(())
   }
 
-  pub fn to_object(self) -> Option<Ptr<Object>> {
+  pub fn to_object(self) -> Option<Ptr<object::Object>> {
     if !self.is_object() {
       return None;
     }
     let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
     std::mem::forget(self);
     Some(ptr)
+  }
+
+  pub fn as_object(&self) -> Option<Ref<'_, object::Object>> {
+    if self.is_object() {
+      let addr = self.value() as usize;
+      let ptr = addr as *const RefCell<object::Object>;
+      Some(unsafe { &*ptr }.borrow())
+    } else {
+      None
+    }
+  }
+
+  pub fn as_object_mut(&mut self) -> Option<RefMut<'_, object::Object>> {
+    if self.is_object() {
+      let addr = self.value() as usize;
+      let ptr = addr as *const RefCell<object::Object>;
+      Some(unsafe { &*ptr }.borrow_mut())
+    } else {
+      None
+    }
   }
 }
 
@@ -236,45 +257,6 @@ impl Drop for Value {
   }
 }
 
-// Object-specific type checks
-impl Value {
-  pub fn as_object(&self) -> Option<&Object> {
-    if self.is_object() {
-      let addr = self.value() as usize;
-      let ptr = addr as *const Object;
-      Some(unsafe { &*ptr })
-    } else {
-      None
-    }
-  }
-
-  pub fn as_object_mut(&mut self) -> Option<&mut Object> {
-    if self.is_object() {
-      let addr = self.value() as usize;
-      let ptr = addr as *mut Object;
-      Some(unsafe { &mut *ptr })
-    } else {
-      None
-    }
-  }
-
-  pub fn as_string<'a>(&'a self) -> Option<&'a crate::object::String> {
-    if let Some(this) = self.as_object() {
-      this.as_string()
-    } else {
-      None
-    }
-  }
-
-  pub fn is_string(&self) -> bool {
-    if let Some(this) = self.as_object() {
-      this.is_string()
-    } else {
-      false
-    }
-  }
-}
-
 impl From<f64> for Value {
   fn from(value: f64) -> Self {
     Value::float(value)
@@ -301,10 +283,10 @@ impl From<()> for Value {
 
 impl<T> From<T> for Value
 where
-  Object: From<T>,
+  object::Object: From<T>,
 {
   fn from(value: T) -> Self {
-    Value::object(Ptr::new(Object::from(value)))
+    Value::object(Ptr::new(object::Object::from(value)))
   }
 }
 

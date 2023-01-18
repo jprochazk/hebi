@@ -1,18 +1,20 @@
+pub use std::cell::{Ref, RefCell, RefMut};
+use std::ops::Deref;
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Ptr<T>(pub(crate) Rc<T>);
+pub struct Ptr<T>(pub(crate) Rc<RefCell<T>>);
 
 impl<T> Ptr<T> {
   pub fn new(v: T) -> Self {
-    Ptr(Rc::new(v))
+    Ptr(Rc::new(RefCell::new(v)))
   }
 
   /// Safety:
   /// - `addr` must come from `Ptr::into_addr`, and the underlying memory must
   ///   still be live
   pub(crate) unsafe fn from_addr(addr: usize) -> Self {
-    Ptr(Rc::from_raw(addr as *const T))
+    Ptr(Rc::from_raw(addr as *const RefCell<T>))
   }
 
   /// To avoid a memory leak, the address must be converted back into a `Ptr`
@@ -30,6 +32,14 @@ impl<T> Ptr<T> {
   }
 }
 
+impl<T> Deref for Ptr<T> {
+  type Target = RefCell<T>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
 impl Ptr<()> {
   pub(crate) unsafe fn increment_strong_count(addr: usize) {
     let ptr = addr as *const ();
@@ -44,12 +54,12 @@ impl Ptr<()> {
 
 impl<T: std::fmt::Debug> std::fmt::Debug for Ptr<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", self.0.as_ref())
+    <T as std::fmt::Debug>::fmt(&self.0.borrow(), f)
   }
 }
 
 impl<T: std::fmt::Display> std::fmt::Display for Ptr<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Display::fmt(&self.0, f)
+    <T as std::fmt::Display>::fmt(&self.0.borrow(), f)
   }
 }

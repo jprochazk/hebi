@@ -10,6 +10,7 @@ disable_snapshot_tests = []
 
 [dependencies]
 beef = "0.5.2"
+paste = "1.0.11"
 
 [dev-dependencies]
 indoc = "1.0.8"

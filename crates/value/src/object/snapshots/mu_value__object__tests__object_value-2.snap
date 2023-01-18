@@ -1,0 +1,37 @@
+---
+source: crates/value/src/object/tests.rs
+expression: "format!(\"display:\\n{v}\\n\\ndebug:\\n{v:#?}\")"
+---
+display:
+{"a": 0, "b": 1}
+
+debug:
+Value {
+    type: "object",
+    value: Some(
+        {
+            Value {
+                type: "object",
+                value: Some(
+                    "a",
+                ),
+            }: Value {
+                type: "int",
+                value: Some(
+                    0,
+                ),
+            },
+            Value {
+                type: "object",
+                value: Some(
+                    "b",
+                ),
+            }: Value {
+                type: "int",
+                value: Some(
+                    1,
+                ),
+            },
+        },
+    ),
+}

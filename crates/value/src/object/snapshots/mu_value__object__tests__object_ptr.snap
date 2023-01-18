@@ -1,0 +1,34 @@
+---
+source: crates/value/src/object/tests.rs
+expression: "format!(\"display:\\n{v}\\n\\ndebug:\\n{v:#?}\")"
+---
+display:
+[0, 1, 2, 3]
+
+debug:
+[
+    Value {
+        type: "int",
+        value: Some(
+            0,
+        ),
+    },
+    Value {
+        type: "int",
+        value: Some(
+            1,
+        ),
+    },
+    Value {
+        type: "int",
+        value: Some(
+            2,
+        ),
+    },
+    Value {
+        type: "int",
+        value: Some(
+            3,
+        ),
+    },
+]

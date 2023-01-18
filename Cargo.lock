@@ -164,6 +164,7 @@ dependencies = [
  "beef",
  "indoc",
  "insta",
+ "paste",
 ]
 
 [[package]]

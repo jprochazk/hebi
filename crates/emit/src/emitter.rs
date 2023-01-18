@@ -72,17 +72,13 @@ impl<'src> Emitter<'src> {
 
     // intern strings
     if value.is_string() {
-      if let Some(slot) = self
-        .strings
-        .get(value.as_string().unwrap().as_str())
-        .cloned()
-      {
+      let str = value.as_string().unwrap();
+      if let Some(slot) = self.strings.get(str.as_str()).cloned() {
         return slot;
       }
 
-      let key = value.as_string().unwrap().clone();
-      let slot = self.state.builder.constant(value);
-      self.strings.insert(key, slot);
+      let slot = self.state.builder.constant(value.clone());
+      self.strings.insert(str.clone(), slot);
       return slot;
     }
 
