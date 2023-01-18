@@ -70,6 +70,8 @@ impl<'src> Emitter<'src> {
   fn const_(&mut self, value: impl Into<Value>) -> u32 {
     let value: Value = value.into();
 
+    // TODO: global string interner, this only interns locally
+    // which means that "a" from module != "a" from a different module
     // intern strings
     if value.is_string() {
       let str = value.as_string().unwrap();
