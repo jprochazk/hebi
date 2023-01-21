@@ -1,0 +1,30 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+f(a, b, c=2)
+
+# Chunk:
+function <test>:
+length = 27
+const pool = (length=4) {
+  0 = "f"
+  1 = "a"
+  2 = "b"
+  3 = "c"
+}
+bytecode:
+  0 | 08 00             load_global          name=0
+  2 | 05 00             store_reg            reg=0
+  4 | 14                create_empty_dict   
+  5 | 05 01             store_reg            reg=1
+  7 | 08 01             load_global          name=1
+  9 | 05 02             store_reg            reg=2
+ 11 | 08 02             load_global          name=2
+ 13 | 05 03             store_reg            reg=3
+ 15 | 11 02 00 00 00    push_small_int       value=2
+ 20 | 16 03 01          insert_to_dict_keyed key=3 dict=1
+ 23 | 2c 00 02          call_kw              callee=0 args=2
+ 26 | ff                suspend             
+

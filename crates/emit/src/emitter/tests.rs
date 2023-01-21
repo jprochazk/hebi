@@ -65,3 +65,14 @@ fn print_field() {
     "#
   }
 }
+
+#[test]
+fn call() {
+  check!(r#"f()"#);
+  check!(r#"f(0)"#);
+  check!(r#"f(0, 1, 2)"#);
+  check!(r#"f(a=0)"#);
+  check!(r#"f(a=0, b=1, c=2)"#);
+  check!(r#"f(a, b, c=2)"#);
+  check!(r#"a(b(c()))"#);
+}

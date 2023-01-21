@@ -3,17 +3,17 @@ source: crates/emit/src/emitter/tests.rs
 expression: snapshot
 ---
 # Input:
-print v # load_global
-
+f()
 
 # Chunk:
 function <test>:
-length = 4
+length = 8
 const pool = (length=1) {
-  0 = "v"
+  0 = "f"
 }
 bytecode:
  0 | 08 00             load_global          name=0
- 2 | 29                print               
- 3 | ff                suspend             
+ 2 | 05 00             store_reg            reg=0
+ 4 | 2b 00 00          call                 callee=0 args=0
+ 7 | ff                suspend             
 

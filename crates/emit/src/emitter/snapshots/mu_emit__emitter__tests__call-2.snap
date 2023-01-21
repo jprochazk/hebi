@@ -1,0 +1,21 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+f(0)
+
+# Chunk:
+function <test>:
+length = 15
+const pool = (length=1) {
+  0 = "f"
+}
+bytecode:
+  0 | 08 00             load_global          name=0
+  2 | 05 00             store_reg            reg=0
+  4 | 11 00 00 00 00    push_small_int       value=0
+  9 | 05 01             store_reg            reg=1
+ 11 | 2b 00 01          call                 callee=0 args=1
+ 14 | ff                suspend             
+

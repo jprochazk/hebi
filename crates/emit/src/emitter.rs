@@ -17,7 +17,7 @@ use crate::regalloc::{RegAlloc, Register};
 use crate::{Error, Result};
 
 struct Emitter<'src> {
-  state: State<'src>,
+  state: Function<'src>,
   module: &'src ast::Module<'src>,
   /// String interning
   strings: HashMap<String, u32>,
@@ -26,7 +26,7 @@ struct Emitter<'src> {
 impl<'src> Emitter<'src> {
   fn new(name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
     Self {
-      state: State::new(name, None),
+      state: Function::new(name, None),
       module,
       strings: HashMap::new(),
     }
@@ -42,7 +42,7 @@ impl<'src> Emitter<'src> {
   }
 
   fn emit_chunk(&mut self, f: impl FnOnce(&mut Self) -> Result<()>) -> Result<Chunk<Value>> {
-    let next = State::new(self.state.name.clone(), None);
+    let next = Function::new(self.state.name.clone(), None);
     let parent = std::mem::replace(&mut self.state, next);
     self.state.parent = Some(Box::new(parent));
 
@@ -125,10 +125,10 @@ struct Capture {
   register: Register,
 }
 
-struct State<'src> {
+struct Function<'src> {
   builder: Builder<Value>,
   name: Cow<'src, str>,
-  parent: Option<Box<State<'src>>>,
+  parent: Option<Box<Function<'src>>>,
   regalloc: RegAlloc,
 
   /// Map of variable name to register.
@@ -137,7 +137,7 @@ struct State<'src> {
   /// of registers, and only the last one is active.
   ///
   /// Invariants:
-  /// - Register stacks may not be empty.If a stack is about to be emptied, the
+  /// - Register stacks may not be empty. If a stack is about to be emptied, the
   ///   local should be removed instead.
   locals: HashMap<Cow<'src, str>, Vec<Register>>,
   /// List of variables captured from an enclosing scope.
@@ -147,8 +147,8 @@ struct State<'src> {
   capture_slot: u32,
 }
 
-impl<'src> State<'src> {
-  fn new(name: impl Into<Cow<'src, str>>, parent: Option<Box<State<'src>>>) -> Self {
+impl<'src> Function<'src> {
+  fn new(name: impl Into<Cow<'src, str>>, parent: Option<Box<Function<'src>>>) -> Self {
     let name = name.into();
     Self {
       builder: Builder::new(name.to_string()),
@@ -235,6 +235,9 @@ fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u
         v.key = register_map[&v.key];
         v.dict = register_map[&v.dict];
       }
+      Instruction::InsertToDictKeyed(v) => {
+        v.dict = register_map[&v.dict];
+      }
       Instruction::Jump(_) => {}
       Instruction::JumpBack(_) => {}
       Instruction::JumpIfFalse(_) => {}
@@ -255,6 +258,8 @@ fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u
       Instruction::CmpLe(v) => v.lhs = register_map[&v.lhs],
       Instruction::Print(_) => {}
       Instruction::PrintList(v) => v.list = register_map[&v.list],
+      Instruction::Call(v) => v.callee = register_map[&v.callee],
+      Instruction::CallKw(v) => v.callee = register_map[&v.callee],
       Instruction::Ret(_) => {}
       Instruction::Suspend(_) => {}
     }
@@ -550,7 +555,66 @@ mod expr {
     }
 
     fn emit_call_expr(&mut self, expr: &'src ast::Call<'src>) -> Result<()> {
-      todo!()
+      let callee = self.reg();
+      self.emit_expr(&expr.target)?;
+      self.emit_op(StoreReg {
+        reg: callee.index(),
+      });
+
+      let mut kw = None;
+      if !expr.args.kw.is_empty() {
+        let kw_reg = self.reg();
+        self.emit_op(CreateEmptyDict);
+        self.emit_op(StoreReg {
+          reg: kw_reg.index(),
+        });
+        kw = Some(kw_reg);
+      }
+
+      // allocate registers for args, then emit them
+      // this ensures that the args are contiguous on the stack
+      let argv = (0..expr.args.pos.len())
+        .map(|_| self.reg())
+        .collect::<Vec<_>>();
+      for (reg, value) in argv.iter().zip(expr.args.pos.iter()) {
+        self.emit_expr(&value)?;
+        self.emit_op(StoreReg { reg: reg.index() });
+      }
+
+      for (key, value) in expr.args.kw.iter() {
+        let key = self.const_(key.as_ref());
+        self.emit_expr(value)?;
+        self.emit_op(InsertToDictKeyed {
+          key,
+          dict: kw.as_ref().unwrap().index(),
+        });
+      }
+
+      // ensure liveness of:
+      // - args (in reverse)
+      // - kw dict
+      // - callee
+      for a in argv.iter().rev() {
+        a.index();
+      }
+      if let Some(kw) = &kw {
+        kw.index();
+      }
+      callee.index();
+
+      if kw.is_none() {
+        self.emit_op(Call {
+          callee: callee.index(),
+          args: argv.len() as u32,
+        });
+      } else {
+        self.emit_op(CallKw {
+          callee: callee.index(),
+          args: argv.len() as u32,
+        });
+      }
+
+      Ok(())
     }
   }
 }

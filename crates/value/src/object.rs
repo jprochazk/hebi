@@ -10,12 +10,13 @@ use crate::Value;
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
-pub type Dict = std::collections::HashMap<Value, Value>;
+pub type Dict = indexmap::IndexMap<Value, Value>;
 
+#[derive(Clone)]
 pub struct Func {
   name: String,
   code: Vec<u8>,
-  const_pool: Vec<Value>,
+  const_: Vec<Value>,
 }
 
 #[derive(Clone)]
@@ -28,6 +29,7 @@ object_repr! {
     String,
     List,
     Dict,
+    Func,
   }
 }
 
@@ -53,6 +55,12 @@ impl std::fmt::Debug for Object {
       Repr::String(v) => write!(f, "{v:?}"),
       Repr::List(v) => f.debug_list().entries(v).finish(),
       Repr::Dict(v) => f.debug_map().entries(v).finish(),
+      Repr::Func(v) => f
+        .debug_struct("Func")
+        .field("name", &v.name)
+        .field("code.len", &v.code.len())
+        .field("const.len", &v.const_.len())
+        .finish(),
     }
   }
 }
@@ -83,6 +91,7 @@ impl std::fmt::Display for Object {
       Repr::String(v) => write!(f, "\"{v}\""),
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
+      Repr::Func(v) => write!(f, "<func {}>", v.name),
     }
   }
 }

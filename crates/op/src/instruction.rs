@@ -100,9 +100,15 @@ instructions! {
   /// Push the value stored in the accumulator into a dictionary.
   ///
   /// ### Operands
-  /// - `key` - register index of the key.
+  /// - `key` - register index of key.
   /// - `dict` - register index of dict.
   InsertToDict (key:uv, dict:uv),
+  /// Push the value stored in the accumulator into a dictionary.
+  ///
+  /// ### Operands
+  /// - `key` - constant pool index of key.
+  /// - `dict` - register index of dict.
+  InsertToDictKeyed (key:uv, dict: uv),
 
   // jumps
   /// Jump forward by `offset`.
@@ -195,9 +201,59 @@ instructions! {
   /// - `list` - register index of value list.
   PrintList (list:uv),
 
-  // TODO: call frames
-  /// Call
-  // Call (),
+  /// Call `callee` using only positional arguments.
+  ///
+  /// The stack should be:
+  /// ```text,ignore
+  /// [callee    ] <func ...>
+  /// [callee+1  ] args[0]
+  /// [callee+...] args[...]
+  /// [callee+N  ] args[N-1]
+  /// ```
+  ///
+  /// Call operation:
+  /// 1. Assert that `callee` is callable, or panic.
+  /// 2. Check the call arguments. [note]
+  /// 3. Create a new call frame.
+  /// 4. Copy arguments at `reg(callee)+1..reg(callee+N)` to the top of the stack in the same order.
+  /// 5. Store the current call frame's IP, and dispatch on the new call frame.
+  ///
+  /// [note]: The following conditions must be true:
+  /// - There are more than `callee.min_args` arguments.
+  /// - There are less than `callee.max_args` arguments.
+  ///
+  /// ### Operands
+  /// - `callee` - register index of callee.
+  /// - `args` - number of arguments.
+  Call (callee:uv, args:uv),
+  /// Call `callee` with mixed positional and keyword arguments.
+  ///
+  /// The stack should be:
+  /// ```text,ignore
+  /// [callee    ] <func ...>
+  /// [callee+1  ] kw
+  /// [callee+2  ] args[0]
+  /// [callee+...] args[...]
+  /// [callee+1+N] args[N-1]
+  /// ```
+  ///
+  /// Call operation:
+  /// 1. Assert that `callee` is callable, or panic.
+  /// 2. Check the call arguments. [note]
+  /// 3. Create a new call frame.
+  /// 4. Copy arguments at `reg(callee)+1..reg(callee+N)` to the top of the stack in the same order.
+  /// 5. Store the current call frame's IP, and dispatch on the new call frame.
+  ///
+  /// [note]: The following conditions must be true:
+  /// - There are more than `callee.min_args` arguments.
+  /// - There are less than `callee.max_args` arguments.
+  /// - All required keyword arguments must appear in `kw`.
+  /// - All keyword argument names must exist in `callee.kw_args`.
+  ///
+  /// ### Operands
+  /// - `callee` - register index of callee.
+  /// - `args` - number of arguments.
+  CallKw (callee:uv, args:uv),
   /// Pop a call frame off the stack.
   Ret (),
 }

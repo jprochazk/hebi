@@ -10,39 +10,39 @@ const pool = (length=3) {
   2 = true
 }
 bytecode:
-  0 | 00                nop              
-  1 | 03 00             load_const        slot=0
-  3 | 01 03 00 01       (w)load_const     slot=256
-  7 | 02 03 00 00 01 00 (x)load_const     slot=65536
- 13 | 04 00             load_reg          reg=0
- 15 | 01 04 00 01       (w)load_reg       reg=256
- 19 | 02 04 00 00 01 00 (x)load_reg       reg=65536
- 25 | 05 00             store_reg         reg=0
- 27 | 01 05 00 01       (w)store_reg      reg=256
- 31 | 02 05 00 00 01 00 (x)store_reg      reg=65536
- 37 | 16 00             jump              offset=0
- 39 | 00                nop              
- 40 | 00                nop              
- 41 | 00                nop              
- 42 | 00                nop              
- 43 | 16 4c             jump              offset=76
- 45 | 00                nop              
- 46 | 00                nop              
- 47 | 00                nop              
- 48 | 00                nop              
- 49 | 18 00             jump_if_false     offset=0
- 51 | 00                nop              
- 52 | 00                nop              
- 53 | 00                nop              
- 54 | 00                nop              
- 55 | 18 4c             jump_if_false     offset=76
- 57 | 00                nop              
- 58 | 00                nop              
- 59 | 00                nop              
- 60 | 00                nop              
- 61 | 11 00 00 00 00    push_small_int    value=0
- 66 | 11 ff ff ff 7f    push_small_int    value=2147483647
- 71 | 11 00 00 00 80    push_small_int    value=-2147483648
- 76 | 2a                ret              
- 77 | ff                suspend          
+  0 | 00                nop                 
+  1 | 03 00             load_const           slot=0
+  3 | 01 03 00 01       (w)load_const        slot=256
+  7 | 02 03 00 00 01 00 (x)load_const        slot=65536
+ 13 | 04 00             load_reg             reg=0
+ 15 | 01 04 00 01       (w)load_reg          reg=256
+ 19 | 02 04 00 00 01 00 (x)load_reg          reg=65536
+ 25 | 05 00             store_reg            reg=0
+ 27 | 01 05 00 01       (w)store_reg         reg=256
+ 31 | 02 05 00 00 01 00 (x)store_reg         reg=65536
+ 37 | 17 00             jump                 offset=0
+ 39 | 00                nop                 
+ 40 | 00                nop                 
+ 41 | 00                nop                 
+ 42 | 00                nop                 
+ 43 | 17 4c             jump                 offset=76
+ 45 | 00                nop                 
+ 46 | 00                nop                 
+ 47 | 00                nop                 
+ 48 | 00                nop                 
+ 49 | 19 00             jump_if_false        offset=0
+ 51 | 00                nop                 
+ 52 | 00                nop                 
+ 53 | 00                nop                 
+ 54 | 00                nop                 
+ 55 | 19 4c             jump_if_false        offset=76
+ 57 | 00                nop                 
+ 58 | 00                nop                 
+ 59 | 00                nop                 
+ 60 | 00                nop                 
+ 61 | 11 00 00 00 00    push_small_int       value=0
+ 66 | 11 ff ff ff 7f    push_small_int       value=2147483647
+ 71 | 11 00 00 00 80    push_small_int       value=-2147483648
+ 76 | 2d                ret                 
+ 77 | ff                suspend             
 

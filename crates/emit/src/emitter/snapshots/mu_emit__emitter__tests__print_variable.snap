@@ -12,9 +12,9 @@ function <test>:
 length = 11
 const pool = <empty>
 bytecode:
-  0 | 11 00 00 00 00    push_small_int    value=0
-  5 | 05 00             store_reg         reg=0
-  7 | 04 00             load_reg          reg=0
-  9 | 28                print            
- 10 | ff                suspend          
+  0 | 11 00 00 00 00    push_small_int       value=0
+  5 | 05 00             store_reg            reg=0
+  7 | 04 00             load_reg             reg=0
+  9 | 29                print               
+ 10 | ff                suspend             
 

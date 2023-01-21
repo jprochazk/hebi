@@ -1,0 +1,29 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+a(b(c()))
+
+# Chunk:
+function <test>:
+length = 26
+const pool = (length=3) {
+  0 = "a"
+  1 = "b"
+  2 = "c"
+}
+bytecode:
+  0 | 08 00             load_global          name=0
+  2 | 05 00             store_reg            reg=0
+  4 | 08 01             load_global          name=1
+  6 | 05 02             store_reg            reg=2
+  8 | 08 02             load_global          name=2
+ 10 | 05 04             store_reg            reg=4
+ 12 | 2b 04 00          call                 callee=4 args=0
+ 15 | 05 03             store_reg            reg=3
+ 17 | 2b 02 01          call                 callee=2 args=1
+ 20 | 05 01             store_reg            reg=1
+ 22 | 2b 00 01          call                 callee=0 args=1
+ 25 | ff                suspend             
+
