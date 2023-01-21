@@ -12,6 +12,7 @@ value = { path = "../value", package = "mu_value" }
 syntax = { path = "../syntax", package = "mu_syntax" }
 diag = { path = "../diag", package = "mu_diag" }
 span = { path = "../span", package = "mu_span" }
+indexmap = "1.9.2"
 
 [dev-dependencies]
 indoc = "1.0.8"

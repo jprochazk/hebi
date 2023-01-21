@@ -7,28 +7,29 @@ print { a: 0, b: 1, c: 2 }
 
 # Chunk:
 function <test>:
-length = 43
-const pool = (length=3) {
-  0 = "a"
-  1 = "b"
-  2 = "c"
-}
-bytecode:
-  0 | 14                create_empty_dict   
-  1 | 05 00             store_reg            reg=0
-  3 | 03 00             load_const           slot=0
-  5 | 05 01             store_reg            reg=1
-  7 | 11 00 00 00 00    push_small_int       value=0
- 12 | 15 01 00          insert_to_dict       key=1 dict=0
- 15 | 03 01             load_const           slot=1
- 17 | 05 02             store_reg            reg=2
- 19 | 11 01 00 00 00    push_small_int       value=1
- 24 | 15 02 00          insert_to_dict       key=2 dict=0
- 27 | 03 02             load_const           slot=2
- 29 | 05 03             store_reg            reg=3
- 31 | 11 02 00 00 00    push_small_int       value=2
- 36 | 15 03 00          insert_to_dict       key=3 dict=0
- 39 | 04 00             load_reg             reg=0
- 41 | 29                print               
- 42 | ff                suspend             
+  frame_size: 4
+  length: 44
+  const (length=3):
+    0: "a"
+    1: "b"
+    2: "c"
+  code:
+     0 | 14                create_empty_dict 
+     1 | 05 00             store_reg r0
+     3 | 03 00             load_const [0]
+     5 | 05 01             store_reg r1
+     7 | 11 00 00 00 00    push_small_int value=0
+    12 | 15 01 00          insert_to_dict r1, r0
+    15 | 03 01             load_const [1]
+    17 | 05 02             store_reg r2
+    19 | 11 01 00 00 00    push_small_int value=1
+    24 | 15 02 00          insert_to_dict r2, r0
+    27 | 03 02             load_const [2]
+    29 | 05 03             store_reg r3
+    31 | 11 02 00 00 00    push_small_int value=2
+    36 | 15 03 00          insert_to_dict r3, r0
+    39 | 04 00             load_reg r0
+    41 | 29                print 
+    42 | 2d                ret 
+    43 | ff                suspend 
 

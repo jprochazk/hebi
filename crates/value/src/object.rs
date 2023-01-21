@@ -1,5 +1,6 @@
 #[macro_use]
 mod macros;
+pub mod func;
 
 use std::cell::{Ref, RefMut};
 
@@ -11,13 +12,7 @@ use crate::Value;
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
 pub type Dict = indexmap::IndexMap<Value, Value>;
-
-#[derive(Clone)]
-pub struct Func {
-  name: String,
-  code: Vec<u8>,
-  const_: Vec<Value>,
-}
+pub use func::Func;
 
 #[derive(Clone)]
 pub struct Object {
@@ -58,8 +53,12 @@ impl std::fmt::Debug for Object {
       Repr::Func(v) => f
         .debug_struct("Func")
         .field("name", &v.name)
+        .field("frame_size", &v.frame_size)
         .field("code.len", &v.code.len())
-        .field("const.len", &v.const_.len())
+        .field("const.len", &v.const_pool.len())
+        .field("params.min", &v.params.min)
+        .field("params.max", &v.params.max)
+        .field("kw.len", &v.params.kw.len())
         .finish(),
     }
   }

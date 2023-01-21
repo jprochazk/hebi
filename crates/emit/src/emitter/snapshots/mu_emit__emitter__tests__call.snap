@@ -7,13 +7,14 @@ f()
 
 # Chunk:
 function <test>:
-length = 8
-const pool = (length=1) {
-  0 = "f"
-}
-bytecode:
- 0 | 08 00             load_global          name=0
- 2 | 05 00             store_reg            reg=0
- 4 | 2b 00 00          call                 callee=0 args=0
- 7 | ff                suspend             
+  frame_size: 1
+  length: 9
+  const (length=1):
+    0: "f"
+  code:
+    0 | 08 00             load_global [0]
+    2 | 05 00             store_reg r0
+    4 | 2b 00 00          call r0, args=0
+    7 | 2d                ret 
+    8 | ff                suspend 
 

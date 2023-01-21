@@ -4,13 +4,14 @@ use std::ops::Deref;
 use beef::lean::Cow;
 use op::instruction::*;
 use syntax::ast;
+use value::object::func;
 use value::Value;
 
 pub fn emit<'src>(
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
-) -> Result<Chunk<Value>> {
-  Emitter::new(name, module).emit()
+) -> Result<func::Func> {
+  Emitter::new(name, module).emit_main()
 }
 
 use crate::regalloc::{RegAlloc, Register};
@@ -32,17 +33,45 @@ impl<'src> Emitter<'src> {
     }
   }
 
-  fn emit(&mut self) -> Result<Chunk<Value>> {
-    self.emit_chunk(|this| {
-      for stmt in this.module.body.iter() {
-        this.emit_stmt(stmt)?;
-      }
-      Ok(())
-    })
+  fn emit_main(mut self) -> Result<func::Func> {
+    for stmt in self.module.body.iter() {
+      self.emit_stmt(stmt)?;
+    }
+    self.emit_op(Ret);
+
+    let (frame_size, register_map) = self.state.regalloc.scan();
+
+    self
+      .state
+      .builder
+      .patch(|instructions| patch_registers(instructions, &register_map));
+
+    let Chunk {
+      name,
+      bytecode,
+      const_pool,
+    } = self.state.builder.build();
+
+    Ok(func::Func::new(
+      name,
+      frame_size,
+      bytecode,
+      const_pool,
+      func::Params {
+        min: 0,
+        max: None,
+        kw: Default::default(),
+      },
+    ))
   }
 
-  fn emit_chunk(&mut self, f: impl FnOnce(&mut Self) -> Result<()>) -> Result<Chunk<Value>> {
-    let next = Function::new(self.state.name.clone(), None);
+  fn emit_func(
+    &mut self,
+    name: impl Into<Cow<'src, str>>,
+    params: func::Params,
+    f: impl FnOnce(&mut Self) -> Result<()>,
+  ) -> Result<func::Func> {
+    let next = Function::new(name.into(), None);
     let parent = std::mem::replace(&mut self.state, next);
     self.state.parent = Some(Box::new(parent));
 
@@ -57,14 +86,21 @@ impl<'src> Emitter<'src> {
 
     result?;
 
-    // TODO: store num_registers in emitted Function
-    let (_num_registers, register_map) = next.regalloc.scan();
+    let (frame_size, register_map) = next.regalloc.scan();
 
     next
       .builder
       .patch(|instructions| patch_registers(instructions, &register_map));
 
-    Ok(next.builder.build())
+    let Chunk {
+      name,
+      bytecode,
+      const_pool,
+    } = next.builder.build();
+
+    Ok(func::Func::new(
+      name, frame_size, bytecode, const_pool, params,
+    ))
   }
 
   fn const_(&mut self, value: impl Into<Value>) -> u32 {
@@ -163,7 +199,7 @@ impl<'src> Function<'src> {
 
   // TODO: remove variables at the end of a block
 
-  fn declare(&mut self, name: impl Into<Cow<'src, str>>, reg: Register) {
+  fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, reg: Register) {
     let name = name.into();
     if let Some(stack) = self.locals.get_mut(&name) {
       stack.push(reg);
@@ -286,9 +322,14 @@ mod stmt {
 
     fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>) -> Result<()> {
       self.emit_expr(&stmt.value)?;
-      let reg = self.reg();
-      self.emit_op(StoreReg { reg: reg.index() });
-      self.state.declare(stmt.name.deref().clone(), reg);
+      if self.state.parent.is_none() {
+        let name = self.const_(stmt.name.as_ref());
+        self.emit_op(StoreGlobal { name });
+      } else {
+        let reg = self.reg();
+        self.emit_op(StoreReg { reg: reg.index() });
+        self.state.declare_local(stmt.name.deref().clone(), reg);
+      }
       Ok(())
     }
 
@@ -305,7 +346,48 @@ mod stmt {
     }
 
     fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) -> Result<()> {
-      todo!()
+      let name = stmt.name.deref().clone();
+      let params = func::Params {
+        // min = number of positional arguments without defaults
+        min: stmt.params.pos.iter().filter(|v| v.1.is_none()).count() as u32,
+        // max = number of positional arguments OR none, if `argv` exists
+        max: if stmt.params.argv.is_some() {
+          None
+        } else {
+          Some(stmt.params.pos.len() as u32)
+        },
+        kw: stmt
+          .params
+          .kw
+          .iter()
+          .map(|v| String::from(v.0.as_ref()))
+          .collect(),
+      };
+
+      let func = self.emit_func(name.clone(), params, |this| {
+        // TODO: handle params (defaults, `argv`, kw, `kwargs`)
+
+        for stmt in stmt.body.iter() {
+          this.emit_stmt(stmt)?;
+        }
+        this.emit_op(Ret);
+        Ok(())
+      })?;
+
+      // TODO: emit closure
+
+      let func = self.const_(func);
+      self.emit_op(LoadConst { slot: func });
+      if self.state.parent.is_none() {
+        let name = self.const_(name);
+        self.emit_op(StoreGlobal { name });
+      } else {
+        let reg = self.reg();
+        self.emit_op(StoreReg { reg: reg.index() });
+        self.state.declare_local(name, reg);
+      }
+
+      Ok(())
     }
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
@@ -418,6 +500,7 @@ mod expr {
               reg: key_reg.index(),
             });
             self.emit_expr(v)?;
+            // TODO: use `InsertToDictKeyed for constant keys`
             self.emit_op(InsertToDict {
               key: key_reg.index(),
               dict: temp.index(),

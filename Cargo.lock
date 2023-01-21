@@ -143,6 +143,7 @@ name = "mu_emit"
 version = "0.0.0"
 dependencies = [
  "beef",
+ "indexmap",
  "indoc",
  "insta",
  "mu_diag",

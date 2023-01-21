@@ -7,19 +7,20 @@ f(0, 1, 2)
 
 # Chunk:
 function <test>:
-length = 29
-const pool = (length=1) {
-  0 = "f"
-}
-bytecode:
-  0 | 08 00             load_global          name=0
-  2 | 05 00             store_reg            reg=0
-  4 | 11 00 00 00 00    push_small_int       value=0
-  9 | 05 01             store_reg            reg=1
- 11 | 11 01 00 00 00    push_small_int       value=1
- 16 | 05 02             store_reg            reg=2
- 18 | 11 02 00 00 00    push_small_int       value=2
- 23 | 05 03             store_reg            reg=3
- 25 | 2b 00 03          call                 callee=0 args=3
- 28 | ff                suspend             
+  frame_size: 4
+  length: 30
+  const (length=1):
+    0: "f"
+  code:
+     0 | 08 00             load_global [0]
+     2 | 05 00             store_reg r0
+     4 | 11 00 00 00 00    push_small_int value=0
+     9 | 05 01             store_reg r1
+    11 | 11 01 00 00 00    push_small_int value=1
+    16 | 05 02             store_reg r2
+    18 | 11 02 00 00 00    push_small_int value=2
+    23 | 05 03             store_reg r3
+    25 | 2b 00 03          call r0, args=3
+    28 | 2d                ret 
+    29 | ff                suspend 
 

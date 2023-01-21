@@ -12,7 +12,7 @@ macro_rules! instruction_struct {
     pub struct $name;
   };
   (
-    $name:ident ($( $operand:ident : $ty:ty ),*)
+    $name:ident ($( $operand:ident : $ty:ident ),*)
   ) => {
     #[derive(Debug, Clone)]
     pub struct $name {
@@ -22,7 +22,7 @@ macro_rules! instruction_struct {
 }
 
 macro_rules! impl_encode_into_for_jump {
-  ( :jump $name:ident ($( $operand:ident : $ty:ty ),*) ) => {
+  ( :jump $name:ident ($( $operand:ident : $ty:ident ),*) ) => {
     impl EncodeInto for $name {
       #[inline]
       fn encode_into(buf: &mut [u8], ($($operand),*): <$name as Decode>::Decoded) {
@@ -39,13 +39,25 @@ macro_rules! impl_encode_into_for_jump {
       }
     }
   };
-  ( $name:ident ($( $operand:ident : $ty:ty ),*) ) => {};
+  ( $name:ident ($( $operand:ident : $ty:ident ),*) ) => {};
+}
+
+macro_rules! disassembly_operand_kind {
+  (Const) => {
+    DisassemblyOperandKind::Const
+  };
+  (Reg) => {
+    DisassemblyOperandKind::Reg
+  };
+  ($ty:ident) => {
+    DisassemblyOperandKind::Simple
+  };
 }
 
 macro_rules! instruction_base {
   (
     $Instruction:ident, $Handler:ident;
-    $(:$jump:ident)? $name:ident ($( $operand:ident : $ty:ty )*) $(= $index:literal)?
+    $(:$jump:ident)? $name:ident ($( $operand:ident : $ty:ident )*) $(= $index:literal)?
   ) => {
     instruction_struct!($name ($($operand : $ty),*));
 
@@ -58,7 +70,8 @@ macro_rules! instruction_base {
         $(
           operands.push(DisassemblyOperand {
             name: stringify!($operand),
-            value: Box::new(unsafe { <$ty>::decode(buf, pc, width) })
+            value: Box::new(unsafe { <$ty>::decode(buf, pc, width) }),
+            kind: disassembly_operand_kind!($ty),
           });
           pc += <$ty>::size(width);
         )*
@@ -134,7 +147,7 @@ macro_rules! instruction_dispatch {
         result: &mut Result<(), H::Error>,
       ) {
         if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc));
+          println!("{}", disassemble(bc, *pc).1);
         }
 
         *result = vm.[<op_ $name:snake>]();
@@ -144,7 +157,7 @@ macro_rules! instruction_dispatch {
       }
     }
   };
-  ($Handler:ident; $name:ident, ($( $operand:ident : $ty:ty ),+)) => {
+  ($Handler:ident; $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
@@ -155,7 +168,7 @@ macro_rules! instruction_dispatch {
         result: &mut Result<(), H::Error>,
       ) {
         if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc));
+          println!("{}", disassemble(bc, *pc).1);
         }
 
         let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
@@ -166,7 +179,7 @@ macro_rules! instruction_dispatch {
       }
     }
   };
-  ($Handler:ident; :jump $name:ident, ($( $operand:ident : $ty:ty ),+)) => {
+  ($Handler:ident; :jump $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
@@ -177,7 +190,7 @@ macro_rules! instruction_dispatch {
         result: &mut Result<(), H::Error>,
       ) {
         if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc));
+          println!("{}", disassemble(bc, *pc).1);
         }
 
         let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
@@ -195,7 +208,7 @@ macro_rules! instruction_dispatch {
 }
 
 macro_rules! handler_method {
-  (:jump $(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ty ),*)) => {
+  (:jump $(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ident ),*)) => {
     paste! {
       #[allow(unused_variables)]
       $(#[$meta])*
@@ -207,7 +220,7 @@ macro_rules! handler_method {
       }
     }
   };
-  ($(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ty ),*)) => {
+  ($(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ident ),*)) => {
     paste! {
       #[allow(unused_variables)]
       $(#[$meta])*
@@ -227,7 +240,10 @@ macro_rules! instructions {
     $Handler:ident, $run:ident,
     $Nop:ident, $Wide:ident, $ExtraWide:ident, $Suspend:ident,
     $disassemble:ident;
-    $( $(#[$meta:meta])* $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ty ),*) $(= $index:literal)? ),* $(,)?
+    $(
+      $(#[$meta:meta])*
+      $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ident ),*) $(= $index:literal)?
+    ),* $(,)?
   ) => {
 
     #[repr(u8)]
@@ -257,14 +273,14 @@ macro_rules! instructions {
       }
     }
 
-    impl $Instruction {
+    /* impl $Instruction {
       pub const fn names() -> &'static [&'static str] {
         &[
           <$Nop>::NAME,
           $( <$name>::NAME ),*
         ]
       }
-    }
+    } */
 
     pub mod $ops {
       #![allow(non_upper_case_globals)]
@@ -376,21 +392,22 @@ macro_rules! instructions {
       result
     }
 
-    pub fn $disassemble(buf: &[u8], offset: usize) -> Disassembly {
+    pub fn $disassemble(buf: &[u8], offset: usize) -> (usize, Disassembly) {
       let (offset, width) = match buf[offset] {
         ops::$Wide => (offset + 1, Width::Double),
         ops::$ExtraWide => (offset + 1, Width::Quad),
         _ => (offset, Width::Single),
       };
 
-      match buf[offset] {
+      let dis = match buf[offset] {
         ops::$Nop => <$Nop>::disassemble(buf, offset, width),
         $(
           ops::$name => <$name>::disassemble(buf, offset, width),
         )*
         ops::$Suspend => <$Suspend>::disassemble(buf, offset, width),
         opcode => panic!("malformed bytecode: invalid opcode 0x{opcode:02x}"),
-      }
+      };
+      (dis.size(), dis)
     }
 
     fn decode_size(buf: &[u8]) -> usize {

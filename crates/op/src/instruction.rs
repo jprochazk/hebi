@@ -22,59 +22,59 @@ instructions! {
   ///
   /// ### Operands
   /// - `slot` - index of value in the constant pool.
-  LoadConst (slot:uv) = 3,
+  LoadConst (slot: Const) = 3,
   /// Load register into the accumulator.
   ///
   /// ### Operands
   /// - `reg` - register index.
-  LoadReg (reg:uv),
+  LoadReg (reg: Reg),
   /// Store the accumulator in a register.
   ///
   /// ### Operands
   /// - `reg` - register index.
-  StoreReg (reg:uv),
+  StoreReg (reg: Reg),
   /// Load capture into the accumulator.
   ///
   /// ### Operands
   /// - `slot` - capture list index.
-  LoadCapture (slot:uv),
+  LoadCapture (slot: uv),
   /// Store the accumulator in a capture.
   ///
   /// ### Operands
   /// - `slot` - capture list index.
-  StoreCapture (slot:uv),
+  StoreCapture (slot: uv),
   /// Load a global into the accumulator.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
-  LoadGlobal (name:uv),
+  LoadGlobal (name: Const),
   /// Store the accumulator in a global.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
-  StoreGlobal (name:uv),
+  StoreGlobal (name: Const),
   /// Load a field by name into the accumulator.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
-  LoadNamed (name:uv),
+  LoadNamed (name: Const),
   /// Store the accumulator in a field by name.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   /// - `obj` - register index of target object.
-  StoreNamed (name:uv, obj:uv),
+  StoreNamed (name: Const, obj: Reg),
   /// Load a field by key into the accumulator.
   ///
   /// ### Operands
   /// - `key` - register index of key.
-  LoadKeyed (key:uv),
+  LoadKeyed (key: Reg),
   /// Store the accumulator in a field by key.
   ///
   /// ### Operands
   /// - `key` - register index of key.
   /// - `obj` - register index of target object.
-  StoreKeyed (key:uv, obj:uv),
+  StoreKeyed (key: Reg, obj: Reg),
 
   // values
   /// Push a `None` value into the accumulator.
@@ -87,14 +87,14 @@ instructions! {
   ///
   /// ### Operands
   /// - `value` - integer value.
-  PushSmallInt (value:sf32),
+  PushSmallInt (value: sf32),
   /// Push an empty list into the accumulator.
   CreateEmptyList (),
   /// Push the value stored in the accumulator into a list.
   ///
   /// ### Operands
   /// - `list` - register index of list.
-  PushToList (list:uv),
+  PushToList (list: Reg),
   /// Push an empty dictionary into the accumulator.
   CreateEmptyDict (),
   /// Push the value stored in the accumulator into a dictionary.
@@ -102,53 +102,53 @@ instructions! {
   /// ### Operands
   /// - `key` - register index of key.
   /// - `dict` - register index of dict.
-  InsertToDict (key:uv, dict:uv),
+  InsertToDict (key: Reg, dict: Reg),
   /// Push the value stored in the accumulator into a dictionary.
   ///
   /// ### Operands
   /// - `key` - constant pool index of key.
   /// - `dict` - register index of dict.
-  InsertToDictKeyed (key:uv, dict: uv),
+  InsertToDictKeyed (key: Const, dict: Reg),
 
   // jumps
   /// Jump forward by `offset`.
-  Jump :jump (offset:uv),
+  Jump :jump (offset: uv),
   /// Jump backwards by `offset`.
-  JumpBack :jump (offset:uv),
+  JumpBack :jump (offset: uv),
   /// Jump forward by `offset` if value stored in the accumulator is truthy.
-  JumpIfFalse :jump (offset:uv),
+  JumpIfFalse :jump (offset: uv),
 
   // arithmetic (binary)
   /// Add `lhs` to value stored in the accumulator, and store the result in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Add (lhs:uv),
+  Add (lhs: Reg),
   /// Subtract value stored in the accumulator from `lhs`, and store the result in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Sub (lhs:uv),
+  Sub (lhs: Reg),
   /// Multiply `lhs` by value stored in the accumulator, and store the result in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Mul (lhs:uv),
+  Mul (lhs: Reg),
   /// Divide `lhs` by value stored in the accumulator, and store the result in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Div (lhs:uv),
+  Div (lhs: Reg),
   /// Divide `lhs` by value stored in the accumulator, and store the remainder of the division in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Rem (lhs:uv),
+  Rem (lhs: Reg),
   /// Raise `lhs` to the power of N, where N is the value stored in the accumulator, and store the result in the accumulator.
   ///
   /// ### Operands
   /// - `lhs` - register index of the left-hand side expression.
-  Pow (lhs:uv),
+  Pow (lhs: Reg),
 
   // unary
   // TODO: `value_of` override?
@@ -164,42 +164,40 @@ instructions! {
   ///
   /// If `lhs` is equal to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpEq (lhs:uv),
+  CmpEq (lhs: Reg),
   /// Compare `lhs` to the accumulator.
   ///
   /// If `lhs` is not equal to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpNeq (lhs:uv),
+  CmpNeq (lhs: Reg),
   /// Compare `lhs` to the accumulator.
   ///
   /// If `lhs` is greater than to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpGt (lhs:uv),
+  CmpGt (lhs: Reg),
   /// Compare `lhs` to the accumulator.
   ///
   /// If `lhs` is greater than or equal to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpGe (lhs:uv),
+  CmpGe (lhs: Reg),
   /// Compare `lhs` to the accumulator.
   ///
   /// If `lhs` is less than to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpLt (lhs:uv),
+  CmpLt (lhs: Reg),
   /// Compare `lhs` to the accumulator.
   ///
   /// If `lhs` is less than or equal to the accumulator, store `true` in the accumulator.
   /// Otherwise, store `false`.
-  CmpLe (lhs:uv),
-  // Invert (),
+  CmpLe (lhs: Reg),
 
-  // print
   /// Print the value in the accumulator.
   Print (),
   /// Print a list of values.
   ///
   /// ### Operands
   /// - `list` - register index of value list.
-  PrintList (list:uv),
+  PrintList (list: Reg),
 
   /// Call `callee` using only positional arguments.
   ///
@@ -225,7 +223,7 @@ instructions! {
   /// ### Operands
   /// - `callee` - register index of callee.
   /// - `args` - number of arguments.
-  Call (callee:uv, args:uv),
+  Call (callee: Reg, args: uv),
   /// Call `callee` with mixed positional and keyword arguments.
   ///
   /// The stack should be:
@@ -253,7 +251,7 @@ instructions! {
   /// ### Operands
   /// - `callee` - register index of callee.
   /// - `args` - number of arguments.
-  CallKw (callee:uv, args:uv),
+  CallKw (callee: Reg, args: uv),
   /// Pop a call frame off the stack.
   Ret (),
 }
@@ -585,26 +583,24 @@ impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
 
       // name
       writeln!(f, "function <{}>:", self.name).unwrap();
-      writeln!(f, "length = {}", self.bytecode.len()).unwrap();
+      writeln!(f, "  length: {}", self.bytecode.len()).unwrap();
 
       // constants
       if self.const_pool.is_empty() {
-        writeln!(f, "const pool = <empty>").unwrap();
+        writeln!(f, "  const_pool: <empty>").unwrap();
       } else {
-        writeln!(f, "const pool = (length={}) {{", self.const_pool.len()).unwrap();
+        writeln!(f, "  const_pool (length={}):", self.const_pool.len()).unwrap();
         for (i, value) in self.const_pool.iter().enumerate() {
-          writeln!(f, "  {i} = {value}").unwrap();
+          writeln!(f, "    {i} = {value}").unwrap();
         }
-        writeln!(f, "}}").unwrap();
       }
 
       // bytecode
-      writeln!(f, "bytecode:").unwrap();
+      writeln!(f, "  code:").unwrap();
       let offset_align = self.bytecode.len().to_string().len();
       let mut pc = 0;
       while pc < self.bytecode.len() {
-        let instr = disassemble(&self.bytecode[..], pc);
-        let size = instr.size();
+        let (size, instr) = disassemble(&self.bytecode[..], pc);
 
         let bytes = {
           let mut out = String::new();
@@ -620,7 +616,7 @@ impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
           out
         };
 
-        writeln!(f, " {pc:offset_align$} | {bytes}{instr}").unwrap();
+        writeln!(f, "    {pc:offset_align$} | {bytes}{instr}").unwrap();
 
         pc += size;
       }
@@ -644,17 +640,16 @@ pub trait Disassemble {
   fn disassemble(buf: &[u8], offset: usize, width: Width) -> Disassembly;
 }
 
-fn align() -> usize {
-  Instruction::names()
-    .iter()
-    .map(|v| v.len())
-    .max()
-    .unwrap_or(0)
+pub(super) enum DisassemblyOperandKind {
+  Simple,
+  Const,
+  Reg,
 }
 
 pub(super) struct DisassemblyOperand {
   pub(super) name: &'static str,
   pub(super) value: Box<dyn std::fmt::Display>,
+  pub(super) kind: DisassemblyOperandKind,
 }
 
 pub struct Disassembly {
@@ -681,17 +676,19 @@ impl Disassembly {
 impl ::std::fmt::Display for Disassembly {
   fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
     // print opcode + prefix
-    write!(f, "{}{}", self.width.as_str(), self.name)?;
+    write!(f, "{}{} ", self.width.as_str(), self.name)?;
 
     // print operands
-    write!(
-      f,
-      "{:w$}",
-      "",
-      w = align() - self.width.as_str().len() - self.name.len()
-    )?;
-    for DisassemblyOperand { name, value } in self.operands.iter() {
-      write!(f, " {name}={value}")?;
+    let mut iter = self.operands.iter().peekable();
+    while let Some(DisassemblyOperand { name, value, kind }) = iter.next() {
+      match kind {
+        DisassemblyOperandKind::Simple => write!(f, "{name}={value}")?,
+        DisassemblyOperandKind::Const => write!(f, "[{value}]")?,
+        DisassemblyOperandKind::Reg => write!(f, "r{value}")?,
+      }
+      if iter.peek().is_some() {
+        write!(f, ", ")?;
+      }
     }
     Ok(())
   }

@@ -18,7 +18,10 @@ macro_rules! check {
         panic!("failed to emit chunk:\n{}", e.report(input));
       }
     };
-    let snapshot = format!("# Input:\n{input}\n\n# Chunk:\n{}", chunk.disassemble());
+    let snapshot = format!(
+      "# Input:\n{input}\n\n# Chunk:\n{}",
+      chunk.disassemble(op::instruction::disassemble)
+    );
     insta::assert_snapshot!(snapshot);
   }};
 }
@@ -75,4 +78,16 @@ fn call() {
   check!(r#"f(a=0, b=1, c=2)"#);
   check!(r#"f(a, b, c=2)"#);
   check!(r#"a(b(c()))"#);
+}
+
+#[test]
+fn func() {
+  check! {
+    r#"
+      fn test():
+        pass
+
+      test()
+    "#
+  }
 }

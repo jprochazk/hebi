@@ -8,12 +8,13 @@ print v # load_global
 
 # Chunk:
 function <test>:
-length = 4
-const pool = (length=1) {
-  0 = "v"
-}
-bytecode:
- 0 | 08 00             load_global          name=0
- 2 | 29                print               
- 3 | ff                suspend             
+  frame_size: 0
+  length: 5
+  const (length=1):
+    0: "v"
+  code:
+    0 | 08 00             load_global [0]
+    2 | 29                print 
+    3 | 2d                ret 
+    4 | ff                suspend 
 

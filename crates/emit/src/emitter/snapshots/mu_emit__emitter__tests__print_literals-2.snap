@@ -7,12 +7,13 @@ print 2.5
 
 # Chunk:
 function <test>:
-length = 4
-const pool = (length=1) {
-  0 = 2.5
-}
-bytecode:
- 0 | 03 00             load_const           slot=0
- 2 | 29                print               
- 3 | ff                suspend             
+  frame_size: 0
+  length: 5
+  const (length=1):
+    0: 2.5
+  code:
+    0 | 03 00             load_const [0]
+    2 | 29                print 
+    3 | 2d                ret 
+    4 | ff                suspend 
 

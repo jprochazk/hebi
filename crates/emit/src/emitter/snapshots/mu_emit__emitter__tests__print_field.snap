@@ -10,25 +10,27 @@ v.a = 1
 
 # Chunk:
 function <test>:
-length = 37
-const pool = (length=1) {
-  0 = "a"
-}
-bytecode:
-  0 | 14                create_empty_dict   
-  1 | 05 00             store_reg            reg=0
-  3 | 03 00             load_const           slot=0
-  5 | 05 01             store_reg            reg=1
-  7 | 11 00 00 00 00    push_small_int       value=0
- 12 | 15 01 00          insert_to_dict       key=1 dict=0
- 15 | 04 00             load_reg             reg=0
- 17 | 05 00             store_reg            reg=0
- 19 | 04 00             load_reg             reg=0
- 21 | 0a 00             load_named           name=0
- 23 | 29                print               
- 24 | 04 00             load_reg             reg=0
- 26 | 05 01             store_reg            reg=1
- 28 | 11 01 00 00 00    push_small_int       value=1
- 33 | 0b 00 01          store_named          name=0 obj=1
- 36 | ff                suspend             
+  frame_size: 2
+  length: 38
+  const (length=2):
+    0: "a"
+    1: "v"
+  code:
+     0 | 14                create_empty_dict 
+     1 | 05 00             store_reg r0
+     3 | 03 00             load_const [0]
+     5 | 05 01             store_reg r1
+     7 | 11 00 00 00 00    push_small_int value=0
+    12 | 15 01 00          insert_to_dict r1, r0
+    15 | 04 00             load_reg r0
+    17 | 09 01             store_global [1]
+    19 | 08 01             load_global [1]
+    21 | 0a 00             load_named [0]
+    23 | 29                print 
+    24 | 08 01             load_global [1]
+    26 | 05 00             store_reg r0
+    28 | 11 01 00 00 00    push_small_int value=1
+    33 | 0b 00 00          store_named [0], r0
+    36 | 2d                ret 
+    37 | ff                suspend 
 

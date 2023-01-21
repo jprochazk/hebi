@@ -254,6 +254,9 @@ fixed!(uf16, u16);
 fixed!(sf32, i32);
 fixed!(uf32, u32);
 
+pub type Const = uv;
+pub type Reg = uv;
+
 pub struct sv;
 pub struct uv;
 pub struct sf8;
