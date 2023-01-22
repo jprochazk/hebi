@@ -63,3 +63,13 @@ impl<T: std::fmt::Display> std::fmt::Display for Ptr<T> {
     <T as std::fmt::Display>::fmt(&self.0.borrow(), f)
   }
 }
+
+// TODO: maybe improve portability by adding a fallback to `Value`
+// which is just an enum
+//
+// this asserts that `Ptr` is 64 bits,
+// which it should be on systems where `usize == u64`
+// `Value` doesn't work on 32-bit systems
+const _: fn() = || {
+  let _ = std::mem::transmute::<Ptr<()>, u64>;
+};
