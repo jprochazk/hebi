@@ -1,3 +1,5 @@
+// TODO: document panics due to unique xor shared borrow
+
 macro_rules! object_repr {
   (
     enum $Repr:ident {
