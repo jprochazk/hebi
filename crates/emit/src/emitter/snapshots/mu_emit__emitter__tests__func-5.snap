@@ -36,7 +36,7 @@ function <test>:
     31 | 31                ret 
     32 | ff                suspend 
 
-function <test>:
+function <[[main]]>:
   frame_size: 3
   length: 45
   const (length=3):

@@ -6,7 +6,7 @@ expression: snapshot
 print { a: 0, b: 1, c: 2 }
 
 # Chunk:
-function <test>:
+function <[[main]]>:
   frame_size: 4
   length: 44
   const (length=3):

@@ -12,7 +12,7 @@ else:
 
 
 # Chunk:
-function <test>:
+function <[[main]]>:
   frame_size: 0
   length: 37
   const (length=3):

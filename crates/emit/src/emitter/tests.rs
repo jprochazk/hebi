@@ -13,7 +13,7 @@ macro_rules! check {
       }
     };
     let ctx = Context::new();
-    let chunk = match emit(ctx, "test", &module) {
+    let chunk = match emit(ctx, "[[main]]", &module) {
       Ok(chunk) => chunk,
       Err(e) => {
         panic!("failed to emit chunk:\n{}", e.report(input));

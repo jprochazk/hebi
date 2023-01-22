@@ -7,7 +7,7 @@ print v # load_global
 
 
 # Chunk:
-function <test>:
+function <[[main]]>:
   frame_size: 0
   length: 5
   const (length=1):

@@ -9,7 +9,7 @@ v["a"] = 1
 
 
 # Chunk:
-function <test>:
+function <[[main]]>:
   frame_size: 2
   length: 46
   const (length=2):

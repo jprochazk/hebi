@@ -220,7 +220,7 @@ function <f3>:
     20 | 31                ret 
     21 | ff                suspend 
 
-function <test>:
+function <[[main]]>:
   frame_size: 0
   length: 26
   const (length=12):
