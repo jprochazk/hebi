@@ -43,24 +43,22 @@ function <test>:
 function <test>:
   frame_size: 4
   length: 67
-  const (length=6):
+  const (length=4):
     0: <func test>
     1: "test"
-    2: "test"
-    3: "test"
-    4: "b"
-    5: "c"
+    2: "b"
+    3: "c"
   code:
      0 | 03 00             load_const [0]
      2 | 09 01             store_global [1]
-     4 | 08 02             load_global [2]
+     4 | 08 01             load_global [1]
      6 | 05 00             store_reg r0
      8 | 11 01 00 00 00    push_small_int value=1
     13 | 05 01             store_reg r1
     15 | 11 02 00 00 00    push_small_int value=2
     20 | 05 02             store_reg r2
     22 | 2c 00 02          call r0, args=2
-    25 | 08 03             load_global [3]
+    25 | 08 01             load_global [1]
     27 | 05 00             store_reg r0
     29 | 14                create_empty_dict 
     30 | 05 01             store_reg r1
@@ -69,9 +67,9 @@ function <test>:
     39 | 11 02 00 00 00    push_small_int value=2
     44 | 05 03             store_reg r3
     46 | 11 03 00 00 00    push_small_int value=3
-    51 | 16 04 01          insert_to_dict_keyed [4], r1
+    51 | 16 02 01          insert_to_dict_keyed [2], r1
     54 | 11 04 00 00 00    push_small_int value=4
-    59 | 16 05 01          insert_to_dict_keyed [5], r1
+    59 | 16 03 01          insert_to_dict_keyed [3], r1
     62 | 2d 00 02          call_kw r0, args=2
     65 | 31                ret 
     66 | ff                suspend 

@@ -30,22 +30,21 @@ function <test>:
 function <test>:
   frame_size: 3
   length: 31
-  const (length=4):
+  const (length=3):
     0: <func test>
     1: "test"
-    2: "test"
-    3: "b"
+    2: "b"
   code:
      0 | 03 00             load_const [0]
      2 | 09 01             store_global [1]
-     4 | 08 02             load_global [2]
+     4 | 08 01             load_global [1]
      6 | 05 00             store_reg r0
      8 | 14                create_empty_dict 
      9 | 05 01             store_reg r1
     11 | 11 01 00 00 00    push_small_int value=1
     16 | 05 02             store_reg r2
     18 | 11 02 00 00 00    push_small_int value=2
-    23 | 16 03 01          insert_to_dict_keyed [3], r1
+    23 | 16 02 01          insert_to_dict_keyed [2], r1
     26 | 2d 00 01          call_kw r0, args=1
     29 | 31                ret 
     30 | ff                suspend 

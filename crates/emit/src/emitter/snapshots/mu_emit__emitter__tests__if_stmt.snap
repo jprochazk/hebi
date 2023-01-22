@@ -1,0 +1,53 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+if true:
+  print a
+elif true:
+  print b
+else:
+  print c
+
+
+# Chunk:
+function <test>:
+  frame_size: 0
+  length: 37
+  const (length=3):
+    0: "a"
+    1: "b"
+    2: "c"
+  code:
+     0 | 0f                push_true 
+     1 | 19 0f             jump_if_false offset=15
+     3 | 00                nop 
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 08 00             load_global [0]
+     9 | 2a                print 
+    10 | 17 19             jump offset=25
+    12 | 00                nop 
+    13 | 00                nop 
+    14 | 00                nop 
+    15 | 00                nop 
+    16 | 0f                push_true 
+    17 | 19 0f             jump_if_false offset=15
+    19 | 00                nop 
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 00                nop 
+    23 | 08 01             load_global [1]
+    25 | 2a                print 
+    26 | 17 09             jump offset=9
+    28 | 00                nop 
+    29 | 00                nop 
+    30 | 00                nop 
+    31 | 00                nop 
+    32 | 08 02             load_global [2]
+    34 | 2a                print 
+    35 | 31                ret 
+    36 | ff                suspend 
+

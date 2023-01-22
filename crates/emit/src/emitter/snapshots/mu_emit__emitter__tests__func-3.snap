@@ -37,20 +37,18 @@ function <test>:
 function <test>:
   frame_size: 3
   length: 41
-  const (length=4):
+  const (length=2):
     0: <func test>
     1: "test"
-    2: "test"
-    3: "test"
   code:
      0 | 03 00             load_const [0]
      2 | 09 01             store_global [1]
-     4 | 08 02             load_global [2]
+     4 | 08 01             load_global [1]
      6 | 05 00             store_reg r0
      8 | 11 01 00 00 00    push_small_int value=1
     13 | 05 01             store_reg r1
     15 | 2c 00 01          call r0, args=1
-    18 | 08 03             load_global [3]
+    18 | 08 01             load_global [1]
     20 | 05 00             store_reg r0
     22 | 11 01 00 00 00    push_small_int value=1
     27 | 05 01             store_reg r1

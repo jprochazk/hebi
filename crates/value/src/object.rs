@@ -3,6 +3,7 @@ mod macros;
 pub mod func;
 
 use std::cell::{Ref, RefMut};
+use std::hash::Hash;
 
 use beef::lean::Cow;
 use paste::paste;
@@ -11,6 +12,7 @@ use crate::Value;
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
+// TODO: only allow ints, strings, and opaque objects as keys
 pub type Dict = indexmap::IndexMap<Value, Value>;
 pub use func::Func;
 
@@ -25,6 +27,30 @@ object_repr! {
     List,
     Dict,
     Func,
+  }
+}
+
+impl PartialEq for Object {
+  fn eq(&self, other: &Self) -> bool {
+    match (&self.repr, &other.repr) {
+      (Repr::String(a), Repr::String(b)) => a == b,
+      (Repr::List(a), Repr::List(b)) => a == b,
+      (Repr::Dict(a), Repr::Dict(b)) => a == b,
+      (Repr::Func(a), Repr::Func(b)) => (a as *const _ as usize) == (b as *const _ as usize),
+      _ => false,
+    }
+  }
+}
+impl Eq for Object {}
+
+impl Hash for Object {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    match &self.repr {
+      Repr::String(v) => v.hash(state),
+      Repr::List(v) => v.hash(state),
+      Repr::Dict(v) => (v as *const _ as usize).hash(state),
+      Repr::Func(v) => (v as *const _ as usize).hash(state),
+    }
   }
 }
 

@@ -12,7 +12,8 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let chunk = match emit("test", &module) {
+    let ctx = Context::new();
+    let chunk = match emit(ctx, "test", &module) {
       Ok(chunk) => chunk,
       Err(e) => {
         panic!("failed to emit chunk:\n{}", e.report(input));
@@ -162,6 +163,30 @@ fn logical_expr() {
 
       fn f3(a, b, c, d):
         a ?? b ?? c
+    "#
+  }
+}
+
+#[test]
+fn if_stmt() {
+  check! {
+    r#"
+      if true:
+        print a
+      elif true:
+        print b
+      else:
+        print c
+    "#
+  }
+
+  check! {
+    r#"
+      if a:
+        b := a
+        print b
+      else:
+        print b
     "#
   }
 }

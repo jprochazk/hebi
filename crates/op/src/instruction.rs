@@ -383,7 +383,7 @@ pub enum ControlFlow {
   Next,
 }
 
-pub struct Builder<Value: Hash + Eq> {
+pub struct Builder<Value: Hash + Eq + Clone> {
   function_name: Cow<'static, str>,
 
   instructions: Vec<Instruction>,
@@ -418,7 +418,7 @@ impl LabelId {
   }
 }
 
-impl<Value: Hash + Eq> Builder<Value> {
+impl<Value: Hash + Eq + Clone> Builder<Value> {
   pub fn new(function_name: impl Into<Cow<'static, str>>) -> Self {
     Self {
       function_name: function_name.into(),
@@ -487,7 +487,8 @@ impl<Value: Hash + Eq> Builder<Value> {
     }
 
     let index = self.const_pool.len() as u32;
-    self.const_pool.push(value);
+    self.const_pool.push(value.clone());
+    self.const_index_map.insert(value, index);
     index
   }
 
@@ -644,14 +645,14 @@ fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [
   out
 }
 
-pub struct Chunk<Value: Hash + Eq> {
+pub struct Chunk<Value: Hash + Eq + Clone> {
   pub name: Cow<'static, str>,
   pub bytecode: Vec<u8>,
   /// Pool of constants referenced in the bytecode.
   pub const_pool: Vec<Value>,
 }
 
-impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
+impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
   pub fn disassemble(&self) -> String {
     use std::fmt::Write;
 

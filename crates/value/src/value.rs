@@ -146,32 +146,48 @@ impl Value {
 
 // Owned conversions
 impl Value {
-  pub fn to_float(self) -> Option<f64> {
+  pub fn as_float(&self) -> Option<f64> {
     if !self.is_float() {
       return None;
     }
     Some(f64::from_bits(self.bits))
   }
 
-  pub fn to_int(self) -> Option<i32> {
+  pub fn to_float(self) -> Option<f64> {
+    self.as_float()
+  }
+
+  pub fn as_int(&self) -> Option<i32> {
     if !self.is_int() {
       return None;
     }
     Some(self.value() as u32 as i32)
   }
 
-  pub fn to_bool(self) -> Option<bool> {
+  pub fn to_int(self) -> Option<i32> {
+    self.as_int()
+  }
+
+  pub fn as_bool(&self) -> Option<bool> {
     if !self.is_bool() {
       return None;
     }
     Some(self.value() == 1)
   }
 
-  pub fn to_none(self) -> Option<()> {
+  pub fn to_bool(self) -> Option<bool> {
+    self.as_bool()
+  }
+
+  pub fn as_none(&self) -> Option<()> {
     if !self.is_none() {
       return None;
     }
     Some(())
+  }
+
+  pub fn to_none(self) -> Option<()> {
+    self.as_none()
   }
 
   pub fn to_object(self) -> Option<Ptr<object::Object>> {
@@ -206,10 +222,22 @@ impl Value {
 
 impl PartialEq<Value> for Value {
   fn eq(&self, other: &Value) -> bool {
+    if self.type_tag() != other.type_tag() {
+      return false;
+    }
+
     if self.is_float() && other.is_float() {
       f64::from_bits(self.bits) == f64::from_bits(other.bits)
+    } else if self.is_int() && other.is_int() {
+      self.as_int() == other.as_int()
+    } else if self.is_bool() && other.is_bool() {
+      self.as_bool() == other.as_bool()
+    } else if self.is_none() && other.is_none() {
+      true
+    } else if self.is_object() && other.is_object() {
+      self.as_object().as_deref() == other.as_object().as_deref()
     } else {
-      self.bits == other.bits
+      unreachable!()
     }
   }
 }
@@ -220,12 +248,23 @@ impl Eq for Value {}
 
 impl Hash for Value {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    if self.is_float() && f64::from_bits(self.bits).is_nan() {
-      // all NaNs have the same hash
-      mask::QNAN.hash(state)
+    if self.is_float() {
+      if f64::from_bits(self.bits).is_nan() {
+        // all NaNs have the same hash
+        mask::QNAN.hash(state)
+      } else {
+        self.bits.hash(state)
+      }
+    } else if self.is_int() {
+      self.as_int().hash(state)
+    } else if self.is_bool() {
+      self.as_bool().hash(state)
+    } else if self.is_none() {
+      self.as_none().hash(state)
+    } else if self.is_object() {
+      self.as_object().as_deref().hash(state)
     } else {
-      // everything else is hashed as bits
-      self.bits.hash(state)
+      unreachable!()
     }
   }
 }

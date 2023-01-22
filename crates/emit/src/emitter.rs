@@ -8,25 +8,28 @@ use value::object::func;
 use value::Value;
 
 pub fn emit<'src>(
+  ctx: Context,
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
 ) -> Result<func::Func> {
-  Emitter::new(name, module).emit_main()
+  Emitter::new(ctx, name, module).emit_main()
 }
 
 use crate::regalloc::{RegAlloc, Register};
-use crate::{Error, Result};
+use crate::{Context, Error, Result};
 
 struct Emitter<'src> {
   state: Function<'src>,
   module: &'src ast::Module<'src>,
+  ctx: Context,
 }
 
 impl<'src> Emitter<'src> {
-  fn new(name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
+  fn new(ctx: Context, name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
     Self {
       state: Function::new(name, None),
       module,
+      ctx,
     }
   }
 
@@ -100,11 +103,15 @@ impl<'src> Emitter<'src> {
     ))
   }
 
-  fn const_(&mut self, value: impl Into<Value>) -> u32 {
+  fn const_name(&mut self, str: &str) -> u32 {
+    self.state.builder.constant(self.ctx.alloc_string(str))
+  }
+
+  fn const_value(&mut self, value: impl Into<Value>) -> u32 {
     let value: Value = value.into();
-
-    // TODO: intern strings
-
+    if value.is_string() {
+      panic!("use `const_name` instead of `const_value` for constant strings");
+    }
     self.state.builder.constant(value)
   }
 
@@ -175,7 +182,9 @@ struct Function<'src> {
   /// Invariants:
   /// - Register stacks may not be empty. If a stack is about to be emptied, the
   ///   local should be removed instead.
-  locals: HashMap<Cow<'src, str>, Vec<Register>>,
+  /// - The top-level `Vec` may not be empty. There must always be at least one
+  ///   scope.
+  locals: Vec<HashMap<Cow<'src, str>, Vec<Register>>>,
   /// List of variables captured from an enclosing scope.
   ///
   /// These may be shadowed by a local.
@@ -191,7 +200,7 @@ impl<'src> Function<'src> {
       name,
       parent,
       regalloc: RegAlloc::new(),
-      locals: HashMap::new(),
+      locals: vec![HashMap::new()],
       captures: HashMap::new(),
       capture_slot: 0,
     }
@@ -199,23 +208,48 @@ impl<'src> Function<'src> {
 
   // TODO: remove variables at the end of a block
 
+  fn begin_scope(&mut self) {
+    self.locals.push(HashMap::new());
+  }
+
+  fn is_global_scope(&self) -> bool {
+    self.parent.is_none() && self.locals.len() < 2
+  }
+
+  fn end_scope(&mut self) {
+    self
+      .locals
+      .pop()
+      .expect("end_scope should not empty the locals stack");
+  }
+
   fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, reg: Register) {
     reg.index(); // ensure liveness at time of declaration
     let name = name.into();
-    if let Some(stack) = self.locals.get_mut(&name) {
+    if let Some(stack) = self
+      .locals
+      .last_mut()
+      .expect("scope stack may not be empty")
+      .get_mut(&name)
+    {
       stack.push(reg);
     } else {
-      self.locals.insert(name, vec![reg]);
+      self
+        .locals
+        .last_mut()
+        .expect("scope stack may not be empty")
+        .insert(name, vec![reg]);
     }
   }
 
   fn local(&self, name: &str) -> Option<Register> {
-    let Some(stack) = self.locals.get(name) else {
-      return None;
-    };
-    let Some(reg) = stack.last() else {
-      panic!("local {name} register stack is empty");
-    };
+    let stack = self.locals.iter().rev().find_map(|stack| stack.get(name))?;
+    let reg = stack.last().unwrap_or_else(|| {
+      panic!(
+        "local's register stack {name} in function {} is empty",
+        self.name
+      )
+    });
     Some(reg.clone())
   }
 
@@ -327,8 +361,8 @@ mod stmt {
 
     fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>) -> Result<()> {
       self.emit_expr(&stmt.value)?;
-      if self.state.parent.is_none() {
-        let name = self.const_(stmt.name.as_ref());
+      if self.state.is_global_scope() {
+        let name = self.const_name(&stmt.name);
         self.emit_op(StoreGlobal { name });
       } else {
         let reg = self.reg();
@@ -339,7 +373,33 @@ mod stmt {
     }
 
     fn emit_if_stmt(&mut self, stmt: &'src ast::If<'src>) -> Result<()> {
-      todo!()
+      // exit label for all branches
+      let end = self.label("end");
+
+      for branch in stmt.branches.iter() {
+        let next = self.label("next");
+        self.emit_expr(&branch.cond)?;
+        self.emit_op(JumpIfFalse { offset: next.id() });
+        self.state.begin_scope();
+        for stmt in branch.body.iter() {
+          self.emit_stmt(&stmt)?;
+        }
+        self.emit_op(Jump { offset: end.id() });
+        self.state.end_scope();
+        self.finish_label(next);
+      }
+
+      if let Some(default) = stmt.default.as_ref() {
+        self.state.begin_scope();
+        for stmt in default.iter() {
+          self.emit_stmt(&stmt)?;
+        }
+        self.state.end_scope();
+      }
+
+      self.finish_label(end);
+
+      Ok(())
     }
 
     fn emit_loop_stmt(&mut self, stmt: &'src ast::Loop<'src>) -> Result<()> {
@@ -382,10 +442,10 @@ mod stmt {
 
       // TODO: emit closure
 
-      let func = self.const_(func);
+      let func = self.const_value(func);
       self.emit_op(LoadConst { slot: func });
-      if self.state.parent.is_none() {
-        let name = self.const_(name);
+      if self.state.is_global_scope() {
+        let name = self.const_name(&name);
         self.emit_op(StoreGlobal { name });
       } else {
         let reg = self.reg();
@@ -397,21 +457,7 @@ mod stmt {
     }
 
     fn emit_func_params(&mut self, func: &'src ast::Func<'src>) -> Result<()> {
-      /*
       // NOTE: params are already checked by `call` instruction
-      #for param in params.pos:
-        #if param.default:
-          if num_args <= #(param.i):
-            reg(param.i) = #(param.default)
-      #for param in params.kw:
-        #if param.default:
-          if not #(param.name) in kw:
-            reg(param.i) = #(param.default)
-          else:
-            reg(param.i) = kw.remove(#(param.name))
-        #else:
-          reg(param.i) = kw.remove(#(param.name))
-      */
 
       // allocate registers
       let receiver = self.reg();
@@ -449,7 +495,7 @@ mod stmt {
       }
       // emit kw + defaults
       for ((name, default), reg) in kw.iter() {
-        let name = self.const_(name.deref().clone());
+        let name = self.const_name(&name);
         // #if param.default.is_some()
         if let Some(default) = default {
           // if not #(param.name) in kw:
@@ -575,7 +621,7 @@ mod expr {
         ast::Literal::Float(v) => {
           // float is 4 bits so cannot be stored inline,
           // but it is interned
-          let num = self.const_(*v);
+          let num = self.const_value(*v);
           self.emit_op(LoadConst { slot: num });
         }
         ast::Literal::Bool(v) => match v {
@@ -584,7 +630,7 @@ mod expr {
         },
         ast::Literal::String(v) => {
           // `const_` interns the string
-          let str = self.const_(v.clone());
+          let str = self.const_name(v);
           self.emit_op(LoadConst { slot: str });
         }
         ast::Literal::List(list) => {
@@ -728,7 +774,7 @@ mod expr {
         Get::Local(reg) => self.emit_op(LoadReg { reg: reg.index() }),
         Get::Capture(slot) => self.emit_op(LoadCapture { slot }),
         Get::Global => {
-          let name = self.const_(expr.name.deref().clone());
+          let name = self.const_name(&expr.name);
           self.emit_op(LoadGlobal { name })
         }
       }
@@ -742,7 +788,7 @@ mod expr {
         Get::Local(reg) => self.emit_op(StoreReg { reg: reg.index() }),
         Get::Capture(slot) => self.emit_op(StoreCapture { slot }),
         Get::Global => {
-          let name = self.const_(expr.target.name.deref().clone());
+          let name = self.const_name(&expr.target.name);
           self.emit_op(StoreGlobal { name });
         }
       }
@@ -751,7 +797,7 @@ mod expr {
     }
 
     fn emit_get_named_expr(&mut self, expr: &'src ast::GetNamed<'src>) -> Result<()> {
-      let name = self.const_(expr.name.deref().clone());
+      let name = self.const_name(&expr.name);
       self.emit_expr(&expr.target)?;
       self.emit_op(LoadNamed { name });
 
@@ -760,7 +806,7 @@ mod expr {
 
     fn emit_set_named_expr(&mut self, expr: &'src ast::SetNamed<'src>) -> Result<()> {
       let obj = self.reg();
-      let name = self.const_(expr.target.name.deref().clone());
+      let name = self.const_name(&expr.target.name);
       self.emit_expr(&expr.target.target)?;
       self.emit_op(StoreReg { reg: obj.index() });
       self.emit_expr(&expr.value)?;
@@ -830,7 +876,7 @@ mod expr {
       }
 
       for (key, value) in expr.args.kw.iter() {
-        let key = self.const_(key.as_ref());
+        let key = self.const_name(key);
         self.emit_expr(value)?;
         self.emit_op(InsertToDictKeyed {
           key,

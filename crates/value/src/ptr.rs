@@ -1,4 +1,5 @@
 pub use std::cell::{Ref, RefCell, RefMut};
+use std::hash::Hash;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -49,6 +50,19 @@ impl Ptr<()> {
   pub(crate) unsafe fn decrement_strong_count(addr: usize) {
     let ptr = addr as *const ();
     unsafe { Rc::decrement_strong_count(ptr) }
+  }
+}
+
+impl<T: PartialEq> PartialEq for Ptr<T> {
+  fn eq(&self, other: &Self) -> bool {
+    self.0 == other.0
+  }
+}
+impl<T: Eq> Eq for Ptr<T> {}
+
+impl<T: Hash> Hash for Ptr<T> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.0.borrow().hash(state);
   }
 }
 

@@ -60,39 +60,6 @@
 //! The maximum register index at any point was `3`, meaning this function will
 //! need 4 registers.
 
-/*
-
-fn a():
-  v0 := 10
-  fn b():
-    print v0
-  return b
-
-f = a()
-f() # 10
-
-bytecode for a:
-  push_small_int 10
-  store_reg r0
-  create_closure [0] (<func b>)
-  capture r0
-  load_reg r0
-  return
-
-bytecode for b:
-  load_capture 0
-  print .a
-  return
-
-bytecode for main:
-  load_const [0] (<func a>)
-  call
-  store_reg r0
-  load_reg r0
-  call
-
-*/
-
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
