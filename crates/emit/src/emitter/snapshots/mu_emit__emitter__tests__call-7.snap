@@ -25,6 +25,6 @@ function <test>:
     17 | 2b 02 01          call r2, args=1
     20 | 05 01             store_reg r1
     22 | 2b 00 01          call r0, args=1
-    25 | 2d                ret 
+    25 | 30                ret 
     26 | ff                suspend 
 

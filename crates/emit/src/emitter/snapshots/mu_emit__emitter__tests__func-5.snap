@@ -1,0 +1,67 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn test(a, *, b=10):
+  print a, b
+
+test(1)
+test(1, b=2)
+
+
+# Chunk:
+function <test>:
+  frame_size: 6
+  length: 33
+  const (length=1):
+    0: "b"
+  code:
+     0 | 2e 00             is_kw_param_not_set [0]
+     2 | 19 0d             jump_if_false offset=13
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 11 0a 00 00 00    push_small_int value=10
+    13 | 05 05             store_reg r5
+    15 | 2f 00 05          load_kw_param [0], r5
+    18 | 12                create_empty_list 
+    19 | 05 00             store_reg r0
+    21 | 04 04             load_reg r4
+    23 | 13 00             push_to_list r0
+    25 | 04 05             load_reg r5
+    27 | 13 00             push_to_list r0
+    29 | 2a 00             print_list r0
+    31 | 30                ret 
+    32 | ff                suspend 
+
+function <test>:
+  frame_size: 3
+  length: 45
+  const (length=5):
+    0: <func test>
+    1: "test"
+    2: "test"
+    3: "test"
+    4: "b"
+  code:
+     0 | 03 00             load_const [0]
+     2 | 09 01             store_global [1]
+     4 | 08 02             load_global [2]
+     6 | 05 00             store_reg r0
+     8 | 11 01 00 00 00    push_small_int value=1
+    13 | 05 01             store_reg r1
+    15 | 2b 00 01          call r0, args=1
+    18 | 08 03             load_global [3]
+    20 | 05 00             store_reg r0
+    22 | 14                create_empty_dict 
+    23 | 05 01             store_reg r1
+    25 | 11 01 00 00 00    push_small_int value=1
+    30 | 05 02             store_reg r2
+    32 | 11 02 00 00 00    push_small_int value=2
+    37 | 16 04 01          insert_to_dict_keyed [4], r1
+    40 | 2c 00 01          call_kw r0, args=1
+    43 | 30                ret 
+    44 | ff                suspend 
+

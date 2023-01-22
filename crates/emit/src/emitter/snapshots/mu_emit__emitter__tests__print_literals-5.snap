@@ -30,6 +30,6 @@ function <test>:
     36 | 15 03 00          insert_to_dict r3, r0
     39 | 04 00             load_reg r0
     41 | 29                print 
-    42 | 2d                ret 
+    42 | 30                ret 
     43 | ff                suspend 
 

@@ -3,7 +3,7 @@ source: crates/op/src/tests.rs
 expression: chunk.disassemble()
 ---
 function <test>:
-  length: 78
+  length: 72
   const_pool (length=3):
     0 = "test"
     1 = 123456789
@@ -19,29 +19,24 @@ function <test>:
     25 | 05 00             store_reg r0
     27 | 01 05 00 01       (w)store_reg r256
     31 | 02 05 00 00 01 00 (x)store_reg r65536
-    37 | 17 00             jump offset=0
+    37 | 18 25             jump_back offset=37
     39 | 00                nop 
     40 | 00                nop 
     41 | 00                nop 
     42 | 00                nop 
-    43 | 17 4c             jump offset=76
+    43 | 17 1b             jump offset=27
     45 | 00                nop 
     46 | 00                nop 
     47 | 00                nop 
     48 | 00                nop 
-    49 | 19 00             jump_if_false offset=0
+    49 | 19 15             jump_if_false offset=21
     51 | 00                nop 
     52 | 00                nop 
     53 | 00                nop 
     54 | 00                nop 
-    55 | 19 4c             jump_if_false offset=76
-    57 | 00                nop 
-    58 | 00                nop 
-    59 | 00                nop 
-    60 | 00                nop 
-    61 | 11 00 00 00 00    push_small_int value=0
-    66 | 11 ff ff ff 7f    push_small_int value=2147483647
-    71 | 11 00 00 00 80    push_small_int value=-2147483648
-    76 | 2d                ret 
-    77 | ff                suspend 
+    55 | 11 00 00 00 00    push_small_int value=0
+    60 | 11 ff ff ff 7f    push_small_int value=2147483647
+    65 | 11 00 00 00 80    push_small_int value=-2147483648
+    70 | 30                ret 
+    71 | ff                suspend 
 

@@ -26,6 +26,6 @@ function <test>:
     15 | 11 02 00 00 00    push_small_int value=2
     20 | 16 03 01          insert_to_dict_keyed [3], r1
     23 | 2c 00 02          call_kw r0, args=2
-    26 | 2d                ret 
+    26 | 30                ret 
     27 | ff                suspend 
 

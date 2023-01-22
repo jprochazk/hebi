@@ -90,4 +90,52 @@ fn func() {
       test()
     "#
   }
+
+  check! {
+    r#"
+      fn test(a):
+        print a
+      
+      test(0)
+    "#
+  }
+
+  check! {
+    r#"
+      fn test(a, b=10):
+        print a, b
+
+      test(1)
+      test(1, 2)
+    "#
+  }
+
+  check! {
+    r#"
+      fn test(a, *, b):
+        print a, b
+
+      test(1, b=2)
+    "#
+  }
+
+  check! {
+    r#"
+      fn test(a, *, b=10):
+        print a, b
+
+      test(1)
+      test(1, b=2)
+    "#
+  }
+
+  check! {
+    r#"
+      fn test(a, *v, b=10, **kw):
+        print a, v, b, kw
+
+      test(1, 2)
+      test(1, 2, b=3, c=4)
+    "#
+  }
 }

@@ -11,25 +11,26 @@ test()
 
 # Chunk:
 function <test>:
-  frame_size: 0
+  frame_size: 4
   length: 2
   const: <empty>
   code:
-    0 | 2d                ret 
+    0 | 30                ret 
     1 | ff                suspend 
 
 function <test>:
   frame_size: 1
   length: 13
-  const (length=2):
+  const (length=3):
     0: <func test>
     1: "test"
+    2: "test"
   code:
      0 | 03 00             load_const [0]
      2 | 09 01             store_global [1]
-     4 | 08 01             load_global [1]
+     4 | 08 02             load_global [2]
      6 | 05 00             store_reg r0
      8 | 2b 00 00          call r0, args=0
-    11 | 2d                ret 
+    11 | 30                ret 
     12 | ff                suspend 
 

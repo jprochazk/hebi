@@ -114,6 +114,8 @@ instructions! {
   /// Jump forward by `offset`.
   Jump :jump (offset: uv),
   /// Jump backwards by `offset`.
+  ///
+  /// This instruction should not be emitted directly.
   JumpBack :jump (offset: uv),
   /// Jump forward by `offset` if value stored in the accumulator is truthy.
   JumpIfFalse :jump (offset: uv),
@@ -203,22 +205,42 @@ instructions! {
   ///
   /// The stack should be:
   /// ```text,ignore
-  /// [callee    ] <func ...>
-  /// [callee+1  ] args[0]
-  /// [callee+...] args[...]
-  /// [callee+N  ] args[N-1]
+  /// [reg(callee)    ] <func ...>
+  /// [reg(callee)+1  ] args[0]
+  /// [reg(callee)+...] args[...]
+  /// [reg(callee)+N  ] args[N-1]
   /// ```
   ///
   /// Call operation:
   /// 1. Assert that `callee` is callable, or panic.
-  /// 2. Check the call arguments. [note]
+  /// 2. Check the call arguments. [check]
   /// 3. Create a new call frame.
-  /// 4. Copy arguments at `reg(callee)+1..reg(callee+N)` to the top of the stack in the same order.
+  /// 4. Initialize the function's params. [params]
   /// 5. Store the current call frame's IP, and dispatch on the new call frame.
   ///
-  /// [note]: The following conditions must be true:
+  /// [check]: The following conditions must be true:
   /// - There are more than `callee.min_args` arguments.
   /// - There are less than `callee.max_args` arguments.
+  ///
+  /// [params]: Param initialization process
+  /// - Set slot `[0]` (receiver) to `none`.
+  /// - Copy the function to slot `[1]` (function).
+  /// - If `num_args > max_args`, create a list at slot `[2]`, and initialize it with `args[max_args..]`.
+  ///   Otherwise, set `[2]` to `none`.
+  /// - Set slot `[3]` (kwargs) to `none`.
+  /// - Copy arguments from `args[..num_args]` to `[4]..[4+N-1]`.
+  /// - If `num_args < max_args`, initialize `params[4+num_args..4+max_args]` to `none`.
+  ///
+  /// Stack after initialization:
+  /// ```text,ignore
+  /// [0]     <receiver>
+  /// [1]     <function>
+  /// [2]     argv
+  /// [3]     kwargs
+  /// [4+0]   params[0]
+  /// [4+*]   params[*]
+  /// [4+N-1] params[N-1]
+  /// ```
   ///
   /// ### Operands
   /// - `callee` - register index of callee.
@@ -228,40 +250,73 @@ instructions! {
   ///
   /// The stack should be:
   /// ```text,ignore
-  /// [callee    ] <func ...>
-  /// [callee+1  ] kw
-  /// [callee+2  ] args[0]
-  /// [callee+...] args[...]
-  /// [callee+1+N] args[N-1]
+  /// [reg(callee)    ] <func ...>
+  /// [reg(callee)+1  ] kw
+  /// [reg(callee)+2  ] args[0]
+  /// [reg(callee)+...] args[...]
+  /// [reg(callee)+1+N] args[N-1]
   /// ```
   ///
   /// Call operation:
   /// 1. Assert that `callee` is callable, or panic.
-  /// 2. Check the call arguments. [note]
+  /// 2. Check the call arguments. [check]
   /// 3. Create a new call frame.
-  /// 4. Copy arguments at `reg(callee)+1..reg(callee+N)` to the top of the stack in the same order.
+  /// 4. Initialize the function's params. [params]
   /// 5. Store the current call frame's IP, and dispatch on the new call frame.
   ///
-  /// [note]: The following conditions must be true:
-  /// - There are more than `callee.min_args` arguments.
-  /// - There are less than `callee.max_args` arguments.
-  /// - All required keyword arguments must appear in `kw`.
-  /// - All keyword argument names must exist in `callee.kw_args`.
+  /// [check]: The following conditions must be true:
+  /// - `num_args >= callee.min_args && num_args <= callee.max_args`
+  /// - All required keyword arguments appear in `kw`.
+  ///
+  /// [params]: Param initialization process
+  /// - Set slot `[0]` (receiver) to `none`.
+  /// - Copy the function to slot `[1]` (function).
+  /// - Create an empty list at slot `[2]` (argv).
+  /// - If `num_args > max_args`, create a list at slot `[2]`, and initialize it with `args[max_args..]`.
+  ///   Otherwise, set `[2]` to `none`.
+  /// - Copy the `kw` dictionary to slot `[3]` (kwargs).
+  /// - Copy arguments from `args[0..num_args]` to `params[4..4+num_args]`
+  /// - If `num_args < max_args`, initialize `params[4+num_args..4+max_args]` to `none`.
+  ///
+  /// Stack after initialization:
+  /// ```text,ignore
+  /// [0]     <receiver>
+  /// [1]     <function>
+  /// [2]     argv
+  /// [3]     kwargs
+  /// [4+0]   params[0]
+  /// [4+*]   params[*]
+  /// [4+N-1] params[N-1]
+  /// ```
   ///
   /// ### Operands
   /// - `callee` - register index of callee.
   /// - `args` - number of arguments.
   CallKw (callee: Reg, args: uv),
+
+  /// Returns true if `call_frame.num_args <= n`.
+  ///
+  /// ### Operands
+  /// - `n` - positional argument index
+  IsPosParamNotSet (index: uv),
+  /// Returns true if keyword argument `name` is not set.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
+  IsKwParamNotSet (name: Const),
+  /// Load keyword argument `name` into `reg`.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
+  /// - `param` - register index of function parameter.
+  LoadKwParam (name: Const, param: Reg),
+
   /// Pop a call frame off the stack.
   Ret (),
 }
 
 // TODO: more instructions
 // TODO: see how V8 handles `??` and `a?.b`
-// float, bigint??, string -> constants
-// TODO: calling convention
-// TODO: fast call? (speed up keyword args) - maybe IC is enough?
-// TODO: What does V8 do with call ICs?
 
 pub trait Opcode: private::Sealed {
   /// Returns the name of the operand for the purpose of `Display`.
@@ -304,15 +359,20 @@ fn handle_jump<E>(
   };
   match _jump {
     ControlFlow::Next => *pc += 1 + size_of_operands,
-    ControlFlow::Goto(offset) => *pc = offset as usize,
+    ControlFlow::Jump(offset) => *pc += offset as usize,
+    ControlFlow::Loop(offset) => *pc -= offset as usize,
   }
 }
 
 pub enum ControlFlow {
-  /// Jump to some `offset` in the bytecode.
+  /// Jump forward by `offset`.
   ///
   /// Note: This must land the dispatch loop on a valid opcode.
-  Goto(u32),
+  Jump(u32),
+  /// Jump backward by `offset`.
+  ///
+  /// Note: This must land the dispatch loop on a valid opcode.
+  Loop(u32),
   /// Go to the next instruction.
   ///
   /// This is equivalent to
@@ -380,13 +440,13 @@ impl<Value: Hash + Eq> Builder<Value> {
   /// opcode is first inserted into the bytecode, we store a temporary value
   /// (the label) in place of its `offset`. When the bytecode is finalized,
   /// all labels are replaced with their real offset values.
-  pub fn label(&mut self, name: Cow<'static, str>) -> LabelId {
+  pub fn label(&mut self, name: impl Into<Cow<'static, str>>) -> LabelId {
     let id = self.label_id;
     self.label_map.insert(
       id,
       Label {
         id,
-        name,
+        name: name.into(),
         offset: None,
       },
     );
@@ -492,17 +552,34 @@ impl<Value: Hash + Eq> Builder<Value> {
         (Some(&ops::ExtraWide), Some(&ops::Jump)) => {
           let label_id = Jump::decode(&bytecode, ip + 2, Width::Quad);
           let offset = get_label_offset(label_id, &label_map, &offsets, &mut used_labels);
-          patch_jump::<Jump>(&mut bytecode, ip, offset);
+          if ip > offset as usize {
+            let offset = ip - offset as usize;
+            patch_jump::<JumpBack>(&mut bytecode, ip, offset as u32);
+          } else if ip < offset as usize {
+            let offset = offset as usize - ip;
+            patch_jump::<Jump>(&mut bytecode, ip, offset as u32);
+          } else {
+            panic!(
+              "jump to label {} ({label_id}) has offset=0",
+              &label_map[&label_id].name
+            );
+          }
         }
         (Some(&ops::ExtraWide), Some(&ops::JumpBack)) => {
-          let label_id = JumpBack::decode(&bytecode, ip + 2, Width::Quad);
-          let offset = get_label_offset(label_id, &label_map, &offsets, &mut used_labels);
-          patch_jump::<JumpBack>(&mut bytecode, ip, offset);
+          panic!("JumpBack should not be emitted directly ({ip})");
         }
         (Some(&ops::ExtraWide), Some(&ops::JumpIfFalse)) => {
           let label_id = JumpIfFalse::decode(&bytecode, ip + 2, Width::Quad);
           let offset = get_label_offset(label_id, &label_map, &offsets, &mut used_labels);
-          patch_jump::<JumpIfFalse>(&mut bytecode, ip, offset);
+          if ip < offset as usize {
+            let offset = offset as usize - ip;
+            patch_jump::<JumpIfFalse>(&mut bytecode, ip, offset as u32);
+          } else {
+            panic!(
+              "JumpIfFalse cannot go backwards (label {} ({label_id}) offset={offset})",
+              &label_map[&label_id].name
+            )
+          }
         }
         _ => ip += decode_size(&bytecode[ip..]),
       }

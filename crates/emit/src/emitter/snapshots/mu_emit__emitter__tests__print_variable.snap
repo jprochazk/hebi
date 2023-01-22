@@ -11,13 +11,14 @@ print v # load_reg
 function <test>:
   frame_size: 0
   length: 12
-  const (length=1):
+  const (length=2):
     0: "v"
+    1: "v"
   code:
      0 | 11 00 00 00 00    push_small_int value=0
      5 | 09 00             store_global [0]
-     7 | 08 00             load_global [0]
+     7 | 08 01             load_global [1]
      9 | 29                print 
-    10 | 2d                ret 
+    10 | 30                ret 
     11 | ff                suspend 
 

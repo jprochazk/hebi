@@ -1,0 +1,62 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn test(a, b=10):
+  print a, b
+
+test(1)
+test(1, 2)
+
+
+# Chunk:
+function <test>:
+  frame_size: 6
+  length: 30
+  const: <empty>
+  code:
+     0 | 2d 01             is_pos_param_not_set index=1
+     2 | 19 0d             jump_if_false offset=13
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 11 0a 00 00 00    push_small_int value=10
+    13 | 05 05             store_reg r5
+    15 | 12                create_empty_list 
+    16 | 05 00             store_reg r0
+    18 | 04 04             load_reg r4
+    20 | 13 00             push_to_list r0
+    22 | 04 05             load_reg r5
+    24 | 13 00             push_to_list r0
+    26 | 2a 00             print_list r0
+    28 | 30                ret 
+    29 | ff                suspend 
+
+function <test>:
+  frame_size: 3
+  length: 41
+  const (length=4):
+    0: <func test>
+    1: "test"
+    2: "test"
+    3: "test"
+  code:
+     0 | 03 00             load_const [0]
+     2 | 09 01             store_global [1]
+     4 | 08 02             load_global [2]
+     6 | 05 00             store_reg r0
+     8 | 11 01 00 00 00    push_small_int value=1
+    13 | 05 01             store_reg r1
+    15 | 2b 00 01          call r0, args=1
+    18 | 08 03             load_global [3]
+    20 | 05 00             store_reg r0
+    22 | 11 01 00 00 00    push_small_int value=1
+    27 | 05 01             store_reg r1
+    29 | 11 02 00 00 00    push_small_int value=2
+    34 | 05 02             store_reg r2
+    36 | 2b 00 02          call r0, args=2
+    39 | 30                ret 
+    40 | ff                suspend 
+

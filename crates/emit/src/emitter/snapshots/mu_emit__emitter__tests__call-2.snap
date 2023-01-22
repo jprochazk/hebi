@@ -17,6 +17,6 @@ function <test>:
      4 | 11 00 00 00 00    push_small_int value=0
      9 | 05 01             store_reg r1
     11 | 2b 00 01          call r0, args=1
-    14 | 2d                ret 
+    14 | 30                ret 
     15 | ff                suspend 
 

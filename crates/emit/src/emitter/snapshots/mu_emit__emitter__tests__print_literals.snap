@@ -13,6 +13,6 @@ function <test>:
   code:
     0 | 11 00 00 00 00    push_small_int value=0
     5 | 29                print 
-    6 | 2d                ret 
+    6 | 30                ret 
     7 | ff                suspend 
 

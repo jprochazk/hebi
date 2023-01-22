@@ -12,9 +12,13 @@ v.a = 1
 function <test>:
   frame_size: 2
   length: 38
-  const (length=2):
+  const (length=6):
     0: "a"
     1: "v"
+    2: "a"
+    3: "v"
+    4: "a"
+    5: "v"
   code:
      0 | 14                create_empty_dict 
      1 | 05 00             store_reg r0
@@ -24,13 +28,13 @@ function <test>:
     12 | 15 01 00          insert_to_dict r1, r0
     15 | 04 00             load_reg r0
     17 | 09 01             store_global [1]
-    19 | 08 01             load_global [1]
-    21 | 0a 00             load_named [0]
+    19 | 08 03             load_global [3]
+    21 | 0a 02             load_named [2]
     23 | 29                print 
-    24 | 08 01             load_global [1]
+    24 | 08 05             load_global [5]
     26 | 05 00             store_reg r0
     28 | 11 01 00 00 00    push_small_int value=1
-    33 | 0b 00 00          store_named [0], r0
-    36 | 2d                ret 
+    33 | 0b 04 00          store_named [4], r0
+    36 | 30                ret 
     37 | ff                suspend 
 

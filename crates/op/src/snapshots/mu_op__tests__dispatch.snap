@@ -9,7 +9,7 @@ function <test>:
      0 | 11 0a 00 00 00    push_small_int value=10
      5 | 05 00             store_reg r0
      7 | 04 00             load_reg r0
-     9 | 19 24             jump_if_false offset=36
+     9 | 19 1b             jump_if_false offset=27
     11 | 00                nop 
     12 | 00                nop 
     13 | 00                nop 
@@ -19,11 +19,11 @@ function <test>:
     21 | 11 01 00 00 00    push_small_int value=1
     26 | 1b 00             sub r0
     28 | 05 00             store_reg r0
-    30 | 17 07             jump offset=7
+    30 | 18 17             jump_back offset=23
     32 | 00                nop 
     33 | 00                nop 
     34 | 00                nop 
     35 | 00                nop 
-    36 | 2d                ret 
+    36 | 30                ret 
     37 | ff                suspend 
 

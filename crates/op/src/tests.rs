@@ -58,7 +58,6 @@ fn test_builder() {
   });
   b.op(Jump { offset: start.id() });
   b.op(Jump { offset: end.id() });
-  b.op(JumpIfFalse { offset: start.id() });
   b.op(JumpIfFalse { offset: end.id() });
   b.op(PushSmallInt { value: 0 });
   b.op(PushSmallInt { value: i32::MAX });
@@ -131,13 +130,17 @@ fn dispatch() {
     }
 
     fn op_jump(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
-      Ok(ControlFlow::Goto(offset))
+      Ok(ControlFlow::Jump(offset))
+    }
+
+    fn op_jump_back(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
+      Ok(ControlFlow::Loop(offset))
     }
 
     fn op_jump_if_false(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
       let value = *self.a.as_number().ok_or(())?;
       Ok(if value == 0 {
-        ControlFlow::Goto(offset)
+        ControlFlow::Jump(offset)
       } else {
         ControlFlow::Next
       })

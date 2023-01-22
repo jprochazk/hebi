@@ -20,8 +20,6 @@ use crate::{Error, Result};
 struct Emitter<'src> {
   state: Function<'src>,
   module: &'src ast::Module<'src>,
-  /// String interning
-  strings: HashMap<String, u32>,
 }
 
 impl<'src> Emitter<'src> {
@@ -29,7 +27,6 @@ impl<'src> Emitter<'src> {
     Self {
       state: Function::new(name, None),
       module,
-      strings: HashMap::new(),
     }
   }
 
@@ -106,19 +103,7 @@ impl<'src> Emitter<'src> {
   fn const_(&mut self, value: impl Into<Value>) -> u32 {
     let value: Value = value.into();
 
-    // TODO: global string interner, this only interns locally
-    // which means that "a" from module != "a" from a different module
-    // intern strings
-    if value.is_string() {
-      let str = value.as_string().unwrap();
-      if let Some(slot) = self.strings.get(str.as_str()).cloned() {
-        return slot;
-      }
-
-      let slot = self.state.builder.constant(value.clone());
-      self.strings.insert(str.clone(), slot);
-      return slot;
-    }
+    // TODO: intern strings
 
     self.state.builder.constant(value)
   }
@@ -129,6 +114,21 @@ impl<'src> Emitter<'src> {
 
   fn reg(&mut self) -> Register {
     self.state.regalloc.alloc()
+  }
+
+  fn label(&mut self, name: impl Into<Cow<'static, str>>) -> LabelId {
+    self.state.builder.label(name)
+  }
+
+  fn labels<const N: usize, T: Into<Cow<'static, str>> + Clone>(
+    &mut self,
+    names: [T; N],
+  ) -> [LabelId; N] {
+    self.state.builder.labels(names)
+  }
+
+  fn finish_label(&mut self, label: LabelId) {
+    self.state.builder.finish_label(label)
   }
 
   fn resolve_var(&mut self, name: impl Into<Cow<'src, str>>) -> Get {
@@ -200,6 +200,7 @@ impl<'src> Function<'src> {
   // TODO: remove variables at the end of a block
 
   fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, reg: Register) {
+    reg.index(); // ensure liveness at time of declaration
     let name = name.into();
     if let Some(stack) = self.locals.get_mut(&name) {
       stack.push(reg);
@@ -296,6 +297,9 @@ fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u
       Instruction::PrintList(v) => v.list = register_map[&v.list],
       Instruction::Call(v) => v.callee = register_map[&v.callee],
       Instruction::CallKw(v) => v.callee = register_map[&v.callee],
+      Instruction::IsPosParamNotSet(_) => {}
+      Instruction::IsKwParamNotSet(_) => {}
+      Instruction::LoadKwParam(_) => {}
       Instruction::Ret(_) => {}
       Instruction::Suspend(_) => {}
     }
@@ -360,12 +364,13 @@ mod stmt {
           .params
           .kw
           .iter()
-          .map(|v| String::from(v.0.as_ref()))
+          .filter(|(_, default)| default.is_none())
+          .map(|(key, _)| String::from(key.as_ref()))
           .collect(),
       };
 
       let func = self.emit_func(name.clone(), params, |this| {
-        // TODO: handle params (defaults, `argv`, kw, `kwargs`)
+        this.emit_func_params(&stmt)?;
 
         for stmt in stmt.body.iter() {
           this.emit_stmt(stmt)?;
@@ -386,6 +391,110 @@ mod stmt {
         self.emit_op(StoreReg { reg: reg.index() });
         self.state.declare_local(name, reg);
       }
+
+      Ok(())
+    }
+
+    fn emit_func_params(&mut self, func: &'src ast::Func<'src>) -> Result<()> {
+      /*
+      // NOTE: params are already checked by `call` instruction
+      #for param in params.pos:
+        #if param.default:
+          if num_args <= #(param.i):
+            reg(param.i) = #(param.default)
+      #for param in params.kw:
+        #if param.default:
+          if not #(param.name) in kw:
+            reg(param.i) = #(param.default)
+          else:
+            reg(param.i) = kw.remove(#(param.name))
+        #else:
+          reg(param.i) = kw.remove(#(param.name))
+      */
+
+      // allocate registers
+      let receiver = self.reg();
+      let this_func = self.reg();
+      let argv = self.reg();
+      let kwargs = self.reg();
+      let pos = func
+        .params
+        .pos
+        .iter()
+        .map(|p| (p, self.reg()))
+        .collect::<Vec<_>>();
+      let kw = func
+        .params
+        .kw
+        .iter()
+        .map(|p| (p, self.reg()))
+        .collect::<Vec<_>>();
+
+      // only pos params with defaults need emit
+      // invariants:
+      // - the `call` instruction checks that all required params are present
+      // - required params may not appear after optional params
+      // - keyword args
+      // emit pos defaults
+      for (i, ((_, default), reg)) in pos.iter().enumerate() {
+        if let Some(default) = default {
+          let next = self.label("next");
+          self.emit_op(IsPosParamNotSet { index: i as u32 });
+          self.emit_op(JumpIfFalse { offset: next.id() });
+          self.emit_expr(default)?;
+          self.emit_op(StoreReg { reg: reg.index() });
+          self.finish_label(next);
+        }
+      }
+      // emit kw + defaults
+      for ((name, default), reg) in kw.iter() {
+        let name = self.const_(name.deref().clone());
+        // #if param.default.is_some()
+        if let Some(default) = default {
+          // if not #(param.name) in kw:
+          let from_key = self.label("next");
+          self.emit_op(IsKwParamNotSet { name });
+          self.emit_op(JumpIfFalse {
+            offset: from_key.id(),
+          });
+          // store(param.reg) = #(param.default)
+          self.emit_expr(default)?;
+          self.emit_op(StoreReg { reg: reg.index() });
+          self.finish_label(from_key);
+          // else:
+          // store(param.reg) = kw.remove(#(param.name))
+          self.emit_op(LoadKwParam {
+            name,
+            param: reg.index(),
+          });
+        } else {
+          // store(param.reg) = kw.remove(#(param.name))
+          self.emit_op(LoadKwParam {
+            name,
+            param: reg.index(),
+          });
+        }
+      }
+
+      // declare locals
+      for ((name, _), reg) in kw.iter().rev() {
+        self.state.declare_local(name.deref().clone(), reg.clone())
+      }
+      for ((name, _), reg) in pos.iter().rev() {
+        self.state.declare_local(name.deref().clone(), reg.clone())
+      }
+      if let Some(name) = func.params.kwargs.as_ref() {
+        self
+          .state
+          .declare_local(name.deref().clone(), kwargs.clone());
+      }
+      if let Some(name) = func.params.argv.as_ref() {
+        self.state.declare_local(name.deref().clone(), argv.clone());
+      }
+      self
+        .state
+        .declare_local(func.name.deref().clone(), this_func);
+      self.state.declare_local("self", receiver);
 
       Ok(())
     }

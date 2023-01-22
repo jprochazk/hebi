@@ -1,0 +1,40 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn test(a):
+  print a
+
+test(0)
+
+
+# Chunk:
+function <test>:
+  frame_size: 5
+  length: 5
+  const: <empty>
+  code:
+    0 | 04 04             load_reg r4
+    2 | 29                print 
+    3 | 30                ret 
+    4 | ff                suspend 
+
+function <test>:
+  frame_size: 2
+  length: 20
+  const (length=3):
+    0: <func test>
+    1: "test"
+    2: "test"
+  code:
+     0 | 03 00             load_const [0]
+     2 | 09 01             store_global [1]
+     4 | 08 02             load_global [2]
+     6 | 05 00             store_reg r0
+     8 | 11 00 00 00 00    push_small_int value=0
+    13 | 05 01             store_reg r1
+    15 | 2b 00 01          call r0, args=1
+    18 | 30                ret 
+    19 | ff                suspend 
+

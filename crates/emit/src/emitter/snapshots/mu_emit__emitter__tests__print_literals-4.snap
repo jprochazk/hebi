@@ -21,6 +21,6 @@ function <test>:
     22 | 13 00             push_to_list r0
     24 | 04 00             load_reg r0
     26 | 29                print 
-    27 | 2d                ret 
+    27 | 30                ret 
     28 | ff                suspend 
 

@@ -15,6 +15,6 @@ function <test>:
     0 | 08 00             load_global [0]
     2 | 05 00             store_reg r0
     4 | 2b 00 00          call r0, args=0
-    7 | 2d                ret 
+    7 | 30                ret 
     8 | ff                suspend 
 
