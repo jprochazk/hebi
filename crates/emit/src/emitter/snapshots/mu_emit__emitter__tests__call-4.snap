@@ -19,7 +19,7 @@ function <test>:
      5 | 05 01             store_reg r1
      7 | 11 00 00 00 00    push_small_int value=0
     12 | 16 01 01          insert_to_dict_keyed [1], r1
-    15 | 2c 00 00          call_kw r0, args=0
-    18 | 30                ret 
+    15 | 2d 00 00          call_kw r0, args=0
+    18 | 31                ret 
     19 | ff                suspend 
 

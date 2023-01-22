@@ -16,7 +16,7 @@ function <test>:
   length: 30
   const: <empty>
   code:
-     0 | 2d 01             is_pos_param_not_set index=1
+     0 | 2e 01             is_pos_param_not_set index=1
      2 | 19 0d             jump_if_false offset=13
      4 | 00                nop 
      5 | 00                nop 
@@ -30,8 +30,8 @@ function <test>:
     20 | 13 00             push_to_list r0
     22 | 04 05             load_reg r5
     24 | 13 00             push_to_list r0
-    26 | 2a 00             print_list r0
-    28 | 30                ret 
+    26 | 2b 00             print_list r0
+    28 | 31                ret 
     29 | ff                suspend 
 
 function <test>:
@@ -49,14 +49,14 @@ function <test>:
      6 | 05 00             store_reg r0
      8 | 11 01 00 00 00    push_small_int value=1
     13 | 05 01             store_reg r1
-    15 | 2b 00 01          call r0, args=1
+    15 | 2c 00 01          call r0, args=1
     18 | 08 03             load_global [3]
     20 | 05 00             store_reg r0
     22 | 11 01 00 00 00    push_small_int value=1
     27 | 05 01             store_reg r1
     29 | 11 02 00 00 00    push_small_int value=2
     34 | 05 02             store_reg r2
-    36 | 2b 00 02          call r0, args=2
-    39 | 30                ret 
+    36 | 2c 00 02          call r0, args=2
+    39 | 31                ret 
     40 | ff                suspend 
 

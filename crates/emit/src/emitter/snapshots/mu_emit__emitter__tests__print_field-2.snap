@@ -32,13 +32,13 @@ function <test>:
     21 | 05 00             store_reg r0
     23 | 08 03             load_global [3]
     25 | 0c 00             load_keyed r0
-    27 | 29                print 
+    27 | 2a                print 
     28 | 03 04             load_const [4]
     30 | 05 00             store_reg r0
     32 | 08 05             load_global [5]
     34 | 05 01             store_reg r1
     36 | 11 01 00 00 00    push_small_int value=1
     41 | 0d 00 01          store_keyed r0, r1
-    44 | 30                ret 
+    44 | 31                ret 
     45 | ff                suspend 
 

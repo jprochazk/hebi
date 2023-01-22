@@ -128,9 +128,6 @@
 //! Implementation inspired by <https://github.com/Marwes/nanbox> and <http://craftinginterpreters.com/optimization.html>.
 //! See the last link for more info.
 
-// TODO: object representation
-// maybe just a trait?
-
 pub mod object;
 pub mod ptr;
 pub mod value;

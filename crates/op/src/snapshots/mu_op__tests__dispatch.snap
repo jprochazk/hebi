@@ -15,7 +15,7 @@ function <test>:
     13 | 00                nop 
     14 | 00                nop 
     15 | 11 7b 00 00 00    push_small_int value=123
-    20 | 29                print 
+    20 | 2a                print 
     21 | 11 01 00 00 00    push_small_int value=1
     26 | 1b 00             sub r0
     28 | 05 00             store_reg r0
@@ -24,6 +24,6 @@ function <test>:
     33 | 00                nop 
     34 | 00                nop 
     35 | 00                nop 
-    36 | 30                ret 
+    36 | 31                ret 
     37 | ff                suspend 
 

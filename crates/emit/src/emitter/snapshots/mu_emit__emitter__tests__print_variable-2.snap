@@ -14,7 +14,7 @@ function <test>:
     0: "v"
   code:
     0 | 08 00             load_global [0]
-    2 | 29                print 
-    3 | 30                ret 
+    2 | 2a                print 
+    3 | 31                ret 
     4 | ff                suspend 
 

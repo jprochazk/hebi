@@ -1,0 +1,254 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn f0(a, b):
+  a && b
+  a || b
+  a ?? b
+
+
+fn f1_a(a, b, c, d):
+  (a && b) || (c && d)
+fn f1_b(a, b, c, d):
+   a && b  ||  c && d
+
+fn f2_a(a, b, c, d):
+  (a || (b && c)) || d
+fn f2_b(a, b, c, d):
+  a ||  b && c  || d
+
+fn f3(a, b, c, d):
+  a ?? b ?? c
+
+
+# Chunk:
+function <f0>:
+  frame_size: 6
+  length: 39
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 19 08             jump_if_false offset=8
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 04 05             load_reg r5
+    10 | 04 04             load_reg r4
+    12 | 19 0c             jump_if_false offset=12
+    14 | 00                nop 
+    15 | 00                nop 
+    16 | 00                nop 
+    17 | 00                nop 
+    18 | 17 08             jump offset=8
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 00                nop 
+    23 | 00                nop 
+    24 | 04 05             load_reg r5
+    26 | 04 04             load_reg r4
+    28 | 29                is_none 
+    29 | 19 08             jump_if_false offset=8
+    31 | 00                nop 
+    32 | 00                nop 
+    33 | 00                nop 
+    34 | 00                nop 
+    35 | 04 05             load_reg r5
+    37 | 31                ret 
+    38 | ff                suspend 
+
+function <f1_a>:
+  frame_size: 8
+  length: 34
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 19 08             jump_if_false offset=8
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 04 05             load_reg r5
+    10 | 19 0c             jump_if_false offset=12
+    12 | 00                nop 
+    13 | 00                nop 
+    14 | 00                nop 
+    15 | 00                nop 
+    16 | 17 10             jump offset=16
+    18 | 00                nop 
+    19 | 00                nop 
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 04 06             load_reg r6
+    24 | 19 08             jump_if_false offset=8
+    26 | 00                nop 
+    27 | 00                nop 
+    28 | 00                nop 
+    29 | 00                nop 
+    30 | 04 07             load_reg r7
+    32 | 31                ret 
+    33 | ff                suspend 
+
+function <f1_b>:
+  frame_size: 8
+  length: 34
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 19 08             jump_if_false offset=8
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 04 05             load_reg r5
+    10 | 19 0c             jump_if_false offset=12
+    12 | 00                nop 
+    13 | 00                nop 
+    14 | 00                nop 
+    15 | 00                nop 
+    16 | 17 10             jump offset=16
+    18 | 00                nop 
+    19 | 00                nop 
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 04 06             load_reg r6
+    24 | 19 08             jump_if_false offset=8
+    26 | 00                nop 
+    27 | 00                nop 
+    28 | 00                nop 
+    29 | 00                nop 
+    30 | 04 07             load_reg r7
+    32 | 31                ret 
+    33 | ff                suspend 
+
+function <f2_a>:
+  frame_size: 8
+  length: 40
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 19 0c             jump_if_false offset=12
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 17 10             jump offset=16
+    10 | 00                nop 
+    11 | 00                nop 
+    12 | 00                nop 
+    13 | 00                nop 
+    14 | 04 05             load_reg r5
+    16 | 19 08             jump_if_false offset=8
+    18 | 00                nop 
+    19 | 00                nop 
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 04 06             load_reg r6
+    24 | 19 0c             jump_if_false offset=12
+    26 | 00                nop 
+    27 | 00                nop 
+    28 | 00                nop 
+    29 | 00                nop 
+    30 | 17 08             jump offset=8
+    32 | 00                nop 
+    33 | 00                nop 
+    34 | 00                nop 
+    35 | 00                nop 
+    36 | 04 07             load_reg r7
+    38 | 31                ret 
+    39 | ff                suspend 
+
+function <f2_b>:
+  frame_size: 8
+  length: 40
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 19 0c             jump_if_false offset=12
+     4 | 00                nop 
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 17 10             jump offset=16
+    10 | 00                nop 
+    11 | 00                nop 
+    12 | 00                nop 
+    13 | 00                nop 
+    14 | 04 05             load_reg r5
+    16 | 19 08             jump_if_false offset=8
+    18 | 00                nop 
+    19 | 00                nop 
+    20 | 00                nop 
+    21 | 00                nop 
+    22 | 04 06             load_reg r6
+    24 | 19 0c             jump_if_false offset=12
+    26 | 00                nop 
+    27 | 00                nop 
+    28 | 00                nop 
+    29 | 00                nop 
+    30 | 17 08             jump offset=8
+    32 | 00                nop 
+    33 | 00                nop 
+    34 | 00                nop 
+    35 | 00                nop 
+    36 | 04 07             load_reg r7
+    38 | 31                ret 
+    39 | ff                suspend 
+
+function <f3>:
+  frame_size: 8
+  length: 22
+  const: <empty>
+  code:
+     0 | 04 04             load_reg r4
+     2 | 29                is_none 
+     3 | 19 08             jump_if_false offset=8
+     5 | 00                nop 
+     6 | 00                nop 
+     7 | 00                nop 
+     8 | 00                nop 
+     9 | 04 05             load_reg r5
+    11 | 29                is_none 
+    12 | 19 08             jump_if_false offset=8
+    14 | 00                nop 
+    15 | 00                nop 
+    16 | 00                nop 
+    17 | 00                nop 
+    18 | 04 06             load_reg r6
+    20 | 31                ret 
+    21 | ff                suspend 
+
+function <test>:
+  frame_size: 0
+  length: 26
+  const (length=12):
+    0: <func f0>
+    1: "f0"
+    2: <func f1_a>
+    3: "f1_a"
+    4: <func f1_b>
+    5: "f1_b"
+    6: <func f2_a>
+    7: "f2_a"
+    8: <func f2_b>
+    9: "f2_b"
+    10: <func f3>
+    11: "f3"
+  code:
+     0 | 03 00             load_const [0]
+     2 | 09 01             store_global [1]
+     4 | 03 02             load_const [2]
+     6 | 09 03             store_global [3]
+     8 | 03 04             load_const [4]
+    10 | 09 05             store_global [5]
+    12 | 03 06             load_const [6]
+    14 | 09 07             store_global [7]
+    16 | 03 08             load_const [8]
+    18 | 09 09             store_global [9]
+    20 | 03 0a             load_const [10]
+    22 | 09 0b             store_global [11]
+    24 | 31                ret 
+    25 | ff                suspend 
+

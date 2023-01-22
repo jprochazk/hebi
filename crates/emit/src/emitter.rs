@@ -293,6 +293,7 @@ fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u
       Instruction::CmpGe(v) => v.lhs = register_map[&v.lhs],
       Instruction::CmpLt(v) => v.lhs = register_map[&v.lhs],
       Instruction::CmpLe(v) => v.lhs = register_map[&v.lhs],
+      Instruction::IsNone(_) => {}
       Instruction::Print(_) => {}
       Instruction::PrintList(v) => v.list = register_map[&v.list],
       Instruction::Call(v) => v.callee = register_map[&v.callee],
@@ -572,7 +573,7 @@ mod expr {
         ast::Literal::None => self.emit_op(PushNone),
         ast::Literal::Int(v) => self.emit_op(PushSmallInt { value: *v }),
         ast::Literal::Float(v) => {
-          // float is 64 bits so cannot be stored inline,
+          // float is 4 bits so cannot be stored inline,
           // but it is interned
           let num = self.const_(*v);
           self.emit_op(LoadConst { slot: num });
@@ -625,6 +626,13 @@ mod expr {
       // binary expressions store lhs in a register,
       // and rhs in the accumulator
 
+      match expr.op {
+        ast::BinaryOp::And | ast::BinaryOp::Or | ast::BinaryOp::Maybe => {
+          return self.emit_logical_expr(expr)
+        }
+        _ => {}
+      }
+
       let lhs = self.reg();
       self.emit_expr(&expr.left)?;
       self.emit_op(StoreReg { reg: lhs.index() });
@@ -644,9 +652,57 @@ mod expr {
         ast::BinaryOp::MoreEq => self.emit_op(CmpGe { lhs }),
         ast::BinaryOp::Less => self.emit_op(CmpLt { lhs }),
         ast::BinaryOp::LessEq => self.emit_op(CmpLe { lhs }),
-        ast::BinaryOp::And => todo!("short-circuiting and"),
-        ast::BinaryOp::Or => todo!("short-circuiting or"),
-        ast::BinaryOp::Maybe => todo!("short-circuiting maybe"),
+        ast::BinaryOp::And | ast::BinaryOp::Or | ast::BinaryOp::Maybe => unreachable!(),
+      }
+
+      Ok(())
+    }
+
+    fn emit_logical_expr(&mut self, expr: &'src ast::Binary<'src>) -> Result<()> {
+      match expr.op {
+        ast::BinaryOp::And => {
+          /*
+            <left> && <right>
+            v = <left>
+            if v:
+              v = <right>
+          */
+          let end = self.label("end");
+          self.emit_expr(&expr.left)?;
+          self.emit_op(JumpIfFalse { offset: end.id() });
+          self.emit_expr(&expr.right)?;
+          self.finish_label(end);
+        }
+        ast::BinaryOp::Or => {
+          /*
+            <left> || <right>
+            v = <left>
+            if !v:
+              v = <right>
+          */
+          let [rhs, end] = self.labels(["rhs", "end"]);
+          self.emit_expr(&expr.left)?;
+          self.emit_op(JumpIfFalse { offset: rhs.id() });
+          self.emit_op(Jump { offset: end.id() });
+          self.finish_label(rhs);
+          self.emit_expr(&expr.right)?;
+          self.finish_label(end);
+        }
+        ast::BinaryOp::Maybe => {
+          /*
+            <left> ?? <right>
+            v = <left>
+            if v is none:
+              v = <right>
+          */
+          let end = self.label("end");
+          self.emit_expr(&expr.left)?;
+          self.emit_op(IsNone);
+          self.emit_op(JumpIfFalse { offset: end.id() });
+          self.emit_expr(&expr.right)?;
+          self.finish_label(end);
+        }
+        _ => unreachable!("not a logical expr: {:?}", expr.op),
       }
 
       Ok(())

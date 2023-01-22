@@ -184,8 +184,7 @@ pub struct Binary<'src> {
   pub right: Expr<'src>,
 }
 
-#[cfg_attr(test, derive(Debug))]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOp {
   Add,
   Sub,

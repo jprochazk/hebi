@@ -139,3 +139,29 @@ fn func() {
     "#
   }
 }
+
+#[test]
+fn logical_expr() {
+  check! {
+    r#"
+      fn f0(a, b):
+        a && b
+        a || b
+        a ?? b
+
+
+      fn f1_a(a, b, c, d):
+        (a && b) || (c && d)
+      fn f1_b(a, b, c, d):
+         a && b  ||  c && d
+      
+      fn f2_a(a, b, c, d):
+        (a || (b && c)) || d
+      fn f2_b(a, b, c, d):
+        a ||  b && c  || d
+
+      fn f3(a, b, c, d):
+        a ?? b ?? c
+    "#
+  }
+}

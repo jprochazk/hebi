@@ -20,7 +20,7 @@ function <test>:
     16 | 05 02             store_reg r2
     18 | 11 02 00 00 00    push_small_int value=2
     23 | 05 03             store_reg r3
-    25 | 2b 00 03          call r0, args=3
-    28 | 30                ret 
+    25 | 2c 00 03          call r0, args=3
+    28 | 31                ret 
     29 | ff                suspend 
 

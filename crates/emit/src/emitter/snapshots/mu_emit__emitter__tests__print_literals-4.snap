@@ -20,7 +20,7 @@ function <test>:
     17 | 11 02 00 00 00    push_small_int value=2
     22 | 13 00             push_to_list r0
     24 | 04 00             load_reg r0
-    26 | 29                print 
-    27 | 30                ret 
+    26 | 2a                print 
+    27 | 31                ret 
     28 | ff                suspend 
 

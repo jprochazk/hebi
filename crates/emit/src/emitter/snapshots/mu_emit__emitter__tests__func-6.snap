@@ -17,7 +17,7 @@ function <test>:
   const (length=1):
     0: "b"
   code:
-     0 | 2e 00             is_kw_param_not_set [0]
+     0 | 2f 00             is_kw_param_not_set [0]
      2 | 19 0d             jump_if_false offset=13
      4 | 00                nop 
      5 | 00                nop 
@@ -25,7 +25,7 @@ function <test>:
      7 | 00                nop 
      8 | 11 0a 00 00 00    push_small_int value=10
     13 | 05 05             store_reg r5
-    15 | 2f 00 05          load_kw_param [0], r5
+    15 | 30 00 05          load_kw_param [0], r5
     18 | 12                create_empty_list 
     19 | 05 00             store_reg r0
     21 | 04 04             load_reg r4
@@ -36,8 +36,8 @@ function <test>:
     31 | 13 00             push_to_list r0
     33 | 04 03             load_reg r3
     35 | 13 00             push_to_list r0
-    37 | 2a 00             print_list r0
-    39 | 30                ret 
+    37 | 2b 00             print_list r0
+    39 | 31                ret 
     40 | ff                suspend 
 
 function <test>:
@@ -59,7 +59,7 @@ function <test>:
     13 | 05 01             store_reg r1
     15 | 11 02 00 00 00    push_small_int value=2
     20 | 05 02             store_reg r2
-    22 | 2b 00 02          call r0, args=2
+    22 | 2c 00 02          call r0, args=2
     25 | 08 03             load_global [3]
     27 | 05 00             store_reg r0
     29 | 14                create_empty_dict 
@@ -72,7 +72,7 @@ function <test>:
     51 | 16 04 01          insert_to_dict_keyed [4], r1
     54 | 11 04 00 00 00    push_small_int value=4
     59 | 16 05 01          insert_to_dict_keyed [5], r1
-    62 | 2c 00 02          call_kw r0, args=2
-    65 | 30                ret 
+    62 | 2d 00 02          call_kw r0, args=2
+    65 | 31                ret 
     66 | ff                suspend 
 

@@ -30,11 +30,11 @@ function <test>:
     17 | 09 01             store_global [1]
     19 | 08 03             load_global [3]
     21 | 0a 02             load_named [2]
-    23 | 29                print 
+    23 | 2a                print 
     24 | 08 05             load_global [5]
     26 | 05 00             store_reg r0
     28 | 11 01 00 00 00    push_small_int value=1
     33 | 0b 04 00          store_named [4], r0
-    36 | 30                ret 
+    36 | 31                ret 
     37 | ff                suspend 
 

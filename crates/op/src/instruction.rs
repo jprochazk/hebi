@@ -193,6 +193,9 @@ instructions! {
   /// Otherwise, store `false`.
   CmpLe (lhs: Reg),
 
+  // Type checks
+  IsNone (),
+
   /// Print the value in the accumulator.
   Print (),
   /// Print a list of values.
@@ -545,7 +548,6 @@ impl<Value: Hash + Eq> Builder<Value> {
     offsets.push(bytecode.len());
 
     // pass 2: patch jumps
-    // TODO: jumps should be relative
     let mut ip = 0;
     while ip < bytecode.len() {
       match (bytecode.get(ip), bytecode.get(ip + 1)) {
@@ -705,8 +707,6 @@ impl<Value: std::fmt::Display + Hash + Eq> Chunk<Value> {
 
 // TODO:
 // - accumulator usage
-// - operand usage instead of name e.g. to print `r0` instead of `reg=0`, `[0]`
-//   instead of `slot=0`, etc.
 
 pub trait Disassemble {
   /// Disassemble a variable-width encoded `self` from `buf` at the specified

@@ -37,6 +37,6 @@ function <test>:
     55 | 11 00 00 00 00    push_small_int value=0
     60 | 11 ff ff ff 7f    push_small_int value=2147483647
     65 | 11 00 00 00 80    push_small_int value=-2147483648
-    70 | 30                ret 
+    70 | 31                ret 
     71 | ff                suspend 
 
