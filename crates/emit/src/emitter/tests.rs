@@ -68,6 +68,20 @@ fn print_field() {
       v["a"] = 1
     "#
   }
+  check! {
+    r#"
+      v := {}
+      print ?v.a
+      print ?v.a.b.c
+    "#
+  }
+  check! {
+    r#"
+      v := {}
+      print ?v["a"]
+      print ?v["a"]["b"]["c"]
+    "#
+  }
 }
 
 #[test]

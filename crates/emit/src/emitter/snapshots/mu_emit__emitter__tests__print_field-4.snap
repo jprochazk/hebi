@@ -1,0 +1,43 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v["a"]
+print ?v["a"]["b"]["c"]
+
+
+# Chunk:
+function <[[main]]>:
+  frame_size: 3
+  length: 39
+  const (length=4):
+    0: "v"
+    1: "a"
+    2: "c"
+    3: "b"
+  code:
+     0 | create_empty_dict 
+     1 | store_reg r0
+     3 | load_reg r0
+     5 | store_global [0]
+     7 | load_const [1]
+     9 | store_reg r0
+    11 | load_global [0]
+    13 | load_keyed_opt r0
+    15 | print 
+    16 | load_const [2]
+    18 | store_reg r0
+    20 | load_const [3]
+    22 | store_reg r1
+    24 | load_const [1]
+    26 | store_reg r2
+    28 | load_global [0]
+    30 | load_keyed_opt r2
+    32 | load_keyed_opt r1
+    34 | load_keyed_opt r0
+    36 | print 
+    37 | ret 
+    38 | suspend 
+
