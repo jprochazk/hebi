@@ -11,8 +11,8 @@ function <[[main]]>:
   length: 8
   const: <empty>
   code:
-    0 | 11 00 00 00 00    push_small_int value=0
-    5 | 2a                print 
-    6 | 31                ret 
-    7 | ff                suspend 
+    0 | push_small_int value=0
+    5 | print 
+    6 | ret 
+    7 | suspend 
 

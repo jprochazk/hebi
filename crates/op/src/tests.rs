@@ -2,7 +2,7 @@ use crate::instruction::*;
 
 macro_rules! check {
   ($chunk:ident) => {
-    insta::assert_snapshot!($chunk.disassemble());
+    insta::assert_snapshot!($chunk.disassemble(false));
   };
 }
 

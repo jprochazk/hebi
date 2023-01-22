@@ -15,7 +15,7 @@ instructions! {
   Instruction, ops,
   Handler, run,
   Nop, Wide, ExtraWide, Suspend,
-  disassemble;
+  disassemble, update_registers;
 
   // loads/stores
   /// Load constant into the accumulator.
@@ -55,9 +55,20 @@ instructions! {
   StoreGlobal (name: Const),
   /// Load a field by name into the accumulator.
   ///
+  /// Panic if the object in the accumulator does not
+  /// have a field with key `name`.
+  ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   LoadNamed (name: Const),
+  /// Load a field by name into the accumulator.
+  ///
+  /// Load `none` into the accumulator if the object in
+  /// the accumulator does not have a field with key `name`.
+  ///
+  /// ### Operands
+  /// - `name` - constant pool index of name.
+  LoadNamedOpt (name: Const),
   /// Store the accumulator in a field by name.
   ///
   /// ### Operands
@@ -66,9 +77,20 @@ instructions! {
   StoreNamed (name: Const, obj: Reg),
   /// Load a field by key into the accumulator.
   ///
+  /// Panic if the object in the accumulator does not
+  /// have a field with key `key`.
+  ///
   /// ### Operands
   /// - `key` - register index of key.
   LoadKeyed (key: Reg),
+  /// Load a field by key into the accumulator.
+  ///
+  /// Load `none` into the accumulator if the object in
+  /// the accumulator does not have a field with key `key`.
+  ///
+  /// ### Operands
+  /// - `key` - register index of key.
+  LoadKeyedOpt (key: Reg),
   /// Store the accumulator in a field by key.
   ///
   /// ### Operands
@@ -653,7 +675,7 @@ pub struct Chunk<Value: Hash + Eq + Clone> {
 }
 
 impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
-  pub fn disassemble(&self) -> String {
+  pub fn disassemble(&self, print_bytes: bool) -> String {
     use std::fmt::Write;
 
     let mut f = String::new();
@@ -684,13 +706,14 @@ impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
 
         let bytes = {
           let mut out = String::new();
-          // print bytes
-          for byte in self.bytecode[pc..pc + size].iter() {
-            write!(&mut out, "{byte:02x} ").unwrap();
-          }
-          if size < 6 {
-            for _ in 0..(6 - size) {
-              write!(&mut out, "   ").unwrap();
+          if print_bytes {
+            for byte in self.bytecode[pc..pc + size].iter() {
+              write!(&mut out, "{byte:02x} ").unwrap();
+            }
+            if size < 6 {
+              for _ in 0..(6 - size) {
+                write!(&mut out, "   ").unwrap();
+              }
             }
           }
           out

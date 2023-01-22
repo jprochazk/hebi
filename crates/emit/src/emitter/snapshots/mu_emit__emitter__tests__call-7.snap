@@ -14,17 +14,17 @@ function <[[main]]>:
     1: "b"
     2: "c"
   code:
-     0 | 08 00             load_global [0]
-     2 | 05 00             store_reg r0
-     4 | 08 01             load_global [1]
-     6 | 05 02             store_reg r2
-     8 | 08 02             load_global [2]
-    10 | 05 04             store_reg r4
-    12 | 2c 04 00          call r4, args=0
-    15 | 05 03             store_reg r3
-    17 | 2c 02 01          call r2, args=1
-    20 | 05 01             store_reg r1
-    22 | 2c 00 01          call r0, args=1
-    25 | 31                ret 
-    26 | ff                suspend 
+     0 | load_global [0]
+     2 | store_reg r0
+     4 | load_global [1]
+     6 | store_reg r2
+     8 | load_global [2]
+    10 | store_reg r4
+    12 | call r4, args=0
+    15 | store_reg r3
+    17 | call r2, args=1
+    20 | store_reg r1
+    22 | call r0, args=1
+    25 | ret 
+    26 | suspend 
 

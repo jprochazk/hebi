@@ -12,9 +12,9 @@ function <[[main]]>:
   const (length=1):
     0: "f"
   code:
-    0 | 08 00             load_global [0]
-    2 | 05 00             store_reg r0
-    4 | 2c 00 00          call r0, args=0
-    7 | 31                ret 
-    8 | ff                suspend 
+    0 | load_global [0]
+    2 | store_reg r0
+    4 | call r0, args=0
+    7 | ret 
+    8 | suspend 
 

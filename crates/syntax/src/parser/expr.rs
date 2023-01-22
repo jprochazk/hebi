@@ -138,6 +138,7 @@ impl<'src> Parser<'src> {
       Op_Plus => ast::UnaryOp::Plus,
       Op_Bang => ast::UnaryOp::Not,
       Tok_Question => ast::UnaryOp::Opt,
+      // TODO: yield should probably not be a unary expr
       Kw_Yield => return self.yield_().map(ast::yield_expr),
       _ => return self.postfix_expr(),
     };

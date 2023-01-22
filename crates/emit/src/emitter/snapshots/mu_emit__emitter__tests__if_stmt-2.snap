@@ -18,23 +18,23 @@ function <[[main]]>:
     0: "a"
     1: "b"
   code:
-     0 | 08 00             load_global [0]
-     2 | 19 13             jump_if_false offset=19
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 08 00             load_global [0]
-    10 | 05 00             store_reg r0
-    12 | 04 00             load_reg r0
-    14 | 2a                print 
-    15 | 17 09             jump offset=9
-    17 | 00                nop 
-    18 | 00                nop 
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 08 01             load_global [1]
-    23 | 2a                print 
-    24 | 31                ret 
-    25 | ff                suspend 
+     0 | load_global [0]
+     2 | jump_if_false offset=19
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | load_global [0]
+    10 | store_reg r0
+    12 | load_reg r0
+    14 | print 
+    15 | jump offset=9
+    17 | nop 
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | load_global [1]
+    23 | print 
+    24 | ret 
+    25 | suspend 
 

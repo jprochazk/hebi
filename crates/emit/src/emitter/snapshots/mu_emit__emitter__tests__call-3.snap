@@ -12,15 +12,15 @@ function <[[main]]>:
   const (length=1):
     0: "f"
   code:
-     0 | 08 00             load_global [0]
-     2 | 05 00             store_reg r0
-     4 | 11 00 00 00 00    push_small_int value=0
-     9 | 05 01             store_reg r1
-    11 | 11 01 00 00 00    push_small_int value=1
-    16 | 05 02             store_reg r2
-    18 | 11 02 00 00 00    push_small_int value=2
-    23 | 05 03             store_reg r3
-    25 | 2c 00 03          call r0, args=3
-    28 | 31                ret 
-    29 | ff                suspend 
+     0 | load_global [0]
+     2 | store_reg r0
+     4 | push_small_int value=0
+     9 | store_reg r1
+    11 | push_small_int value=1
+    16 | store_reg r2
+    18 | push_small_int value=2
+    23 | store_reg r3
+    25 | call r0, args=3
+    28 | ret 
+    29 | suspend 
 

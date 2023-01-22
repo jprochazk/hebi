@@ -15,10 +15,10 @@ function <test>:
   length: 5
   const: <empty>
   code:
-    0 | 04 04             load_reg r4
-    2 | 2a                print 
-    3 | 31                ret 
-    4 | ff                suspend 
+    0 | load_reg r4
+    2 | print 
+    3 | ret 
+    4 | suspend 
 
 function <[[main]]>:
   frame_size: 2
@@ -27,13 +27,13 @@ function <[[main]]>:
     0: <func test>
     1: "test"
   code:
-     0 | 03 00             load_const [0]
-     2 | 09 01             store_global [1]
-     4 | 08 01             load_global [1]
-     6 | 05 00             store_reg r0
-     8 | 11 00 00 00 00    push_small_int value=0
-    13 | 05 01             store_reg r1
-    15 | 2c 00 01          call r0, args=1
-    18 | 31                ret 
-    19 | ff                suspend 
+     0 | load_const [0]
+     2 | store_global [1]
+     4 | load_global [1]
+     6 | store_reg r0
+     8 | push_small_int value=0
+    13 | store_reg r1
+    15 | call r0, args=1
+    18 | ret 
+    19 | suspend 
 

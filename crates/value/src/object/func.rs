@@ -37,7 +37,7 @@ pub struct Params {
 }
 
 impl Func {
-  pub fn disassemble<F, D>(&self, disassemble_instruction: F) -> String
+  pub fn disassemble<F, D>(&self, disassemble_instruction: F, print_bytes: bool) -> String
   where
     F: Fn(&[u8], usize) -> (usize, D),
     D: std::fmt::Display,
@@ -46,16 +46,16 @@ impl Func {
 
     for v in self.const_pool.iter() {
       if let Some(func) = v.as_func() {
-        func.disassemble_inner(&disassemble_instruction, &mut out);
+        func.disassemble_inner(&disassemble_instruction, &mut out, print_bytes);
         out += "\n";
       }
     }
 
-    self.disassemble_inner(&disassemble_instruction, &mut out);
+    self.disassemble_inner(&disassemble_instruction, &mut out, print_bytes);
     out
   }
 
-  fn disassemble_inner<F, D>(&self, disassemble_instruction: F, f: &mut String)
+  fn disassemble_inner<F, D>(&self, disassemble_instruction: F, f: &mut String, print_bytes: bool)
   where
     F: Fn(&[u8], usize) -> (usize, D),
     D: std::fmt::Display,
@@ -86,13 +86,14 @@ impl Func {
 
       let bytes = {
         let mut out = String::new();
-        // print bytes
-        for byte in self.code[pc..pc + size].iter() {
-          write!(&mut out, "{byte:02x} ").unwrap();
-        }
-        if size < 6 {
-          for _ in 0..(6 - size) {
-            write!(&mut out, "   ").unwrap();
+        if print_bytes {
+          for byte in self.code[pc..pc + size].iter() {
+            write!(&mut out, "{byte:02x} ").unwrap();
+          }
+          if size < 6 {
+            for _ in 0..(6 - size) {
+              write!(&mut out, "   ").unwrap();
+            }
           }
         }
         out

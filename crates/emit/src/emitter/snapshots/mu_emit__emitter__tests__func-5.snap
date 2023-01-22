@@ -17,24 +17,24 @@ function <test>:
   const (length=1):
     0: "b"
   code:
-     0 | 2f 00             is_kw_param_not_set [0]
-     2 | 19 0d             jump_if_false offset=13
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 11 0a 00 00 00    push_small_int value=10
-    13 | 05 05             store_reg r5
-    15 | 30 00 05          load_kw_param [0], r5
-    18 | 12                create_empty_list 
-    19 | 05 00             store_reg r0
-    21 | 04 04             load_reg r4
-    23 | 13 00             push_to_list r0
-    25 | 04 05             load_reg r5
-    27 | 13 00             push_to_list r0
-    29 | 2b 00             print_list r0
-    31 | 31                ret 
-    32 | ff                suspend 
+     0 | is_kw_param_not_set [0]
+     2 | jump_if_false offset=13
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | push_small_int value=10
+    13 | store_reg r5
+    15 | load_kw_param [0], r5
+    18 | create_empty_list 
+    19 | store_reg r6
+    21 | load_reg r4
+    23 | push_to_list r6
+    25 | load_reg r5
+    27 | push_to_list r6
+    29 | print_list r6
+    31 | ret 
+    32 | suspend 
 
 function <[[main]]>:
   frame_size: 3
@@ -44,22 +44,22 @@ function <[[main]]>:
     1: "test"
     2: "b"
   code:
-     0 | 03 00             load_const [0]
-     2 | 09 01             store_global [1]
-     4 | 08 01             load_global [1]
-     6 | 05 00             store_reg r0
-     8 | 11 01 00 00 00    push_small_int value=1
-    13 | 05 01             store_reg r1
-    15 | 2c 00 01          call r0, args=1
-    18 | 08 01             load_global [1]
-    20 | 05 00             store_reg r0
-    22 | 14                create_empty_dict 
-    23 | 05 01             store_reg r1
-    25 | 11 01 00 00 00    push_small_int value=1
-    30 | 05 02             store_reg r2
-    32 | 11 02 00 00 00    push_small_int value=2
-    37 | 16 02 01          insert_to_dict_keyed [2], r1
-    40 | 2d 00 01          call_kw r0, args=1
-    43 | 31                ret 
-    44 | ff                suspend 
+     0 | load_const [0]
+     2 | store_global [1]
+     4 | load_global [1]
+     6 | store_reg r0
+     8 | push_small_int value=1
+    13 | store_reg r1
+    15 | call r0, args=1
+    18 | load_global [1]
+    20 | store_reg r0
+    22 | create_empty_dict 
+    23 | store_reg r1
+    25 | push_small_int value=1
+    30 | store_reg r2
+    32 | push_small_int value=2
+    37 | insert_to_dict_keyed [2], r1
+    40 | call_kw r0, args=1
+    43 | ret 
+    44 | suspend 
 

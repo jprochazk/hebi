@@ -1,6 +1,6 @@
 ---
 source: crates/op/src/tests.rs
-expression: chunk.disassemble()
+expression: chunk.disassemble(false)
 ---
 function <test>:
   length: 72
@@ -9,34 +9,34 @@ function <test>:
     1 = 123456789
     2 = true
   code:
-     0 | 00                nop 
-     1 | 03 00             load_const [0]
-     3 | 01 03 00 01       (w)load_const [256]
-     7 | 02 03 00 00 01 00 (x)load_const [65536]
-    13 | 04 00             load_reg r0
-    15 | 01 04 00 01       (w)load_reg r256
-    19 | 02 04 00 00 01 00 (x)load_reg r65536
-    25 | 05 00             store_reg r0
-    27 | 01 05 00 01       (w)store_reg r256
-    31 | 02 05 00 00 01 00 (x)store_reg r65536
-    37 | 18 25             jump_back offset=37
-    39 | 00                nop 
-    40 | 00                nop 
-    41 | 00                nop 
-    42 | 00                nop 
-    43 | 17 1b             jump offset=27
-    45 | 00                nop 
-    46 | 00                nop 
-    47 | 00                nop 
-    48 | 00                nop 
-    49 | 19 15             jump_if_false offset=21
-    51 | 00                nop 
-    52 | 00                nop 
-    53 | 00                nop 
-    54 | 00                nop 
-    55 | 11 00 00 00 00    push_small_int value=0
-    60 | 11 ff ff ff 7f    push_small_int value=2147483647
-    65 | 11 00 00 00 80    push_small_int value=-2147483648
-    70 | 31                ret 
-    71 | ff                suspend 
+     0 | nop 
+     1 | load_const [0]
+     3 | (w)load_const [256]
+     7 | (x)load_const [65536]
+    13 | load_reg r0
+    15 | (w)load_reg r256
+    19 | (x)load_reg r65536
+    25 | store_reg r0
+    27 | (w)store_reg r256
+    31 | (x)store_reg r65536
+    37 | jump_back offset=37
+    39 | nop 
+    40 | nop 
+    41 | nop 
+    42 | nop 
+    43 | jump offset=27
+    45 | nop 
+    46 | nop 
+    47 | nop 
+    48 | nop 
+    49 | jump_if_false offset=21
+    51 | nop 
+    52 | nop 
+    53 | nop 
+    54 | nop 
+    55 | push_small_int value=0
+    60 | push_small_int value=2147483647
+    65 | push_small_int value=-2147483648
+    70 | ret 
+    71 | suspend 
 

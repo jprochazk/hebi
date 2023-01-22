@@ -16,16 +16,16 @@ function <test>:
   const (length=1):
     0: "b"
   code:
-     0 | 30 00 05          load_kw_param [0], r5
-     3 | 12                create_empty_list 
-     4 | 05 00             store_reg r0
-     6 | 04 04             load_reg r4
-     8 | 13 00             push_to_list r0
-    10 | 04 05             load_reg r5
-    12 | 13 00             push_to_list r0
-    14 | 2b 00             print_list r0
-    16 | 31                ret 
-    17 | ff                suspend 
+     0 | load_kw_param [0], r5
+     3 | create_empty_list 
+     4 | store_reg r6
+     6 | load_reg r4
+     8 | push_to_list r6
+    10 | load_reg r5
+    12 | push_to_list r6
+    14 | print_list r6
+    16 | ret 
+    17 | suspend 
 
 function <[[main]]>:
   frame_size: 3
@@ -35,17 +35,17 @@ function <[[main]]>:
     1: "test"
     2: "b"
   code:
-     0 | 03 00             load_const [0]
-     2 | 09 01             store_global [1]
-     4 | 08 01             load_global [1]
-     6 | 05 00             store_reg r0
-     8 | 14                create_empty_dict 
-     9 | 05 01             store_reg r1
-    11 | 11 01 00 00 00    push_small_int value=1
-    16 | 05 02             store_reg r2
-    18 | 11 02 00 00 00    push_small_int value=2
-    23 | 16 02 01          insert_to_dict_keyed [2], r1
-    26 | 2d 00 01          call_kw r0, args=1
-    29 | 31                ret 
-    30 | ff                suspend 
+     0 | load_const [0]
+     2 | store_global [1]
+     4 | load_global [1]
+     6 | store_reg r0
+     8 | create_empty_dict 
+     9 | store_reg r1
+    11 | push_small_int value=1
+    16 | store_reg r2
+    18 | push_small_int value=2
+    23 | insert_to_dict_keyed [2], r1
+    26 | call_kw r0, args=1
+    29 | ret 
+    30 | suspend 
 

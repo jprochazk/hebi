@@ -234,12 +234,19 @@ macro_rules! handler_method {
   };
 }
 
+macro_rules! update_register {
+  ($map:ident, $inner:ident, $operand:ident : Reg) => {
+    $inner.$operand = $map[&$inner.$operand]
+  };
+  ($map:ident, $inner:ident, $operand:ident : $ty:ident) => {};
+}
+
 macro_rules! instructions {
   (
     $Instruction:ident, $ops:ident,
     $Handler:ident, $run:ident,
     $Nop:ident, $Wide:ident, $ExtraWide:ident, $Suspend:ident,
-    $disassemble:ident;
+    $disassemble:ident, $update_registers:ident;
     $(
       $(#[$meta:meta])*
       $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ident ),*) $(= $index:literal)?
@@ -424,6 +431,19 @@ macro_rules! instructions {
         )*
         ops::$Suspend => offset + 1,
         opcode => panic!("malformed bytecode: invalid opcode 0x{opcode:02x}"),
+      }
+    }
+
+    #[allow(unused_variables)]
+    pub fn $update_registers(instruction: &mut $Instruction, map: &HashMap<u32, u32>) {
+      match instruction {
+        $Instruction::$Nop(_) => {}
+        $(
+          $Instruction::$name(inner) => {
+            $( update_register!(map, inner, $operand : $ty); )*
+          },
+        )*
+        $Instruction::$Suspend(_) => {}
       }
     }
   }

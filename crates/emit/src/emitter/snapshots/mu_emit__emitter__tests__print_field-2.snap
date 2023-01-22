@@ -16,25 +16,25 @@ function <[[main]]>:
     0: "a"
     1: "v"
   code:
-     0 | 14                create_empty_dict 
-     1 | 05 00             store_reg r0
-     3 | 03 00             load_const [0]
-     5 | 05 01             store_reg r1
-     7 | 11 00 00 00 00    push_small_int value=0
-    12 | 15 01 00          insert_to_dict r1, r0
-    15 | 04 00             load_reg r0
-    17 | 09 01             store_global [1]
-    19 | 03 00             load_const [0]
-    21 | 05 00             store_reg r0
-    23 | 08 01             load_global [1]
-    25 | 0c 00             load_keyed r0
-    27 | 2a                print 
-    28 | 03 00             load_const [0]
-    30 | 05 00             store_reg r0
-    32 | 08 01             load_global [1]
-    34 | 05 01             store_reg r1
-    36 | 11 01 00 00 00    push_small_int value=1
-    41 | 0d 00 01          store_keyed r0, r1
-    44 | 31                ret 
-    45 | ff                suspend 
+     0 | create_empty_dict 
+     1 | store_reg r0
+     3 | load_const [0]
+     5 | store_reg r1
+     7 | push_small_int value=0
+    12 | insert_to_dict r1, r0
+    15 | load_reg r0
+    17 | store_global [1]
+    19 | load_const [0]
+    21 | store_reg r0
+    23 | load_global [1]
+    25 | load_keyed r0
+    27 | print 
+    28 | load_const [0]
+    30 | store_reg r0
+    32 | load_global [1]
+    34 | store_reg r1
+    36 | push_small_int value=1
+    41 | store_keyed r0, r1
+    44 | ret 
+    45 | suspend 
 

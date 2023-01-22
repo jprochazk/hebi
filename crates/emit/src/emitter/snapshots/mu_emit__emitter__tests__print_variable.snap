@@ -14,10 +14,10 @@ function <[[main]]>:
   const (length=1):
     0: "v"
   code:
-     0 | 11 00 00 00 00    push_small_int value=0
-     5 | 09 00             store_global [0]
-     7 | 08 00             load_global [0]
-     9 | 2a                print 
-    10 | 31                ret 
-    11 | ff                suspend 
+     0 | push_small_int value=0
+     5 | store_global [0]
+     7 | load_global [0]
+     9 | print 
+    10 | ret 
+    11 | suspend 
 

@@ -20,34 +20,34 @@ function <[[main]]>:
     1: "b"
     2: "c"
   code:
-     0 | 0f                push_true 
-     1 | 19 0f             jump_if_false offset=15
-     3 | 00                nop 
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 08 00             load_global [0]
-     9 | 2a                print 
-    10 | 17 19             jump offset=25
-    12 | 00                nop 
-    13 | 00                nop 
-    14 | 00                nop 
-    15 | 00                nop 
-    16 | 0f                push_true 
-    17 | 19 0f             jump_if_false offset=15
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 00                nop 
-    23 | 08 01             load_global [1]
-    25 | 2a                print 
-    26 | 17 09             jump offset=9
-    28 | 00                nop 
-    29 | 00                nop 
-    30 | 00                nop 
-    31 | 00                nop 
-    32 | 08 02             load_global [2]
-    34 | 2a                print 
-    35 | 31                ret 
-    36 | ff                suspend 
+     0 | push_true 
+     1 | jump_if_false offset=15
+     3 | nop 
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | load_global [0]
+     9 | print 
+    10 | jump offset=25
+    12 | nop 
+    13 | nop 
+    14 | nop 
+    15 | nop 
+    16 | push_true 
+    17 | jump_if_false offset=15
+    19 | nop 
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | load_global [1]
+    25 | print 
+    26 | jump offset=9
+    28 | nop 
+    29 | nop 
+    30 | nop 
+    31 | nop 
+    32 | load_global [2]
+    34 | print 
+    35 | ret 
+    36 | suspend 
 

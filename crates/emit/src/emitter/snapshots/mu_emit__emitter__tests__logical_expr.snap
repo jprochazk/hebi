@@ -29,196 +29,196 @@ function <f0>:
   length: 39
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 19 08             jump_if_false offset=8
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 04 05             load_reg r5
-    10 | 04 04             load_reg r4
-    12 | 19 0c             jump_if_false offset=12
-    14 | 00                nop 
-    15 | 00                nop 
-    16 | 00                nop 
-    17 | 00                nop 
-    18 | 17 08             jump offset=8
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 00                nop 
-    23 | 00                nop 
-    24 | 04 05             load_reg r5
-    26 | 04 04             load_reg r4
-    28 | 29                is_none 
-    29 | 19 08             jump_if_false offset=8
-    31 | 00                nop 
-    32 | 00                nop 
-    33 | 00                nop 
-    34 | 00                nop 
-    35 | 04 05             load_reg r5
-    37 | 31                ret 
-    38 | ff                suspend 
+     0 | load_reg r4
+     2 | jump_if_false offset=8
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | load_reg r5
+    10 | load_reg r4
+    12 | jump_if_false offset=12
+    14 | nop 
+    15 | nop 
+    16 | nop 
+    17 | nop 
+    18 | jump offset=8
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | nop 
+    24 | load_reg r5
+    26 | load_reg r4
+    28 | is_none 
+    29 | jump_if_false offset=8
+    31 | nop 
+    32 | nop 
+    33 | nop 
+    34 | nop 
+    35 | load_reg r5
+    37 | ret 
+    38 | suspend 
 
 function <f1_a>:
   frame_size: 8
   length: 34
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 19 08             jump_if_false offset=8
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 04 05             load_reg r5
-    10 | 19 0c             jump_if_false offset=12
-    12 | 00                nop 
-    13 | 00                nop 
-    14 | 00                nop 
-    15 | 00                nop 
-    16 | 17 10             jump offset=16
-    18 | 00                nop 
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 04 06             load_reg r6
-    24 | 19 08             jump_if_false offset=8
-    26 | 00                nop 
-    27 | 00                nop 
-    28 | 00                nop 
-    29 | 00                nop 
-    30 | 04 07             load_reg r7
-    32 | 31                ret 
-    33 | ff                suspend 
+     0 | load_reg r4
+     2 | jump_if_false offset=8
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | load_reg r5
+    10 | jump_if_false offset=12
+    12 | nop 
+    13 | nop 
+    14 | nop 
+    15 | nop 
+    16 | jump offset=16
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | nop 
+    22 | load_reg r6
+    24 | jump_if_false offset=8
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | load_reg r7
+    32 | ret 
+    33 | suspend 
 
 function <f1_b>:
   frame_size: 8
   length: 34
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 19 08             jump_if_false offset=8
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 04 05             load_reg r5
-    10 | 19 0c             jump_if_false offset=12
-    12 | 00                nop 
-    13 | 00                nop 
-    14 | 00                nop 
-    15 | 00                nop 
-    16 | 17 10             jump offset=16
-    18 | 00                nop 
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 04 06             load_reg r6
-    24 | 19 08             jump_if_false offset=8
-    26 | 00                nop 
-    27 | 00                nop 
-    28 | 00                nop 
-    29 | 00                nop 
-    30 | 04 07             load_reg r7
-    32 | 31                ret 
-    33 | ff                suspend 
+     0 | load_reg r4
+     2 | jump_if_false offset=8
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | load_reg r5
+    10 | jump_if_false offset=12
+    12 | nop 
+    13 | nop 
+    14 | nop 
+    15 | nop 
+    16 | jump offset=16
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | nop 
+    22 | load_reg r6
+    24 | jump_if_false offset=8
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | load_reg r7
+    32 | ret 
+    33 | suspend 
 
 function <f2_a>:
   frame_size: 8
   length: 40
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 19 0c             jump_if_false offset=12
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 17 10             jump offset=16
-    10 | 00                nop 
-    11 | 00                nop 
-    12 | 00                nop 
-    13 | 00                nop 
-    14 | 04 05             load_reg r5
-    16 | 19 08             jump_if_false offset=8
-    18 | 00                nop 
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 04 06             load_reg r6
-    24 | 19 0c             jump_if_false offset=12
-    26 | 00                nop 
-    27 | 00                nop 
-    28 | 00                nop 
-    29 | 00                nop 
-    30 | 17 08             jump offset=8
-    32 | 00                nop 
-    33 | 00                nop 
-    34 | 00                nop 
-    35 | 00                nop 
-    36 | 04 07             load_reg r7
-    38 | 31                ret 
-    39 | ff                suspend 
+     0 | load_reg r4
+     2 | jump_if_false offset=12
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | jump offset=16
+    10 | nop 
+    11 | nop 
+    12 | nop 
+    13 | nop 
+    14 | load_reg r5
+    16 | jump_if_false offset=8
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | nop 
+    22 | load_reg r6
+    24 | jump_if_false offset=12
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | jump offset=8
+    32 | nop 
+    33 | nop 
+    34 | nop 
+    35 | nop 
+    36 | load_reg r7
+    38 | ret 
+    39 | suspend 
 
 function <f2_b>:
   frame_size: 8
   length: 40
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 19 0c             jump_if_false offset=12
-     4 | 00                nop 
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 17 10             jump offset=16
-    10 | 00                nop 
-    11 | 00                nop 
-    12 | 00                nop 
-    13 | 00                nop 
-    14 | 04 05             load_reg r5
-    16 | 19 08             jump_if_false offset=8
-    18 | 00                nop 
-    19 | 00                nop 
-    20 | 00                nop 
-    21 | 00                nop 
-    22 | 04 06             load_reg r6
-    24 | 19 0c             jump_if_false offset=12
-    26 | 00                nop 
-    27 | 00                nop 
-    28 | 00                nop 
-    29 | 00                nop 
-    30 | 17 08             jump offset=8
-    32 | 00                nop 
-    33 | 00                nop 
-    34 | 00                nop 
-    35 | 00                nop 
-    36 | 04 07             load_reg r7
-    38 | 31                ret 
-    39 | ff                suspend 
+     0 | load_reg r4
+     2 | jump_if_false offset=12
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | jump offset=16
+    10 | nop 
+    11 | nop 
+    12 | nop 
+    13 | nop 
+    14 | load_reg r5
+    16 | jump_if_false offset=8
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | nop 
+    22 | load_reg r6
+    24 | jump_if_false offset=12
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | jump offset=8
+    32 | nop 
+    33 | nop 
+    34 | nop 
+    35 | nop 
+    36 | load_reg r7
+    38 | ret 
+    39 | suspend 
 
 function <f3>:
   frame_size: 8
   length: 22
   const: <empty>
   code:
-     0 | 04 04             load_reg r4
-     2 | 29                is_none 
-     3 | 19 08             jump_if_false offset=8
-     5 | 00                nop 
-     6 | 00                nop 
-     7 | 00                nop 
-     8 | 00                nop 
-     9 | 04 05             load_reg r5
-    11 | 29                is_none 
-    12 | 19 08             jump_if_false offset=8
-    14 | 00                nop 
-    15 | 00                nop 
-    16 | 00                nop 
-    17 | 00                nop 
-    18 | 04 06             load_reg r6
-    20 | 31                ret 
-    21 | ff                suspend 
+     0 | load_reg r4
+     2 | is_none 
+     3 | jump_if_false offset=8
+     5 | nop 
+     6 | nop 
+     7 | nop 
+     8 | nop 
+     9 | load_reg r5
+    11 | is_none 
+    12 | jump_if_false offset=8
+    14 | nop 
+    15 | nop 
+    16 | nop 
+    17 | nop 
+    18 | load_reg r6
+    20 | ret 
+    21 | suspend 
 
 function <[[main]]>:
   frame_size: 0
@@ -237,18 +237,18 @@ function <[[main]]>:
     10: <func f3>
     11: "f3"
   code:
-     0 | 03 00             load_const [0]
-     2 | 09 01             store_global [1]
-     4 | 03 02             load_const [2]
-     6 | 09 03             store_global [3]
-     8 | 03 04             load_const [4]
-    10 | 09 05             store_global [5]
-    12 | 03 06             load_const [6]
-    14 | 09 07             store_global [7]
-    16 | 03 08             load_const [8]
-    18 | 09 09             store_global [9]
-    20 | 03 0a             load_const [10]
-    22 | 09 0b             store_global [11]
-    24 | 31                ret 
-    25 | ff                suspend 
+     0 | load_const [0]
+     2 | store_global [1]
+     4 | load_const [2]
+     6 | store_global [3]
+     8 | load_const [4]
+    10 | store_global [5]
+    12 | load_const [6]
+    14 | store_global [7]
+    16 | load_const [8]
+    18 | store_global [9]
+    20 | load_const [10]
+    22 | store_global [11]
+    24 | ret 
+    25 | suspend 
 

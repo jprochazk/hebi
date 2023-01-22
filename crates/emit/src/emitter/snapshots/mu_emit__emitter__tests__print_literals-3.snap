@@ -12,8 +12,8 @@ function <[[main]]>:
   const (length=1):
     0: "test"
   code:
-    0 | 03 00             load_const [0]
-    2 | 2a                print 
-    3 | 31                ret 
-    4 | ff                suspend 
+    0 | load_const [0]
+    2 | print 
+    3 | ret 
+    4 | suspend 
 

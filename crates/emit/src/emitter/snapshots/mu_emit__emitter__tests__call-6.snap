@@ -15,17 +15,17 @@ function <[[main]]>:
     2: "b"
     3: "c"
   code:
-     0 | 08 00             load_global [0]
-     2 | 05 00             store_reg r0
-     4 | 14                create_empty_dict 
-     5 | 05 01             store_reg r1
-     7 | 08 01             load_global [1]
-     9 | 05 02             store_reg r2
-    11 | 08 02             load_global [2]
-    13 | 05 03             store_reg r3
-    15 | 11 02 00 00 00    push_small_int value=2
-    20 | 16 03 01          insert_to_dict_keyed [3], r1
-    23 | 2d 00 02          call_kw r0, args=2
-    26 | 31                ret 
-    27 | ff                suspend 
+     0 | load_global [0]
+     2 | store_reg r0
+     4 | create_empty_dict 
+     5 | store_reg r1
+     7 | load_global [1]
+     9 | store_reg r2
+    11 | load_global [2]
+    13 | store_reg r3
+    15 | push_small_int value=2
+    20 | insert_to_dict_keyed [3], r1
+    23 | call_kw r0, args=2
+    26 | ret 
+    27 | suspend 
 

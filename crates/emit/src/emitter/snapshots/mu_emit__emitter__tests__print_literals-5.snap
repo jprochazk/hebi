@@ -14,22 +14,22 @@ function <[[main]]>:
     1: "b"
     2: "c"
   code:
-     0 | 14                create_empty_dict 
-     1 | 05 00             store_reg r0
-     3 | 03 00             load_const [0]
-     5 | 05 01             store_reg r1
-     7 | 11 00 00 00 00    push_small_int value=0
-    12 | 15 01 00          insert_to_dict r1, r0
-    15 | 03 01             load_const [1]
-    17 | 05 02             store_reg r2
-    19 | 11 01 00 00 00    push_small_int value=1
-    24 | 15 02 00          insert_to_dict r2, r0
-    27 | 03 02             load_const [2]
-    29 | 05 03             store_reg r3
-    31 | 11 02 00 00 00    push_small_int value=2
-    36 | 15 03 00          insert_to_dict r3, r0
-    39 | 04 00             load_reg r0
-    41 | 2a                print 
-    42 | 31                ret 
-    43 | ff                suspend 
+     0 | create_empty_dict 
+     1 | store_reg r0
+     3 | load_const [0]
+     5 | store_reg r1
+     7 | push_small_int value=0
+    12 | insert_to_dict r1, r0
+    15 | load_const [1]
+    17 | store_reg r2
+    19 | push_small_int value=1
+    24 | insert_to_dict r2, r0
+    27 | load_const [2]
+    29 | store_reg r3
+    31 | push_small_int value=2
+    36 | insert_to_dict r3, r0
+    39 | load_reg r0
+    41 | print 
+    42 | ret 
+    43 | suspend 
 

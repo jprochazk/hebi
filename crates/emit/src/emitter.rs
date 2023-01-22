@@ -41,10 +41,11 @@ impl<'src> Emitter<'src> {
 
     let (frame_size, register_map) = self.state.regalloc.scan();
 
-    self
-      .state
-      .builder
-      .patch(|instructions| patch_registers(instructions, &register_map));
+    self.state.builder.patch(|instructions| {
+      for instruction in instructions.iter_mut() {
+        op::instruction::update_registers(instruction, &register_map)
+      }
+    });
 
     let Chunk {
       name,
@@ -82,15 +83,17 @@ impl<'src> Emitter<'src> {
       .parent
       .take()
       .expect("`self.state.parent` was set to `None` inside of callback passed to `emit_chunk`");
-    let mut next = std::mem::replace(&mut self.state, *parent);
+    let next = std::mem::replace(&mut self.state, *parent);
 
     result?;
 
     let (frame_size, register_map) = next.regalloc.scan();
 
-    next
-      .builder
-      .patch(|instructions| patch_registers(instructions, &register_map));
+    self.state.builder.patch(|instructions| {
+      for instruction in instructions.iter_mut() {
+        op::instruction::update_registers(instruction, &register_map)
+      }
+    });
 
     let Chunk {
       name,
@@ -190,6 +193,8 @@ struct Function<'src> {
   /// These may be shadowed by a local.
   captures: HashMap<Cow<'src, str>, Capture>,
   capture_slot: u32,
+
+  is_in_opt_expr: bool,
 }
 
 impl<'src> Function<'src> {
@@ -203,6 +208,7 @@ impl<'src> Function<'src> {
       locals: vec![HashMap::new()],
       captures: HashMap::new(),
       capture_slot: 0,
+      is_in_opt_expr: false,
     }
   }
 
@@ -272,72 +278,6 @@ impl<'src> Function<'src> {
     });
 
     Some(capture.slot)
-  }
-}
-
-fn patch_registers(instructions: &mut Vec<Instruction>, register_map: &HashMap<u32, u32>) {
-  // TODO: some kind of trait that is automatically implemented by `instructions!`
-  // macro
-  for instruction in instructions.iter_mut() {
-    match instruction {
-      Instruction::Nop(_) => {}
-      Instruction::LoadConst(_) => {}
-      Instruction::LoadReg(v) => v.reg = register_map[&v.reg],
-      Instruction::StoreReg(v) => v.reg = register_map[&v.reg],
-      Instruction::LoadCapture(_) => {}
-      Instruction::StoreCapture(_) => {}
-      Instruction::LoadGlobal(_) => {}
-      Instruction::StoreGlobal(_) => {}
-      Instruction::LoadNamed(_) => {}
-      Instruction::StoreNamed(v) => v.obj = register_map[&v.obj],
-      Instruction::LoadKeyed(v) => v.key = register_map[&v.key],
-      Instruction::StoreKeyed(v) => {
-        v.key = register_map[&v.key];
-        v.obj = register_map[&v.obj];
-      }
-      Instruction::PushNone(_) => {}
-      Instruction::PushTrue(_) => {}
-      Instruction::PushFalse(_) => {}
-      Instruction::PushSmallInt(_) => {}
-      Instruction::CreateEmptyList(_) => {}
-      Instruction::PushToList(v) => v.list = register_map[&v.list],
-      Instruction::CreateEmptyDict(_) => {}
-      Instruction::InsertToDict(v) => {
-        v.key = register_map[&v.key];
-        v.dict = register_map[&v.dict];
-      }
-      Instruction::InsertToDictKeyed(v) => {
-        v.dict = register_map[&v.dict];
-      }
-      Instruction::Jump(_) => {}
-      Instruction::JumpBack(_) => {}
-      Instruction::JumpIfFalse(_) => {}
-      Instruction::Add(v) => v.lhs = register_map[&v.lhs],
-      Instruction::Sub(v) => v.lhs = register_map[&v.lhs],
-      Instruction::Mul(v) => v.lhs = register_map[&v.lhs],
-      Instruction::Div(v) => v.lhs = register_map[&v.lhs],
-      Instruction::Rem(v) => v.lhs = register_map[&v.lhs],
-      Instruction::Pow(v) => v.lhs = register_map[&v.lhs],
-      Instruction::UnaryPlus(_) => {}
-      Instruction::UnaryMinus(_) => {}
-      Instruction::UnaryNot(_) => {}
-      Instruction::CmpEq(v) => v.lhs = register_map[&v.lhs],
-      Instruction::CmpNeq(v) => v.lhs = register_map[&v.lhs],
-      Instruction::CmpGt(v) => v.lhs = register_map[&v.lhs],
-      Instruction::CmpGe(v) => v.lhs = register_map[&v.lhs],
-      Instruction::CmpLt(v) => v.lhs = register_map[&v.lhs],
-      Instruction::CmpLe(v) => v.lhs = register_map[&v.lhs],
-      Instruction::IsNone(_) => {}
-      Instruction::Print(_) => {}
-      Instruction::PrintList(v) => v.list = register_map[&v.list],
-      Instruction::Call(v) => v.callee = register_map[&v.callee],
-      Instruction::CallKw(v) => v.callee = register_map[&v.callee],
-      Instruction::IsPosParamNotSet(_) => {}
-      Instruction::IsKwParamNotSet(_) => {}
-      Instruction::LoadKwParam(_) => {}
-      Instruction::Ret(_) => {}
-      Instruction::Suspend(_) => {}
-    }
   }
 }
 
@@ -757,14 +697,30 @@ mod expr {
     fn emit_unary_expr(&mut self, expr: &'src ast::Unary<'src>) -> Result<()> {
       // unary expressions only use the accumulator
 
+      if matches!(expr.op, ast::UnaryOp::Opt) {
+        return self.emit_opt_expr(expr);
+      }
+
       self.emit_expr(&expr.right)?;
 
       match expr.op {
         ast::UnaryOp::Plus => self.emit_op(UnaryPlus),
         ast::UnaryOp::Minus => self.emit_op(UnaryMinus),
         ast::UnaryOp::Not => self.emit_op(UnaryNot),
-        ast::UnaryOp::Opt => todo!("optional access"),
+        ast::UnaryOp::Opt => unreachable!(),
       }
+
+      Ok(())
+    }
+
+    fn emit_opt_expr(&mut self, expr: &'src ast::Unary<'src>) -> Result<()> {
+      assert!(matches!(expr.op, ast::UnaryOp::Opt));
+
+      // - emit_call_expr <- with receiver, `CallMethodOpt` or similar
+
+      let prev = std::mem::replace(&mut self.state.is_in_opt_expr, true);
+      self.emit_expr(&expr.right)?;
+      let _ = std::mem::replace(&mut self.state.is_in_opt_expr, prev);
 
       Ok(())
     }
@@ -799,7 +755,11 @@ mod expr {
     fn emit_get_named_expr(&mut self, expr: &'src ast::GetNamed<'src>) -> Result<()> {
       let name = self.const_name(&expr.name);
       self.emit_expr(&expr.target)?;
-      self.emit_op(LoadNamed { name });
+      if self.state.is_in_opt_expr {
+        self.emit_op(LoadNamedOpt { name });
+      } else {
+        self.emit_op(LoadNamed { name });
+      }
 
       Ok(())
     }
@@ -823,7 +783,11 @@ mod expr {
       self.emit_expr(&expr.key)?;
       self.emit_op(StoreReg { reg: key.index() });
       self.emit_expr(&expr.target)?;
-      self.emit_op(LoadKeyed { key: key.index() });
+      if self.state.is_in_opt_expr {
+        self.emit_op(LoadKeyedOpt { key: key.index() });
+      } else {
+        self.emit_op(LoadKeyed { key: key.index() });
+      }
 
       Ok(())
     }
