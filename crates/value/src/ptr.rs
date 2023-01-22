@@ -78,12 +78,12 @@ impl<T: std::fmt::Display> std::fmt::Display for Ptr<T> {
   }
 }
 
-// TODO: maybe improve portability by adding a fallback to `Value`
-// which is just an enum
-//
+// TODO: improve portability by adding a fallback to a `Value` enum
+
 // this asserts that `Ptr` is 64 bits,
 // which it should be on systems where `usize == u64`
-// `Value` doesn't work on 32-bit systems
+// `Value` doesn't work on 32-bit systems, so this doubles
+// as an architecture check
 const _: fn() = || {
   let _ = std::mem::transmute::<Ptr<()>, u64>;
 };

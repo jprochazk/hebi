@@ -177,6 +177,7 @@ struct Function<'src> {
   parent: Option<Box<Function<'src>>>,
   regalloc: RegAlloc,
 
+  // TODO: use a better data structure for this
   /// Map of variable name to register.
   ///
   /// Because locals may shadow other locals, the register is actually a stack
@@ -194,6 +195,10 @@ struct Function<'src> {
   captures: HashMap<Cow<'src, str>, Capture>,
   capture_slot: u32,
 
+  /// Whether or not we're currently emitting `?<expr>`.
+  ///
+  /// This changes `LoadNamed`/`LoadKeyed` to `LoadNamedOpt`/`LoadKeyedOpt`,
+  /// which return `none` instead of panicking if a field doesn't exist.
   is_in_opt_expr: bool,
 }
 
@@ -211,8 +216,6 @@ impl<'src> Function<'src> {
       is_in_opt_expr: false,
     }
   }
-
-  // TODO: remove variables at the end of a block
 
   fn begin_scope(&mut self) {
     self.locals.push(HashMap::new());

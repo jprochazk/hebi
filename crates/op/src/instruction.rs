@@ -729,9 +729,6 @@ impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
   }
 }
 
-// TODO:
-// - accumulator usage
-
 pub trait Disassemble {
   /// Disassemble a variable-width encoded `self` from `buf` at the specified
   /// `offset`.
