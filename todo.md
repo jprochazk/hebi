@@ -1,8 +1,0 @@
-- codegen
-  - `Codegen` struct
-  - nested `State` structs
-  - use callback methods for dealing with `begin_scope`/`end_scope` and similar
-- VM
-  - reference counting (no proper GC or cycle detection for now)
-  - Value type using pointer tagging or nan-boxing?
-

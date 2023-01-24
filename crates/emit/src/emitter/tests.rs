@@ -156,6 +156,32 @@ fn func() {
 }
 
 #[test]
+fn closure() {
+  check! {
+    r#"
+      fn a():
+        v := 0
+        fn b():
+          print v
+        return b
+      
+      a()()
+    "#
+  }
+
+  check! {
+    r#"
+      fn a():
+        v := 0
+        fn b():
+          fn c():
+            fn d():
+              print v
+    "#
+  }
+}
+
+#[test]
 fn logical_expr() {
   check! {
     r#"

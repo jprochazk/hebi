@@ -13,7 +13,7 @@ test(1, b=2)
 # Chunk:
 function <test>:
   frame_size: 6
-  length: 33
+  length: 34
   const (length=1):
     0: "b"
   code:
@@ -27,14 +27,15 @@ function <test>:
     13 | store_reg r5
     15 | load_kw_param [0], r5
     18 | create_empty_list 
-    19 | store_reg r6
+    19 | store_reg r0
     21 | load_reg r4
-    23 | push_to_list r6
+    23 | push_to_list r0
     25 | load_reg r5
-    27 | push_to_list r6
-    29 | print_list r6
-    31 | ret 
-    32 | suspend 
+    27 | push_to_list r0
+    29 | print_list r0
+    31 | push_none 
+    32 | ret 
+    33 | suspend 
 
 function <[[main]]>:
   frame_size: 3

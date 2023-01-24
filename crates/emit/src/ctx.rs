@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use indexmap::IndexMap;
 use value::Value;
 
 // TODO: turn this into `Isolate`
@@ -9,13 +9,14 @@ use value::Value;
 pub struct Context(Arc<Mutex<Inner>>);
 
 struct Inner {
-  intern_table: HashMap<String, Value>,
+  intern_table: IndexMap<String, Value>,
 }
 
 impl Context {
+  #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
     Self(Arc::new(Mutex::new(Inner {
-      intern_table: HashMap::new(),
+      intern_table: IndexMap::new(),
     })))
   }
 

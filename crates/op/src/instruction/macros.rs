@@ -441,7 +441,7 @@ macro_rules! instructions {
     }
 
     #[allow(unused_variables)]
-    pub fn $update_registers(instruction: &mut $Instruction, map: &HashMap<u32, u32>) {
+    pub fn $update_registers(instruction: &mut $Instruction, map: &indexmap::IndexMap<u32, u32>) {
       match instruction {
         $Instruction::$Nop(_) => {}
         $(

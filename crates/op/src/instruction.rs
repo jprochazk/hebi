@@ -131,6 +131,21 @@ instructions! {
   /// - `key` - constant pool index of key.
   /// - `dict` - register index of dict.
   InsertToDictKeyed (key: Const, dict: Reg),
+  /// Create a closure from `descriptor`.
+  ///
+  /// ### Operands
+  /// - `descriptor` - constant pool index of descriptor.
+  CreateClosure (descriptor: Const),
+  /// Capture `reg` and store it in the captures of the closure stored in the accumulator.
+  ///
+  /// ### Operands
+  /// - `reg` - register index of the captured register.
+  CaptureReg (reg: Reg),
+  /// Capture `slot` and store it in the captures of the closure stored in the accumulator.
+  ///
+  /// ### Operands
+  /// - `slot` - capture list index.
+  CaptureSlot (slot: uv),
 
   // jumps
   /// Jump forward by `offset`.
@@ -541,6 +556,12 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
     let mut instructions = self.instructions;
     let const_pool = self.const_pool;
     let mut used_labels = HashSet::new();
+
+    // functions without a final `return` always return `none`
+    if !matches!(instructions.last(), Some(Instruction::Ret(..))) {
+      instructions.push(Instruction::PushNone(PushNone));
+      instructions.push(Instruction::Ret(Ret));
+    }
 
     // ensure bytecode is terminated by `op_suspend`,
     // so that the dispatch loop stops

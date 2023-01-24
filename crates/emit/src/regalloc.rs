@@ -64,9 +64,12 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 
+use indexmap::IndexMap;
+
 pub struct RegAlloc(Rc<RefCell<Tracking>>);
 
 impl RegAlloc {
+  #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
     Self(Rc::new(RefCell::new(Tracking {
       intervals: Vec::new(),
@@ -92,17 +95,16 @@ impl RegAlloc {
   /// Returns a tuple of:
   /// 0. The total number of used registers
   /// 1. A mapping from each register index to a final register slot
-  pub fn scan(self) -> (u32, HashMap<u32, u32>) {
+  pub fn scan(self) -> (u32, IndexMap<u32, u32>) {
     println!("{}", DisplayTracking(&self.0.borrow()));
     linear_scan(&self.0.borrow().intervals)
   }
 }
 
-fn linear_scan(intervals: &[Interval]) -> (u32, HashMap<u32, u32>) {
-  let mut mapping = HashMap::new();
+fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
+  let mut mapping = IndexMap::new();
 
   let mut free = VecDeque::new();
-  // TODO: use indexmap instead of this
   let mut active = Active::new();
   let mut registers = 0u32;
 
@@ -155,6 +157,7 @@ fn linear_scan(intervals: &[Interval]) -> (u32, HashMap<u32, u32>) {
     }
   }
 
+  // TODO: use indexmap instead of this
   struct Active {
     map: HashMap<u32, (Interval, u32)>,
     scratch: Vec<Interval>,

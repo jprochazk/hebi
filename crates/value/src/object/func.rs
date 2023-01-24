@@ -20,7 +20,7 @@ pub struct ClosureDescriptor {
 #[derive(Clone, Debug)]
 pub struct Closure {
   pub(super) descriptor: Value,
-  pub(super) captures: Vec<Value>,
+  pub captures: Vec<Value>,
 }
 
 impl Closure {
@@ -95,29 +95,40 @@ impl Func {
     &self.params
   }
 
-  pub fn disassemble<F, D>(&self, disassemble_instruction: F, print_bytes: bool) -> String
+  pub fn disassemble<D>(
+    &self,
+    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
+    print_bytes: bool,
+  ) -> String
   where
-    F: Fn(&[u8], usize) -> (usize, D),
     D: std::fmt::Display,
   {
     let mut out = String::new();
 
-    for v in self.const_pool.iter() {
-      if let Some(func) = v.as_func() {
-        func.disassemble_inner(&disassemble_instruction, &mut out, print_bytes);
-        out += "\n";
-      }
-    }
-
-    self.disassemble_inner(&disassemble_instruction, &mut out, print_bytes);
+    self.disassemble_inner(disassemble_instruction, &mut out, print_bytes);
     out
   }
 
-  fn disassemble_inner<F, D>(&self, disassemble_instruction: F, f: &mut String, print_bytes: bool)
-  where
-    F: Fn(&[u8], usize) -> (usize, D),
+  fn disassemble_inner<D>(
+    &self,
+    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
+    f: &mut String,
+    print_bytes: bool,
+  ) where
     D: std::fmt::Display,
   {
+    for v in self.const_pool.iter() {
+      if let Some(func) = v.as_func() {
+        func.disassemble_inner(disassemble_instruction, f, print_bytes);
+        f.push('\n');
+      } else if let Some(descriptor) = v.as_closure_descriptor() {
+        descriptor
+          .func
+          .disassemble_inner(disassemble_instruction, f, print_bytes);
+        f.push('\n');
+      }
+    }
+
     use std::fmt::Write;
 
     // name

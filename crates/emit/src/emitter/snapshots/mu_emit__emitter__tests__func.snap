@@ -12,11 +12,12 @@ test()
 # Chunk:
 function <test>:
   frame_size: 4
-  length: 2
+  length: 3
   const: <empty>
   code:
-    0 | ret 
-    1 | suspend 
+    0 | push_none 
+    1 | ret 
+    2 | suspend 
 
 function <[[main]]>:
   frame_size: 1

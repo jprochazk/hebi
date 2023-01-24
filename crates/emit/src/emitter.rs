@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use std::ops::Deref;
 
 use beef::lean::Cow;
+use indexmap::IndexMap;
 use op::instruction::*;
 use syntax::ast;
-use value::object::func;
+use value::object::{func, Func};
 use value::Value;
 
 pub fn emit<'src>(
@@ -12,7 +12,9 @@ pub fn emit<'src>(
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
 ) -> Result<func::Func> {
-  Emitter::new(ctx, name, module).emit_main()
+  Emitter::new(ctx, name, module)
+    .emit_main()
+    .map(|result| result.func)
 }
 
 use crate::regalloc::{RegAlloc, Register};
@@ -24,6 +26,11 @@ struct Emitter<'src> {
   ctx: Context,
 }
 
+struct EmitResult<'src> {
+  func: Func,
+  captures: IndexMap<Cow<'src, str>, Upvalue>,
+}
+
 impl<'src> Emitter<'src> {
   fn new(ctx: Context, name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
     Self {
@@ -33,7 +40,7 @@ impl<'src> Emitter<'src> {
     }
   }
 
-  fn emit_main(mut self) -> Result<func::Func> {
+  fn emit_main(mut self) -> Result<EmitResult<'src>> {
     for stmt in self.module.body.iter() {
       self.emit_stmt(stmt)?;
     }
@@ -53,17 +60,20 @@ impl<'src> Emitter<'src> {
       const_pool,
     } = self.state.builder.build();
 
-    Ok(func::Func::new(
-      name,
-      frame_size,
-      bytecode,
-      const_pool,
-      func::Params {
-        min: 0,
-        max: None,
-        kw: Default::default(),
-      },
-    ))
+    Ok(EmitResult {
+      func: Func::new(
+        name,
+        frame_size,
+        bytecode,
+        const_pool,
+        func::Params {
+          min: 0,
+          max: None,
+          kw: Default::default(),
+        },
+      ),
+      captures: Default::default(),
+    })
   }
 
   fn emit_func(
@@ -71,7 +81,7 @@ impl<'src> Emitter<'src> {
     name: impl Into<Cow<'src, str>>,
     params: func::Params,
     f: impl FnOnce(&mut Self) -> Result<()>,
-  ) -> Result<func::Func> {
+  ) -> Result<EmitResult<'src>> {
     let next = Function::new(name.into(), None);
     let parent = std::mem::replace(&mut self.state, next);
     self.state.parent = Some(Box::new(parent));
@@ -84,12 +94,18 @@ impl<'src> Emitter<'src> {
       .take()
       .expect("`self.state.parent` was set to `None` inside of callback passed to `emit_chunk`");
     let next = std::mem::replace(&mut self.state, *parent);
-
     result?;
 
-    let (frame_size, register_map) = next.regalloc.scan();
+    let Function {
+      mut builder,
+      regalloc,
+      captures,
+      ..
+    } = next;
 
-    self.state.builder.patch(|instructions| {
+    let (frame_size, register_map) = regalloc.scan();
+
+    builder.patch(|instructions| {
       for instruction in instructions.iter_mut() {
         op::instruction::update_registers(instruction, &register_map)
       }
@@ -99,11 +115,12 @@ impl<'src> Emitter<'src> {
       name,
       bytecode,
       const_pool,
-    } = next.builder.build();
+    } = builder.build();
 
-    Ok(func::Func::new(
-      name, frame_size, bytecode, const_pool, params,
-    ))
+    Ok(EmitResult {
+      func: Func::new(name, frame_size, bytecode, const_pool, params),
+      captures,
+    })
   }
 
   fn const_name(&mut self, str: &str) -> u32 {
@@ -162,13 +179,19 @@ enum Get {
   Global,
 }
 
-struct Capture {
-  /// Capture slot
-  slot: u32,
-  /// Captured register from enclosing scope
+struct Upvalue {
+  /// Capture slot.
   ///
-  /// Used to emit `Capture` instructions after emitting closures
-  register: Register,
+  /// Each closure object contains a `captures` list, which will be indexed by
+  /// this value.
+  slot: u32,
+  /// Describes how to capture the value in the enclosing scope
+  kind: UpvalueKind,
+}
+
+enum UpvalueKind {
+  Register(Register),
+  Capture(u32),
 }
 
 struct Function<'src> {
@@ -188,11 +211,16 @@ struct Function<'src> {
   ///   local should be removed instead.
   /// - The top-level `Vec` may not be empty. There must always be at least one
   ///   scope.
-  locals: Vec<HashMap<Cow<'src, str>, Vec<Register>>>,
+  locals: Vec<IndexMap<Cow<'src, str>, Vec<Register>>>,
   /// List of variables captured from an enclosing scope.
   ///
   /// These may be shadowed by a local.
-  captures: HashMap<Cow<'src, str>, Capture>,
+  ///
+  /// Invariants:
+  /// - Captures may never be removed.
+  /// - The stored registers may not be used until the current function has been
+  ///   emitted.
+  captures: IndexMap<Cow<'src, str>, Upvalue>,
   capture_slot: u32,
 
   /// Whether or not we're currently emitting `?<expr>`.
@@ -210,15 +238,15 @@ impl<'src> Function<'src> {
       name,
       parent,
       regalloc: RegAlloc::new(),
-      locals: vec![HashMap::new()],
-      captures: HashMap::new(),
+      locals: vec![IndexMap::new()],
+      captures: IndexMap::new(),
       capture_slot: 0,
       is_in_opt_expr: false,
     }
   }
 
   fn begin_scope(&mut self) {
-    self.locals.push(HashMap::new());
+    self.locals.push(IndexMap::new());
   }
 
   fn is_global_scope(&self) -> bool {
@@ -267,20 +295,36 @@ impl<'src> Function<'src> {
     let Some(parent) = self.parent.as_deref_mut() else {
       return None;
     };
-    let Some(reg) = parent.local(&name) else {
-      return parent.capture(name);
-    };
 
-    let capture = self.captures.entry(name).or_insert_with(|| {
-      let slot = self.capture_slot;
-      self.capture_slot += 1;
-      Capture {
-        slot,
-        register: reg,
-      }
-    });
+    if let Some(info) = self.captures.get(&name) {
+      return Some(info.slot);
+    }
 
-    Some(capture.slot)
+    let local_slot = self.capture_slot;
+    self.capture_slot += 1;
+    if let Some(reg) = parent.local(&name) {
+      self.captures.insert(
+        name,
+        Upvalue {
+          slot: local_slot,
+          kind: UpvalueKind::Register(reg),
+        },
+      );
+      return Some(local_slot);
+    }
+
+    if let Some(parent_slot) = parent.capture(name.clone()) {
+      self.captures.insert(
+        name,
+        Upvalue {
+          slot: local_slot,
+          kind: UpvalueKind::Capture(parent_slot),
+        },
+      );
+      return Some(local_slot);
+    }
+
+    None
   }
 }
 
@@ -350,7 +394,21 @@ mod stmt {
     }
 
     fn emit_ctrl_stmt(&mut self, stmt: &'src ast::Ctrl<'src>) -> Result<()> {
-      todo!()
+      match stmt {
+        ast::Ctrl::Return(v) => {
+          if let Some(value) = v.value.as_ref() {
+            self.emit_expr(value)?;
+          } else {
+            self.emit_op(PushNone);
+          }
+          self.emit_op(Ret);
+        }
+        ast::Ctrl::Yield(_) => todo!(),
+        ast::Ctrl::Continue => todo!(),
+        ast::Ctrl::Break => todo!(),
+      }
+
+      Ok(())
     }
 
     fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) -> Result<()> {
@@ -373,20 +431,33 @@ mod stmt {
           .collect(),
       };
 
-      let func = self.emit_func(name.clone(), params, |this| {
+      let result = self.emit_func(name.clone(), params, |this| {
         this.emit_func_params(stmt)?;
 
         for stmt in stmt.body.iter() {
           this.emit_stmt(stmt)?;
         }
-        this.emit_op(Ret);
+
         Ok(())
       })?;
 
-      // TODO: emit closure
+      if result.captures.is_empty() {
+        let func = self.const_value(result.func);
+        self.emit_op(LoadConst { slot: func });
+      } else {
+        let descriptor = self.const_value(func::ClosureDescriptor {
+          func: result.func,
+          num_captures: result.captures.len() as u32,
+        });
+        self.emit_op(CreateClosure { descriptor });
+        for (_, info) in result.captures.iter() {
+          match &info.kind {
+            UpvalueKind::Register(reg) => self.emit_op(CaptureReg { reg: reg.index() }),
+            UpvalueKind::Capture(slot) => self.emit_op(CaptureSlot { slot: *slot }),
+          };
+        }
+      }
 
-      let func = self.const_value(func);
-      self.emit_op(LoadConst { slot: func });
       if self.state.is_global_scope() {
         let name = self.const_name(&name);
         self.emit_op(StoreGlobal { name });

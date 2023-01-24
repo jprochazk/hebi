@@ -12,13 +12,14 @@ test(0)
 # Chunk:
 function <test>:
   frame_size: 5
-  length: 5
+  length: 6
   const: <empty>
   code:
     0 | load_reg r4
     2 | print 
-    3 | ret 
-    4 | suspend 
+    3 | push_none 
+    4 | ret 
+    5 | suspend 
 
 function <[[main]]>:
   frame_size: 2

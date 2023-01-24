@@ -26,7 +26,7 @@ fn f3(a, b, c, d):
 # Chunk:
 function <f0>:
   frame_size: 6
-  length: 39
+  length: 40
   const: <empty>
   code:
      0 | load_reg r4
@@ -56,12 +56,13 @@ function <f0>:
     33 | nop 
     34 | nop 
     35 | load_reg r5
-    37 | ret 
-    38 | suspend 
+    37 | push_none 
+    38 | ret 
+    39 | suspend 
 
 function <f1_a>:
   frame_size: 8
-  length: 34
+  length: 35
   const: <empty>
   code:
      0 | load_reg r4
@@ -88,12 +89,13 @@ function <f1_a>:
     28 | nop 
     29 | nop 
     30 | load_reg r7
-    32 | ret 
-    33 | suspend 
+    32 | push_none 
+    33 | ret 
+    34 | suspend 
 
 function <f1_b>:
   frame_size: 8
-  length: 34
+  length: 35
   const: <empty>
   code:
      0 | load_reg r4
@@ -120,12 +122,13 @@ function <f1_b>:
     28 | nop 
     29 | nop 
     30 | load_reg r7
-    32 | ret 
-    33 | suspend 
+    32 | push_none 
+    33 | ret 
+    34 | suspend 
 
 function <f2_a>:
   frame_size: 8
-  length: 40
+  length: 41
   const: <empty>
   code:
      0 | load_reg r4
@@ -157,12 +160,13 @@ function <f2_a>:
     34 | nop 
     35 | nop 
     36 | load_reg r7
-    38 | ret 
-    39 | suspend 
+    38 | push_none 
+    39 | ret 
+    40 | suspend 
 
 function <f2_b>:
   frame_size: 8
-  length: 40
+  length: 41
   const: <empty>
   code:
      0 | load_reg r4
@@ -194,12 +198,13 @@ function <f2_b>:
     34 | nop 
     35 | nop 
     36 | load_reg r7
-    38 | ret 
-    39 | suspend 
+    38 | push_none 
+    39 | ret 
+    40 | suspend 
 
 function <f3>:
   frame_size: 8
-  length: 22
+  length: 23
   const: <empty>
   code:
      0 | load_reg r4
@@ -217,8 +222,9 @@ function <f3>:
     16 | nop 
     17 | nop 
     18 | load_reg r6
-    20 | ret 
-    21 | suspend 
+    20 | push_none 
+    21 | ret 
+    22 | suspend 
 
 function <[[main]]>:
   frame_size: 0

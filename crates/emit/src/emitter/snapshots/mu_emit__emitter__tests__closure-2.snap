@@ -1,0 +1,78 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn a():
+  v := 0
+  fn b():
+    fn c():
+      fn d():
+        print v
+
+
+# Chunk:
+function <d>:
+  frame_size: 4
+  length: 6
+  const: <empty>
+  code:
+    0 | load_capture slot=0
+    2 | print 
+    3 | push_none 
+    4 | ret 
+    5 | suspend 
+
+function <c>:
+  frame_size: 4
+  length: 9
+  const (length=1):
+    0: <closure descriptor d n=1>
+  code:
+    0 | create_closure [0]
+    2 | capture_slot slot=0
+    4 | store_reg r0
+    6 | push_none 
+    7 | ret 
+    8 | suspend 
+
+function <b>:
+  frame_size: 4
+  length: 9
+  const (length=1):
+    0: <closure descriptor c n=1>
+  code:
+    0 | create_closure [0]
+    2 | capture_slot slot=0
+    4 | store_reg r0
+    6 | push_none 
+    7 | ret 
+    8 | suspend 
+
+function <a>:
+  frame_size: 4
+  length: 16
+  const (length=1):
+    0: <closure descriptor b n=1>
+  code:
+     0 | push_small_int value=0
+     5 | store_reg r0
+     7 | create_closure [0]
+     9 | capture_reg r0
+    11 | store_reg r1
+    13 | push_none 
+    14 | ret 
+    15 | suspend 
+
+function <[[main]]>:
+  frame_size: 0
+  length: 6
+  const (length=2):
+    0: <func a>
+    1: "a"
+  code:
+    0 | load_const [0]
+    2 | store_global [1]
+    4 | ret 
+    5 | suspend 
+
