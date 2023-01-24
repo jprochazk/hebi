@@ -14,7 +14,7 @@ pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
 // TODO: only allow ints, strings, and opaque objects as keys
 pub type Dict = indexmap::IndexMap<Value, Value>;
-pub use func::Func;
+pub use func::{Closure, ClosureDescriptor, Func};
 
 #[derive(Clone)]
 pub struct Object {
@@ -27,6 +27,8 @@ object_repr! {
     List,
     Dict,
     Func,
+    Closure,
+    ClosureDescriptor,
   }
 }
 
@@ -36,7 +38,7 @@ impl PartialEq for Object {
       (Repr::String(a), Repr::String(b)) => a == b,
       (Repr::List(a), Repr::List(b)) => a == b,
       (Repr::Dict(a), Repr::Dict(b)) => a == b,
-      (Repr::Func(a), Repr::Func(b)) => (a as *const _ as usize) == (b as *const _ as usize),
+      (Repr::Func(a), Repr::Func(b)) => std::ptr::eq(a, b),
       _ => false,
     }
   }
@@ -50,6 +52,8 @@ impl Hash for Object {
       Repr::List(v) => v.hash(state),
       Repr::Dict(v) => (v as *const _ as usize).hash(state),
       Repr::Func(v) => (v as *const _ as usize).hash(state),
+      Repr::Closure(v) => (v as *const _ as usize).hash(state),
+      Repr::ClosureDescriptor(v) => (v as *const _ as usize).hash(state),
     }
   }
 }
@@ -72,21 +76,7 @@ impl<'a> From<Cow<'a, str>> for Object {
 
 impl std::fmt::Debug for Object {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self.repr {
-      Repr::String(v) => write!(f, "{v:?}"),
-      Repr::List(v) => f.debug_list().entries(v).finish(),
-      Repr::Dict(v) => f.debug_map().entries(v).finish(),
-      Repr::Func(v) => f
-        .debug_struct("Func")
-        .field("name", &v.name)
-        .field("frame_size", &v.frame_size)
-        .field("code.len", &v.code.len())
-        .field("const.len", &v.const_pool.len())
-        .field("params.min", &v.params.min)
-        .field("params.max", &v.params.max)
-        .field("kw.len", &v.params.kw.len())
-        .finish(),
-    }
+    std::fmt::Debug::fmt(&self.repr, f)
   }
 }
 
@@ -117,6 +107,16 @@ impl std::fmt::Display for Object {
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
       Repr::Func(v) => write!(f, "<func {}>", v.name),
+      Repr::Closure(v) => write!(
+        f,
+        "<closure {}>",
+        v.descriptor.as_closure_descriptor().unwrap().func.name
+      ),
+      Repr::ClosureDescriptor(v) => write!(
+        f,
+        "<closure descriptor {} n={}>",
+        v.func.name, v.num_captures
+      ),
     }
   }
 }

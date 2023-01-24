@@ -6,27 +6,33 @@ display:
 {"a": 0, "b": 1}
 
 debug:
-{
-    Value {
-        type: "object",
-        value: Some(
-            "a",
-        ),
-    }: Value {
-        type: "int",
-        value: Some(
-            0,
-        ),
+Dict(
+    {
+        Value {
+            type: "object",
+            value: Some(
+                String(
+                    "a",
+                ),
+            ),
+        }: Value {
+            type: "int",
+            value: Some(
+                0,
+            ),
+        },
+        Value {
+            type: "object",
+            value: Some(
+                String(
+                    "b",
+                ),
+            ),
+        }: Value {
+            type: "int",
+            value: Some(
+                1,
+            ),
+        },
     },
-    Value {
-        type: "object",
-        value: Some(
-            "b",
-        ),
-    }: Value {
-        type: "int",
-        value: Some(
-            1,
-        ),
-    },
-}
+)

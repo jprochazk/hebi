@@ -9,31 +9,33 @@ debug:
 Value {
     type: "object",
     value: Some(
-        [
-            Value {
-                type: "int",
-                value: Some(
-                    0,
-                ),
-            },
-            Value {
-                type: "int",
-                value: Some(
-                    1,
-                ),
-            },
-            Value {
-                type: "int",
-                value: Some(
-                    2,
-                ),
-            },
-            Value {
-                type: "int",
-                value: Some(
-                    3,
-                ),
-            },
-        ],
+        List(
+            [
+                Value {
+                    type: "int",
+                    value: Some(
+                        0,
+                    ),
+                },
+                Value {
+                    type: "int",
+                    value: Some(
+                        1,
+                    ),
+                },
+                Value {
+                    type: "int",
+                    value: Some(
+                        2,
+                    ),
+                },
+                Value {
+                    type: "int",
+                    value: Some(
+                        3,
+                    ),
+                },
+            ],
+        ),
     ),
 }

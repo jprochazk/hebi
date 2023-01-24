@@ -325,7 +325,7 @@ mod stmt {
         self.emit_op(JumpIfFalse { offset: next.id() });
         self.state.begin_scope();
         for stmt in branch.body.iter() {
-          self.emit_stmt(&stmt)?;
+          self.emit_stmt(stmt)?;
         }
         self.emit_op(Jump { offset: end.id() });
         self.state.end_scope();
@@ -335,7 +335,7 @@ mod stmt {
       if let Some(default) = stmt.default.as_ref() {
         self.state.begin_scope();
         for stmt in default.iter() {
-          self.emit_stmt(&stmt)?;
+          self.emit_stmt(stmt)?;
         }
         self.state.end_scope();
       }
@@ -374,7 +374,7 @@ mod stmt {
       };
 
       let func = self.emit_func(name.clone(), params, |this| {
-        this.emit_func_params(&stmt)?;
+        this.emit_func_params(stmt)?;
 
         for stmt in stmt.body.iter() {
           this.emit_stmt(stmt)?;
@@ -438,7 +438,7 @@ mod stmt {
       }
       // emit kw + defaults
       for ((name, default), reg) in kw.iter() {
-        let name = self.const_name(&name);
+        let name = self.const_name(name);
         // #if param.default.is_some()
         if let Some(default) = default {
           // if not #(param.name) in kw:
@@ -474,12 +474,10 @@ mod stmt {
         self.state.declare_local(name.deref().clone(), reg.clone())
       }
       if let Some(name) = func.params.kwargs.as_ref() {
-        self
-          .state
-          .declare_local(name.deref().clone(), kwargs.clone());
+        self.state.declare_local(name.deref().clone(), kwargs);
       }
       if let Some(name) = func.params.argv.as_ref() {
-        self.state.declare_local(name.deref().clone(), argv.clone());
+        self.state.declare_local(name.deref().clone(), argv);
       }
       self
         .state
@@ -838,7 +836,7 @@ mod expr {
         .map(|_| self.reg())
         .collect::<Vec<_>>();
       for (reg, value) in argv.iter().zip(expr.args.pos.iter()) {
-        self.emit_expr(&value)?;
+        self.emit_expr(value)?;
         self.emit_op(StoreReg { reg: reg.index() });
       }
 

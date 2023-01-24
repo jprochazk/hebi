@@ -577,17 +577,19 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
         (Some(&ops::ExtraWide), Some(&ops::Jump)) => {
           let label_id = Jump::decode(&bytecode, ip + 2, Width::Quad);
           let offset = get_label_offset(label_id, &label_map, &offsets, &mut used_labels);
-          if ip > offset as usize {
-            let offset = ip - offset as usize;
-            patch_jump::<JumpBack>(&mut bytecode, ip, offset as u32);
-          } else if ip < offset as usize {
-            let offset = offset as usize - ip;
-            patch_jump::<Jump>(&mut bytecode, ip, offset as u32);
-          } else {
-            panic!(
+          match ip.cmp(&(offset as usize)) {
+            std::cmp::Ordering::Greater => {
+              let offset = ip - offset as usize;
+              patch_jump::<JumpBack>(&mut bytecode, ip, offset as u32);
+            }
+            std::cmp::Ordering::Less => {
+              let offset = offset as usize - ip;
+              patch_jump::<Jump>(&mut bytecode, ip, offset as u32);
+            }
+            std::cmp::Ordering::Equal => panic!(
               "jump to label {} ({label_id}) has offset=0",
               &label_map[&label_id].name
-            );
+            ),
           }
         }
         (Some(&ops::ExtraWide), Some(&ops::JumpBack)) => {

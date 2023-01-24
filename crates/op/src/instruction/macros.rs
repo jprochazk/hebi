@@ -25,6 +25,7 @@ macro_rules! impl_encode_into_for_jump {
   ( :jump $name:ident ($( $operand:ident : $ty:ident ),*) ) => {
     impl EncodeInto for $name {
       #[inline]
+      #[allow(unused_assignments)]
       fn encode_into(buf: &mut [u8], ($($operand),*): <$name as Decode>::Decoded) {
         let prefix = Width::Single $( | <$ty as Operand>::width($operand) )* ;
         let mut pc = prefix.encode_into(buf, 0);
@@ -35,7 +36,6 @@ macro_rules! impl_encode_into_for_jump {
         $(
           pc += <$ty as Operand>::encode_into(buf, pc, $operand);
         )*
-        drop(pc);
       }
     }
   };
@@ -138,6 +138,7 @@ macro_rules! instruction_base {
 macro_rules! instruction_dispatch {
   ($Handler:ident; $name:ident, ()) => {
     paste! {
+      #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
         bc: &mut Vec<u8>,
@@ -159,6 +160,7 @@ macro_rules! instruction_dispatch {
   };
   ($Handler:ident; $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
+      #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
         bc: &mut Vec<u8>,
@@ -181,6 +183,7 @@ macro_rules! instruction_dispatch {
   };
   ($Handler:ident; :jump $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
+      #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
         bc: &mut Vec<u8>,
@@ -315,6 +318,7 @@ macro_rules! instructions {
       $Nop () = 0
     );
 
+    #[allow(clippy::ptr_arg)]
     fn op_nop<H: $Handler>(
       _: &mut H,
       bc: &mut Vec<u8>,
@@ -328,6 +332,7 @@ macro_rules! instructions {
       *opcode = bc[*pc];
     }
 
+    #[allow(clippy::ptr_arg)]
     fn op_wide<H: $Handler>(
       _: &mut H,
       bc: &mut Vec<u8>,
@@ -341,6 +346,7 @@ macro_rules! instructions {
       *opcode = bc[*pc];
     }
 
+    #[allow(clippy::ptr_arg)]
     fn op_extra_wide<H: $Handler>(
       _: &mut H,
       bc: &mut Vec<u8>,

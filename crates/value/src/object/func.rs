@@ -2,13 +2,60 @@ use beef::lean::Cow;
 
 use crate::Value;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Func {
   pub(super) name: Cow<'static, str>,
   pub(super) frame_size: u32,
   pub(super) code: Vec<u8>,
   pub(super) const_pool: Vec<Value>,
   pub(super) params: Params,
+}
+
+#[derive(Clone, Debug)]
+pub struct ClosureDescriptor {
+  pub func: Func,
+  pub num_captures: u32,
+}
+
+#[derive(Clone, Debug)]
+pub struct Closure {
+  pub(super) descriptor: Value,
+  pub(super) captures: Vec<Value>,
+}
+
+impl Closure {
+  /// Create a new closure.
+  ///
+  /// # Panics
+  /// If `func.is_closure_descriptor()` is not `true`.
+  pub fn new(descriptor: Value) -> Self {
+    // TODO: can this be encoded via the type system?
+    assert!(
+      descriptor.is_closure_descriptor(),
+      "closure may only be constructed from a closure descriptor"
+    );
+
+    let captures = {
+      let descriptor = descriptor.as_closure_descriptor().unwrap();
+      let mut v = Vec::with_capacity(descriptor.num_captures as usize);
+      for _ in 0..descriptor.num_captures {
+        v.push(Value::none());
+      }
+      v
+    };
+
+    Self {
+      descriptor,
+      captures,
+    }
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct Params {
+  pub min: u32,
+  pub max: Option<u32>,
+  pub kw: indexmap::IndexSet<String>,
 }
 
 impl Func {
@@ -27,16 +74,27 @@ impl Func {
       params,
     }
   }
-}
 
-#[derive(Clone)]
-pub struct Params {
-  pub min: u32,
-  pub max: Option<u32>,
-  pub kw: indexmap::IndexSet<String>,
-}
+  pub fn name(&self) -> &str {
+    self.name.as_ref()
+  }
 
-impl Func {
+  pub fn frame_size(&self) -> u32 {
+    self.frame_size
+  }
+
+  pub fn code(&self) -> &[u8] {
+    &self.code
+  }
+
+  pub fn const_pool(&self) -> &[Value] {
+    &self.const_pool
+  }
+
+  pub fn params(&self) -> &Params {
+    &self.params
+  }
+
   pub fn disassemble<F, D>(&self, disassemble_instruction: F, print_bytes: bool) -> String
   where
     F: Fn(&[u8], usize) -> (usize, D),

@@ -28,7 +28,9 @@ expression: values
     Value {
         type: "object",
         value: Some(
-            "test",
+            String(
+                "test",
+            ),
         ),
     },
 ]

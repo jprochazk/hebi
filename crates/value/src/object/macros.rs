@@ -8,22 +8,22 @@ macro_rules! object_repr {
     }
   ) => {
     paste! {
-      #[derive(Clone)]
+      #[derive(Clone, Debug)]
       enum $Repr {
         $( $ty($ty), )*
       }
 
       impl Object {
         $(
-          pub fn [<$ty:lower>](v: impl Into<$ty>) -> Self {
+          pub fn [<$ty:snake>](v: impl Into<$ty>) -> Self {
             Object { repr: $Repr::$ty(v.into()) }
           }
 
-          pub fn [<is_ $ty:lower>](&self) -> bool {
+          pub fn [<is_ $ty:snake>](&self) -> bool {
             matches!(self.repr, $Repr::$ty(..))
           }
 
-          pub fn [<as_ $ty:lower>](&self) -> Option<&$ty> {
+          pub fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
             if let $Repr::$ty(ref v) = self.repr {
               Some(v)
             } else {
@@ -31,7 +31,7 @@ macro_rules! object_repr {
             }
           }
 
-          pub fn [<as_ $ty:lower _mut>](&mut self) -> Option<&mut $ty> {
+          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<&mut $ty> {
             if let $Repr::$ty(ref mut v) = self.repr {
               Some(v)
             } else {
@@ -43,26 +43,26 @@ macro_rules! object_repr {
 
       impl Value {
         $(
-          pub fn [<is_ $ty:lower>](&self) -> bool {
+          pub fn [<is_ $ty:snake>](&self) -> bool {
             let Some(this) = self.as_object() else { return false; };
-            this.[<is_ $ty:lower>]()
+            this.[<is_ $ty:snake>]()
           }
 
-          pub fn [<as_ $ty:lower>](&self) -> Option<Ref<'_, $ty>> {
+          pub fn [<as_ $ty:snake>](&self) -> Option<Ref<'_, $ty>> {
             let Some(this) = self.as_object() else { return None; };
-            if !this.[<is_ $ty:lower>]() {
+            if !this.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(Ref::map(this, |v| v.[<as_ $ty:lower>]().unwrap()))
+            Some(Ref::map(this, |v| v.[<as_ $ty:snake>]().unwrap()))
           }
 
 
-          pub fn [<as_ $ty:lower _mut>](&mut self) -> Option<RefMut<'_, $ty>> {
+          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<RefMut<'_, $ty>> {
             let Some(this) = self.as_object_mut() else { return None; };
-            if !this.[<is_ $ty:lower>]() {
+            if !this.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(RefMut::map(this, |v| v.[<as_ $ty:lower _mut>]().unwrap()))
+            Some(RefMut::map(this, |v| v.[<as_ $ty:snake _mut>]().unwrap()))
           }
         )*
       }
@@ -70,7 +70,7 @@ macro_rules! object_repr {
       $(
         impl From<$ty> for Object {
           fn from(v: $ty) -> Self {
-            Object::[<$ty:lower>](v)
+            Object::[<$ty:snake>](v)
           }
         }
       )*

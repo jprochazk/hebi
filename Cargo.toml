@@ -8,6 +8,9 @@ members = [
   "crates/value",
 ]
 
+# TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
+# will make it easier to update
+
 [profile.dev.package.insta]
 opt-level = 3
 
