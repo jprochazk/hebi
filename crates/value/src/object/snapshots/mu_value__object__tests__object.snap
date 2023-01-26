@@ -10,27 +10,19 @@ List(
     [
         Value {
             type: "int",
-            value: Some(
-                0,
-            ),
+            value: 0,
         },
         Value {
             type: "int",
-            value: Some(
-                1,
-            ),
+            value: 1,
         },
         Value {
             type: "int",
-            value: Some(
-                2,
-            ),
+            value: 2,
         },
         Value {
             type: "int",
-            value: Some(
-                3,
-            ),
+            value: 3,
         },
     ],
 )

@@ -1,5 +1,6 @@
 #[macro_use]
 mod macros;
+pub mod dict;
 pub mod func;
 
 use std::cell::{Ref, RefMut};
@@ -12,8 +13,7 @@ use crate::Value;
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
-// TODO: only allow ints, strings, and opaque objects as keys
-pub type Dict = indexmap::IndexMap<Value, Value>;
+pub use dict::Dict;
 pub use func::{Closure, ClosureDescriptor, Func};
 
 #[derive(Clone)]

@@ -190,7 +190,13 @@ impl Value {
     self.as_none()
   }
 
-  pub fn to_object(self) -> Option<Ptr<object::Object>> {
+  /// This is `pub(crate)` so that users may not break the invariant that
+  /// `value::object::dict::Key::String` is always a string by mutating the
+  /// object behind the pointer using `borrow_mut`.
+  ///
+  /// It's not necessary because `Value` has impls for `as_<repr>` where
+  /// `<repr>` is any of the possible object representations.
+  pub(crate) fn to_object(self) -> Option<Ptr<object::Object>> {
     if !self.is_object() {
       return None;
     }
@@ -199,7 +205,7 @@ impl Value {
     Some(ptr)
   }
 
-  pub fn as_object(&self) -> Option<Ref<'_, object::Object>> {
+  pub(crate) fn as_object(&self) -> Option<Ref<'_, object::Object>> {
     if self.is_object() {
       let addr = self.value() as usize;
       let ptr = addr as *const RefCell<object::Object>;
@@ -209,7 +215,13 @@ impl Value {
     }
   }
 
-  pub fn as_object_mut(&mut self) -> Option<RefMut<'_, object::Object>> {
+  /// This is `pub(crate)` so that users may not break the invariant that
+  /// `value::object::dict::Key::String` is always a string by mutating the
+  /// object behind the pointer using `borrow_mut`.
+  ///
+  /// It's not necessary because `Value` has impls for `as_<repr>` where
+  /// `<repr>` is any of the possible object representations.
+  pub(crate) fn as_object_mut(&mut self) -> Option<RefMut<'_, object::Object>> {
     if self.is_object() {
       let addr = self.value() as usize;
       let ptr = addr as *const RefCell<object::Object>;
@@ -344,16 +356,16 @@ where
 impl std::fmt::Display for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let v = self.clone();
-    if v.is_float() {
-      write!(f, "{}", v.to_float().unwrap())?;
-    } else if v.is_int() {
-      write!(f, "{}", v.to_int().unwrap())?;
-    } else if v.is_bool() {
-      write!(f, "{}", v.to_bool().unwrap())?;
-    } else if v.is_none() {
+    if let Some(v) = v.as_float() {
+      write!(f, "{v}")?;
+    } else if let Some(v) = v.as_int() {
+      write!(f, "{v}")?;
+    } else if let Some(v) = v.as_bool() {
+      write!(f, "{v}")?;
+    } else if let Some(v) = v.as_none() {
       write!(f, "none")?;
-    } else if v.is_object() {
-      write!(f, "{}", v.to_object().unwrap())?;
+    } else if let Some(v) = v.as_object() {
+      write!(f, "{v}")?;
     } else {
       unreachable!("invalid type");
     }
@@ -366,21 +378,21 @@ impl std::fmt::Debug for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let v = self.clone();
     let mut s = f.debug_struct("Value");
-    if v.is_float() {
+    if let Some(v) = v.as_float() {
       s.field("type", &"float");
-      s.field("value", &v.to_float());
-    } else if v.is_int() {
+      s.field("value", &v);
+    } else if let Some(v) = v.as_int() {
       s.field("type", &"int");
-      s.field("value", &v.to_int());
-    } else if v.is_bool() {
+      s.field("value", &v);
+    } else if let Some(v) = v.as_bool() {
       s.field("type", &"bool");
-      s.field("value", &v.to_bool());
-    } else if v.is_none() {
+      s.field("value", &v);
+    } else if let Some(v) = v.as_none() {
       s.field("type", &"none");
       s.field("value", &"<none>");
-    } else if v.is_object() {
+    } else if let Some(v) = v.as_object() {
       s.field("type", &"object");
-      s.field("value", &v.to_object());
+      s.field("value", &v);
     } else {
       unreachable!("invalid type");
     }

@@ -8,36 +8,20 @@ display:
 debug:
 Value {
     type: "object",
-    value: Some(
-        Dict(
-            {
-                Value {
-                    type: "object",
-                    value: Some(
-                        String(
-                            "a",
-                        ),
-                    ),
-                }: Value {
-                    type: "int",
-                    value: Some(
-                        0,
-                    ),
-                },
-                Value {
-                    type: "object",
-                    value: Some(
-                        String(
-                            "b",
-                        ),
-                    ),
-                }: Value {
-                    type: "int",
-                    value: Some(
-                        1,
-                    ),
-                },
+    value: Dict(
+        {
+            String(
+                "a",
+            ): Value {
+                type: "int",
+                value: 0,
             },
-        ),
+            String(
+                "b",
+            ): Value {
+                type: "int",
+                value: 1,
+            },
+        },
     ),
 }

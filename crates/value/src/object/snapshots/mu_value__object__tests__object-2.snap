@@ -8,31 +8,17 @@ display:
 debug:
 Dict(
     {
-        Value {
-            type: "object",
-            value: Some(
-                String(
-                    "a",
-                ),
-            ),
-        }: Value {
+        String(
+            "a",
+        ): Value {
             type: "int",
-            value: Some(
-                0,
-            ),
+            value: 0,
         },
-        Value {
-            type: "object",
-            value: Some(
-                String(
-                    "b",
-                ),
-            ),
-        }: Value {
+        String(
+            "b",
+        ): Value {
             type: "int",
-            value: Some(
-                1,
-            ),
+            value: 1,
         },
     },
 )

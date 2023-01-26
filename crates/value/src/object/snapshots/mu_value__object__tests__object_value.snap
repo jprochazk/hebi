@@ -8,34 +8,24 @@ display:
 debug:
 Value {
     type: "object",
-    value: Some(
-        List(
-            [
-                Value {
-                    type: "int",
-                    value: Some(
-                        0,
-                    ),
-                },
-                Value {
-                    type: "int",
-                    value: Some(
-                        1,
-                    ),
-                },
-                Value {
-                    type: "int",
-                    value: Some(
-                        2,
-                    ),
-                },
-                Value {
-                    type: "int",
-                    value: Some(
-                        3,
-                    ),
-                },
-            ],
-        ),
+    value: List(
+        [
+            Value {
+                type: "int",
+                value: 0,
+            },
+            Value {
+                type: "int",
+                value: 1,
+            },
+            Value {
+                type: "int",
+                value: 2,
+            },
+            Value {
+                type: "int",
+                value: 3,
+            },
+        ],
     ),
 }
