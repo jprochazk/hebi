@@ -433,7 +433,7 @@ impl TryFrom<Value> for Key {
   type Error = InvalidKeyType;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {
-    let value = value.to_object().ok_or(InvalidKeyType)?;
+    let value = value.into_object().ok_or(InvalidKeyType)?;
     if !value.borrow().is_string() {
       return Err(InvalidKeyType);
     }

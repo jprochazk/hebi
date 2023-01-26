@@ -53,10 +53,10 @@ fn clone_and_drop_object_value() {
   assert_eq!(Ptr::strong_count(&ptr), 3);
 
   // check object refcounts
-  let ptr_a = a.to_object().unwrap();
+  let ptr_a = a.into_object().unwrap();
   assert_eq!(Ptr::strong_count(&ptr_a), 3);
 
-  let ptr_b = b.to_object().unwrap();
+  let ptr_b = b.into_object().unwrap();
   assert_eq!(Ptr::strong_count(&ptr_b), 3);
 
   // reconstruct and drop

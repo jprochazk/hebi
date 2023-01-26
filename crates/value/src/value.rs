@@ -196,7 +196,7 @@ impl Value {
   ///
   /// It's not necessary because `Value` has impls for `as_<repr>` where
   /// `<repr>` is any of the possible object representations.
-  pub(crate) fn to_object(self) -> Option<Ptr<object::Object>> {
+  pub(crate) fn into_object(self) -> Option<Ptr<object::Object>> {
     if !self.is_object() {
       return None;
     }
@@ -362,7 +362,7 @@ impl std::fmt::Display for Value {
       write!(f, "{v}")?;
     } else if let Some(v) = v.as_bool() {
       write!(f, "{v}")?;
-    } else if let Some(v) = v.as_none() {
+    } else if v.is_none() {
       write!(f, "none")?;
     } else if let Some(v) = v.as_object() {
       write!(f, "{v}")?;
@@ -387,7 +387,7 @@ impl std::fmt::Debug for Value {
     } else if let Some(v) = v.as_bool() {
       s.field("type", &"bool");
       s.field("value", &v);
-    } else if let Some(v) = v.as_none() {
+    } else if v.is_none() {
       s.field("type", &"none");
       s.field("value", &"<none>");
     } else if let Some(v) = v.as_object() {
