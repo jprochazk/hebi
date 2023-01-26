@@ -48,6 +48,7 @@ impl Default for Func {
 }
 
 struct Parser<'src> {
+  module: ast::Module<'src>,
   lex: Lexer<'src>,
   errors: Vec<Error>,
   indent: IndentStack,
@@ -57,6 +58,7 @@ struct Parser<'src> {
 impl<'src> Parser<'src> {
   fn new(lex: Lexer<'src>) -> Self {
     Self {
+      module: ast::Module::new(),
       lex,
       errors: Vec::new(),
       indent: IndentStack::new(),

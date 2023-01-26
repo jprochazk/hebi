@@ -1,0 +1,15 @@
+[package]
+name = "mu_vm"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+beef = "0.5.2"
+op = { path = "../op", package = "mu_op" }
+value = { path = "../value", package = "mu_value" }
+
+[dev-dependencies]
+indoc = "1.0.8"
+insta = "1.23.0"

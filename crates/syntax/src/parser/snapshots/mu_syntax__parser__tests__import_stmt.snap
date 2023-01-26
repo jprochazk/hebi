@@ -3,90 +3,131 @@ source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
 Module {
-    imports: [
-        Import {
-            path: [
-                "a",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-                "c",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "c",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-                "c",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "d",
-                "e",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-                "b",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "c",
-                "d",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "a",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "b",
-            ],
-            alias: None,
-        },
-        Import {
-            path: [
-                "c",
-            ],
-            alias: None,
-        },
+    body: [
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "b",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "b",
+                            "c",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "b",
+                        ],
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "c",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "b",
+                            "c",
+                        ],
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "d",
+                            "e",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                            "b",
+                        ],
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        path: [
+                            "c",
+                            "d",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "a",
+                        ],
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        path: [
+                            "b",
+                        ],
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        path: [
+                            "c",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
+        ),
     ],
-    body: [],
 }

@@ -10,41 +10,18 @@ pub type Map<K, V> = BTreeMap<K, V>;
 
 #[cfg_attr(test, derive(Debug))]
 pub struct Module<'src> {
-  pub imports: Vec<Import<'src>>,
   pub body: Vec<Stmt<'src>>,
 }
 
 impl<'src> Module<'src> {
   pub fn new() -> Self {
-    Self {
-      imports: vec![],
-      body: vec![],
-    }
+    Self { body: vec![] }
   }
 }
 
 impl<'src> Default for Module<'src> {
   fn default() -> Self {
     Self::new()
-  }
-}
-
-#[cfg_attr(test, derive(Debug))]
-pub struct Import<'src> {
-  pub path: Vec<Ident<'src>>,
-  pub alias: Option<Ident<'src>>,
-}
-
-impl<'src> Import<'src> {
-  pub fn normal(path: Vec<Ident<'src>>) -> Self {
-    Import { path, alias: None }
-  }
-
-  pub fn alias(path: Vec<Ident<'src>>, alias: Ident<'src>) -> Self {
-    Import {
-      path,
-      alias: Some(alias),
-    }
   }
 }
 
@@ -61,6 +38,31 @@ pub enum StmtKind<'src> {
   Expr(Box<Expr<'src>>),
   Pass,
   Print(Box<Print<'src>>),
+  Import(Box<Import<'src>>),
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Import<'src> {
+  pub symbols: Vec<ImportSymbol<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct ImportSymbol<'src> {
+  pub path: Vec<Ident<'src>>,
+  pub alias: Option<Ident<'src>>,
+}
+
+impl<'src> ImportSymbol<'src> {
+  pub fn normal(path: Vec<Ident<'src>>) -> Self {
+    ImportSymbol { path, alias: None }
+  }
+
+  pub fn alias(path: Vec<Ident<'src>>, alias: Ident<'src>) -> Self {
+    ImportSymbol {
+      path,
+      alias: Some(alias),
+    }
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -365,6 +367,10 @@ pub enum Ctrl<'src> {
   Yield(Yield<'src>),
   Continue,
   Break,
+}
+
+pub fn import_stmt<'src>(s: impl Into<Span>, symbols: Vec<ImportSymbol<'src>>) -> Stmt<'src> {
+  Stmt::new(s, StmtKind::Import(Box::new(Import { symbols })))
 }
 
 pub fn if_stmt<'src>(

@@ -2,10 +2,8 @@ use super::*;
 
 impl<'src> Parser<'src> {
   pub(super) fn module(mut self) -> Result<ast::Module<'src>, Vec<Error>> {
-    let mut module = ast::Module::new();
-
     while !self.current().is(Tok_Eof) {
-      if let Err(e) = self.top_level_stmt(&mut module) {
+      if let Err(e) = self.top_level_stmt() {
         self.errors.push(e);
         self.sync();
       }
@@ -15,6 +13,6 @@ impl<'src> Parser<'src> {
       return Err(self.errors);
     }
 
-    Ok(module)
+    Ok(self.module)
   }
 }

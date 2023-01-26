@@ -12,8 +12,7 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let ctx = Context::new();
-    let chunk = match emit(ctx, "[[main]]", &module) {
+    let chunk = match emit(&Context::new(), "[[main]]", &module) {
       Ok(chunk) => chunk,
       Err(e) => {
         panic!("failed to emit chunk:\n{}", e.report(input));

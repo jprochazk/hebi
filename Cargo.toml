@@ -6,6 +6,7 @@ members = [
   "crates/span",
   "crates/syntax",
   "crates/value",
+  "crates/vm",
 ]
 
 # TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace

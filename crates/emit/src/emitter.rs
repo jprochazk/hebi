@@ -8,7 +8,7 @@ use value::object::{func, Func};
 use value::Value;
 
 pub fn emit<'src>(
-  ctx: Context,
+  ctx: &Context,
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
 ) -> Result<func::Func> {
@@ -32,11 +32,11 @@ struct EmitResult<'src> {
 }
 
 impl<'src> Emitter<'src> {
-  fn new(ctx: Context, name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
+  fn new(ctx: &Context, name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
     Self {
       state: Function::new(name, None),
       module,
-      ctx,
+      ctx: ctx.clone(),
     }
   }
 
@@ -343,6 +343,7 @@ mod stmt {
         ast::StmtKind::Expr(v) => self.emit_expr_stmt(v),
         ast::StmtKind::Pass => self.emit_pass_stmt(),
         ast::StmtKind::Print(v) => self.emit_print_stmt(v),
+        ast::StmtKind::Import(v) => self.emit_import_stmt(v),
       }
     }
 
@@ -598,6 +599,10 @@ mod stmt {
       }
 
       Ok(())
+    }
+
+    fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) -> Result<()> {
+      todo!()
     }
   }
 }

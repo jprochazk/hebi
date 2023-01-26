@@ -1,69 +1,10 @@
 use super::*;
 
 impl<'src> Parser<'src> {
-  pub(super) fn top_level_stmt(&mut self, module: &mut ast::Module<'src>) -> Result<()> {
+  pub(super) fn top_level_stmt(&mut self) -> Result<()> {
     self.indent_eq()?;
-
-    if self.bump_if(Kw_Import) {
-      self.import_stmt(module)?;
-    } else {
-      module.body.push(self.stmt()?)
-    }
-
-    Ok(())
-  }
-
-  fn import_stmt(&mut self, module: &mut ast::Module<'src>) -> Result<()> {
-    #[allow(clippy::ptr_arg)]
-    fn extend_path<'src>(p: &Vec<ast::Ident<'src>>, v: ast::Ident<'src>) -> Vec<ast::Ident<'src>> {
-      let mut p = p.clone();
-      p.push(v);
-      p
-    }
-
-    fn import_stmt_inner<'src>(
-      p: &mut Parser<'src>,
-      path: &Vec<ast::Ident<'src>>,
-      module: &mut ast::Module<'src>,
-    ) -> Result<()> {
-      check_recursion_limit(p.current().span)?;
-
-      let path = extend_path(path, p.ident()?);
-      if p.bump_if(Kw_As) {
-        let alias = Some(p.ident()?);
-        module.imports.push(ast::Import { path, alias });
-        return Ok(());
-      }
-
-      if p.bump_if(Op_Dot) {
-        if p.bump_if(Brk_CurlyL) {
-          import_stmt_inner(p, &path, module)?;
-          while p.bump_if(Tok_Comma) && !p.current().is(Brk_CurlyR) {
-            import_stmt_inner(p, &path, module)?;
-          }
-          p.expect(Brk_CurlyR)?;
-          return Ok(());
-        }
-
-        import_stmt_inner(p, &path, module)?;
-        return Ok(());
-      }
-
-      module.imports.push(ast::Import { path, alias: None });
-      Ok(())
-    }
-
-    let path = vec![];
-    if self.bump_if(Brk_CurlyL) {
-      import_stmt_inner(self, &path, module)?;
-      while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
-        import_stmt_inner(self, &path, module)?;
-      }
-      self.expect(Brk_CurlyR)?;
-    } else {
-      import_stmt_inner(self, &path, module)?;
-    }
-
+    let stmt = self.stmt()?;
+    self.module.body.push(stmt);
     Ok(())
   }
 
@@ -82,8 +23,62 @@ impl<'src> Parser<'src> {
       Kw_Loop => Some(self.loop_stmt()?),
       Kw_Fn => Some(self.func_stmt()?),
       Kw_Class => Some(self.class_stmt()?),
+      Kw_Import => Some(self.import_stmt()?),
       _ => None,
     })
+  }
+
+  fn import_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+    self.expect(Kw_Import)?;
+    let start = self.previous().span.start;
+
+    let mut symbols = vec![];
+    let path = vec![];
+    if self.bump_if(Brk_CurlyL) {
+      self.import_stmt_inner(&path, &mut symbols)?;
+      while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
+        self.import_stmt_inner(&path, &mut symbols)?;
+      }
+      self.expect(Brk_CurlyR)?;
+    } else {
+      self.import_stmt_inner(&path, &mut symbols)?;
+    }
+
+    let end = self.previous().span.end;
+
+    Ok(ast::import_stmt(start..end, symbols))
+  }
+
+  fn import_stmt_inner(
+    &mut self,
+    path: &Vec<ast::Ident<'src>>,
+    symbols: &mut Vec<ast::ImportSymbol<'src>>,
+  ) -> Result<()> {
+    check_recursion_limit(self.current().span)?;
+
+    let path = extend_path(path, self.ident()?);
+    if self.bump_if(Kw_As) {
+      let alias = self.ident()?;
+      symbols.push(ast::ImportSymbol::alias(path, alias));
+      return Ok(());
+    }
+
+    if self.bump_if(Op_Dot) {
+      if self.bump_if(Brk_CurlyL) {
+        self.import_stmt_inner(&path, symbols)?;
+        while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
+          self.import_stmt_inner(&path, symbols)?;
+        }
+        self.expect(Brk_CurlyR)?;
+        return Ok(());
+      }
+
+      self.import_stmt_inner(&path, symbols)?;
+      return Ok(());
+    }
+
+    symbols.push(ast::ImportSymbol::normal(path));
+    Ok(())
   }
 
   fn if_stmt(&mut self) -> Result<ast::Stmt<'src>> {
@@ -509,6 +504,13 @@ impl<'src> Parser<'src> {
     self.bump(); // bump operator
     Some(kind)
   }
+}
+
+#[allow(clippy::ptr_arg)]
+fn extend_path<'src>(p: &Vec<ast::Ident<'src>>, v: ast::Ident<'src>) -> Vec<ast::Ident<'src>> {
+  let mut p = p.clone();
+  p.push(v);
+  p
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -3,14 +3,6 @@ source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
 Module {
-    imports: [
-        Import {
-            path: [
-                "json",
-            ],
-            alias: None,
-        },
-    ],
     body: [
         Var(
             Var {
@@ -1913,6 +1905,18 @@ Module {
                     },
                 },
             ),
+        ),
+        Import(
+            Import {
+                symbols: [
+                    ImportSymbol {
+                        path: [
+                            "json",
+                        ],
+                        alias: None,
+                    },
+                ],
+            },
         ),
         Expr(
             SetVar(

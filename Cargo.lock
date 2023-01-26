@@ -193,6 +193,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mu_vm"
+version = "0.0.0"
+dependencies = [
+ "beef",
+ "indoc",
+ "insta",
+ "mu_op",
+ "mu_value",
+]
+
+[[package]]
 name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
