@@ -8,3 +8,7 @@ set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
 @miri *ARGS:
   INSTA_FORCE_PASS="true" MIRIFLAGS="-Zmiri-disable-isolation" cargo miri {{ARGS}}
+
+@time build:
+  cargo clean
+  cargo +nightly build --workspace --timings --release
