@@ -24,7 +24,7 @@ function <[[main]]>:
     11 | load_global [2]
     13 | store_reg r3
     15 | push_small_int value=2
-    20 | insert_to_dict_keyed [3], r1
+    20 | insert_to_dict_named [3], r1
     23 | call_kw r0, args=2
     26 | ret 
     27 | suspend 

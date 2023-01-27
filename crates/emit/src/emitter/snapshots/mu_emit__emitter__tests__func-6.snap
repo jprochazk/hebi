@@ -68,9 +68,9 @@ function <[[main]]>:
     39 | push_small_int value=2
     44 | store_reg r3
     46 | push_small_int value=3
-    51 | insert_to_dict_keyed [2], r1
+    51 | insert_to_dict_named [2], r1
     54 | push_small_int value=4
-    59 | insert_to_dict_keyed [3], r1
+    59 | insert_to_dict_named [3], r1
     62 | call_kw r0, args=2
     65 | ret 
     66 | suspend 

@@ -25,44 +25,44 @@ function <d>:
 
 function <c>:
   frame_size: 4
-  length: 9
+  length: 10
   const (length=1):
     0: <closure descriptor d n=1>
   code:
-    0 | create_closure [0]
-    2 | capture_slot slot=0
-    4 | store_reg r0
-    6 | push_none 
-    7 | ret 
-    8 | suspend 
+     0 | create_closure [0]
+     2 | capture_slot parent_slot=0, self_slot=0
+     5 | store_reg r0
+     7 | push_none 
+     8 | ret 
+     9 | suspend 
 
 function <b>:
   frame_size: 4
-  length: 9
+  length: 10
   const (length=1):
     0: <closure descriptor c n=1>
   code:
-    0 | create_closure [0]
-    2 | capture_slot slot=0
-    4 | store_reg r0
-    6 | push_none 
-    7 | ret 
-    8 | suspend 
+     0 | create_closure [0]
+     2 | capture_slot parent_slot=0, self_slot=0
+     5 | store_reg r0
+     7 | push_none 
+     8 | ret 
+     9 | suspend 
 
 function <a>:
   frame_size: 4
-  length: 16
+  length: 17
   const (length=1):
     0: <closure descriptor b n=1>
   code:
      0 | push_small_int value=0
      5 | store_reg r0
      7 | create_closure [0]
-     9 | capture_reg r0
-    11 | store_reg r1
-    13 | push_none 
-    14 | ret 
-    15 | suspend 
+     9 | capture_reg r0, slot=0
+    12 | store_reg r1
+    14 | push_none 
+    15 | ret 
+    16 | suspend 
 
 function <[[main]]>:
   frame_size: 0

@@ -20,11 +20,11 @@ function <[[main]]>:
      4 | create_empty_dict 
      5 | store_reg r1
      7 | push_small_int value=0
-    12 | insert_to_dict_keyed [1], r1
+    12 | insert_to_dict_named [1], r1
     15 | push_small_int value=1
-    20 | insert_to_dict_keyed [2], r1
+    20 | insert_to_dict_named [2], r1
     23 | push_small_int value=2
-    28 | insert_to_dict_keyed [3], r1
+    28 | insert_to_dict_named [3], r1
     31 | call_kw r0, args=0
     34 | ret 
     35 | suspend 

@@ -45,7 +45,7 @@ function <[[main]]>:
     11 | push_small_int value=1
     16 | store_reg r2
     18 | push_small_int value=2
-    23 | insert_to_dict_keyed [2], r1
+    23 | insert_to_dict_named [2], r1
     26 | call_kw r0, args=1
     29 | ret 
     30 | suspend 

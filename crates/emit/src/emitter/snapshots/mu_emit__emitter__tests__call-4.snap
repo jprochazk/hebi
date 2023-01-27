@@ -18,7 +18,7 @@ function <[[main]]>:
      4 | create_empty_dict 
      5 | store_reg r1
      7 | push_small_int value=0
-    12 | insert_to_dict_keyed [1], r1
+    12 | insert_to_dict_named [1], r1
     15 | call_kw r0, args=0
     18 | ret 
     19 | suspend 
