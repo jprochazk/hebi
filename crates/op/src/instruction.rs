@@ -128,9 +128,9 @@ instructions! {
   /// Push the value stored in the accumulator into a dictionary.
   ///
   /// ### Operands
-  /// - `key` - constant pool index of key.
+  /// - `name` - constant pool index of name.
   /// - `dict` - register index of dict.
-  InsertToDictKeyed (key: Const, dict: Reg),
+  InsertToDictNamed (name: Const, dict: Reg),
   /// Create a closure from `descriptor`.
   ///
   /// ### Operands
@@ -140,12 +140,14 @@ instructions! {
   ///
   /// ### Operands
   /// - `reg` - register index of the captured register.
-  CaptureReg (reg: Reg),
+  /// - `slot` - slot in capture list of closure in the accumulator.
+  CaptureReg (reg: Reg, slot: uv),
   /// Capture `slot` and store it in the captures of the closure stored in the accumulator.
   ///
   /// ### Operands
-  /// - `slot` - capture list index.
-  CaptureSlot (slot: uv),
+  /// - `parent_slot` - parent capture list index.
+  /// - `self_slot` - slot in capture list of closure in the accumulator.
+  CaptureSlot (parent_slot: uv, self_slot: uv),
 
   // jumps
   /// Jump forward by `offset`.

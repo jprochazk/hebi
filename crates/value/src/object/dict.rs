@@ -202,40 +202,31 @@ impl Dict {
   /// Return `true` if an equivalent to `key` exists in the map.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
-  where
-    Q: Hash + Equivalent<Key>,
-  {
-    self.inner.contains_key(key)
+  pub fn contains_key<E>(&self, key: impl TryInto<Key, Error = E>) -> Result<bool, E> {
+    Ok(self.inner.contains_key(&key.try_into()?))
   }
 
   /// Return a reference to the value stored for `key`, if it is present,
   /// else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
-  where
-    Q: Hash + Equivalent<Key>,
-  {
-    self.inner.get(key)
+  pub fn get<E>(&self, key: impl TryInto<Key, Error = E>) -> Result<Option<&Value>, E> {
+    Ok(self.inner.get(&key.try_into()?))
   }
 
   /// Return references to the key-value pair stored for `key`,
   /// if it is present, else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get_key_value<Q: ?Sized>(&self, key: &Q) -> Option<(&Key, &Value)>
-  where
-    Q: Hash + Equivalent<Key>,
-  {
-    self.inner.get_key_value(key)
+  pub fn get_key_value<E>(
+    &self,
+    key: impl TryInto<Key, Error = E>,
+  ) -> Result<Option<(&Key, &Value)>, E> {
+    Ok(self.inner.get_key_value(&key.try_into()?))
   }
 
-  pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
-  where
-    Q: Hash + Equivalent<Key>,
-  {
-    self.inner.get_mut(key)
+  pub fn get_mut<E>(&mut self, key: impl TryInto<Key, Error = E>) -> Result<Option<&mut Value>, E> {
+    Ok(self.inner.get_mut(&key.try_into()?))
   }
 
   /// Remove the last key-value pair
@@ -366,30 +357,9 @@ impl From<i32> for Key {
   }
 }
 
-impl Equivalent<i32> for Key {
-  fn equivalent(&self, key: &i32) -> bool {
-    match &self.0 {
-      KeyRepr::Int(v) => v == key,
-      _ => false,
-    }
-  }
-}
-
 impl<'a> From<&'a str> for Key {
   fn from(value: &'a str) -> Self {
     Key(KeyRepr::String(Ptr::new(Object::string(value))))
-  }
-}
-
-impl<'a> Equivalent<&'a str> for Key {
-  fn equivalent(&self, key: &&'a str) -> bool {
-    match &self.0 {
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        unsafe { v.borrow().as_string().unwrap_unchecked() == *key }
-      }
-      _ => false,
-    }
   }
 }
 
@@ -399,33 +369,9 @@ impl<'a> From<Cow<'a, str>> for Key {
   }
 }
 
-impl<'a> Equivalent<Cow<'a, str>> for Key {
-  fn equivalent(&self, key: &Cow<'a, str>) -> bool {
-    match &self.0 {
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        unsafe { v.borrow().as_string().unwrap_unchecked() == key.as_ref() }
-      }
-      _ => false,
-    }
-  }
-}
-
 impl From<String> for Key {
   fn from(value: String) -> Self {
     Key(KeyRepr::String(Ptr::new(Object::string(value))))
-  }
-}
-
-impl Equivalent<String> for Key {
-  fn equivalent(&self, key: &String) -> bool {
-    match &self.0 {
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        unsafe { v.borrow().as_string().unwrap_unchecked() == key.as_str() }
-      }
-      _ => false,
-    }
   }
 }
 

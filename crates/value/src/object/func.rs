@@ -1,5 +1,6 @@
 use beef::lean::Cow;
 
+use crate::ptr::{Ref, RefMut};
 use crate::Value;
 
 #[derive(Clone, Debug)]
@@ -36,7 +37,7 @@ impl Closure {
     );
 
     let captures = {
-      let descriptor = descriptor.as_closure_descriptor().unwrap();
+      let descriptor = unsafe { descriptor.as_closure_descriptor().unwrap_unchecked() };
       let mut v = Vec::with_capacity(descriptor.num_captures as usize);
       for _ in 0..descriptor.num_captures {
         v.push(Value::none());
@@ -48,6 +49,62 @@ impl Closure {
       descriptor,
       captures,
     }
+  }
+
+  fn func(&self) -> Ref<'_, Func> {
+    Ref::map(
+      unsafe { self.descriptor.as_closure_descriptor().unwrap_unchecked() },
+      |v| &v.func,
+    )
+  }
+
+  fn func_mut(&mut self) -> RefMut<'_, Func> {
+    RefMut::map(
+      unsafe {
+        self
+          .descriptor
+          .as_closure_descriptor_mut()
+          .unwrap_unchecked()
+      },
+      |v| &mut v.func,
+    )
+  }
+
+  pub fn name(&self) -> Ref<'_, str> {
+    Ref::map(self.func(), |v| v.name.as_ref())
+  }
+
+  pub fn frame_size(&self) -> u32 {
+    self.func().frame_size
+  }
+
+  pub fn code(&self) -> Ref<'_, [u8]> {
+    Ref::map(self.func(), |v| &v.code[..])
+  }
+
+  pub fn code_mut(&mut self) -> RefMut<'_, [u8]> {
+    RefMut::map(self.func_mut(), |v| &mut v.code[..])
+  }
+
+  pub fn const_pool(&self) -> Ref<'_, [Value]> {
+    Ref::map(self.func(), |v| &v.const_pool[..])
+  }
+
+  pub fn params(&self) -> Ref<'_, Params> {
+    Ref::map(self.func(), |v| &v.params)
+  }
+
+  pub fn disassemble<D>(
+    &self,
+    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
+    print_bytes: bool,
+  ) -> String
+  where
+    D: std::fmt::Display,
+  {
+    self
+      .func()
+      .disassemble(disassemble_instruction, print_bytes)
   }
 }
 
@@ -85,6 +142,10 @@ impl Func {
 
   pub fn code(&self) -> &[u8] {
     &self.code
+  }
+
+  pub fn code_mut(&mut self) -> &mut [u8] {
+    &mut self.code
   }
 
   pub fn const_pool(&self) -> &[Value] {

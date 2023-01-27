@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use beef::lean::Cow;
 use indexmap::IndexMap;
-use op::instruction::*;
+use op::*;
 use syntax::ast;
 use value::object::{func, Func};
 use value::Value;
@@ -50,7 +50,7 @@ impl<'src> Emitter<'src> {
 
     self.state.builder.patch(|instructions| {
       for instruction in instructions.iter_mut() {
-        op::instruction::update_registers(instruction, &register_map)
+        op::update_registers(instruction, &register_map)
       }
     });
 
@@ -107,7 +107,7 @@ impl<'src> Emitter<'src> {
 
     builder.patch(|instructions| {
       for instruction in instructions.iter_mut() {
-        op::instruction::update_registers(instruction, &register_map)
+        op::update_registers(instruction, &register_map)
       }
     });
 
@@ -453,8 +453,14 @@ mod stmt {
         self.emit_op(CreateClosure { descriptor });
         for (_, info) in result.captures.iter() {
           match &info.kind {
-            UpvalueKind::Register(reg) => self.emit_op(CaptureReg { reg: reg.index() }),
-            UpvalueKind::Capture(slot) => self.emit_op(CaptureSlot { slot: *slot }),
+            UpvalueKind::Register(reg) => self.emit_op(CaptureReg {
+              reg: reg.index(),
+              slot: info.slot,
+            }),
+            UpvalueKind::Capture(slot) => self.emit_op(CaptureSlot {
+              parent_slot: *slot,
+              self_slot: info.slot,
+            }),
           };
         }
       }
@@ -673,7 +679,7 @@ mod expr {
               reg: key_reg.index(),
             });
             self.emit_expr(v)?;
-            // TODO: use `InsertToDictKeyed for constant keys`
+            // TODO: use `InsertToDictNamed for constant keys`
             self.emit_op(InsertToDict {
               key: key_reg.index(),
               dict: temp.index(),
@@ -916,11 +922,11 @@ mod expr {
         self.emit_op(StoreReg { reg: reg.index() });
       }
 
-      for (key, value) in expr.args.kw.iter() {
-        let key = self.const_name(key);
+      for (name, value) in expr.args.kw.iter() {
+        let name = self.const_name(name);
         self.emit_expr(value)?;
-        self.emit_op(InsertToDictKeyed {
-          key,
+        self.emit_op(InsertToDictNamed {
+          name,
           dict: kw.as_ref().unwrap().index(),
         });
       }

@@ -20,7 +20,7 @@ macro_rules! check {
     };
     let snapshot = format!(
       "# Input:\n{input}\n\n# Chunk:\n{}",
-      chunk.disassemble(op::instruction::disassemble, false)
+      chunk.disassemble(op::disassemble, false)
     );
     insta::assert_snapshot!(snapshot);
   }};
