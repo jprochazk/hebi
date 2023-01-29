@@ -5,6 +5,8 @@ mod error;
 mod truth;
 mod util;
 
+// TODO: make the VM panic-less (other than debug asserts for unsafe things)
+
 pub use error::Error;
 use value::object::{dict, Closure, Dict};
 use value::Value;
