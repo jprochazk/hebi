@@ -1,0 +1,36 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+2 ?? none
+
+# Func:
+function <[[main]]>:
+  frame_size: 5
+  length: 24
+  const: <empty>
+  code:
+     0 | push_small_int value=2
+     5 | store_reg r4
+     7 | is_none 
+     8 | jump_if_false offset=13
+    10 | nop 
+    11 | nop 
+    12 | nop 
+    13 | nop 
+    14 | push_none 
+    15 | jump offset=8
+    17 | nop 
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | load_reg r4
+    23 | suspend 
+
+
+# Result (success):
+2
+
+# Stdout:
+

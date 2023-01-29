@@ -42,8 +42,8 @@ function <test>:
     41 | suspend 
 
 function <[[main]]>:
-  frame_size: 4
-  length: 67
+  frame_size: 8
+  length: 66
   const (length=4):
     0: <func test>
     1: "test"
@@ -53,25 +53,39 @@ function <[[main]]>:
      0 | load_const [0]
      2 | store_global [1]
      4 | load_global [1]
-     6 | store_reg r0
+     6 | store_reg r4
      8 | push_small_int value=1
-    13 | store_reg r1
+    13 | store_reg r5
     15 | push_small_int value=2
-    20 | store_reg r2
-    22 | call r0, args=2
+    20 | store_reg r6
+    22 | call r4, args=2
     25 | load_global [1]
-    27 | store_reg r0
+    27 | store_reg r6
     29 | create_empty_dict 
-    30 | store_reg r1
+    30 | store_reg r5
     32 | push_small_int value=1
-    37 | store_reg r2
+    37 | store_reg r4
     39 | push_small_int value=2
-    44 | store_reg r3
+    44 | store_reg r7
     46 | push_small_int value=3
-    51 | insert_to_dict_named [2], r1
+    51 | insert_to_dict_named [2], r5
     54 | push_small_int value=4
-    59 | insert_to_dict_named [3], r1
-    62 | call_kw r0, args=2
-    65 | ret 
-    66 | suspend 
+    59 | insert_to_dict_named [3], r5
+    62 | call_kw r6, args=2
+    65 | suspend 
 
+
+# Regalloc:
+r0  │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1  │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2  │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3  │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4  │                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r5  │                         ●━━━━━━━━━━━━━━━━━━━●
+r6  │                             ●━━━━━━━━━━━●
+r7  │                                                         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r8  │                                                                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r9  │                                                                         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r10  │                                                                             ●━━━━━━━━━━━━━━━━━━━●
+    ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  

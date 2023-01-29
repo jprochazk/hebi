@@ -7,8 +7,8 @@ f(a=0, b=1, c=2)
 
 # Func:
 function <[[main]]>:
-  frame_size: 2
-  length: 36
+  frame_size: 6
+  length: 35
   const (length=4):
     0: "f"
     1: "a"
@@ -16,16 +16,25 @@ function <[[main]]>:
     3: "c"
   code:
      0 | load_global [0]
-     2 | store_reg r0
+     2 | store_reg r4
      4 | create_empty_dict 
-     5 | store_reg r1
+     5 | store_reg r5
      7 | push_small_int value=0
-    12 | insert_to_dict_named [1], r1
+    12 | insert_to_dict_named [1], r5
     15 | push_small_int value=1
-    20 | insert_to_dict_named [2], r1
+    20 | insert_to_dict_named [2], r5
     23 | push_small_int value=2
-    28 | insert_to_dict_named [3], r1
-    31 | call_kw r0, args=0
-    34 | ret 
-    35 | suspend 
+    28 | insert_to_dict_named [3], r5
+    31 | call_kw r4, args=0
+    34 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r5 │                         ●━━━━━━━━━━━━━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  

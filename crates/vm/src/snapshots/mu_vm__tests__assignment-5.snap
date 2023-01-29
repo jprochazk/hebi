@@ -1,0 +1,34 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+v := 10
+v /= 2
+print v
+
+
+# Func:
+function <[[main]]>:
+  frame_size: 5
+  length: 24
+  const (length=1):
+    0: "v"
+  code:
+     0 | push_small_int value=10
+     5 | store_global [0]
+     7 | load_global [0]
+     9 | store_reg r4
+    11 | push_small_int value=2
+    16 | div r4
+    18 | store_global [0]
+    20 | load_global [0]
+    22 | print 
+    23 | suspend 
+
+
+# Result (success):
+5
+
+# Stdout:
+5

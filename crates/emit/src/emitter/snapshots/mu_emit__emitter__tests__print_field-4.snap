@@ -10,8 +10,8 @@ print ?v["a"]["b"]["c"]
 
 # Func:
 function <[[main]]>:
-  frame_size: 3
-  length: 39
+  frame_size: 7
+  length: 38
   const (length=4):
     0: "v"
     1: "a"
@@ -19,25 +19,37 @@ function <[[main]]>:
     3: "b"
   code:
      0 | create_empty_dict 
-     1 | store_reg r0
-     3 | load_reg r0
+     1 | store_reg r4
+     3 | load_reg r4
      5 | store_global [0]
      7 | load_const [1]
-     9 | store_reg r0
+     9 | store_reg r4
     11 | load_global [0]
-    13 | load_keyed_opt r0
+    13 | load_keyed_opt r4
     15 | print 
     16 | load_const [2]
-    18 | store_reg r0
+    18 | store_reg r4
     20 | load_const [3]
-    22 | store_reg r1
+    22 | store_reg r5
     24 | load_const [1]
-    26 | store_reg r2
+    26 | store_reg r6
     28 | load_global [0]
-    30 | load_keyed_opt r2
-    32 | load_keyed_opt r1
-    34 | load_keyed_opt r0
+    30 | load_keyed_opt r6
+    32 | load_keyed_opt r5
+    34 | load_keyed_opt r4
     36 | print 
-    37 | ret 
-    38 | suspend 
+    37 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━●
+r5 │                             ●━━━━━━━●
+r6 │                                         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r7 │                                                 ●━━━━━━━━━━━━━━━━━━━●
+r8 │                                                         ●━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21  22  23  

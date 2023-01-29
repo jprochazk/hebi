@@ -1,0 +1,22 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+true
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 2
+  const: <empty>
+  code:
+    0 | push_true 
+    1 | suspend 
+
+
+# Result (success):
+true
+
+# Stdout:
+

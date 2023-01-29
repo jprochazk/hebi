@@ -11,39 +11,41 @@ pub use error::Error;
 use value::object::{dict, Closure, Dict};
 use value::Value;
 
-pub struct Isolate {
+pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   // TODO: module registry
   globals: Dict,
   pc: usize,
   acc: Value,
   stack: Vec<Value>,
   call_stack: Vec<call::CallFrame>,
-  io: Box<dyn std::io::Write>,
+  io: Io,
 }
 
-impl Isolate {
+impl Isolate<std::io::Stdout> {
   #[allow(clippy::new_without_default)]
-  pub fn new() -> Self {
-    Self::with_io(std::io::stdout())
+  pub fn new() -> Isolate<std::io::Stdout> {
+    Isolate::<std::io::Stdout>::with_io(std::io::stdout())
   }
+}
 
-  pub fn with_io(io: impl std::io::Write + 'static) -> Self {
-    Self {
+impl<Io: std::io::Write> Isolate<Io> {
+  pub fn with_io(io: Io) -> Isolate<Io> {
+    Isolate {
       globals: Dict::new(),
       pc: 0,
       acc: Value::none(),
       stack: vec![],
       call_stack: vec![],
-      io: Box::new(io),
+      io,
     }
   }
 
-  pub fn get_io(&self) -> &dyn std::io::Write {
+  pub(crate) fn get_io(&self) -> &Io {
     &self.io
   }
 }
 
-impl op::Handler for Isolate {
+impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   type Error = Error;
 
   fn op_load_const(&mut self, slot: u32) -> Result<(), Self::Error> {
@@ -228,10 +230,12 @@ impl op::Handler for Isolate {
         return Err(Error::new(format!("undefined field {name}")));
       };
 
-      match obj.get(name) {
-        Some(v) => v.clone(),
-        None => Value::none(),
-      }
+      let Some(value) = obj.get(name.clone()) else {
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
+      };
+
+      value.clone()
     };
 
     self.acc = value;
@@ -581,7 +585,7 @@ impl op::Handler for Isolate {
 
   fn op_unary_not(&mut self) -> Result<(), Self::Error> {
     // TODO: overload
-    let value = truth::truthiness(self.acc.clone());
+    let value = !truth::truthiness(self.acc.clone());
 
     self.acc = Value::bool(value);
 

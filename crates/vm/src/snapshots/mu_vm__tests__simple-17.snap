@@ -1,0 +1,23 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
++2
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 7
+  const: <empty>
+  code:
+    0 | push_small_int value=2
+    5 | unary_plus 
+    6 | suspend 
+
+
+# Result (success):
+2
+
+# Stdout:
+

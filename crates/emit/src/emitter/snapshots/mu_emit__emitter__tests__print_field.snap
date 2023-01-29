@@ -10,27 +10,37 @@ v.a = 1
 
 # Func:
 function <[[main]]>:
-  frame_size: 2
-  length: 38
+  frame_size: 6
+  length: 37
   const (length=2):
     0: "a"
     1: "v"
   code:
      0 | create_empty_dict 
-     1 | store_reg r0
+     1 | store_reg r4
      3 | load_const [0]
-     5 | store_reg r1
+     5 | store_reg r5
      7 | push_small_int value=0
-    12 | insert_to_dict r1, r0
-    15 | load_reg r0
+    12 | insert_to_dict r5, r4
+    15 | load_reg r4
     17 | store_global [1]
     19 | load_global [1]
     21 | load_named [0]
     23 | print 
     24 | load_global [1]
-    26 | store_reg r0
+    26 | store_reg r5
     28 | push_small_int value=1
-    33 | store_named [0], r0
-    36 | ret 
-    37 | suspend 
+    33 | store_named [0], r5
+    36 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━●
+r5 │                         ●━━━━━━━●
+r6 │                                             ●━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  

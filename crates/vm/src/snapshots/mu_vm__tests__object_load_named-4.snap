@@ -1,0 +1,37 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v.a
+print v.a
+
+
+# Func:
+function <[[main]]>:
+  frame_size: 5
+  length: 18
+  const (length=2):
+    0: "v"
+    1: "a"
+  code:
+     0 | create_empty_dict 
+     1 | store_reg r4
+     3 | load_reg r4
+     5 | store_global [0]
+     7 | load_global [0]
+     9 | load_named_opt [1]
+    11 | print 
+    12 | load_global [0]
+    14 | load_named [1]
+    16 | print 
+    17 | suspend 
+
+
+# Result (error):
+[31merror[0m in code: undefined field "a"
+
+
+# Stdout:
+none

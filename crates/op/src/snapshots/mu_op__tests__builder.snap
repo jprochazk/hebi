@@ -3,7 +3,7 @@ source: crates/op/src/tests.rs
 expression: chunk.disassemble(false)
 ---
 function <test>:
-  length: 75
+  length: 72
   const_pool (length=3):
     0 = "test"
     1 = 123456789
@@ -39,7 +39,4 @@ function <test>:
     65 | push_small_int value=-2147483648
     70 | ret 
     71 | suspend 
-    72 | push_none 
-    73 | ret 
-    74 | suspend 
 

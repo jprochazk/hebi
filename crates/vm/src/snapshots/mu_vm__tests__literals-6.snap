@@ -1,0 +1,23 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+1.5e3
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 3
+  const (length=1):
+    0: 1500
+  code:
+    0 | load_const [0]
+    2 | suspend 
+
+
+# Result (success):
+1500
+
+# Stdout:
+

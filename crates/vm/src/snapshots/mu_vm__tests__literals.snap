@@ -1,0 +1,22 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+none
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 2
+  const: <empty>
+  code:
+    0 | push_none 
+    1 | suspend 
+
+
+# Result (success):
+none
+
+# Stdout:
+

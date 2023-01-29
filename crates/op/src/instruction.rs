@@ -539,6 +539,10 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
     f(&mut self.instructions)
   }
 
+  pub fn instructions(&self) -> &[Instruction] {
+    &self.instructions
+  }
+
   /// Finalize the bytecode, and emit a [`Chunk`][`crate::Chunk`].
   ///
   /// Bytecode is finalized by emitting the bytes required to run the specified
@@ -560,10 +564,10 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
     let mut used_labels = HashSet::new();
 
     // functions without a final `return` always return `none`
-    if !matches!(instructions.last(), Some(Instruction::Ret(..))) {
+    /* if !matches!(instructions.last(), Some(Instruction::Ret(..))) {
       instructions.push(Instruction::PushNone(PushNone));
       instructions.push(Instruction::Ret(Ret));
-    }
+    } */
 
     // ensure bytecode is terminated by `op_suspend`,
     // so that the dispatch loop stops

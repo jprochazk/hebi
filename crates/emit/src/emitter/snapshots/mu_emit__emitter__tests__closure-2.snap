@@ -50,7 +50,7 @@ function <b>:
      9 | suspend 
 
 function <a>:
-  frame_size: 6
+  frame_size: 5
   length: 17
   const (length=1):
     0: <closure descriptor b n=1>
@@ -59,20 +59,27 @@ function <a>:
      5 | store_reg r4
      7 | create_closure [0]
      9 | capture_reg r4, slot=0
-    12 | store_reg r5
+    12 | store_reg r4
     14 | push_none 
     15 | ret 
     16 | suspend 
 
 function <[[main]]>:
-  frame_size: 0
-  length: 6
+  frame_size: 4
+  length: 5
   const (length=2):
     0: <func a>
     1: "a"
   code:
     0 | load_const [0]
     2 | store_global [1]
-    4 | ret 
-    5 | suspend 
+    4 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

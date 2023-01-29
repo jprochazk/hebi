@@ -17,6 +17,9 @@ pub fn emit<'src>(
     .map(|result| Value::from(result.func))
 }
 
+// TODO: look at regalloc graphs for emitter tests
+// they don't seem to be right
+
 use crate::regalloc::{RegAlloc, Register};
 use crate::{Context, Error, Result};
 
@@ -29,6 +32,8 @@ struct Emitter<'src> {
 struct EmitResult<'src> {
   func: Func,
   captures: IndexMap<Cow<'src, str>, Upvalue>,
+  #[cfg(test)]
+  regalloc: RegAlloc,
 }
 
 impl<'src> Emitter<'src> {
@@ -41,10 +46,12 @@ impl<'src> Emitter<'src> {
   }
 
   fn emit_main(mut self) -> Result<EmitResult<'src>> {
+    let regs = [self.reg(), self.reg(), self.reg(), self.reg()];
+    self.state.preserve.extend(regs);
+
     for stmt in self.module.body.iter() {
       self.emit_stmt(stmt)?;
     }
-    self.emit_op(Ret);
 
     for reg in self.state.preserve.iter().rev() {
       reg.index();
@@ -79,6 +86,8 @@ impl<'src> Emitter<'src> {
         },
       ),
       captures: Default::default(),
+      #[cfg(test)]
+      regalloc: self.state.regalloc.clone(),
     })
   }
 
@@ -126,6 +135,8 @@ impl<'src> Emitter<'src> {
     Ok(EmitResult {
       func: Func::new(name, frame_size, bytecode, const_pool, params),
       captures,
+      #[cfg(test)]
+      regalloc: self.state.regalloc.clone(),
     })
   }
 
@@ -454,6 +465,14 @@ mod stmt {
 
         for reg in this.state.preserve.iter().rev() {
           reg.index();
+        }
+
+        if !matches!(
+          this.state.builder.instructions().last(),
+          Some(Instruction::Ret(..))
+        ) {
+          this.emit_op(PushNone);
+          this.emit_op(Ret);
         }
 
         Ok(())
@@ -789,11 +808,16 @@ mod expr {
             if v is none:
               v = <right>
           */
-          let end = self.label("end");
+          let [lhs, end] = self.labels(["lhs", "end"]);
+          let reg = self.reg();
           self.emit_expr(&expr.left)?;
+          self.emit_op(StoreReg { reg: reg.index() });
           self.emit_op(IsNone);
-          self.emit_op(JumpIfFalse { offset: end.id() });
+          self.emit_op(JumpIfFalse { offset: lhs.id() });
           self.emit_expr(&expr.right)?;
+          self.emit_op(Jump { offset: end.id() });
+          self.finish_label(lhs);
+          self.emit_op(LoadReg { reg: reg.index() });
           self.finish_label(end);
         }
         _ => unreachable!("not a logical expr: {:?}", expr.op),

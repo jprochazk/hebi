@@ -7,7 +7,7 @@ use value::Value;
 use crate::util::JoinIter;
 use crate::{Error, Isolate};
 
-impl Isolate {
+impl<Io: std::io::Write> Isolate<Io> {
   pub fn call(&mut self, f: Value, args: &[Value], kw: Dict) -> Result<Value, Error> {
     // # Check that callee is callable
     if !f.is_func() && !f.is_closure() {
@@ -18,12 +18,9 @@ impl Isolate {
     let params = check_args(f.clone(), args, &kw)?;
 
     let parent_pc = self.pc;
-    // TODO: minimum 4 stack slots
-    // this doesn't work because we're using frame_size which may be 0 (for <main>)
     let stack_base = match self.call_stack.last() {
       Some(frame) => frame.stack_base + frame.frame_size,
-      // at minimum, we need 4 stack slots
-      None => 4,
+      None => 0,
     };
 
     // # Create a new call frame

@@ -10,8 +10,8 @@ print ?v.a.b.c
 
 # Func:
 function <[[main]]>:
-  frame_size: 1
-  length: 23
+  frame_size: 5
+  length: 22
   const (length=4):
     0: "v"
     1: "a"
@@ -19,8 +19,8 @@ function <[[main]]>:
     3: "b"
   code:
      0 | create_empty_dict 
-     1 | store_reg r0
-     3 | load_reg r0
+     1 | store_reg r4
+     3 | load_reg r4
      5 | store_global [0]
      7 | load_global [0]
      9 | load_named_opt [1]
@@ -30,6 +30,14 @@ function <[[main]]>:
     16 | load_named_opt [3]
     18 | load_named_opt [2]
     20 | print 
-    21 | ret 
-    22 | suspend 
+    21 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  

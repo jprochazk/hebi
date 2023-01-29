@@ -66,6 +66,7 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
+#[derive(Clone)]
 pub struct RegAlloc(Rc<RefCell<Tracking>>);
 
 impl RegAlloc {
@@ -95,9 +96,14 @@ impl RegAlloc {
   /// Returns a tuple of:
   /// 0. The total number of used registers
   /// 1. A mapping from each register index to a final register slot
-  pub fn scan(self) -> (u32, IndexMap<u32, u32>) {
-    println!("{}", DisplayTracking(&self.0.borrow()));
+  pub fn scan(&self) -> (u32, IndexMap<u32, u32>) {
+    // println!("{}", DisplayTracking(&self.0.borrow()));
     linear_scan(&self.0.borrow().intervals)
+  }
+
+  #[cfg(test)]
+  pub(crate) fn get_tracking(&self) -> Rc<RefCell<Tracking>> {
+    self.0.clone()
   }
 }
 
@@ -174,14 +180,14 @@ fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
     pub fn sort_by_end(&mut self) {
       self.scratch.clear();
       self.scratch.extend(self.map.values().map(|v| v.0));
-      self.scratch.sort_unstable_by_key(|v| v.index);
+      self.scratch.sort_unstable_by(|a, b| a.end.cmp(&b.end));
     }
   }
 
   (registers, mapping)
 }
 
-struct Tracking {
+pub(crate) struct Tracking {
   intervals: Vec<Interval>,
   event: usize,
 }
@@ -223,7 +229,7 @@ struct Interval {
   end: usize,
 }
 
-struct DisplayTracking<'a>(&'a Tracking);
+pub(crate) struct DisplayTracking<'a>(pub(crate) &'a Tracking);
 
 impl<'a> std::fmt::Display for DisplayTracking<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -245,14 +251,14 @@ impl<'a> std::fmt::Display for DisplayTracking<'a> {
     for (index, interval) in this.intervals.iter().enumerate() {
       write!(f, "r{index}{:w$} │ ", "", w = index_align)?;
       for _ in 0..interval.start {
-        write!(f, "   ")?;
+        write!(f, "    ")?;
       }
-      write!(f, "●━━")?;
+      write!(f, "●━━━")?;
       for v in interval.start + 1..interval.end {
         if v == interval.end {
           break;
         }
-        write!(f, "━━━")?;
+        write!(f, "━━━━")?;
       }
       writeln!(f, "●")?;
 
@@ -269,7 +275,7 @@ impl<'a> std::fmt::Display for DisplayTracking<'a> {
     )?;
     write!(f, "  {0:w$}   ", "", w = index_align)?;
     for i in 0..=steps {
-      write!(f, "{i}  ")?;
+      write!(f, "{i:02}  ")?;
     }
 
     Ok(())

@@ -184,15 +184,15 @@ impl<'a> Report<'a> {
       symbol: colors::style().blue(),
     };
 
-    // {level}: {message}
-    writeln!(
-      w,
-      "{}: {}",
-      style.level(format!("{}", self.level)),
-      self.message
-    )?;
-
     if let Some(span) = self.span {
+      // {level}: {message}
+      writeln!(
+        w,
+        "{}: {}",
+        style.level(format!("{}", self.level)),
+        self.message
+      )?;
+
       if self.source.str().get(Range::from(span)).is_none() {
         return Err(EmitError::OutOfBounds);
       }
@@ -314,12 +314,13 @@ impl<'a> Report<'a> {
       // empty line at the end for symmetry
       writeln!(w, "{pipe} ")?;
     } else {
-      // > {file.name}
+      // {level} in {file}: {message}
       writeln!(
         w,
-        "{} {}",
-        style.symbol(">"),
+        "{} in {}: {}",
+        style.level(format!("{}", self.level)),
         self.source.name().unwrap_or("code"),
+        self.message
       )?;
     }
 

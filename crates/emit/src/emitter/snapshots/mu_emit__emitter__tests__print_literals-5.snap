@@ -7,29 +7,40 @@ print { a: 0, b: 1, c: 2 }
 
 # Func:
 function <[[main]]>:
-  frame_size: 4
-  length: 44
+  frame_size: 6
+  length: 43
   const (length=3):
     0: "a"
     1: "b"
     2: "c"
   code:
      0 | create_empty_dict 
-     1 | store_reg r0
+     1 | store_reg r4
      3 | load_const [0]
-     5 | store_reg r1
+     5 | store_reg r5
      7 | push_small_int value=0
-    12 | insert_to_dict r1, r0
+    12 | insert_to_dict r5, r4
     15 | load_const [1]
-    17 | store_reg r2
+    17 | store_reg r5
     19 | push_small_int value=1
-    24 | insert_to_dict r2, r0
+    24 | insert_to_dict r5, r4
     27 | load_const [2]
-    29 | store_reg r3
+    29 | store_reg r5
     31 | push_small_int value=2
-    36 | insert_to_dict r3, r0
-    39 | load_reg r0
+    36 | insert_to_dict r5, r4
+    39 | load_reg r4
     41 | print 
-    42 | ret 
-    43 | suspend 
+    42 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r5 │                         ●━━━━━━━●
+r6 │                                         ●━━━━━━━●
+r7 │                                                         ●━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21  22  23  

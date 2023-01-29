@@ -1,0 +1,28 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+1 + 2 * 3
+
+# Func:
+function <[[main]]>:
+  frame_size: 6
+  length: 24
+  const: <empty>
+  code:
+     0 | push_small_int value=1
+     5 | store_reg r4
+     7 | push_small_int value=2
+    12 | store_reg r5
+    14 | push_small_int value=3
+    19 | mul r5
+    21 | add r4
+    23 | suspend 
+
+
+# Result (success):
+7
+
+# Stdout:
+

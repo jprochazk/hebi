@@ -1,0 +1,33 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+true || false
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 15
+  const: <empty>
+  code:
+     0 | push_true 
+     1 | jump_if_false offset=12
+     3 | nop 
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | jump offset=7
+     9 | nop 
+    10 | nop 
+    11 | nop 
+    12 | nop 
+    13 | push_false 
+    14 | suspend 
+
+
+# Result (success):
+true
+
+# Stdout:
+

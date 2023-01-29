@@ -1,0 +1,25 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+"\tas\\df\u{2800}\x28\n"
+
+# Func:
+function <[[main]]>:
+  frame_size: 4
+  length: 3
+  const (length=1):
+    0: "	as\df⠀(
+"
+  code:
+    0 | load_const [0]
+    2 | suspend 
+
+
+# Result (success):
+"	as\df⠀(
+"
+
+# Stdout:
+

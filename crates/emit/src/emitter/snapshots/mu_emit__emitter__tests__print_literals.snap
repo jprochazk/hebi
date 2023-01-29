@@ -7,12 +7,19 @@ print 0
 
 # Func:
 function <[[main]]>:
-  frame_size: 0
-  length: 8
+  frame_size: 4
+  length: 7
   const: <empty>
   code:
     0 | push_small_int value=0
     5 | print 
-    6 | ret 
-    7 | suspend 
+    6 | suspend 
 
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

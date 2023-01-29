@@ -12,16 +12,20 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let func = match emit(&Context::new(), "[[main]]", &module) {
-      Ok(func) => func,
+    let result = match Emitter::new(&Context::new(), "[[main]]", &module).emit_main() {
+      Ok(result) => result,
       Err(e) => {
         panic!("failed to emit func:\n{}", e.report(input));
       }
     };
+    let tracking = result.regalloc.get_tracking();
+    let tracking = tracking.borrow();
+    let func = Value::from(result.func);
     let func = func.as_func().unwrap();
     let snapshot = format!(
-      "# Input:\n{input}\n\n# Func:\n{}",
-      func.disassemble(op::disassemble, false)
+      "# Input:\n{input}\n\n# Func:\n{}\n\n# Regalloc:\n{}",
+      func.disassemble(op::disassemble, false),
+      crate::regalloc::DisplayTracking(&tracking),
     );
     insta::assert_snapshot!(snapshot);
   }};
