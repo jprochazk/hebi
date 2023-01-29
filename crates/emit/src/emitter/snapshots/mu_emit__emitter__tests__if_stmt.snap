@@ -11,7 +11,7 @@ else:
   print c
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 0
   length: 37

@@ -8,6 +8,7 @@ members = [
   "crates/value",
   "crates/vm",
 ]
+resolver = "2"
 
 # TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
 # will make it easier to update

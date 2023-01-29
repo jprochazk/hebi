@@ -6,7 +6,7 @@ expression: snapshot
 print v # load_global
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 0
   length: 5

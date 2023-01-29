@@ -17,6 +17,6 @@ pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>, Error> {
     }
   }
 
-  // TODO: error message
-  Err(Error)
+  // TODO: span + print types
+  Err(Error::new("cannot compare values"))
 }

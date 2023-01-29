@@ -13,6 +13,7 @@ use std::ops::{Index, IndexMut, RangeBounds};
 use beef::lean::Cow;
 use indexmap::{map, Equivalent, IndexMap};
 
+use crate::ptr::Ref;
 use crate::{Object, Ptr, Value};
 
 type Inner = IndexMap<Key, Value>;
@@ -180,53 +181,43 @@ impl Dict {
   ///
   /// See also [`entry`](#method.entry) if you you want to insert *or* modify
   /// or if you need to get the index of the corresponding key-value pair.
-  pub fn insert<E>(
-    &mut self,
-    key: impl TryInto<Key, Error = E>,
-    value: Value,
-  ) -> Result<Option<Value>, E> {
-    Ok(self.inner.insert(key.try_into()?, value))
+  pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
+    self.inner.insert(key, value)
   }
 
   /// Get the given key’s corresponding entry in the map for insertion and/or
   /// in-place manipulation.
   ///
   /// Computes in **O(1)** time (amortized average).
-  pub fn entry<E>(
-    &mut self,
-    key: impl TryInto<Key, Error = E>,
-  ) -> Result<map::Entry<'_, Key, Value>, E> {
-    Ok(self.inner.entry(key.try_into()?))
+  pub fn entry(&mut self, key: Key) -> map::Entry<'_, Key, Value> {
+    self.inner.entry(key)
   }
 
   /// Return `true` if an equivalent to `key` exists in the map.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn contains_key<E>(&self, key: impl TryInto<Key, Error = E>) -> Result<bool, E> {
-    Ok(self.inner.contains_key(&key.try_into()?))
+  pub fn contains_key(&self, key: Key) -> bool {
+    self.inner.contains_key(&key)
   }
 
   /// Return a reference to the value stored for `key`, if it is present,
   /// else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get<E>(&self, key: impl TryInto<Key, Error = E>) -> Result<Option<&Value>, E> {
-    Ok(self.inner.get(&key.try_into()?))
+  pub fn get(&self, key: Key) -> Option<&Value> {
+    self.inner.get(&key)
   }
 
   /// Return references to the key-value pair stored for `key`,
   /// if it is present, else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get_key_value<E>(
-    &self,
-    key: impl TryInto<Key, Error = E>,
-  ) -> Result<Option<(&Key, &Value)>, E> {
-    Ok(self.inner.get_key_value(&key.try_into()?))
+  pub fn get_key_value(&self, key: Key) -> Option<(&Key, &Value)> {
+    self.inner.get_key_value(&key)
   }
 
-  pub fn get_mut<E>(&mut self, key: impl TryInto<Key, Error = E>) -> Result<Option<&mut Value>, E> {
-    Ok(self.inner.get_mut(&key.try_into()?))
+  pub fn get_mut(&mut self, key: Key) -> Option<&mut Value> {
+    self.inner.get_mut(&key)
   }
 
   /// Remove the last key-value pair
@@ -336,6 +327,18 @@ impl Dict {
 
 #[derive(Clone)]
 pub struct Key(pub(crate) KeyRepr);
+
+impl Key {
+  pub fn as_str(&self) -> Option<Ref<'_, str>> {
+    match &self.0 {
+      KeyRepr::String(v) => Some(Ref::map(v.borrow(), |v| {
+        debug_assert!(v.is_string());
+        unsafe { v.as_string().unwrap_unchecked().as_str() }
+      })),
+      KeyRepr::Int(_) => None,
+    }
+  }
+}
 
 /// The dictionary key type.
 ///

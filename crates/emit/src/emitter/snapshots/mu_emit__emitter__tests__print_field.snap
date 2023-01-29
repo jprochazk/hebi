@@ -8,7 +8,7 @@ print v.a
 v.a = 1
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 2
   length: 38

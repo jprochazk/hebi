@@ -139,64 +139,47 @@ macro_rules! instruction_dispatch {
   ($Handler:ident; $name:ident, ()) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      fn [<op_ $name:snake>]<H: $Handler>(
+      unsafe fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: &mut Vec<u8>,
-        pc: &mut usize,
-        opcode: &mut u8,
+        _: std::ptr::NonNull<[u8]>,
+        pc: std::ptr::NonNull<usize>,
         width: &mut Width,
         result: &mut Result<(), H::Error>,
       ) {
-        if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc).1);
-        }
-
         *result = vm.[<op_ $name:snake>]();
-        *pc += 1;
+        *pc.as_ptr() += 1;
         *width = Width::Single;
-        *opcode = bc[*pc];
       }
     }
   };
   ($Handler:ident; $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      fn [<op_ $name:snake>]<H: $Handler>(
+      unsafe fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: &mut Vec<u8>,
-        pc: &mut usize,
-        opcode: &mut u8,
+        bc: std::ptr::NonNull<[u8]>,
+        pc: std::ptr::NonNull<usize>,
         width: &mut Width,
         result: &mut Result<(), H::Error>,
       ) {
-        if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc).1);
-        }
-
-        let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
+        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
         *result = vm.[<op_ $name:snake>]($($operand),*);
-        *pc += 1 + <$name as Decode>::Operands::size(*width);
+        *pc.as_ptr() += 1 + <$name as Decode>::Operands::size(*width);
         *width = Width::Single;
-        *opcode = bc[*pc];
       }
     }
   };
   ($Handler:ident; :jump $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      fn [<op_ $name:snake>]<H: $Handler>(
+      unsafe fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: &mut Vec<u8>,
-        pc: &mut usize,
-        opcode: &mut u8,
+        bc: std::ptr::NonNull<[u8]>,
+        pc: std::ptr::NonNull<usize>,
         width: &mut Width,
         result: &mut Result<(), H::Error>,
       ) {
-        if cfg!(feature = "disassembly") {
-          println!("{}", disassemble(bc, *pc).1);
-        }
-
-        let ($($operand),*) = <$name>::decode(bc, *pc + 1, *width);
+        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
         handle_jump(
           vm.[<op_ $name:snake>]($($operand),*),
           pc,
@@ -204,7 +187,6 @@ macro_rules! instruction_dispatch {
           result
         );
         *width = Width::Single;
-        *opcode = bc[*pc];
       }
     }
   };
@@ -319,45 +301,39 @@ macro_rules! instructions {
     );
 
     #[allow(clippy::ptr_arg)]
-    fn op_nop<H: $Handler>(
+    unsafe fn op_nop<H: $Handler>(
       _: &mut H,
-      bc: &mut Vec<u8>,
-      pc: &mut usize,
-      opcode: &mut u8,
+      _: std::ptr::NonNull<[u8]>,
+      pc: std::ptr::NonNull<usize>,
       width: &mut Width,
       _: &mut Result<(), H::Error>,
     ) {
-      *pc += 1;
+      *pc.as_ptr() += 1;
       *width = Width::Single;
-      *opcode = bc[*pc];
     }
 
     #[allow(clippy::ptr_arg)]
-    fn op_wide<H: $Handler>(
+    unsafe fn op_wide<H: $Handler>(
       _: &mut H,
-      bc: &mut Vec<u8>,
-      pc: &mut usize,
-      opcode: &mut u8,
+      _: std::ptr::NonNull<[u8]>,
+      pc: std::ptr::NonNull<usize>,
       width: &mut Width,
       _: &mut Result<(), H::Error>,
     ) {
-      *pc += 1;
+      *pc.as_ptr() += 1;
       *width = Width::Double;
-      *opcode = bc[*pc];
     }
 
     #[allow(clippy::ptr_arg)]
-    fn op_extra_wide<H: $Handler>(
+    unsafe fn op_extra_wide<H: $Handler>(
       _: &mut H,
-      bc: &mut Vec<u8>,
-      pc: &mut usize,
-      opcode: &mut u8,
+      _: std::ptr::NonNull<[u8]>,
+      pc: std::ptr::NonNull<usize>,
       width: &mut Width,
       _: &mut Result<(), H::Error>,
     ) {
-      *pc += 1;
+      *pc.as_ptr() += 1;
       *width = Width::Quad;
-      *opcode = bc[*pc];
     }
 
     instruction_base!(
@@ -384,23 +360,39 @@ macro_rules! instructions {
       }
     }
 
+    /// Execute bytecode in `bc` starting at `pc`.
+    ///
+    /// Handles decoding variable-width operands,
+    /// and delegates implementation to `vm`.
+    ///
+    /// # Safety
+    ///
+    /// `bc` and `pc` must be valid pointers, as defined in https://doc.rust-lang.org/std/ptr/index.html#safety.
     #[inline(never)]
-    pub fn $run<H: $Handler>(vm: &mut H, bc: &mut Vec<u8>, pc: &mut usize) -> Result<(), H::Error> {
-      let opcode = &mut (bc[*pc].clone());
-      let width = &mut Width::Single;
+    pub unsafe fn $run<H: $Handler>(vm: &mut H, bc: std::ptr::NonNull<[u8]>, pc: std::ptr::NonNull<usize>) -> Result<(), H::Error> {
+      #[inline]
+      unsafe fn read_at(a: std::ptr::NonNull<[u8]>, i: std::ptr::NonNull<usize>) -> u8 {
+        let i = std::ptr::read(i.as_ptr());
+        std::ptr::read(a.cast::<u8>().as_ptr().add(i))
+      }
+
+      let mut opcode = read_at(bc, pc);
+      let mut width = Width::Single;
       let mut result = Ok(());
       while result.is_ok() {
+        let width = &mut width;
         let result = &mut result;
-        match *opcode {
-          ops::$Nop => op_nop(vm, bc, pc, opcode, width, result),
-          ops::$Wide => op_wide(vm, bc, pc, opcode, width, result),
-          ops::$ExtraWide => op_extra_wide(vm, bc, pc, opcode, width, result),
+        match opcode {
+          ops::$Nop => op_nop(vm, bc, pc, width, result),
+          ops::$Wide => op_wide(vm, bc, pc, width, result),
+          ops::$ExtraWide => op_extra_wide(vm, bc, pc, width, result),
           $(
-            ops::$name => paste!([<op_ $name:snake>])(vm, bc, pc, opcode, width, result),
+            ops::$name => paste!([<op_ $name:snake>])(vm, bc, pc, width, result),
           )*
           ops::$Suspend => break,
-          _ => panic!("malformed bytecode: invalid opcode {}", *opcode),
+          _ => panic!("malformed bytecode: invalid opcode {}", opcode),
         }
+        opcode = read_at(bc, pc);
       }
       result
     }

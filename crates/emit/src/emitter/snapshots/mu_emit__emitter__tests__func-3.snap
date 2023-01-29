@@ -10,9 +10,9 @@ test(1)
 test(1, 2)
 
 
-# Chunk:
+# Func:
 function <test>:
-  frame_size: 6
+  frame_size: 7
   length: 31
   const: <empty>
   code:
@@ -25,12 +25,12 @@ function <test>:
      8 | push_small_int value=10
     13 | store_reg r5
     15 | create_empty_list 
-    16 | store_reg r0
+    16 | store_reg r6
     18 | load_reg r4
-    20 | push_to_list r0
+    20 | push_to_list r6
     22 | load_reg r5
-    24 | push_to_list r0
-    26 | print_list r0
+    24 | push_to_list r6
+    26 | print_list r6
     28 | push_none 
     29 | ret 
     30 | suspend 

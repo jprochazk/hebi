@@ -10,7 +10,7 @@ else:
   print b
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 1
   length: 26

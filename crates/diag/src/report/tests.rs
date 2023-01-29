@@ -126,7 +126,7 @@ fn emit_report_single_line() {
     level: Level::Error,
     source: Source::file("test.mu", "let x = 10\nlet y = 20;"),
     message: "expected semicolon".into(),
-    span: (10..11).into(),
+    span: Some((10..11).into()),
     label: None,
     color: true,
   };
@@ -139,7 +139,7 @@ fn emit_report_multi_line() {
     level: Level::Error,
     source: Source::file("test.mu", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
     message: "mismatched type".into(),
-    span: (13..36).into(),
+    span: Some((13..36).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
     color: true,
   };
@@ -155,7 +155,7 @@ fn emit_report_multi_line_large() {
       "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n  c: 0,\n  d: 0,\n  e: 0,\n  f: 0,\n  g: 0,\n};",
     ),
     message: "mismatched type".into(),
-    span: (13..76).into(),
+    span: Some((13..76).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
     color: true,
   };
@@ -168,7 +168,7 @@ fn emit_report_single_line_no_color() {
     level: Level::Error,
     source: Source::file("test.mu", "let x = 10\nlet y = 20;"),
     message: "expected semicolon".into(),
-    span: (10..11).into(),
+    span: Some((10..11).into()),
     label: None,
     color: false,
   };
@@ -181,7 +181,7 @@ fn emit_report_multi_line_no_color() {
     level: Level::Error,
     source: Source::file("test.mu", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
     message: "mismatched type".into(),
-    span: (13..36).into(),
+    span: Some((13..36).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
     color: false,
   };
@@ -197,7 +197,7 @@ fn emit_report_multi_line_large_no_color() {
       "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n  c: 0,\n  d: 0,\n  e: 0,\n  f: 0,\n  g: 0,\n};",
     ),
     message: "mismatched type".into(),
-    span: (13..76).into(),
+    span: Some((13..76).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
     color: false,
   };
@@ -210,7 +210,7 @@ fn emit_report_multi_line_edge_case_sandwiched_newline() {
     level: Level::Error,
     source: Source::file("test.mu", "\"\n\\"),
     message: "invalid character sequence".into(),
-    span: (0..2).into(),
+    span: Some((0..2).into()),
     label: None,
     color: false,
   };
@@ -223,7 +223,7 @@ fn emit_report_multi_line_edge_case_sandwiched_newline_2() {
     level: Level::Error,
     source: Source::file("test.mu", "\0\"\nl\n\n\n\n\\"),
     message: "invalid character sequence".into(),
-    span: (1..8).into(),
+    span: Some((1..8).into()),
     label: None,
     color: false,
   };

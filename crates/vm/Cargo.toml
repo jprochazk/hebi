@@ -9,7 +9,12 @@ edition = "2021"
 beef = "0.5.2"
 op = { path = "../op", package = "mu_op" }
 value = { path = "../value", package = "mu_value" }
+diag = { path = "../diag", package = "mu_diag" }
+span = { path = "../span", package = "mu_span" }
+indexmap = "1.9.2"
 
 [dev-dependencies]
 indoc = "1.0.8"
 insta = "1.23.0"
+syntax = { path = "../syntax", package = "mu_syntax" }
+emit = { path = "../emit", package = "mu_emit" }

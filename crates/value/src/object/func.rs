@@ -110,8 +110,10 @@ impl Closure {
 
 #[derive(Clone, Debug)]
 pub struct Params {
-  pub min: u32,
-  pub max: Option<u32>,
+  pub min: usize,
+  pub max: usize,
+  pub argv: bool,
+  pub pos: Vec<String>,
   pub kw: indexmap::IndexSet<String>,
 }
 

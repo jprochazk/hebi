@@ -10,9 +10,9 @@ test(1)
 test(1, b=2)
 
 
-# Chunk:
+# Func:
 function <test>:
-  frame_size: 6
+  frame_size: 7
   length: 34
   const (length=1):
     0: "b"
@@ -27,12 +27,12 @@ function <test>:
     13 | store_reg r5
     15 | load_kw_param [0], r5
     18 | create_empty_list 
-    19 | store_reg r0
+    19 | store_reg r6
     21 | load_reg r4
-    23 | push_to_list r0
+    23 | push_to_list r6
     25 | load_reg r5
-    27 | push_to_list r0
-    29 | print_list r0
+    27 | push_to_list r6
+    29 | print_list r6
     31 | push_none 
     32 | ret 
     33 | suspend 

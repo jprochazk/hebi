@@ -386,9 +386,9 @@ pub trait EncodeInto: Decode + private::Sealed {
   fn encode_into(buf: &mut [u8], operands: Self::Decoded);
 }
 
-fn handle_jump<E>(
+unsafe fn handle_jump<E>(
   value: Result<ControlFlow, E>,
-  pc: &mut usize,
+  pc: std::ptr::NonNull<usize>,
   size_of_operands: usize,
   result: &mut Result<(), E>,
 ) {
@@ -400,9 +400,9 @@ fn handle_jump<E>(
     }
   };
   match _jump {
-    ControlFlow::Next => *pc += 1 + size_of_operands,
-    ControlFlow::Jump(offset) => *pc += offset as usize,
-    ControlFlow::Loop(offset) => *pc -= offset as usize,
+    ControlFlow::Next => *pc.as_ptr() += 1 + size_of_operands,
+    ControlFlow::Jump(offset) => *pc.as_ptr() += offset as usize,
+    ControlFlow::Loop(offset) => *pc.as_ptr() -= offset as usize,
   }
 }
 

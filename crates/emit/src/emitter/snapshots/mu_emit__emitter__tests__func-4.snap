@@ -9,21 +9,21 @@ fn test(a, *, b):
 test(1, b=2)
 
 
-# Chunk:
+# Func:
 function <test>:
-  frame_size: 6
+  frame_size: 7
   length: 19
   const (length=1):
     0: "b"
   code:
      0 | load_kw_param [0], r5
      3 | create_empty_list 
-     4 | store_reg r0
+     4 | store_reg r6
      6 | load_reg r4
-     8 | push_to_list r0
+     8 | push_to_list r6
     10 | load_reg r5
-    12 | push_to_list r0
-    14 | print_list r0
+    12 | push_to_list r6
+    14 | print_list r6
     16 | push_none 
     17 | ret 
     18 | suspend 

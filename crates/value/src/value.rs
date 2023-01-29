@@ -308,6 +308,12 @@ impl Drop for Value {
   }
 }
 
+impl Default for Value {
+  fn default() -> Self {
+    Self::none()
+  }
+}
+
 impl From<f64> for Value {
   fn from(value: f64) -> Self {
     Value::float(value)

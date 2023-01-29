@@ -9,7 +9,7 @@ fn test(a):
 test(0)
 
 
-# Chunk:
+# Func:
 function <test>:
   frame_size: 5
   length: 6

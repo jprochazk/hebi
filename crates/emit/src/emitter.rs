@@ -11,10 +11,10 @@ pub fn emit<'src>(
   ctx: &Context,
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
-) -> Result<func::Func> {
+) -> Result<Value> {
   Emitter::new(ctx, name, module)
     .emit_main()
-    .map(|result| result.func)
+    .map(|result| Value::from(result.func))
 }
 
 use crate::regalloc::{RegAlloc, Register};
@@ -46,6 +46,10 @@ impl<'src> Emitter<'src> {
     }
     self.emit_op(Ret);
 
+    for reg in self.state.preserve.iter().rev() {
+      reg.index();
+    }
+
     let (frame_size, register_map) = self.state.regalloc.scan();
 
     self.state.builder.patch(|instructions| {
@@ -68,7 +72,9 @@ impl<'src> Emitter<'src> {
         const_pool,
         func::Params {
           min: 0,
-          max: None,
+          max: 0,
+          argv: false,
+          pos: Default::default(),
           kw: Default::default(),
         },
       ),
@@ -200,6 +206,9 @@ struct Function<'src> {
   parent: Option<Box<Function<'src>>>,
   regalloc: RegAlloc,
 
+  /// List of registers to keep alive for the entire scope of the function.
+  preserve: Vec<Register>,
+
   // TODO: use a better data structure for this
   /// Map of variable name to register.
   ///
@@ -238,6 +247,7 @@ impl<'src> Function<'src> {
       name,
       parent,
       regalloc: RegAlloc::new(),
+      preserve: vec![],
       locals: vec![IndexMap::new()],
       captures: IndexMap::new(),
       capture_slot: 0,
@@ -416,13 +426,16 @@ mod stmt {
       let name = stmt.name.deref().clone();
       let params = func::Params {
         // min = number of positional arguments without defaults
-        min: stmt.params.pos.iter().filter(|v| v.1.is_none()).count() as u32,
+        min: stmt.params.pos.iter().filter(|v| v.1.is_none()).count(),
         // max = number of positional arguments OR none, if `argv` exists
-        max: if stmt.params.argv.is_some() {
-          None
-        } else {
-          Some(stmt.params.pos.len() as u32)
-        },
+        max: stmt.params.pos.len(),
+        argv: !stmt.params.kw.is_empty(),
+        pos: stmt
+          .params
+          .pos
+          .iter()
+          .map(|v| v.0.deref().to_string())
+          .collect(),
         kw: stmt
           .params
           .kw
@@ -437,6 +450,10 @@ mod stmt {
 
         for stmt in stmt.body.iter() {
           this.emit_stmt(stmt)?;
+        }
+
+        for reg in this.state.preserve.iter().rev() {
+          reg.index();
         }
 
         Ok(())
@@ -497,6 +514,14 @@ mod stmt {
         .iter()
         .map(|p| (p, self.reg()))
         .collect::<Vec<_>>();
+
+      // preserve the first 4
+      self.state.preserve.extend([
+        receiver.clone(),
+        this_func.clone(),
+        argv.clone(),
+        kwargs.clone(),
+      ]);
 
       // only pos params with defaults need emit
       // invariants:

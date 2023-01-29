@@ -8,7 +8,7 @@ print ?v["a"]
 print ?v["a"]["b"]["c"]
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 3
   length: 39

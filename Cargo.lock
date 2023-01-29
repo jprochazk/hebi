@@ -197,9 +197,14 @@ name = "mu_vm"
 version = "0.0.0"
 dependencies = [
  "beef",
+ "indexmap",
  "indoc",
  "insta",
+ "mu_diag",
+ "mu_emit",
  "mu_op",
+ "mu_span",
+ "mu_syntax",
  "mu_value",
 ]
 

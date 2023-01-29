@@ -23,7 +23,7 @@ fn f3(a, b, c, d):
   a ?? b ?? c
 
 
-# Chunk:
+# Func:
 function <f0>:
   frame_size: 6
   length: 40

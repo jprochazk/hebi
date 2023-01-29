@@ -7,7 +7,7 @@ v := 0
 print v # load_reg
 
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 0
   length: 12

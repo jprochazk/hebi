@@ -1,49 +1,45 @@
 mod binop;
 mod call;
 mod cmp;
+mod error;
 mod truth;
+mod util;
 
-use value::object::{dict, Dict};
-use value::{object, Value};
+pub use error::Error;
+use value::object::{dict, Closure, Dict};
+use value::Value;
 
 pub struct Isolate {
   // TODO: module registry
-  globals: object::Dict,
+  globals: Dict,
+  pc: usize,
   acc: Value,
   stack: Vec<Value>,
   call_stack: Vec<call::CallFrame>,
-  io: Io,
-}
-
-struct Io {
-  stdout: Box<dyn std::io::Write>,
-  stderr: Box<dyn std::io::Write>,
+  io: Box<dyn std::io::Write>,
 }
 
 impl Isolate {
   #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
-    Self::with_io(std::io::stdout(), std::io::stderr())
+    Self::with_io(std::io::stdout())
   }
 
-  pub fn with_io(
-    stdout: impl std::io::Write + 'static,
-    stderr: impl std::io::Write + 'static,
-  ) -> Self {
+  pub fn with_io(io: impl std::io::Write + 'static) -> Self {
     Self {
-      globals: object::Dict::new(),
+      globals: Dict::new(),
+      pc: 0,
       acc: Value::none(),
       stack: vec![],
       call_stack: vec![],
-      io: Io {
-        stdout: Box::new(stdout),
-        stderr: Box::new(stderr),
-      },
+      io: Box::new(io),
     }
   }
-}
 
-pub struct Error;
+  pub fn get_io(&self) -> &dyn std::io::Write {
+    &self.io
+  }
+}
 
 impl op::Handler for Isolate {
   type Error = Error;
@@ -58,7 +54,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_load_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let reg = reg as usize;
 
     self.acc = self.stack[base + reg].clone();
@@ -67,7 +63,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_store_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let reg = reg as usize;
 
     self.stack[base + reg] = self.acc.clone();
@@ -115,10 +111,11 @@ impl op::Handler for Isolate {
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
     // global name is always a string
-    match self.globals.get(name).unwrap() {
+    let name = dict::Key::try_from(name).unwrap();
+    match self.globals.get(name.clone()) {
       Some(v) => self.acc = v.clone(),
-      // TODO: error message
-      None => return Err(Error),
+      // TODO: span
+      None => return Err(Error::new(format!("undefined global {name}"))),
     }
 
     Ok(())
@@ -129,11 +126,8 @@ impl op::Handler for Isolate {
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
     // global name is always a string
-    match self.globals.get_mut(name).unwrap() {
-      Some(v) => *v = self.acc.clone(),
-      // TODO: error message
-      None => return Err(Error),
-    }
+    let name = dict::Key::try_from(name).unwrap();
+    self.globals.insert(name, self.acc.clone());
 
     Ok(())
   }
@@ -142,18 +136,19 @@ impl op::Handler for Isolate {
     let name = name as usize;
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
+    // name used in named load is always a string
+    let name = dict::Key::try_from(name).unwrap();
 
     let value = {
       // TODO: class
       let Some(obj) = self.acc.as_dict() else {
-        // TODO: error message
-        return Err(Error);
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
       };
 
-      // name used in named load is always a string
-      let Some(value) = obj.get(name).unwrap() else {
-        // TODO: error message
-        return Err(Error);
+      let Some(value) = obj.get(name.clone()) else {
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
       };
 
       value.clone()
@@ -168,6 +163,8 @@ impl op::Handler for Isolate {
     let name = name as usize;
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
+    // name used in named load is always a string
+    let name = dict::Key::try_from(name).unwrap();
 
     // early exit if on `none`
     if self.acc.is_none() {
@@ -177,12 +174,11 @@ impl op::Handler for Isolate {
     let value = {
       // TODO: class
       let Some(obj) = self.acc.as_dict() else {
-        // TODO: error message
-        return Err(Error);
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
       };
 
-      // name used in named load is always a string
-      match obj.get(name).unwrap() {
+      match obj.get(name) {
         Some(v) => v.clone(),
         None => Value::none(),
       }
@@ -194,42 +190,43 @@ impl op::Handler for Isolate {
   }
 
   fn op_store_named(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let name = name as usize;
     let obj = obj as usize;
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
+    // name used in named load is always a string
+    let name = dict::Key::try_from(name).unwrap();
 
     // TODO: class
     let Some(mut obj) = self.stack[base + obj].as_dict_mut() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not an object"));
     };
 
-    // name used in named load is always a string
-    obj.insert(name, self.acc.clone()).unwrap();
+    obj.insert(name, self.acc.clone());
 
     Ok(())
   }
 
   fn op_load_keyed(&mut self, key: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let key = key as usize;
 
-    let Ok(name) = dict::Key::try_from(self.stack[base + key].clone()) else {
-      // TODO: error message
-      return Err(Error);
+    let name = self.stack[base + key].clone();
+    let Ok(name) = dict::Key::try_from(name.clone()) else {
+      // TODO: span
+      return Err(Error::new(format!("{name} is not a valid key")));
     };
 
     let value = {
       // TODO: class
       let Some(obj) = self.acc.as_dict() else {
-        // TODO: error message
-        return Err(Error);
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
       };
 
-      // `name` is a `Key` so this `unwrap` won't panic
-      match obj.get(name).unwrap() {
+      match obj.get(name) {
         Some(v) => v.clone(),
         None => Value::none(),
       }
@@ -241,12 +238,13 @@ impl op::Handler for Isolate {
   }
 
   fn op_load_keyed_opt(&mut self, key: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let key = key as usize;
 
-    let Ok(name) = dict::Key::try_from(self.stack[base + key].clone()) else {
-      // TODO: error message
-      return Err(Error);
+    let name = self.stack[base + key].clone();
+    let Ok(name) = dict::Key::try_from(name.clone()) else {
+      // TODO: span
+      return Err(Error::new(format!("{name} is not a valid key")));
     };
 
     // early exit if on `none`
@@ -257,12 +255,11 @@ impl op::Handler for Isolate {
     let value = {
       // TODO: class
       let Some(obj) = self.acc.as_dict() else {
-        // TODO: error message
-        return Err(Error);
+        // TODO: span
+        return Err(Error::new(format!("undefined field {name}")));
       };
 
-      // `name` is a `Key` so this `unwrap` won't panic
-      match obj.get(name).unwrap() {
+      match obj.get(name) {
         Some(v) => v.clone(),
         None => Value::none(),
       }
@@ -274,23 +271,23 @@ impl op::Handler for Isolate {
   }
 
   fn op_store_keyed(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let key = key as usize;
     let obj = obj as usize;
 
-    let Ok(name) = dict::Key::try_from(self.stack[base + key].clone()) else {
-      // TODO: error message
-      return Err(Error);
+    let name = self.stack[base + key].clone();
+    let Ok(name) = dict::Key::try_from(name.clone()) else {
+      // TODO: span
+      return Err(Error::new(format!("{name} is not a valid key")));
     };
 
     // TODO: class
     let Some(mut obj) = self.stack[base + obj].as_dict_mut() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not an object"));
     };
 
-    // `name` is a `Key` so this `unwrap` won't panic
-    obj.insert(name, self.acc.clone()).unwrap();
+    obj.insert(name, self.acc.clone());
 
     Ok(())
   }
@@ -326,12 +323,12 @@ impl op::Handler for Isolate {
   }
 
   fn op_push_to_list(&mut self, list: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let list = list as usize;
 
     let Some(mut list) = self.stack[base + list].as_list_mut() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not a list"));
     };
 
     list.push(self.acc.clone());
@@ -346,41 +343,44 @@ impl op::Handler for Isolate {
   }
 
   fn op_insert_to_dict(&mut self, key: u32, dict: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let key = key as usize;
     let dict = dict as usize;
 
-    let Ok(key) = dict::Key::try_from(self.stack[base + key].clone()) else {
-      // TODO: error message
-      return Err(Error);
+    let key = self.stack[base + key].clone();
+    let Ok(key) = dict::Key::try_from(key.clone()) else {
+      // TODO: span
+      return Err(Error::new(format!("{key} is not a valid key")));
     };
 
     let Some(mut dict) = self.stack[base + dict].as_dict_mut() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not an object"));
     };
 
     // `name` is a `Key` so this `unwrap` won't panic
-    dict.insert(key, self.acc.clone()).unwrap();
+    dict.insert(key, self.acc.clone());
 
     Ok(())
   }
 
   fn op_insert_to_dict_named(&mut self, name: u32, dict: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let name = name as usize;
     let dict = dict as usize;
 
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let name = const_pool[name].clone();
+    // name used in named load is always a string
+    let name = dict::Key::try_from(name).unwrap();
 
     let Some(mut dict) = self.stack[base + dict].as_dict_mut() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not an object"));
     };
 
     // name used in named load is always a string
-    dict.insert(name, self.acc.clone()).unwrap();
+    dict.insert(name, self.acc.clone());
 
     Ok(())
   }
@@ -390,13 +390,13 @@ impl op::Handler for Isolate {
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let descriptor = const_pool[descriptor].clone();
 
-    self.acc = object::Closure::new(descriptor).into();
+    self.acc = Closure::new(descriptor).into();
 
     Ok(())
   }
 
   fn op_capture_reg(&mut self, reg: u32, slot: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let reg = reg as usize;
     let slot = slot as usize;
 
@@ -448,8 +448,8 @@ impl op::Handler for Isolate {
 
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
     let Some(value) = self.acc.as_bool() else {
-      // TODO: error message
-      return Err(Error);
+      // TODO: span
+      return Err(Error::new("value is not a bool"));
     };
 
     match value {
@@ -459,7 +459,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_add(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -475,7 +475,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_sub(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -491,7 +491,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_mul(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -507,7 +507,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_div(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -523,7 +523,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_rem(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -539,7 +539,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_pow(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -587,7 +587,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_eq(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -605,7 +605,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_neq(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -623,7 +623,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_gt(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -641,7 +641,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_ge(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -662,7 +662,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_lt(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -680,7 +680,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_cmp_le(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let lhs = lhs as usize;
 
     // TODO: object overload
@@ -710,15 +710,14 @@ impl op::Handler for Isolate {
     let value = &self.acc;
     self
       .io
-      .stdout
       .write_fmt(format_args!("{value}"))
-      // TODO: error message
-      .map_err(|_| Error)?;
+      // TODO: span
+      .map_err(|_| Error::new("failed to print value"))?;
     Ok(())
   }
 
   fn op_print_list(&mut self, list: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().base;
+    let base = self.call_stack.last().unwrap().stack_base;
     let list = list as usize;
 
     let list = self.stack[base + list].clone();
@@ -731,17 +730,15 @@ impl op::Handler for Isolate {
         // space at end
         self
           .io
-          .stdout
           .write_fmt(format_args!("{value} "))
-          // TODO: error message
-          .map_err(|_| Error)?;
+          // TODO: span
+          .map_err(|_| Error::new("failed to print values"))?;
       } else {
         self
           .io
-          .stdout
           .write_fmt(format_args!("{value}"))
-          // TODO: error message
-          .map_err(|_| Error)?;
+          // TODO: span
+          .map_err(|_| Error::new("failed to print values"))?;
       }
     }
 
@@ -772,3 +769,6 @@ impl op::Handler for Isolate {
     unimplemented!()
   }
 }
+
+#[cfg(test)]
+mod tests;

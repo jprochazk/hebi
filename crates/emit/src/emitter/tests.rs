@@ -12,15 +12,16 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let chunk = match emit(&Context::new(), "[[main]]", &module) {
-      Ok(chunk) => chunk,
+    let func = match emit(&Context::new(), "[[main]]", &module) {
+      Ok(func) => func,
       Err(e) => {
-        panic!("failed to emit chunk:\n{}", e.report(input));
+        panic!("failed to emit func:\n{}", e.report(input));
       }
     };
+    let func = func.as_func().unwrap();
     let snapshot = format!(
-      "# Input:\n{input}\n\n# Chunk:\n{}",
-      chunk.disassemble(op::disassemble, false)
+      "# Input:\n{input}\n\n# Func:\n{}",
+      func.disassemble(op::disassemble, false)
     );
     insta::assert_snapshot!(snapshot);
   }};

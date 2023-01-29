@@ -249,7 +249,7 @@ fn dispatch() {
   };
 
   let mut pc = 0;
-  run(&mut vm, &mut bytecode, &mut pc).unwrap();
+  unsafe { run(&mut vm, (&mut bytecode[..]).into(), (&mut pc).into()) }.unwrap();
 
   let stdout = String::from_utf8(vm.stdout).unwrap();
   insta::assert_snapshot!(stdout);

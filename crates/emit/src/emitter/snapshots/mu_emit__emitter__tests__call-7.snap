@@ -5,7 +5,7 @@ expression: snapshot
 # Input:
 a(b(c()))
 
-# Chunk:
+# Func:
 function <[[main]]>:
   frame_size: 5
   length: 27

@@ -11,7 +11,7 @@ fn a():
         print v
 
 
-# Chunk:
+# Func:
 function <d>:
   frame_size: 4
   length: 6
@@ -24,42 +24,42 @@ function <d>:
     5 | suspend 
 
 function <c>:
-  frame_size: 4
+  frame_size: 5
   length: 10
   const (length=1):
     0: <closure descriptor d n=1>
   code:
      0 | create_closure [0]
      2 | capture_slot parent_slot=0, self_slot=0
-     5 | store_reg r0
+     5 | store_reg r4
      7 | push_none 
      8 | ret 
      9 | suspend 
 
 function <b>:
-  frame_size: 4
+  frame_size: 5
   length: 10
   const (length=1):
     0: <closure descriptor c n=1>
   code:
      0 | create_closure [0]
      2 | capture_slot parent_slot=0, self_slot=0
-     5 | store_reg r0
+     5 | store_reg r4
      7 | push_none 
      8 | ret 
      9 | suspend 
 
 function <a>:
-  frame_size: 4
+  frame_size: 6
   length: 17
   const (length=1):
     0: <closure descriptor b n=1>
   code:
      0 | push_small_int value=0
-     5 | store_reg r0
+     5 | store_reg r4
      7 | create_closure [0]
-     9 | capture_reg r0, slot=0
-    12 | store_reg r1
+     9 | capture_reg r4, slot=0
+    12 | store_reg r5
     14 | push_none 
     15 | ret 
     16 | suspend 
