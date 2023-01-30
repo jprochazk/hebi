@@ -1,4 +1,3 @@
-- finish writing tests for fn declarations and call exprs (kw params, param default values, closures)
 - classes + method call + bound methods
 - indexing ops split out from the VM (might become a trait, should be used for making it easier to deal with dict[key] vs list[key] vs class[key] etc.)
 - iterator protocol + range-based loop using iterators (for v in obj) (blocked by meta methods)

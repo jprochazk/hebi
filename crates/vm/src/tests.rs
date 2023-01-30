@@ -562,4 +562,19 @@ fn call_closure() {
       print c()
     "#
   }
+  check! {
+    r#"
+      fn a():
+        fn b():
+          v := 10
+          fn c():
+            fn d():
+              return v
+            return d
+          return c
+        return b
+      
+      print a()()()()
+    "#
+  }
 }
