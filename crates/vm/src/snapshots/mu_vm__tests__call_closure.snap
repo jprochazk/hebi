@@ -3,8 +3,13 @@ source: crates/vm/src/tests.rs
 expression: snapshot
 ---
 # Input:
-v := { a: { b: 10 } }
-print ?v["a"]["b"]
+fn a():
+  v := 10
+  fn b():
+    print v
+  return b
+
+a()()
 
 
 # Result (success):

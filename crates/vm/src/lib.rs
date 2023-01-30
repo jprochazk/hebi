@@ -7,6 +7,8 @@ mod util;
 
 // TODO: make the VM panic-less (other than debug asserts for unsafe things)
 
+use std::mem::take;
+
 pub use error::Error;
 use value::object::{dict, Closure, Dict};
 use value::Value;
@@ -341,7 +343,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       return Err(Error::new("value is not a list"));
     };
 
-    list.push(self.acc.clone());
+    list.push(std::mem::take(&mut self.acc));
 
     Ok(())
   }
@@ -369,7 +371,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     };
 
     // `name` is a `Key` so this `unwrap` won't panic
-    dict.insert(key, self.acc.clone());
+    dict.insert(key, std::mem::take(&mut self.acc));
 
     Ok(())
   }
@@ -390,7 +392,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     };
 
     // name used in named load is always a string
-    dict.insert(name, self.acc.clone());
+    dict.insert(name, std::mem::take(&mut self.acc));
 
     Ok(())
   }
@@ -474,7 +476,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = std::mem::take(&mut self.acc);
 
     match binop::add(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -490,7 +492,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = std::mem::take(&mut self.acc);
 
     match binop::sub(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -506,7 +508,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = std::mem::take(&mut self.acc);
 
     match binop::mul(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -522,7 +524,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = std::mem::take(&mut self.acc);
 
     match binop::div(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -538,7 +540,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = std::mem::take(&mut self.acc);
 
     match binop::rem(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -554,7 +556,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     match binop::pow(lhs, rhs) {
       Ok(value) => self.acc = value,
@@ -572,7 +574,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_unary_minus(&mut self) -> Result<(), Self::Error> {
-    let value = self.acc.clone();
+    let value = take(&mut self.acc);
     let value = if let Some(value) = value.as_int() {
       Value::int(-value)
     } else if let Some(value) = value.as_float() {
@@ -589,7 +591,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_unary_not(&mut self) -> Result<(), Self::Error> {
     // TODO: overload
-    let value = !truth::truthiness(self.acc.clone());
+    let value = !truth::truthiness(take(&mut self.acc));
 
     self.acc = Value::bool(value);
 
@@ -602,7 +604,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -620,7 +622,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -638,7 +640,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -656,7 +658,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -677,7 +679,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -695,7 +697,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // TODO: object overload
     let lhs = self.stack[base + lhs].clone();
-    let rhs = self.acc.clone();
+    let rhs = take(&mut self.acc);
 
     let ord = match cmp::partial_cmp(lhs, rhs) {
       Ok(v) => v,
@@ -717,7 +719,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_print(&mut self) -> Result<(), Self::Error> {
-    let value = self.acc.clone();
+    let value = take(&mut self.acc);
     self
       .print(format_args!("{value}\n"))
       // TODO: span
@@ -731,6 +733,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     let list = self.stack[base + list].clone();
     let list = list.as_list().expect("print_list argument is not a list");
+
+    // print is a statement so should not leave a value in `acc`
+    let _ = take(&mut self.acc);
 
     // prints items separated by a single space
     let mut iter = list.iter().peekable();

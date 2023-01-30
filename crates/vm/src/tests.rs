@@ -532,3 +532,34 @@ fn fn_call_kw() {
     "#
   }
 }
+
+#[test]
+fn call_closure() {
+  check! {
+    r#"
+      fn a():
+        v := 10
+        fn b():
+          print v
+        return b
+      
+      a()()
+    "#
+  }
+  check! {
+    r#"
+      fn counter(start=0, *, step=1):
+        state := { value: start }
+        fn inner():
+          temp := state.value
+          state.value += step
+          return temp
+        return inner
+      
+      c := counter()
+      print c()
+      print c()
+      print c()
+    "#
+  }
+}
