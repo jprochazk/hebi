@@ -24,9 +24,9 @@ function <[[main]]>:
     15 | load_reg r4
     17 | store_global [1]
     19 | load_const [0]
-    21 | store_reg r5
+    21 | store_reg r4
     23 | load_global [1]
-    25 | load_keyed r5
+    25 | load_keyed r4
     27 | print 
     28 | suspend 
 
@@ -36,3 +36,4 @@ function <[[main]]>:
 
 # Stdout:
 10
+

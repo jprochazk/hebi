@@ -1,0 +1,71 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+i := 0
+loop:
+  if i >= 10:
+    break
+  print i
+  i += 1
+
+
+# Func:
+function <[[main]]>:
+  frame_size: 5
+  length: 59
+  const (length=1):
+    0: "i"
+  code:
+     0 | push_small_int value=0
+     5 | store_global [0]
+     7 | load_global [0]
+     9 | store_reg r4
+    11 | push_small_int value=10
+    16 | cmp_ge r4
+    18 | jump_if_false offset=18
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | nop 
+    24 | jump offset=34
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | jump offset=6
+    32 | nop 
+    33 | nop 
+    34 | nop 
+    35 | nop 
+    36 | load_global [0]
+    38 | print 
+    39 | load_global [0]
+    41 | store_reg r4
+    43 | push_small_int value=1
+    48 | add r4
+    50 | store_global [0]
+    52 | jump_back offset=45
+    54 | nop 
+    55 | nop 
+    56 | nop 
+    57 | nop 
+    58 | suspend 
+
+
+# Result (success):
+true
+
+# Stdout:
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+

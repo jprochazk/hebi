@@ -234,3 +234,160 @@ fn if_stmt() {
     "#
   }
 }
+
+#[test]
+fn loop_stmt() {
+  check! {
+    r#"
+      loop:
+        print "test"
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        continue
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        break
+    "#
+  }
+
+  check! {
+    r#"
+      while true:
+        print "test"
+    "#
+  }
+  check! {
+    r#"
+      while true:
+        continue
+    "#
+  }
+  check! {
+    r#"
+      while true:
+        break
+    "#
+  }
+  check! {
+    r#"
+      v := 0
+      while v < 10:
+        print "less than 10:", v
+        v += 1
+      print "now it's 10"
+    "#
+  }
+
+  check! {
+    r#"
+      while true:
+        while true:
+          break
+        break
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        loop:
+          break
+        break
+    "#
+  }
+  check! {
+    r#"
+      while true:
+        loop:
+          break
+        break
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        while true:
+          break
+        break
+    "#
+  }
+
+  check! {
+    r#"
+      while true:
+        while true:
+          continue
+        continue
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        loop:
+          continue
+        continue
+    "#
+  }
+  check! {
+    r#"
+      while true:
+        loop:
+          continue
+        continue
+    "#
+  }
+  check! {
+    r#"
+      loop:
+        while true:
+          continue
+        continue
+    "#
+  }
+}
+
+#[test]
+fn for_loop_stmt() {
+  check! {
+    r#"
+      for i in 0..10:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..=10:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..=10:
+        break
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..=10:
+        continue
+    "#
+  }
+}
+
+/* #[test]
+fn _temp() {
+  check! {
+    r#"
+      fn f(a, *rest):
+        print a, rest
+
+      f(0)
+      f(0, 1, 2)
+    "#
+  }
+} */

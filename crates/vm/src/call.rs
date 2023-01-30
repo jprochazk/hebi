@@ -1,14 +1,14 @@
 use std::ptr::NonNull;
 
 use indexmap::IndexSet;
-use value::object::{func, Dict};
+use value::object::func;
 use value::Value;
 
 use crate::util::JoinIter;
 use crate::{Error, Isolate};
 
 impl<Io: std::io::Write> Isolate<Io> {
-  pub fn call(&mut self, f: Value, args: &[Value], kw: Dict) -> Result<Value, Error> {
+  pub fn call(&mut self, f: Value, args: &[Value], kw: Value) -> Result<Value, Error> {
     // # Check that callee is callable
     if !f.is_func() && !f.is_closure() {
       return Err(Error::new("value is not callable"));
@@ -24,7 +24,7 @@ impl<Io: std::io::Write> Isolate<Io> {
     };
 
     // # Create a new call frame
-    let frame = CallFrame::new(f.clone(), parent_pc, stack_base);
+    let frame = CallFrame::new(f.clone(), parent_pc, stack_base, args.len());
     self
       .stack
       .extend((0..frame.frame_size).map(|_| Value::none()));
@@ -53,7 +53,12 @@ impl<Io: std::io::Write> Isolate<Io> {
   }
 }
 
-fn check_args(f: Value, args: &[Value], kw: &Dict) -> Result<func::Params, Error> {
+fn check_args(f: Value, args: &[Value], kw: &Value) -> Result<func::Params, Error> {
+  let Some(kw) = kw.as_dict() else {
+    return Err(Error::new("call <kw> slot was not a dictionary"));
+  };
+  // TODO: this should not be cloned
+  // use an inner function
   let params = if let Some(f) = f.as_func() {
     f.params().clone()
   } else if let Some(f) = f.as_closure() {
@@ -64,7 +69,7 @@ fn check_args(f: Value, args: &[Value], kw: &Dict) -> Result<func::Params, Error
   if args.len() < params.min {
     return Err(Error::new(format!(
       "missing required positional params: {}",
-      params.pos[params.min - args.len()..].iter().join(", "),
+      params.pos[args.len()..params.min].iter().join(", "),
     )));
   }
   if !params.argv && args.len() > params.max {
@@ -83,7 +88,7 @@ fn check_args(f: Value, args: &[Value], kw: &Dict) -> Result<func::Params, Error
   let mut unknown = IndexSet::new();
   let mut matched_kw = 0;
   for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-    if !params.kw.contains(&key[..]) {
+    if !params.kwargs && !params.kw.contains(&key[..]) {
       unknown.insert(key.to_string());
     } else {
       matched_kw += 1;
@@ -117,7 +122,7 @@ fn init_params(
   stack_base: usize,
   params: func::Params,
   args: &[Value],
-  kw: Dict,
+  kw: Value,
 ) {
   // receiver + function
   stack[stack_base + 0] = Value::none();
@@ -130,7 +135,7 @@ fn init_params(
     stack[stack_base + 2] = Value::none();
   }
   // kwargs
-  stack[stack_base + 3] = Value::from(kw);
+  stack[stack_base + 3] = kw;
   // params
   for i in 0..std::cmp::min(args.len(), params.max) {
     stack[stack_base + 4 + i] = args[i].clone();
@@ -146,12 +151,13 @@ pub(crate) struct CallFrame {
   // ensures that the pointers below remain valid for the lifetime of the `CallFrame`
   #[allow(dead_code)]
   func: Value,
-  pub(crate) code: NonNull<[u8]>,
-  pub(crate) const_pool: NonNull<[Value]>,
-  pub(crate) captures: Option<NonNull<[Value]>>,
-  pub(crate) parent_pc: usize,
-  pub(crate) stack_base: usize,
-  pub(crate) frame_size: usize,
+  pub code: NonNull<[u8]>,
+  pub const_pool: NonNull<[Value]>,
+  pub captures: Option<NonNull<[Value]>>,
+  pub parent_pc: usize,
+  pub stack_base: usize,
+  pub frame_size: usize,
+  pub num_args: usize,
 }
 
 impl CallFrame {
@@ -160,7 +166,7 @@ impl CallFrame {
   /// # Panics
   ///
   /// If `func` is not a function or closure.
-  pub(crate) fn new(mut func: Value, parent_pc: usize, stack_base: usize) -> Self {
+  pub fn new(mut func: Value, parent_pc: usize, stack_base: usize, num_args: usize) -> Self {
     let value = func.clone();
     if let Some(mut f) = func.as_func_mut() {
       let code = NonNull::from(f.code_mut());
@@ -174,6 +180,7 @@ impl CallFrame {
         parent_pc,
         stack_base,
         frame_size,
+        num_args,
       };
     }
 
@@ -190,6 +197,7 @@ impl CallFrame {
         parent_pc,
         stack_base,
         frame_size,
+        num_args,
       };
     }
 

@@ -27,12 +27,12 @@ function <[[main]]>:
     15 | load_reg r4
     17 | store_global [1]
     19 | load_const [2]
-    21 | store_reg r6
+    21 | store_reg r4
     23 | load_const [0]
     25 | store_reg r5
     27 | load_global [1]
     29 | load_keyed r5
-    31 | load_keyed r6
+    31 | load_keyed r4
     33 | print 
     34 | suspend 
 

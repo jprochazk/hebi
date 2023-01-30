@@ -1,0 +1,82 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+for i in 0..10:
+  if i % 2 == 0: continue
+  print i
+
+
+# Func:
+function <[[main]]>:
+  frame_size: 8
+  length: 93
+  const: <empty>
+  code:
+     0 | push_small_int value=0
+     5 | store_reg r4
+     7 | push_small_int value=10
+    12 | store_reg r5
+    14 | load_reg r5
+    16 | cmp_lt r4
+    18 | jump_if_false offset=74
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | nop 
+    24 | jump offset=21
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | push_small_int value=1
+    35 | add r4
+    37 | store_reg r4
+    39 | jump_back offset=25
+    41 | nop 
+    42 | nop 
+    43 | nop 
+    44 | nop 
+    45 | load_reg r4
+    47 | store_reg r7
+    49 | push_small_int value=2
+    54 | rem r7
+    56 | store_reg r6
+    58 | push_small_int value=0
+    63 | cmp_eq r6
+    65 | jump_if_false offset=18
+    67 | nop 
+    68 | nop 
+    69 | nop 
+    70 | nop 
+    71 | jump_back offset=41
+    73 | nop 
+    74 | nop 
+    75 | nop 
+    76 | nop 
+    77 | jump offset=6
+    79 | nop 
+    80 | nop 
+    81 | nop 
+    82 | nop 
+    83 | load_reg r4
+    85 | print 
+    86 | jump_back offset=56
+    88 | nop 
+    89 | nop 
+    90 | nop 
+    91 | nop 
+    92 | suspend 
+
+
+# Result (success):
+false
+
+# Stdout:
+1
+3
+5
+7
+9
+

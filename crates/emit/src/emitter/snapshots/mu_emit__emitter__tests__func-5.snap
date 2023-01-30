@@ -53,14 +53,14 @@ function <[[main]]>:
     13 | store_reg r5
     15 | call r4, args=1
     18 | load_global [1]
-    20 | store_reg r5
+    20 | store_reg r4
     22 | create_empty_dict 
-    23 | store_reg r4
+    23 | store_reg r5
     25 | push_small_int value=1
     30 | store_reg r6
     32 | push_small_int value=2
-    37 | insert_to_dict_named [2], r4
-    40 | call_kw r5, args=1
+    37 | insert_to_dict_named [2], r5
+    40 | call_kw r4, args=1
     43 | suspend 
 
 

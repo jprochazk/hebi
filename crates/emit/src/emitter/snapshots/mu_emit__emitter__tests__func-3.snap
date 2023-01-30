@@ -50,12 +50,12 @@ function <[[main]]>:
     13 | store_reg r5
     15 | call r4, args=1
     18 | load_global [1]
-    20 | store_reg r5
+    20 | store_reg r4
     22 | push_small_int value=1
-    27 | store_reg r4
+    27 | store_reg r5
     29 | push_small_int value=2
     34 | store_reg r6
-    36 | call r5, args=2
+    36 | call r4, args=2
     39 | suspend 
 
 

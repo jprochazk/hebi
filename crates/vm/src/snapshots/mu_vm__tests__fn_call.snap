@@ -1,0 +1,50 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+fn f():
+  print "test"
+
+f()
+f()
+
+
+# Func:
+function <f>:
+  frame_size: 4
+  length: 6
+  const (length=1):
+    0: "test"
+  code:
+    0 | load_const [0]
+    2 | print 
+    3 | push_none 
+    4 | ret 
+    5 | suspend 
+
+function <[[main]]>:
+  frame_size: 5
+  length: 19
+  const (length=2):
+    0: <func f>
+    1: "f"
+  code:
+     0 | load_const [0]
+     2 | store_global [1]
+     4 | load_global [1]
+     6 | store_reg r4
+     8 | call r4, args=0
+    11 | load_global [1]
+    13 | store_reg r4
+    15 | call r4, args=0
+    18 | suspend 
+
+
+# Result (success):
+none
+
+# Stdout:
+"test"
+"test"
+

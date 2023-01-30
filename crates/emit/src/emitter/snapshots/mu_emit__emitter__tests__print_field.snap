@@ -28,9 +28,9 @@ function <[[main]]>:
     21 | load_named [0]
     23 | print 
     24 | load_global [1]
-    26 | store_reg r5
+    26 | store_reg r4
     28 | push_small_int value=1
-    33 | store_named [0], r5
+    33 | store_named [0], r4
     36 | suspend 
 
 

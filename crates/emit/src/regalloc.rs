@@ -61,7 +61,8 @@
 //! need 4 registers.
 
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 use std::rc::Rc;
 
 use indexmap::IndexMap;
@@ -110,13 +111,13 @@ impl RegAlloc {
 fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
   let mut mapping = IndexMap::new();
 
-  let mut free = VecDeque::new();
+  let mut free = BinaryHeap::new();
   let mut active = Active::new();
   let mut registers = 0u32;
 
   // intervals sorted in order of increasing start point
   let mut intervals_by_start = intervals.to_vec();
-  intervals_by_start.sort_unstable_by_key(|i| i.start);
+  intervals_by_start.sort_unstable_by(|a, b| a.start.cmp(&b.start));
 
   // foreach live interval i, in order of increasing start point
   for i in intervals_by_start.iter() {
@@ -135,12 +136,12 @@ fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
     mapping.insert(i.index, register);
   }
 
-  fn expire_old_intervals(i: &Interval, free: &mut VecDeque<u32>, active: &mut Active) {
+  fn expire_old_intervals(i: &Interval, free: &mut BinaryHeap<Reverse<u32>>, active: &mut Active) {
     // foreach interval j in active, in order of increasing end point
     active.sort_by_end();
     for j in active.scratch.iter() {
       // if endpoint[j] ≥ startpoint[i] then
-      if j.end > i.start {
+      if j.end >= i.start {
         // return
         return;
       }
@@ -148,17 +149,20 @@ fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
       // remove j from active
       let register = active.map.remove(&j.index).unwrap().1;
       // add register[j] to pool of free registers
-      free.push_back(register);
+      free.push(Reverse(register));
+      eprintln!("free {register}");
     }
   }
 
-  fn allocate(free: &mut VecDeque<u32>, registers: &mut u32) -> u32 {
+  fn allocate(free: &mut BinaryHeap<Reverse<u32>>, registers: &mut u32) -> u32 {
     // attempt to acquire a free register, and fall back to allocating a new one
-    if let Some(reg) = free.pop_front() {
+    if let Some(Reverse(reg)) = free.pop() {
+      eprintln!("use {reg}");
       reg
     } else {
       let reg = *registers;
       *registers += 1;
+      eprintln!("alloc {reg}");
       reg
     }
   }

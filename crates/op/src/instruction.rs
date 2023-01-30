@@ -336,17 +336,19 @@ instructions! {
   /// - `args` - number of arguments.
   CallKw (callee: Reg, args: uv),
 
-  /// Returns true if `call_frame.num_args <= n`.
+  /// Sets the accumulator to `true` if `call_frame.num_args <= n`.
   ///
   /// ### Operands
   /// - `n` - positional argument index
   IsPosParamNotSet (index: uv),
-  /// Returns true if keyword argument `name` is not set.
+  /// Sets the accumulator to `true` if keyword argument `name` is not set.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   IsKwParamNotSet (name: Const),
   /// Load keyword argument `name` into `reg`.
+  ///
+  /// Keyword argument dictionary is stored in `call_frame.stack_base + 3`.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
@@ -441,11 +443,12 @@ pub struct Builder<Value: Hash + Eq + Clone> {
   label_map: HashMap<u32, Label>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Label {
-  pub id: u32,
-  pub name: Cow<'static, str>,
-  pub offset: Option<u32>,
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct Label {
+  id: u32,
+  name: Cow<'static, str>,
+  offset: Option<u32>,
+  allow_unused: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -474,9 +477,11 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
   /// Reserve a jump label.
   ///
   /// Each jump label must be finished using
-  /// [`finish_label`][`crate::BytecodeBuilder::finish_label`] before calling
-  /// [`build`][`crate::BytecodeBuilder::build`]. Failing to do so will result
-  /// in a panic.
+  /// [`finish_label`][`crate::BytecodeBuilder::finish_label`], or explicitly
+  /// allow it to be unused using
+  /// [`allow_unused_label`][`crate::BytecodeBuilder::allow_unused_label`]
+  /// before calling [`build`][`crate::BytecodeBuilder::build`]. Failing to do
+  /// so will result in a panic.
   ///
   /// Because we don't know what the offset of a jump will be when the jump
   /// opcode is first inserted into the bytecode, we store a temporary value
@@ -490,6 +495,7 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
         id,
         name: name.into(),
         offset: None,
+        allow_unused: false,
       },
     );
     self.label_id += 1;
@@ -514,6 +520,13 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
       panic!("invalid label ID: {}", label.0);
     };
     entry.offset = Some(jump_index);
+  }
+
+  pub fn allow_unused_label(&mut self, label: LabelId) {
+    let Some(entry) = self.label_map.get_mut(&label.0) else {
+      panic!("invalid label ID: {}", label.0);
+    };
+    entry.allow_unused = true;
   }
 
   /// Inserts an entry into the constant pool, and returns the index.
@@ -605,7 +618,7 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
           let label_id = Jump::decode(&bytecode, ip + 2, Width::Quad);
           let offset = get_label_offset(label_id, &label_map, &offsets, &mut used_labels);
           match ip.cmp(&(offset as usize)) {
-            std::cmp::Ordering::Greater => {
+            std::cmp::Ordering::Greater | std::cmp::Ordering::Equal => {
               let offset = ip - offset as usize;
               patch_jump::<JumpBack>(&mut bytecode, ip, offset as u32);
             }
@@ -613,10 +626,6 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
               let offset = offset as usize - ip;
               patch_jump::<Jump>(&mut bytecode, ip, offset as u32);
             }
-            std::cmp::Ordering::Equal => panic!(
-              "jump to label {} ({label_id}) has offset=0",
-              &label_map[&label_id].name
-            ),
           }
         }
         (Some(&ops::ExtraWide), Some(&ops::JumpBack)) => {
@@ -641,8 +650,8 @@ impl<Value: Hash + Eq + Clone> Builder<Value> {
 
     let unused_labels = label_map
       .iter()
-      .filter(|(_, v)| !used_labels.contains(&v.id))
-      .map(|(_, v)| v.clone())
+      .filter(|(_, v)| !v.allow_unused && !used_labels.contains(&v.id))
+      .map(|(_, v)| v)
       .collect::<Vec<_>>();
     if !unused_labels.is_empty() {
       for label in unused_labels.iter() {

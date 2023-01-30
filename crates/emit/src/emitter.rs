@@ -58,6 +58,7 @@ impl<'src> Emitter<'src> {
     }
 
     let (frame_size, register_map) = self.state.regalloc.scan();
+    //panic!("{register_map:?}");
 
     self.state.builder.patch(|instructions| {
       for instruction in instructions.iter_mut() {
@@ -81,6 +82,7 @@ impl<'src> Emitter<'src> {
           min: 0,
           max: 0,
           argv: false,
+          kwargs: false,
           pos: Default::default(),
           kw: Default::default(),
         },
@@ -211,6 +213,11 @@ enum UpvalueKind {
   Capture(u32),
 }
 
+struct Loop {
+  start: LabelId,
+  end: LabelId,
+}
+
 struct Function<'src> {
   builder: Builder<Value>,
   name: Cow<'src, str>,
@@ -248,6 +255,8 @@ struct Function<'src> {
   /// This changes `LoadNamed`/`LoadKeyed` to `LoadNamedOpt`/`LoadKeyedOpt`,
   /// which return `none` instead of panicking if a field doesn't exist.
   is_in_opt_expr: bool,
+
+  loops: Vec<Loop>,
 }
 
 impl<'src> Function<'src> {
@@ -263,7 +272,20 @@ impl<'src> Function<'src> {
       captures: IndexMap::new(),
       capture_slot: 0,
       is_in_opt_expr: false,
+      loops: vec![],
     }
+  }
+
+  fn begin_loop(&mut self, start: LabelId, end: LabelId) {
+    self.loops.push(Loop { start, end })
+  }
+
+  fn current_loop(&self) -> Option<&Loop> {
+    self.loops.last()
+  }
+
+  fn end_loop(&mut self) {
+    self.loops.pop();
   }
 
   fn begin_scope(&mut self) {
@@ -412,7 +434,139 @@ mod stmt {
     }
 
     fn emit_loop_stmt(&mut self, stmt: &'src ast::Loop<'src>) -> Result<()> {
+      match stmt {
+        ast::Loop::For(v) => match &v.iter {
+          ast::ForIter::Range(range) => self.emit_for_range_loop(v, range),
+          ast::ForIter::Expr(iter) => self.emit_for_iter_loop(v, iter),
+        },
+        ast::Loop::While(v) => self.emit_while_loop(v),
+        ast::Loop::Infinite(v) => self.emit_inf_loop(v),
+      }
+    }
+
+    fn emit_for_range_loop(
+      &mut self,
+      stmt: &'src ast::For<'src>,
+      range: &'src ast::IterRange<'src>,
+    ) -> Result<()> {
+      let [cond, latch, body, end] = self.labels(["cond", "latch", "body", "end"]);
+      self.state.builder.allow_unused_label(cond);
+      self.state.builder.allow_unused_label(latch);
+      self.state.builder.allow_unused_label(body);
+      self.state.builder.allow_unused_label(end);
+
+      self.state.begin_loop(latch, end);
+      self.state.begin_scope();
+
+      // &item = start
+      // <end> = end
+      let item = self.reg();
+      self
+        .state
+        .declare_local(stmt.item.deref().clone(), item.clone());
+      self.emit_expr(&range.start)?;
+      self.emit_op(StoreReg { reg: item.index() });
+      let end_v = self.reg();
+      self.emit_expr(&range.end)?;
+      self.emit_op(StoreReg { reg: end_v.index() });
+
+      // @cond:
+      //   if not &item $op <end>:
+      //     jump @end
+      //   jump @body
+      self.finish_label(cond);
+      self.emit_op(LoadReg { reg: end_v.index() });
+      if range.inclusive {
+        self.emit_op(CmpLe { lhs: item.index() });
+      } else {
+        self.emit_op(CmpLt { lhs: item.index() });
+      }
+      self.emit_op(JumpIfFalse { offset: end.id() });
+      self.emit_op(Jump { offset: body.id() });
+
+      // @latch:
+      //   &item += 1
+      //   jump @cond
+      self.finish_label(latch);
+      self.emit_op(PushSmallInt { value: 1 });
+      self.emit_op(Add { lhs: item.index() });
+      self.emit_op(StoreReg { reg: item.index() });
+      self.emit_op(Jump { offset: cond.id() });
+
+      // @body:
+      //   <body>
+      //   jump @latch
+      self.finish_label(body);
+      for stmt in stmt.body.iter() {
+        // break in <body> = jump @end
+        // continue in <body> = jump @latch
+        self.emit_stmt(stmt)?;
+      }
+      self.emit_op(Jump { offset: latch.id() });
+
+      end_v.index();
+      item.index();
+
+      // @end:
+      self.finish_label(end);
+      self.state.end_scope();
+      self.state.end_loop();
+      Ok(())
+    }
+
+    fn emit_for_iter_loop(
+      &mut self,
+      stmt: &'src ast::For<'src>,
+      iter: &'src ast::Expr<'src>,
+    ) -> Result<()> {
       todo!()
+    }
+
+    fn emit_while_loop(&mut self, stmt: &'src ast::While<'src>) -> Result<()> {
+      let [start, end] = self.labels(["start", "end"]);
+      self.state.builder.allow_unused_label(start);
+      self.state.builder.allow_unused_label(end);
+
+      self.state.begin_loop(start, end);
+      self.state.begin_scope();
+      self.finish_label(start);
+
+      // condition
+      self.emit_expr(&stmt.cond)?;
+      self.emit_op(JumpIfFalse { offset: end.id() });
+      // body
+      for stmt in stmt.body.iter() {
+        self.emit_stmt(stmt)?;
+      }
+      self.emit_op(Jump { offset: start.id() });
+
+      self.finish_label(end);
+      self.state.end_scope();
+      self.state.end_loop();
+
+      Ok(())
+    }
+
+    fn emit_inf_loop(&mut self, stmt: &'src ast::Infinite<'src>) -> Result<()> {
+      let [start, end] = self.labels(["start", "end"]);
+      self.state.builder.allow_unused_label(start);
+      self.state.builder.allow_unused_label(end);
+
+      self.state.begin_loop(start, end);
+      self.state.begin_scope();
+      self.finish_label(start);
+
+      // body
+      for stmt in stmt.body.iter() {
+        self.emit_stmt(stmt)?;
+      }
+      self.emit_op(Jump { offset: start.id() });
+
+      self.finish_label(end);
+      self.state.end_scope();
+      self.state.end_loop();
+
+      Ok(())
     }
 
     fn emit_ctrl_stmt(&mut self, stmt: &'src ast::Ctrl<'src>) -> Result<()> {
@@ -426,8 +580,24 @@ mod stmt {
           self.emit_op(Ret);
         }
         ast::Ctrl::Yield(_) => todo!(),
-        ast::Ctrl::Continue => todo!(),
-        ast::Ctrl::Break => todo!(),
+        ast::Ctrl::Continue => {
+          let loop_ = self
+            .state
+            .current_loop()
+            .expect("attempted to emit continue outside of loop");
+          self.emit_op(Jump {
+            offset: loop_.start.id(),
+          });
+        }
+        ast::Ctrl::Break => {
+          let loop_ = self
+            .state
+            .current_loop()
+            .expect("attempted to emit continue outside of loop");
+          self.emit_op(Jump {
+            offset: loop_.end.id(),
+          });
+        }
       }
 
       Ok(())
@@ -440,7 +610,8 @@ mod stmt {
         min: stmt.params.pos.iter().filter(|v| v.1.is_none()).count(),
         // max = number of positional arguments OR none, if `argv` exists
         max: stmt.params.pos.len(),
-        argv: !stmt.params.kw.is_empty(),
+        argv: stmt.params.argv.is_some(),
+        kwargs: stmt.params.kwargs.is_some(),
         pos: stmt
           .params
           .pos
@@ -979,6 +1150,10 @@ mod expr {
           dict: kw.as_ref().unwrap().index(),
         });
       }
+
+      // TODO: something here is broken
+      // args are not contiguous
+      // callee is not in the right slot
 
       // ensure liveness of:
       // - args (in reverse)

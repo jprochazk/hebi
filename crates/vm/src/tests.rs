@@ -19,13 +19,13 @@ macro_rules! check {
       }
     };
     let mut vm = Isolate::with_io(Vec::new());
-    let value = match vm.call(func.clone(), &[], Default::default()) {
+    let value = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
       Ok(v) => v,
       Err(e) => {
         panic!("call to func failed with:\n{}", e.report(input));
       }
     };
-    let stdout = std::str::from_utf8(&vm.get_io()[..]).unwrap();
+    let stdout = std::str::from_utf8(vm.io()).unwrap();
     let func = func.as_func().unwrap().disassemble(op::disassemble, false);
     let snapshot = format!("# Input:\n{input}\n\n# Func:\n{func}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}");
     insta::assert_snapshot!(snapshot);
@@ -51,11 +51,11 @@ macro_rules! check_error {
       }
     };
     let mut vm = Isolate::with_io(Vec::<u8>::new());
-    let error = match vm.call(func.clone(), &[], Default::default()) {
+    let error = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
       Ok(v) => panic!("call to func succeeded with {v}"),
       Err(e) => e.report(input),
     };
-    let stdout = std::str::from_utf8(&vm.get_io()[..]).unwrap();
+    let stdout = std::str::from_utf8(vm.io()).unwrap();
     let func = func.as_func().unwrap().disassemble(op::disassemble, false);
     let snapshot = format!(
       "# Input:\n{input}\n\n# Func:\n{func}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}"
@@ -279,6 +279,108 @@ fn branch() {
         print "yes"
       else:
         print "no"
+    "#
+  }
+}
+
+#[test]
+fn loops() {
+  check! {
+    r#"
+      i := 0
+      loop:
+        if i >= 10:
+          break
+        print i
+        i += 1
+    "#
+  }
+  check! {
+    r#"
+      i := 0
+      while i < 10:
+        print i
+        i += 1
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..10:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..=10:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      for i in 10..0:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      start := 0
+      end := 10
+      for i in start..end:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      start := 0
+      end := 10
+      for i in start..=end:
+        print i
+    "#
+  }
+  check! {
+    r#"
+      for i in 0..10:
+        if i % 2 == 0: continue
+        print i
+    "#
+  }
+}
+
+#[test]
+fn fn_call() {
+  check! {
+    r#"
+      fn f():
+        print "test"
+
+      f()
+      f()
+    "#
+  }
+  check! {
+    r#"
+      fn f(a, b, c):
+        print a, b, c
+
+      f(0, 1, 2)
+      f(0, 1, 2)
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(a, b, c):
+        print a, b, c
+
+      f()
+    "#
+  }
+  check! {
+    r#"
+      fn f(a, *rest):
+        print a, rest
+
+      f(0)
+      f(0, 1, 2)
     "#
   }
 }

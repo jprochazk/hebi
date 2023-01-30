@@ -113,6 +113,7 @@ pub struct Params {
   pub min: usize,
   pub max: usize,
   pub argv: bool,
+  pub kwargs: bool,
   pub pos: Vec<String>,
   pub kw: indexmap::IndexSet<String>,
 }

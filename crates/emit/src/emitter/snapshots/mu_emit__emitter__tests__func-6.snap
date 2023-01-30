@@ -60,18 +60,18 @@ function <[[main]]>:
     20 | store_reg r6
     22 | call r4, args=2
     25 | load_global [1]
-    27 | store_reg r6
+    27 | store_reg r4
     29 | create_empty_dict 
     30 | store_reg r5
     32 | push_small_int value=1
-    37 | store_reg r4
+    37 | store_reg r6
     39 | push_small_int value=2
     44 | store_reg r7
     46 | push_small_int value=3
     51 | insert_to_dict_named [2], r5
     54 | push_small_int value=4
     59 | insert_to_dict_named [3], r5
-    62 | call_kw r6, args=2
+    62 | call_kw r4, args=2
     65 | suspend 
 
 

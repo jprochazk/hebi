@@ -40,8 +40,12 @@ impl<Io: std::io::Write> Isolate<Io> {
     }
   }
 
-  pub(crate) fn get_io(&self) -> &Io {
+  pub fn io(&self) -> &Io {
     &self.io
+  }
+
+  pub fn print(&mut self, args: std::fmt::Arguments<'_>) -> std::io::Result<()> {
+    self.io.write_fmt(args)
   }
 }
 
@@ -713,10 +717,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_print(&mut self) -> Result<(), Self::Error> {
-    let value = &self.acc;
+    let value = self.acc.clone();
     self
-      .io
-      .write_fmt(format_args!("{value}"))
+      .print(format_args!("{value}\n"))
       // TODO: span
       .map_err(|_| Error::new("failed to print value"))?;
     Ok(())
@@ -735,44 +738,95 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       if iter.peek().is_some() {
         // space at end
         self
-          .io
-          .write_fmt(format_args!("{value} "))
+          .print(format_args!("{value} "))
           // TODO: span
           .map_err(|_| Error::new("failed to print values"))?;
       } else {
         self
-          .io
-          .write_fmt(format_args!("{value}"))
+          .print(format_args!("{value}"))
           // TODO: span
           .map_err(|_| Error::new("failed to print values"))?;
       }
     }
+    self
+      .print(format_args!("\n"))
+      // TODO: span
+      .map_err(|_| Error::new("failed to print values"))?;
 
     Ok(())
   }
 
   fn op_call(&mut self, callee: u32, args: u32) -> Result<(), Self::Error> {
-    unimplemented!()
+    let base = self.call_stack.last().unwrap().stack_base;
+    let callee = callee as usize;
+    let args = args as usize;
+
+    let func = self.stack[base + callee].clone();
+    // TODO: remove `to_vec` somehow
+    let args = self.stack[base + callee + 1..=base + callee + args].to_vec();
+    self.acc = self.call(func, &args, Value::from(Dict::new()))?;
+
+    Ok(())
   }
 
   fn op_call_kw(&mut self, callee: u32, args: u32) -> Result<(), Self::Error> {
-    unimplemented!()
+    let base = self.call_stack.last().unwrap().stack_base;
+    let callee = callee as usize;
+    let args = args as usize;
+
+    let func = self.stack[base + callee].clone();
+    let kwargs = self.stack[base + callee + 1].clone();
+    // TODO: remove `to_vec` somehow
+    let args = self.stack[base + callee + 2..base + callee + 2 + args].to_vec();
+    self.acc = self.call(func, &args, kwargs)?;
+
+    Ok(())
   }
 
   fn op_is_pos_param_not_set(&mut self, index: u32) -> Result<(), Self::Error> {
-    unimplemented!()
+    let frame = self.call_stack.last().unwrap();
+    let index = index as usize;
+
+    self.acc = Value::bool(frame.num_args <= index);
+
+    Ok(())
   }
 
   fn op_is_kw_param_not_set(&mut self, name: u32) -> Result<(), Self::Error> {
-    unimplemented!()
+    let base = self.call_stack.last().unwrap().stack_base;
+    let name = name as usize;
+    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
+    let name = const_pool[name].clone();
+    // name is always a string here
+    let name = dict::Key::try_from(name).unwrap();
+    // base + 3 is always the kw dictionary
+    let kwargs = self.stack[base + 3].as_dict().unwrap();
+
+    self.acc = Value::bool(kwargs.contains_key(name));
+
+    Ok(())
   }
 
   fn op_load_kw_param(&mut self, name: u32, param: u32) -> Result<(), Self::Error> {
-    unimplemented!()
+    let base = self.call_stack.last().unwrap().stack_base;
+    let name = name as usize;
+    let param = param as usize;
+    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
+    let name = const_pool[name].clone();
+    // name is always a string here
+    let name = dict::Key::try_from(name).unwrap();
+    // base + 3 is always the kw dictionary
+    let kwargs = self.stack[base + 3].clone();
+    let kwargs = kwargs.as_dict().unwrap();
+
+    self.stack[base + param] = kwargs.get(name).unwrap().clone();
+
+    Ok(())
   }
 
   fn op_ret(&mut self) -> Result<(), Self::Error> {
-    unimplemented!()
+    // TODO: change this if you stop using c-stack for mu calls
+    Ok(())
   }
 }
 
