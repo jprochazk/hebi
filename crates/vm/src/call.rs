@@ -132,7 +132,7 @@ fn init_params(
     let argv = args[params.max..args.len()].to_vec();
     stack[stack_base + 2] = Value::from(argv);
   } else {
-    stack[stack_base + 2] = Value::none();
+    stack[stack_base + 2] = Value::from(vec![]);
   }
   // kwargs
   stack[stack_base + 3] = kw;
@@ -140,6 +140,7 @@ fn init_params(
   for i in 0..std::cmp::min(args.len(), params.max) {
     stack[stack_base + 4 + i] = args[i].clone();
   }
+  // TODO: is this necessary?
   if args.len() < params.max {
     for i in args.len()..params.max {
       stack[stack_base + 4 + i] = Value::none();

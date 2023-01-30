@@ -57,6 +57,6 @@ function <[[main]]>:
 none
 
 # Stdout:
-0 none
+0 []
 0 [1, 2]
 
