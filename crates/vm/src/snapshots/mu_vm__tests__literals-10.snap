@@ -5,33 +5,6 @@ expression: snapshot
 # Input:
 {a:0, b:1, c:2}
 
-# Func:
-function <[[main]]>:
-  frame_size: 6
-  length: 42
-  const (length=3):
-    0: "a"
-    1: "b"
-    2: "c"
-  code:
-     0 | create_empty_dict 
-     1 | store_reg r4
-     3 | load_const [0]
-     5 | store_reg r5
-     7 | push_small_int value=0
-    12 | insert_to_dict r5, r4
-    15 | load_const [1]
-    17 | store_reg r5
-    19 | push_small_int value=1
-    24 | insert_to_dict r5, r4
-    27 | load_const [2]
-    29 | store_reg r5
-    31 | push_small_int value=2
-    36 | insert_to_dict r5, r4
-    39 | load_reg r4
-    41 | suspend 
-
-
 # Result (success):
 {"a": 0, "b": 1, "c": 2}
 

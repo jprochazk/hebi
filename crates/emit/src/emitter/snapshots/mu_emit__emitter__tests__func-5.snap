@@ -13,29 +13,34 @@ test(1, b=2)
 # Func:
 function <test>:
   frame_size: 7
-  length: 34
+  length: 40
   const (length=1):
     0: "b"
   code:
      0 | is_kw_param_not_set [0]
-     2 | jump_if_false offset=13
+     2 | jump_if_false offset=19
      4 | nop 
      5 | nop 
      6 | nop 
      7 | nop 
      8 | push_small_int value=10
     13 | store_reg r5
-    15 | load_kw_param [0], r5
-    18 | create_empty_list 
-    19 | store_reg r6
-    21 | load_reg r4
-    23 | push_to_list r6
-    25 | load_reg r5
-    27 | push_to_list r6
-    29 | print_list r6
-    31 | push_none 
-    32 | ret 
-    33 | suspend 
+    15 | jump offset=9
+    17 | nop 
+    18 | nop 
+    19 | nop 
+    20 | nop 
+    21 | load_kw_param [0], r5
+    24 | create_empty_list 
+    25 | store_reg r6
+    27 | load_reg r4
+    29 | push_to_list r6
+    31 | load_reg r5
+    33 | push_to_list r6
+    35 | print_list r6
+    37 | push_none 
+    38 | ret 
+    39 | suspend 
 
 function <[[main]]>:
   frame_size: 7

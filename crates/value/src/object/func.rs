@@ -1,4 +1,5 @@
 use beef::lean::Cow;
+use indexmap::IndexMap;
 
 use crate::ptr::{Ref, RefMut};
 use crate::Value;
@@ -115,7 +116,7 @@ pub struct Params {
   pub argv: bool,
   pub kwargs: bool,
   pub pos: Vec<String>,
-  pub kw: indexmap::IndexSet<String>,
+  pub kw: IndexMap<String, bool>,
 }
 
 impl Func {

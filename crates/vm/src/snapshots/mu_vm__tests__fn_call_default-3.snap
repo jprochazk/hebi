@@ -1,0 +1,17 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+fn f(a=10):
+  print a
+
+f(1,2)
+
+
+# Result (error):
+[31merror[0m in code: expected at most 1 args, got 2
+
+
+# Stdout:
+

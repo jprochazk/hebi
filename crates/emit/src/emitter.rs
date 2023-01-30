@@ -622,8 +622,7 @@ mod stmt {
           .params
           .kw
           .iter()
-          .filter(|(_, default)| default.is_none())
-          .map(|(key, _)| String::from(key.as_ref()))
+          .map(|(key, v)| (String::from(key.as_ref()), v.is_some()))
           .collect(),
       };
 
@@ -735,7 +734,7 @@ mod stmt {
         // #if param.default.is_some()
         if let Some(default) = default {
           // if not #(param.name) in kw:
-          let from_key = self.label("next");
+          let [from_key, next] = self.labels(["from_key", "next"]);
           self.emit_op(IsKwParamNotSet { name });
           self.emit_op(JumpIfFalse {
             offset: from_key.id(),
@@ -743,6 +742,7 @@ mod stmt {
           // store(param.reg) = #(param.default)
           self.emit_expr(default)?;
           self.emit_op(StoreReg { reg: reg.index() });
+          self.emit_op(Jump { offset: next.id() });
           self.finish_label(from_key);
           // else:
           // store(param.reg) = kw.remove(#(param.name))
@@ -750,6 +750,7 @@ mod stmt {
             name,
             param: reg.index(),
           });
+          self.finish_label(next);
         } else {
           // store(param.reg) = kw.remove(#(param.name))
           self.emit_op(LoadKwParam {

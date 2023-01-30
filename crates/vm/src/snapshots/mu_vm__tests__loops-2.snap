@@ -9,39 +9,6 @@ while i < 10:
   i += 1
 
 
-# Func:
-function <[[main]]>:
-  frame_size: 5
-  length: 47
-  const (length=1):
-    0: "i"
-  code:
-     0 | push_small_int value=0
-     5 | store_global [0]
-     7 | load_global [0]
-     9 | store_reg r4
-    11 | push_small_int value=10
-    16 | cmp_lt r4
-    18 | jump_if_false offset=28
-    20 | nop 
-    21 | nop 
-    22 | nop 
-    23 | nop 
-    24 | load_global [0]
-    26 | print 
-    27 | load_global [0]
-    29 | store_reg r4
-    31 | push_small_int value=1
-    36 | add r4
-    38 | store_global [0]
-    40 | jump_back offset=33
-    42 | nop 
-    43 | nop 
-    44 | nop 
-    45 | nop 
-    46 | suspend 
-
-
 # Result (success):
 false
 

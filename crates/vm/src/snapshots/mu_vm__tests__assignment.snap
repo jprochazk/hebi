@@ -8,24 +8,9 @@ v = 5
 print v
 
 
-# Func:
-function <[[main]]>:
-  frame_size: 4
-  length: 18
-  const (length=1):
-    0: "v"
-  code:
-     0 | push_small_int value=10
-     5 | store_global [0]
-     7 | push_small_int value=5
-    12 | store_global [0]
-    14 | load_global [0]
-    16 | print 
-    17 | suspend 
-
-
 # Result (success):
 5
 
 # Stdout:
 5
+

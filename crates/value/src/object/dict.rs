@@ -196,28 +196,47 @@ impl Dict {
   /// Return `true` if an equivalent to `key` exists in the map.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn contains_key(&self, key: Key) -> bool {
-    self.inner.contains_key(&key)
+  pub fn contains_key<Q>(&self, key: &Q) -> bool
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.inner.contains_key(key)
   }
 
   /// Return a reference to the value stored for `key`, if it is present,
   /// else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get(&self, key: Key) -> Option<&Value> {
-    self.inner.get(&key)
+  pub fn get<Q>(&self, key: &Q) -> Option<&Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.inner.get(key)
+  }
+
+  pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.inner.remove(key)
   }
 
   /// Return references to the key-value pair stored for `key`,
   /// if it is present, else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get_key_value(&self, key: Key) -> Option<(&Key, &Value)> {
-    self.inner.get_key_value(&key)
+  pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&Key, &Value)>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.inner.get_key_value(key)
   }
 
-  pub fn get_mut(&mut self, key: Key) -> Option<&mut Value> {
-    self.inner.get_mut(&key)
+  pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.inner.get_mut(key)
   }
 
   /// Remove the last key-value pair
@@ -387,6 +406,18 @@ impl TryFrom<Value> for Key {
       return Err(InvalidKeyType);
     }
     Ok(Key(KeyRepr::String(value)))
+  }
+}
+
+impl Equivalent<Key> for str {
+  fn equivalent(&self, key: &Key) -> bool {
+    match &key.0 {
+      KeyRepr::Int(_) => false,
+      KeyRepr::String(v) => {
+        debug_assert!(v.borrow().is_string());
+        unsafe { v.borrow().as_string().unwrap_unchecked().as_str() == self }
+      }
+    }
   }
 }
 

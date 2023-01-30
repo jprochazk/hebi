@@ -5,17 +5,6 @@ expression: snapshot
 # Input:
 !false
 
-# Func:
-function <[[main]]>:
-  frame_size: 4
-  length: 3
-  const: <empty>
-  code:
-    0 | push_false 
-    1 | unary_not 
-    2 | suspend 
-
-
 # Result (success):
 true
 

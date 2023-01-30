@@ -350,6 +350,8 @@ instructions! {
   ///
   /// Keyword argument dictionary is stored in `call_frame.stack_base + 3`.
   ///
+  /// This should remove `name` from the dictionary.
+  ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   /// - `param` - register index of function parameter.

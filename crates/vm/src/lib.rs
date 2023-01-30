@@ -120,7 +120,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let name = const_pool[name].clone();
     // global name is always a string
     let name = dict::Key::try_from(name).unwrap();
-    match self.globals.get(name.clone()) {
+    match self.globals.get(&name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
       None => return Err(Error::new(format!("undefined global {name}"))),
@@ -154,7 +154,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
         return Err(Error::new(format!("undefined field {name}")));
       };
 
-      let Some(value) = obj.get(name.clone()) else {
+      let Some(value) = obj.get(&name) else {
         // TODO: span
         return Err(Error::new(format!("undefined field {name}")));
       };
@@ -186,7 +186,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
         return Err(Error::new(format!("undefined field {name}")));
       };
 
-      match obj.get(name) {
+      match obj.get(&name) {
         Some(v) => v.clone(),
         None => Value::none(),
       }
@@ -234,7 +234,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
         return Err(Error::new(format!("undefined field {name}")));
       };
 
-      let Some(value) = obj.get(name.clone()) else {
+      let Some(value) = obj.get(&name) else {
         // TODO: span
         return Err(Error::new(format!("undefined field {name}")));
       };
@@ -269,7 +269,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
         return Err(Error::new(format!("undefined field {name}")));
       };
 
-      match obj.get(name) {
+      match obj.get(&name) {
         Some(v) => v.clone(),
         None => Value::none(),
       }
@@ -763,7 +763,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     let func = self.stack[base + callee].clone();
     // TODO: remove `to_vec` somehow
-    let args = self.stack[base + callee + 1..=base + callee + args].to_vec();
+    let args = self.stack[base + callee + 1..base + callee + 1 + args].to_vec();
     self.acc = self.call(func, &args, Value::from(Dict::new()))?;
 
     Ok(())
@@ -802,7 +802,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // base + 3 is always the kw dictionary
     let kwargs = self.stack[base + 3].as_dict().unwrap();
 
-    self.acc = Value::bool(kwargs.contains_key(name));
+    self.acc = Value::bool(!kwargs.contains_key(&name));
 
     Ok(())
   }
@@ -816,10 +816,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name is always a string here
     let name = dict::Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let kwargs = self.stack[base + 3].clone();
-    let kwargs = kwargs.as_dict().unwrap();
+    let mut kwargs = self.stack[base + 3].clone();
+    let mut kwargs = kwargs.as_dict_mut().unwrap();
 
-    self.stack[base + param] = kwargs.get(name).unwrap().clone();
+    self.stack[base + param] = kwargs.remove(&name).unwrap();
 
     Ok(())
   }

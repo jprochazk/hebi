@@ -10,40 +10,9 @@ else:
   print "no"
 
 
-# Func:
-function <[[main]]>:
-  frame_size: 5
-  length: 37
-  const (length=3):
-    0: "v"
-    1: "yes"
-    2: "no"
-  code:
-     0 | push_small_int value=10
-     5 | store_global [0]
-     7 | load_global [0]
-     9 | store_reg r4
-    11 | push_small_int value=5
-    16 | cmp_gt r4
-    18 | jump_if_false offset=15
-    20 | nop 
-    21 | nop 
-    22 | nop 
-    23 | nop 
-    24 | load_const [1]
-    26 | print 
-    27 | jump offset=9
-    29 | nop 
-    30 | nop 
-    31 | nop 
-    32 | nop 
-    33 | load_const [2]
-    35 | print 
-    36 | suspend 
-
-
 # Result (success):
 "yes"
 
 # Stdout:
 "yes"
+

@@ -5,17 +5,6 @@ expression: snapshot
 # Input:
 0.1
 
-# Func:
-function <[[main]]>:
-  frame_size: 4
-  length: 3
-  const (length=1):
-    0: 0.1
-  code:
-    0 | load_const [0]
-    2 | suspend 
-
-
 # Result (success):
 0.1
 

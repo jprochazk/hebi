@@ -5,30 +5,6 @@ expression: snapshot
 # Input:
 none ?? 2
 
-# Func:
-function <[[main]]>:
-  frame_size: 5
-  length: 24
-  const: <empty>
-  code:
-     0 | push_none 
-     1 | store_reg r4
-     3 | is_none 
-     4 | jump_if_false offset=17
-     6 | nop 
-     7 | nop 
-     8 | nop 
-     9 | nop 
-    10 | push_small_int value=2
-    15 | jump offset=8
-    17 | nop 
-    18 | nop 
-    19 | nop 
-    20 | nop 
-    21 | load_reg r4
-    23 | suspend 
-
-
 # Result (success):
 2
 

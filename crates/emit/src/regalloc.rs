@@ -98,7 +98,6 @@ impl RegAlloc {
   /// 0. The total number of used registers
   /// 1. A mapping from each register index to a final register slot
   pub fn scan(&self) -> (u32, IndexMap<u32, u32>) {
-    // println!("{}", DisplayTracking(&self.0.borrow()));
     linear_scan(&self.0.borrow().intervals)
   }
 
@@ -150,19 +149,16 @@ fn linear_scan(intervals: &[Interval]) -> (u32, IndexMap<u32, u32>) {
       let register = active.map.remove(&j.index).unwrap().1;
       // add register[j] to pool of free registers
       free.push(Reverse(register));
-      eprintln!("free {register}");
     }
   }
 
   fn allocate(free: &mut BinaryHeap<Reverse<u32>>, registers: &mut u32) -> u32 {
     // attempt to acquire a free register, and fall back to allocating a new one
     if let Some(Reverse(reg)) = free.pop() {
-      eprintln!("use {reg}");
       reg
     } else {
       let reg = *registers;
       *registers += 1;
-      eprintln!("alloc {reg}");
       reg
     }
   }

@@ -1,7 +1,9 @@
 use super::*;
 
 macro_rules! check {
-  ($input:literal) => {{
+  ($input:literal) => {check!(__print_func:false, $input)};
+  (:print_func $input:literal) => {check!(__print_func:true, $input)};
+  (__print_func:$print_func:expr, $input:literal) => {{
     let input = indoc::indoc!($input);
     let module = match syntax::parse(input) {
       Ok(module) => module,
@@ -26,14 +28,20 @@ macro_rules! check {
       }
     };
     let stdout = std::str::from_utf8(vm.io()).unwrap();
-    let func = func.as_func().unwrap().disassemble(op::disassemble, false);
-    let snapshot = format!("# Input:\n{input}\n\n# Func:\n{func}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}");
+    let snapshot = if $print_func {
+      let func = func.as_func().unwrap().disassemble(op::disassemble, false);
+      format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}\n\n# Func:\n{func}")
+    } else {
+      format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}")
+    };
     insta::assert_snapshot!(snapshot);
   }};
 }
 
 macro_rules! check_error {
-  ($input:literal) => {{
+  ($input:literal) => {check_error!(__print_func:false, $input)};
+  (:print_func $input:literal) => {check_error!(__print_func:true, $input)};
+  (__print_func:$print_func:expr, $input:literal) => {{
     let input = indoc::indoc!($input);
     let module = match syntax::parse(input) {
       Ok(module) => module,
@@ -56,10 +64,12 @@ macro_rules! check_error {
       Err(e) => e.report(input),
     };
     let stdout = std::str::from_utf8(vm.io()).unwrap();
-    let func = func.as_func().unwrap().disassemble(op::disassemble, false);
-    let snapshot = format!(
-      "# Input:\n{input}\n\n# Func:\n{func}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}"
-    );
+    let snapshot = if $print_func {
+      let func = func.as_func().unwrap().disassemble(op::disassemble, false);
+      format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}\n\n# Func:\n{func}")
+    } else {
+      format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}")
+    };
     insta::assert_snapshot!(snapshot);
   }};
 }
@@ -381,6 +391,144 @@ fn fn_call() {
 
       f(0)
       f(0, 1, 2)
+    "#
+  }
+}
+
+#[test]
+fn fn_call_default() {
+  check! {
+    r#"
+      fn f(a=10):
+        print a
+      
+      f()
+      f(1)
+    "#
+  }
+  check! {
+    r#"
+      fn f(a, b=10):
+        print a, b
+      
+      f(1)
+      f(1,2)
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(a=10):
+        print a
+      
+      f(1,2)
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(a, b=10):
+        print a
+      
+      f(1,2,3)
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(a, b=10):
+        print a
+      
+      f()
+    "#
+  }
+  check! {
+    r#"
+      fn f(a, b=10, *c):
+        print a, b, c
+      
+      f(1)
+      f(1,2)
+      f(1,2,3)
+    "#
+  }
+}
+
+#[test]
+fn fn_call_kw() {
+  check! {
+    r#"
+      fn f(*, a):
+        print a
+
+      f(a=10)
+    "#
+  }
+  check! {
+    r#"
+      fn f(*, a, b):
+        print a, b
+
+      f(a=1, b=2)
+      f(b=2, a=1)
+    "#
+  }
+  check! {
+    r#"
+      fn f(*, a, b=10):
+        print a, b
+
+      f(a=1)
+      f(a=1, b=2)
+    "#
+  }
+  check! {
+    r#"
+      fn f(*, a, b, **kw):
+        print a, b, kw
+
+      f(a=1, b=2, c=3)
+      f(c=3, b=2, a=1)
+    "#
+  }
+  check! {
+    r#"
+      fn f(*, a, b=10, **kw):
+        print a, b, kw
+
+      f(a=1, c=3)
+      f(c=3, a=1)
+      f(a=1, b=2, c=3)
+      f(c=3, b=2, a=1)
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(*, a):
+        print a
+
+      f()
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(*, a, b):
+        print a, b
+
+      f()
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(*, a, b, **kw):
+        print a, b, kw
+
+      f()
+    "#
+  }
+  check_error! {
+    r#"
+      fn f(*, a, b, **kw):
+        print a, b, kw
+
+      f(c=10)
     "#
   }
 }

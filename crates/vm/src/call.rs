@@ -66,6 +66,7 @@ fn check_args(f: Value, args: &[Value], kw: &Value) -> Result<func::Params, Erro
   } else {
     unreachable!()
   };
+
   if args.len() < params.min {
     return Err(Error::new(format!(
       "missing required positional params: {}",
@@ -82,36 +83,47 @@ fn check_args(f: Value, args: &[Value], kw: &Value) -> Result<func::Params, Erro
   if params.kw.is_empty() && !kw.is_empty() {
     return Err(Error::new(format!(
       "missing required keyword params: {}",
-      params.kw.iter().join(", "),
+      params.kw.iter().map(|(k, _)| k).join(", "),
     )));
   }
+
   let mut unknown = IndexSet::new();
-  let mut matched_kw = 0;
+  let mut missing = IndexSet::new();
   for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-    if !params.kwargs && !params.kw.contains(&key[..]) {
+    if !params.kwargs && !params.kw.contains_key(&key[..]) {
       unknown.insert(key.to_string());
-    } else {
-      matched_kw += 1;
     }
   }
-  if !unknown.is_empty() {
-    return Err(Error::new(format!(
-      "unknown keyword params: {}",
-      unknown.iter().join(", ")
-    )));
-  }
-  if matched_kw != params.kw.len() {
-    let mut missing = IndexSet::new();
-    for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-      if !params.kw.contains(&key[..]) {
-        missing.insert(key.to_string());
-      }
+  for key in params
+    .kw
+    .iter()
+    .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
+  {
+    if !kw.contains_key(key) {
+      missing.insert(key.to_string());
     }
+  }
+  if !unknown.is_empty() || !missing.is_empty() {
     return Err(Error::new(format!(
-      "missing required keyword params: {}",
-      params.kw.iter().join(", ")
+      "mismatched keyword params: {}{}{}",
+      if !unknown.is_empty() {
+        format!("could not recognize {}", unknown.iter().join(", "))
+      } else {
+        String::new()
+      },
+      if !unknown.is_empty() && !missing.is_empty() {
+        " and "
+      } else {
+        ""
+      },
+      if !missing.is_empty() {
+        format!("missing {}", missing.iter().join(", "))
+      } else {
+        String::new()
+      },
     )));
   }
+
   Ok(params)
 }
 

@@ -5,16 +5,6 @@ expression: snapshot
 # Input:
 false
 
-# Func:
-function <[[main]]>:
-  frame_size: 4
-  length: 2
-  const: <empty>
-  code:
-    0 | push_false 
-    1 | suspend 
-
-
 # Result (success):
 false
 

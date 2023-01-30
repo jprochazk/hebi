@@ -9,40 +9,6 @@ fn f(a, b, c):
 f()
 
 
-# Func:
-function <f>:
-  frame_size: 8
-  length: 20
-  const: <empty>
-  code:
-     0 | create_empty_list 
-     1 | store_reg r7
-     3 | load_reg r4
-     5 | push_to_list r7
-     7 | load_reg r5
-     9 | push_to_list r7
-    11 | load_reg r6
-    13 | push_to_list r7
-    15 | print_list r7
-    17 | push_none 
-    18 | ret 
-    19 | suspend 
-
-function <[[main]]>:
-  frame_size: 5
-  length: 12
-  const (length=2):
-    0: <func f>
-    1: "f"
-  code:
-     0 | load_const [0]
-     2 | store_global [1]
-     4 | load_global [1]
-     6 | store_reg r4
-     8 | call r4, args=0
-    11 | suspend 
-
-
 # Result (error):
 [31merror[0m in code: missing required positional params: a, b, c
 

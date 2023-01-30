@@ -383,11 +383,11 @@ fn for_loop_stmt() {
 fn _temp() {
   check! {
     r#"
-      fn f(a, *rest):
-        print a, rest
+      fn f(*, a, b=10):
+        print a, b
 
-      f(0)
-      f(0, 1, 2)
+      f(a=1)
+      f(a=1, b=2)
     "#
   }
 } */

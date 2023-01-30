@@ -7,32 +7,6 @@ v := { a: {} }
 print v.a.b
 
 
-# Func:
-function <[[main]]>:
-  frame_size: 7
-  length: 27
-  const (length=3):
-    0: "a"
-    1: "v"
-    2: "b"
-  code:
-     0 | create_empty_dict 
-     1 | store_reg r4
-     3 | load_const [0]
-     5 | store_reg r5
-     7 | create_empty_dict 
-     8 | store_reg r6
-    10 | load_reg r6
-    12 | insert_to_dict r5, r4
-    15 | load_reg r4
-    17 | store_global [1]
-    19 | load_global [1]
-    21 | load_named [0]
-    23 | load_named [2]
-    25 | print 
-    26 | suspend 
-
-
 # Result (error):
 [31merror[0m in code: undefined field "b"
 

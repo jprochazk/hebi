@@ -8,38 +8,9 @@ v ??= 2
 print v
 
 
-# Func:
-function <[[main]]>:
-  frame_size: 5
-  length: 37
-  const (length=1):
-    0: "v"
-  code:
-     0 | push_small_int value=10
-     5 | store_global [0]
-     7 | load_global [0]
-     9 | store_reg r4
-    11 | is_none 
-    12 | jump_if_false offset=17
-    14 | nop 
-    15 | nop 
-    16 | nop 
-    17 | nop 
-    18 | push_small_int value=2
-    23 | jump offset=8
-    25 | nop 
-    26 | nop 
-    27 | nop 
-    28 | nop 
-    29 | load_reg r4
-    31 | store_global [0]
-    33 | load_global [0]
-    35 | print 
-    36 | suspend 
-
-
 # Result (success):
 10
 
 # Stdout:
 10
+

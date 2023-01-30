@@ -5,22 +5,6 @@ expression: snapshot
 # Input:
 3 * 2 + 1
 
-# Func:
-function <[[main]]>:
-  frame_size: 6
-  length: 24
-  const: <empty>
-  code:
-     0 | push_small_int value=3
-     5 | store_reg r5
-     7 | push_small_int value=2
-    12 | mul r5
-    14 | store_reg r4
-    16 | push_small_int value=1
-    21 | add r4
-    23 | suspend 
-
-
 # Result (success):
 7
 
