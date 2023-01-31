@@ -8,6 +8,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "a",
@@ -36,6 +37,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "a",
@@ -70,6 +72,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [],
                     argv: Some(
                         "argv",
@@ -87,6 +90,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [],
                     argv: None,
                     kw: [],
@@ -104,6 +108,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [],
                     argv: Some(
                         "argv",
@@ -123,6 +128,7 @@ Module {
             Func {
                 name: "f",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "a",

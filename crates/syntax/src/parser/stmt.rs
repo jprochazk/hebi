@@ -171,12 +171,9 @@ impl<'src> Parser<'src> {
   }
 
   fn loop_body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
-    let ctx = Context {
-      current_loop: Some(()),
-      current_func: self.ctx.current_func,
-      ..Default::default()
-    };
+    let ctx = Context::with_loop(&self.ctx);
     let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
+    // yield may appear in loop, in which case we have to propagate it upwards here
     self.ctx.current_func = ctx.current_func;
 
     Ok(body)
@@ -197,10 +194,7 @@ impl<'src> Parser<'src> {
     let params = self.func_params()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let ctx = Context {
-      current_func: Some(Func::default()),
-      ..Default::default()
-    };
+    let ctx = self.ctx.with_func(params.has_self);
     let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
     let has_yield = ctx
       .current_func
@@ -213,7 +207,19 @@ impl<'src> Parser<'src> {
   fn func_params(&mut self) -> Result<ast::Params<'src>> {
     self.expect(Brk_ParenL)?;
 
-    let mut params = ast::Params::default();
+    let has_self = self.bump_if(Kw_Self);
+    if has_self {
+      let span = self.previous().span;
+      self.bump_if(Tok_Comma);
+      if self.ctx.current_class.is_none() {
+        return Err(Error::new("cannot access `self` outside of class", span));
+      }
+    }
+
+    let mut params = ast::Params {
+      has_self,
+      ..Default::default()
+    };
     if !self.current().is(Brk_ParenR) {
       let mut state = ParamState::Positional;
       self.param(&mut params, &mut state)?;
@@ -228,6 +234,7 @@ impl<'src> Parser<'src> {
       }
     }
     self.expect(Brk_ParenR)?;
+
     Ok(params)
   }
 
@@ -326,7 +333,8 @@ impl<'src> Parser<'src> {
     self.expect(Tok_Colon)?;
     let mut fields = vec![];
     let mut funcs = vec![];
-    self.class_members(&mut fields, &mut funcs)?;
+    let ctx = Context::with_class(parent.is_some());
+    self.with_ctx(ctx, |this| this.class_members(&mut fields, &mut funcs))?;
     let end = self.previous().span.end;
     Ok(ast::class_stmt(start..end, name, parent, fields, funcs))
   }

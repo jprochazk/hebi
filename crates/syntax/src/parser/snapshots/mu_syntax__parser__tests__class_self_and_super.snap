@@ -1,0 +1,99 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: Params {
+                            has_self: true,
+                            pos: [],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetSelf,
+                                    ],
+                                },
+                            ),
+                        ],
+                        has_yield: false,
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [],
+                funcs: [
+                    Func {
+                        name: "f",
+                        params: Params {
+                            has_self: true,
+                            pos: [],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetSelf,
+                                        GetSuper,
+                                    ],
+                                },
+                            ),
+                        ],
+                        has_yield: false,
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                fields: [
+                    Field {
+                        name: "v",
+                        default: Some(
+                            Call(
+                                Call {
+                                    target: GetNamed(
+                                        GetNamed {
+                                            target: GetSuper,
+                                            name: "f",
+                                        },
+                                    ),
+                                    args: Args {
+                                        pos: [],
+                                        kw: [],
+                                    },
+                                },
+                            ),
+                        ),
+                    },
+                ],
+                funcs: [],
+            },
+        ),
+    ],
+}

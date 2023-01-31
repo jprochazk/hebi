@@ -236,15 +236,41 @@ impl<'src> Parser<'src> {
       return Ok(ast::expr_dict(start..end, items));
     }
 
+    if self.bump_if(Kw_Self) {
+      if self.ctx.current_class.is_none()
+        || !self.ctx.current_func.map(|f| f.has_self).unwrap_or(false)
+      {
+        return Err(Error::new(
+          "cannot access `self` outside of class method",
+          self.previous().span,
+        ));
+      }
+      return Ok(ast::expr_get_self(self.previous().span));
+    }
+
+    if self.bump_if(Kw_Super) {
+      if let Some(c) = &self.ctx.current_class {
+        if !c.has_super {
+          return Err(Error::new(
+            "cannot access `super` in a class with no parent class",
+            self.previous().span,
+          ));
+        }
+      } else {
+        return Err(Error::new(
+          "cannot access `super` outside of class method",
+          self.previous().span,
+        ));
+      }
+      return Ok(ast::expr_get_super(self.previous().span));
+    }
+
     if self.current().is(Lit_Ident) {
       return Ok(ast::expr_get_var(self.ident()?));
     }
 
     if self.bump_if(Brk_ParenL) {
-      let ctx = Context {
-        ignore_indent: true,
-        ..Default::default()
-      };
+      let ctx = self.ctx.with_ignore_indent();
       let expr = self.with_ctx(ctx, |p| p.expr())?;
       self.expect(Brk_ParenR)?;
       return Ok(expr);
@@ -275,10 +301,7 @@ impl<'src> Parser<'src> {
     let mut args = ast::Args::new();
     self.expect(Brk_ParenL)?;
     if !self.current().is(Brk_ParenR) {
-      let ctx = Context {
-        ignore_indent: true,
-        ..Default::default()
-      };
+      let ctx = self.ctx.with_ignore_indent();
       self.with_ctx(ctx, |p| {
         let mut parsing_kw = false;
         p.call_arg_one(&mut args, &mut parsing_kw)?;

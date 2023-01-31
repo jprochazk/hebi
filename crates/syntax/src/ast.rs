@@ -76,6 +76,7 @@ pub struct Func<'src> {
 #[cfg_attr(test, derive(Debug))]
 #[derive(Default)]
 pub struct Params<'src> {
+  pub has_self: bool,
   pub pos: Vec<(Ident<'src>, Option<Expr<'src>>)>,
   pub argv: Option<Ident<'src>>,
   pub kw: Vec<(Ident<'src>, Option<Expr<'src>>)>,
@@ -164,6 +165,8 @@ pub enum ExprKind<'src> {
   SetKeyed(Box<SetKeyed<'src>>),
   Yield(Box<Yield<'src>>),
   Call(Box<Call<'src>>),
+  GetSelf,
+  GetSuper,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -462,6 +465,14 @@ pub fn expr_dict<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>)
 
 pub fn expr_get_var(name: Ident) -> Expr {
   Expr::new(name.span, ExprKind::GetVar(Box::new(GetVar { name })))
+}
+
+pub fn expr_get_self<'src>(s: impl Into<Span>) -> Expr<'src> {
+  Expr::new(s, ExprKind::GetSelf)
+}
+
+pub fn expr_get_super<'src>(s: impl Into<Span>) -> Expr<'src> {
+  Expr::new(s, ExprKind::GetSuper)
 }
 
 pub fn expr_stmt(expr: Expr) -> Stmt {

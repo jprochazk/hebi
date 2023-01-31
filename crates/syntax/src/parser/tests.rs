@@ -734,6 +734,73 @@ fn class_stmt() {
 }
 
 #[test]
+fn class_self_and_super() {
+  check_module! {
+    r#"
+      class T:
+        f(self):
+          print self
+      
+      class T(U):
+        f(self):
+          print self, super
+
+      class T(U):
+        v = super.f()
+    "#
+  }
+
+  check_error! {
+    r#"
+      self
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        v = self.f()
+    "#
+  }
+
+  check_error! {
+    r#"
+      fn f():
+        print self
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        f():
+          print self
+    "#
+  }
+
+  check_error! {
+    r#"
+      super
+    "#
+  }
+
+  check_error! {
+    r#"
+      fn f():
+        print super
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        f():
+          print self
+    "#
+  }
+}
+
+#[test]
 fn whole_module() {
   check_module! {
     r#"

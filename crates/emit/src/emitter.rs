@@ -849,7 +849,12 @@ mod expr {
         ast::ExprKind::GetKeyed(v) => self.emit_get_keyed_expr(v),
         ast::ExprKind::SetKeyed(v) => self.emit_set_keyed_expr(v),
         ast::ExprKind::Yield(v) => self.emit_yield_expr(v),
-        ast::ExprKind::Call(v) => self.emit_call_expr(v),
+        ast::ExprKind::Call(v) => match get_receiver(v) {
+          None => self.emit_call_expr(v),
+          Some(receiver) => self.emit_invoke_expr(v, receiver),
+        },
+        ast::ExprKind::GetSelf => self.emit_get_self_expr(),
+        ast::ExprKind::GetSuper => self.emit_get_super_expr(),
       }
     }
 
@@ -1116,6 +1121,7 @@ mod expr {
       todo!()
     }
 
+    // TODO: method call
     fn emit_call_expr(&mut self, expr: &'src ast::Call<'src>) -> Result<()> {
       let callee = self.reg();
       self.emit_expr(&expr.target)?;
@@ -1182,6 +1188,49 @@ mod expr {
 
       Ok(())
     }
+
+    // TODO:
+    // - emit receiver into reg
+    // - emit callee into reg based on call.target expr (LoadNamed/LoadKeyed)
+    // - add extra arg for receiver
+    // everything else is the same as `emit_call_expr`
+    fn emit_invoke_expr(
+      &mut self,
+      call: &'src ast::Call<'src>,
+      receiver: &'src ast::Expr<'src>,
+    ) -> Result<()> {
+      todo!()
+    }
+
+    fn emit_get_self_expr(&mut self) -> Result<()> {
+      self.emit_op(LoadSelf);
+
+      Ok(())
+    }
+
+    fn emit_get_super_expr(&mut self) -> Result<()> {
+      self.emit_op(LoadSuper);
+
+      Ok(())
+    }
+  }
+}
+
+fn get_receiver<'src>(call: &'src ast::Call<'src>) -> Option<&'src ast::Expr<'src>> {
+  match call.target.deref() {
+    ast::ExprKind::Literal(_) => None,
+    ast::ExprKind::Binary(_) => None,
+    ast::ExprKind::Unary(_) => None,
+    ast::ExprKind::GetVar(_) => None,
+    ast::ExprKind::SetVar(_) => None,
+    ast::ExprKind::GetNamed(v) => Some(&v.target),
+    ast::ExprKind::SetNamed(_) => None,
+    ast::ExprKind::GetKeyed(v) => Some(&v.target),
+    ast::ExprKind::SetKeyed(_) => None,
+    ast::ExprKind::Yield(_) => None,
+    ast::ExprKind::Call(_) => None,
+    ast::ExprKind::GetSelf => None,
+    ast::ExprKind::GetSuper => None,
   }
 }
 

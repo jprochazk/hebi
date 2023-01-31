@@ -127,6 +127,10 @@ pub enum TokenKind {
   Kw_Yield,
   #[token("class")]
   Kw_Class,
+  #[token("self")]
+  Kw_Self,
+  #[token("super")]
+  Kw_Super,
   #[token("for")]
   Kw_For,
   #[token("in")]
@@ -279,6 +283,8 @@ impl TokenKind {
       TokenKind::Kw_Fn => "fn",
       TokenKind::Kw_Yield => "yield",
       TokenKind::Kw_Class => "class",
+      TokenKind::Kw_Self => "self",
+      TokenKind::Kw_Super => "super",
       TokenKind::Kw_For => "for",
       TokenKind::Kw_In => "in",
       TokenKind::Kw_While => "while",

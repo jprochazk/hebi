@@ -917,6 +917,7 @@ Module {
             Func {
                 name: "add",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "a",
@@ -996,6 +997,7 @@ Module {
             Func {
                 name: "fib",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "n",
@@ -1104,6 +1106,7 @@ Module {
             Func {
                 name: "print_fib",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "n",
@@ -1183,6 +1186,7 @@ Module {
             Func {
                 name: "counter",
                 params: Params {
+                    has_self: false,
                     pos: [
                         (
                             "start",
@@ -1603,11 +1607,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
+                            has_self: true,
                             pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
                                 (
                                     "n",
                                     None,
@@ -1622,11 +1623,7 @@ Module {
                                 SetNamed(
                                     SetNamed {
                                         target: GetNamed {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "self",
-                                                },
-                                            ),
+                                            target: GetSelf,
                                             name: "n",
                                         },
                                         value: GetVar(
@@ -1643,12 +1640,8 @@ Module {
                     Func {
                         name: "get_n",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -1660,11 +1653,7 @@ Module {
                                         value: Some(
                                             GetNamed(
                                                 GetNamed {
-                                                    target: GetVar(
-                                                        GetVar {
-                                                            name: "self",
-                                                        },
-                                                    ),
+                                                    target: GetSelf,
                                                     name: "n",
                                                 },
                                             ),
@@ -1678,12 +1667,8 @@ Module {
                     Func {
                         name: "test1",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -1697,11 +1682,7 @@ Module {
                                                 "instance",
                                             ),
                                         ),
-                                        GetVar(
-                                            GetVar {
-                                                name: "self",
-                                            },
-                                        ),
+                                        GetSelf,
                                     ],
                                 },
                             ),
@@ -1711,6 +1692,7 @@ Module {
                     Func {
                         name: "test0",
                         params: Params {
+                            has_self: false,
                             pos: [],
                             argv: None,
                             kw: [],
@@ -2058,12 +2040,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2137,12 +2115,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2152,11 +2126,7 @@ Module {
                                 SetNamed(
                                     SetNamed {
                                         target: GetNamed {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "self",
-                                                },
-                                            ),
+                                            target: GetSelf,
                                             name: "a",
                                         },
                                         value: Literal(
@@ -2233,12 +2203,8 @@ Module {
                     Func {
                         name: "inherited",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2338,12 +2304,8 @@ Module {
                     Func {
                         name: "inherited",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2405,12 +2367,8 @@ Module {
                     Func {
                         name: "inherited",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2421,11 +2379,7 @@ Module {
                                     Call {
                                         target: GetNamed(
                                             GetNamed {
-                                                target: GetVar(
-                                                    GetVar {
-                                                        name: "super",
-                                                    },
-                                                ),
+                                                target: GetSuper,
                                                 name: "inherited",
                                             },
                                         ),
@@ -2490,12 +2444,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2505,11 +2455,7 @@ Module {
                                 SetNamed(
                                     SetNamed {
                                         target: GetNamed {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "self",
-                                                },
-                                            ),
+                                            target: GetSelf,
                                             name: "v",
                                         },
                                         value: Literal(
@@ -2537,12 +2483,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
-                            pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
-                            ],
+                            has_self: true,
+                            pos: [],
                             argv: None,
                             kw: [],
                             kwargs: None,
@@ -2552,11 +2494,7 @@ Module {
                                 SetNamed(
                                     SetNamed {
                                         target: GetNamed {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "self",
-                                                },
-                                            ),
+                                            target: GetSelf,
                                             name: "v",
                                         },
                                         value: Literal(
@@ -2584,11 +2522,8 @@ Module {
                     Func {
                         name: "init",
                         params: Params {
+                            has_self: true,
                             pos: [
-                                (
-                                    "self",
-                                    None,
-                                ),
                                 (
                                     "v",
                                     None,
@@ -2604,21 +2539,13 @@ Module {
                                     Call {
                                         target: GetNamed(
                                             GetNamed {
-                                                target: GetVar(
-                                                    GetVar {
-                                                        name: "super",
-                                                    },
-                                                ),
+                                                target: GetSuper,
                                                 name: "init",
                                             },
                                         ),
                                         args: Args {
                                             pos: [
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "self",
-                                                    },
-                                                ),
+                                                GetSelf,
                                             ],
                                             kw: [],
                                         },
@@ -2629,11 +2556,7 @@ Module {
                                 SetNamed(
                                     SetNamed {
                                         target: GetNamed {
-                                            target: GetVar(
-                                                GetVar {
-                                                    name: "self",
-                                                },
-                                            ),
+                                            target: GetSelf,
                                             name: "v",
                                         },
                                         value: Binary(
@@ -2641,11 +2564,7 @@ Module {
                                                 op: Add,
                                                 left: GetNamed(
                                                     GetNamed {
-                                                        target: GetVar(
-                                                            GetVar {
-                                                                name: "self",
-                                                            },
-                                                        ),
+                                                        target: GetSelf,
                                                         name: "v",
                                                     },
                                                 ),

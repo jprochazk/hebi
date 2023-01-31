@@ -18,15 +18,64 @@ pub fn parse(src: &str) -> Result<ast::Module, Vec<Error>> {
   parser.module()
 }
 
+#[derive(Clone)]
 struct Context {
   ignore_indent: bool,
   current_loop: Option<()>,
   current_func: Option<Func>,
+  current_class: Option<Class>,
+}
+
+impl Context {
+  pub fn with_ignore_indent(&self) -> Self {
+    Self {
+      ignore_indent: true,
+      current_loop: self.current_loop,
+      current_func: self.current_func,
+      current_class: self.current_class,
+    }
+  }
+
+  pub fn with_class(has_super: bool) -> Self {
+    Self {
+      ignore_indent: false,
+      current_loop: None,
+      current_func: None,
+      current_class: Some(Class { has_super }),
+    }
+  }
+
+  pub fn with_func(&self, has_self: bool) -> Self {
+    Self {
+      ignore_indent: false,
+      current_loop: None,
+      current_func: Some(Func {
+        has_yield: false,
+        has_self,
+      }),
+      current_class: self.current_class,
+    }
+  }
+
+  pub fn with_loop(&self) -> Self {
+    Self {
+      ignore_indent: false,
+      current_loop: Some(()),
+      current_func: self.current_func,
+      current_class: self.current_class,
+    }
+  }
+}
+
+#[derive(Clone, Copy)]
+struct Class {
+  has_super: bool,
 }
 
 #[derive(Clone, Copy)]
 struct Func {
   has_yield: bool,
+  has_self: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -36,6 +85,7 @@ impl Default for Context {
       ignore_indent: false,
       current_loop: None,
       current_func: None,
+      current_class: None,
     }
   }
 }
@@ -43,7 +93,10 @@ impl Default for Context {
 #[allow(clippy::derivable_impls)]
 impl Default for Func {
   fn default() -> Self {
-    Self { has_yield: false }
+    Self {
+      has_yield: false,
+      has_self: false,
+    }
   }
 }
 

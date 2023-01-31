@@ -29,6 +29,7 @@ Module {
                     Func {
                         name: "f",
                         params: Params {
+                            has_self: false,
                             pos: [
                                 (
                                     "v",
@@ -67,6 +68,7 @@ Module {
                     Func {
                         name: "f",
                         params: Params {
+                            has_self: false,
                             pos: [
                                 (
                                     "v",
@@ -148,6 +150,7 @@ Module {
                     Func {
                         name: "f",
                         params: Params {
+                            has_self: false,
                             pos: [
                                 (
                                     "v",
@@ -188,6 +191,7 @@ Module {
                     Func {
                         name: "f",
                         params: Params {
+                            has_self: false,
                             pos: [
                                 (
                                     "v",
