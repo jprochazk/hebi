@@ -379,6 +379,14 @@ fn for_loop_stmt() {
   }
 }
 
+#[test]
+fn method_call() {
+  check!(r#"o.f()"#);
+  check!(r#"o.f(0)"#);
+  check!(r#"o.f(1,2,3)"#);
+  check!(r#"o.f(1,2,c=3)"#);
+}
+
 /* #[test]
 fn _temp() {
   check! {

@@ -246,6 +246,16 @@ instructions! {
   /// - `list` - register index of value list.
   PrintList (list: Reg),
 
+  // TODO: `Call` and `CallKw` should not take `callee` by register
+  // instead, the register should point to the first argument,
+  // and `args` remains as the number of arguments.
+  // emit will place the function load just before the call instruction
+  // this will put the function in the accumulator, which is good enough,
+  // but in return, it means that we will be able to peephole optimize:
+  //   <load_named_ic> / <load_keyed_ic>
+  //   <call>
+  // to just:
+  //   <call_named_ic> / <call_keyed_ic>
   /// Call `callee` using only positional arguments.
   ///
   /// The stack should be:
@@ -338,99 +348,6 @@ instructions! {
   /// - `callee` - register index of callee.
   /// - `args` - number of arguments.
   CallKw (callee: Reg, args: uv),
-
-  /// Call `callee` with mixed positional and keyword arguments.
-  ///
-  /// The stack should be:
-  /// ```text,ignore
-  /// [reg(callee)      ] <func ...>
-  /// [reg(callee)+1    ] args[0] = receiver
-  /// [reg(callee)+1+...] args[...]
-  /// [reg(callee)+1+N-1] args[N-1]
-  /// ```
-  ///
-  /// Call operation:
-  /// 1. Assert that `callee` is callable, or panic.
-  /// 2. Check the call arguments. [check]
-  /// 3. Create a new call frame.
-  /// 4. Initialize the function's params. [params]
-  /// 5. Store the current call frame's IP, and dispatch on the new call frame.
-  ///
-  /// [check]: The following conditions must be true:
-  /// - `num_args >= callee.min_args && num_args <= callee.max_args`
-  /// - All required keyword arguments appear in `kw`.
-  ///
-  /// [params]: Param initialization process
-  /// - Copy the receiver to slot `[0]` (receiver).
-  /// - Copy the function to slot `[1]` (function).
-  /// - If `num_args > max_args`, create a list at slot `[2]`, and initialize it with `args[max_args..]`.
-  ///   Otherwise, set `[2]` to `none`.
-  /// - Set slot `[3]` (kwargs) to `none`.
-  /// - Copy arguments from `args[..num_args]` to `[4]..[4+N-1]`.
-  /// - If `num_args < max_args`, initialize `params[4+num_args..4+max_args]` to `none`.
-  ///
-  /// Stack after initialization:
-  /// ```text,ignore
-  /// [0    ] <receiver>
-  /// [1    ] <function>
-  /// [2    ] argv
-  /// [3    ] kwargs
-  /// [4+0  ] params[0]
-  /// [4+...] params[...]
-  /// [4+N-1] params[N-1]
-  /// ```
-  ///
-  /// ### Operands
-  /// - `callee` - register index of callee.
-  /// - `args` - number of arguments.
-  Invoke (callee: Reg, args: uv),
-
-  /// Call `callee` with mixed positional and keyword arguments.
-  ///
-  /// The stack should be:
-  /// ```text,ignore
-  /// [reg(callee)      ] <func ...>
-  /// [reg(callee)+1    ] kw
-  /// [reg(callee)+2    ] args[0] = receiver
-  /// [reg(callee)+2+...] args[...]
-  /// [reg(callee)+2+N-1] args[N-1]
-  /// ```
-  ///
-  /// Call operation:
-  /// 1. Assert that `callee` is callable, or panic.
-  /// 2. Check the call arguments. [check]
-  /// 3. Create a new call frame.
-  /// 4. Initialize the function's params. [params]
-  /// 5. Store the current call frame's IP, and dispatch on the new call frame.
-  ///
-  /// [check]: The following conditions must be true:
-  /// - `num_args >= callee.min_args && num_args <= callee.max_args`
-  /// - All required keyword arguments appear in `kw`.
-  ///
-  /// [params]: Param initialization process
-  /// - Copy the receiver to slot `[0]` (receiver).
-  /// - Copy the function to slot `[1]` (function).
-  /// - If `num_args > max_args`, create a list at slot `[2]`, and initialize it with `args[max_args..]`.
-  ///   Otherwise, set `[2]` to `none`.
-  /// - Copy the `kw` dictionary to slot `[3]` (kwargs).
-  /// - Copy arguments from `args[0..num_args]` to `params[4..4+num_args]`
-  /// - If `num_args < max_args`, initialize `params[4+num_args..4+max_args]` to `none`.
-  ///
-  /// Stack after initialization:
-  /// ```text,ignore
-  /// [0    ] <receiver>
-  /// [1    ] <function>
-  /// [2    ] argv
-  /// [3    ] kwargs
-  /// [4+0  ] params[0]
-  /// [4+...] params[...]
-  /// [4+N-1] params[N-1]
-  /// ```
-  ///
-  /// ### Operands
-  /// - `callee` - register index of callee.
-  /// - `args` - number of arguments.
-  InvokeKw (callee: Reg, args: uv),
 
   /// Sets the accumulator to `true` if `call_frame.num_args <= n`.
   ///
