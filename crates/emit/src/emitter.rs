@@ -782,6 +782,12 @@ mod stmt {
     }
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
+      // emit initializer function
+      // emit rest of methods
+      // package that into class descriptor
+      // emit CreateClass op with class descriptor
+      // emit Inherit op for classes with parents
+
       todo!()
     }
 
@@ -1118,66 +1124,62 @@ mod expr {
       todo!()
     }
 
-    // TODO: method call
     fn emit_call_expr(&mut self, expr: &'src ast::Call<'src>) -> Result<()> {
-      // emit callee
-      let callee = self.reg();
-      self.emit_expr(&expr.target)?;
-      self.emit_op(StoreReg {
-        reg: callee.index(),
-      });
+      // 1. emit args (reg)
+      // 2. emit kw dict (reg)
+      // 3. emit callee (acc)
+      // 4. emit op Call (#args)
 
-      // emit kw dict
-      let mut kw = None;
-      if !expr.args.kw.is_empty() {
-        let kw_reg = self.reg();
-        self.emit_op(CreateEmptyDict);
-        self.emit_op(StoreReg {
-          reg: kw_reg.index(),
-        });
-        kw = Some(kw_reg);
-      }
-
-      // emit args
+      // allocate registers
+      let kw = if !expr.args.kw.is_empty() {
+        Some(self.reg())
+      } else {
+        None
+      };
       let argv = (0..expr.args.pos.len())
         .map(|_| self.reg())
         .collect::<Vec<_>>();
+
+      // emit args
       for (reg, value) in argv.iter().zip(expr.args.pos.iter()) {
         self.emit_expr(value)?;
         self.emit_op(StoreReg { reg: reg.index() });
       }
 
-      // emit kw args
-      for (name, value) in expr.args.kw.iter() {
-        let name = self.const_name(name);
-        self.emit_expr(value)?;
-        self.emit_op(InsertToDictNamed {
-          name,
-          dict: kw.as_ref().unwrap().index(),
-        });
+      // emit kw dict
+      if let Some(kw) = &kw {
+        self.emit_op(CreateEmptyDict);
+        self.emit_op(StoreReg { reg: kw.index() });
+        for (name, value) in expr.args.kw.iter() {
+          let name = self.const_name(name);
+          self.emit_expr(value)?;
+          self.emit_op(InsertToDictNamed {
+            name,
+            dict: kw.index(),
+          });
+        }
       }
+
+      // emit callee
+      self.emit_expr(&expr.target)?;
 
       // extend live intervals of args
-      for a in argv.iter().rev() {
-        a.index();
+      //   - this ensures that regalloc doesn't reallocate our argument registers to
+      //     any potential intermediate registers in the argument expressions.
+      for r in argv.iter().skip(1).rev() {
+        r.index();
       }
-      if let Some(kw) = &kw {
-        kw.index();
-      }
-      callee.index();
+      let arg0 = argv.first().map(|r| r.index());
+      let kw = kw.map(|r| r.index());
+      let args = argv.len() as u32;
 
       // emit op
-      if kw.is_none() {
-        self.emit_op(Call {
-          callee: callee.index(),
-          args: argv.len() as u32,
-        });
-      } else {
-        self.emit_op(CallKw {
-          callee: callee.index(),
-          args: argv.len() as u32,
-        });
-      }
+      let op: Instruction = match (kw, arg0) {
+        (Some(kw), _) => CallKw { start: kw, args }.into(),
+        (None, Some(arg0)) => Call { start: arg0, args }.into(),
+        _ => Call0.into(),
+      };
+      self.emit_op(op);
 
       Ok(())
     }

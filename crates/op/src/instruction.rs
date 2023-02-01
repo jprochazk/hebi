@@ -152,6 +152,18 @@ instructions! {
   /// - `self_slot` - slot in capture list of closure in the accumulator.
   CaptureSlot (parent_slot: uv, self_slot: uv),
 
+  /// Create a class from `descriptor`.
+  ///
+  /// ### Operands
+  /// - `descriptor` - constant pool index of descriptor.
+  CreateClass (descriptor: Const),
+  /// Create a class from `descriptor` and have it inherit from class stored in `parent`.
+  ///
+  /// ### Operands
+  /// - `descriptor` - constant pool index of descriptor.
+  /// - `parent` - register index of the parent class.
+  CreateClassDerived (descriptor: Const, parent: Reg),
+
   // jumps
   /// Jump forward by `offset`.
   Jump :jump (offset: uv),
@@ -246,25 +258,9 @@ instructions! {
   /// - `list` - register index of value list.
   PrintList (list: Reg),
 
-  // TODO: `Call` and `CallKw` should not take `callee` by register
-  // instead, the register should point to the first argument,
-  // and `args` remains as the number of arguments.
-  // emit will place the function load just before the call instruction
-  // this will put the function in the accumulator, which is good enough,
-  // but in return, it means that we will be able to peephole optimize:
-  //   <load_named_ic> / <load_keyed_ic>
-  //   <call>
-  // to just:
-  //   <call_named_ic> / <call_keyed_ic>
   /// Call `callee` using only positional arguments.
   ///
-  /// The stack should be:
-  /// ```text,ignore
-  /// [reg(callee)      ] <func ...>
-  /// [reg(callee)+1    ] args[0]
-  /// [reg(callee)+1+...] args[...]
-  /// [reg(callee)+1+N-1] args[N-1]
-  /// ```
+  /// The callee is stored in the accumulator.
   ///
   /// Call operation:
   /// 1. Assert that `callee` is callable, or panic.
@@ -298,20 +294,82 @@ instructions! {
   /// ```
   ///
   /// ### Operands
-  /// - `callee` - register index of callee.
-  /// - `args` - number of arguments.
-  Call (callee: Reg, args: uv),
+  ///
+  /// None.
+  Call0 (),
 
-  /// Call `callee` with mixed positional and keyword arguments.
+  // TODO: `Call` and `CallKw` should not take `callee` by register
+  // instead, the register should point to the first argument,
+  // and `args` remains as the number of arguments.
+  // emit will place the function load just before the call instruction
+  // this will put the function in the accumulator, which is good enough,
+  // but in return, it means that we will be able to peephole optimize:
+  //   <load_named_ic> / <load_keyed_ic>
+  //   <call>
+  // to just:
+  //   <call_named_ic> / <call_keyed_ic>
+  /// Call `callee` using only positional arguments.
+  ///
+  /// The callee is stored in the accumulator.
   ///
   /// The stack should be:
   /// ```text,ignore
-  /// [reg(callee)      ] <func ...>
-  /// [reg(callee)+1    ] kw
-  /// [reg(callee)+2    ] args[0]
-  /// [reg(callee)+2+...] args[...]
-  /// [reg(callee)+2+N-1] args[N-1]
+  /// [...]
+  /// 0   | args[0]
+  /// *   | args[*]
+  /// N-1 | args[N-1]
   /// ```
+  /// `args[0]` is at `base+start`.
+  ///
+  /// Call operation:
+  /// 1. Assert that `callee` is callable, or panic.
+  /// 2. Check the call arguments. [check]
+  /// 3. Create a new call frame.
+  /// 4. Initialize the function's params. [params]
+  /// 5. Store the current call frame's IP, and dispatch on the new call frame.
+  ///
+  /// [check]: The following conditions must be true:
+  /// - There are more than `callee.min_args` arguments.
+  /// - There are less than `callee.max_args` arguments.
+  ///
+  /// [params]: Param initialization process
+  /// - Set slot `[0]` (receiver) to `none`.
+  /// - Copy the function to slot `[1]` (function).
+  /// - If `num_args > max_args`, create a list at slot `[2]`, and initialize it with `args[max_args..]`.
+  ///   Otherwise, set `[2]` to `none`.
+  /// - Set slot `[3]` (kwargs) to `none`.
+  /// - Copy arguments from `args[..num_args]` to `[4]..[4+N-1]`.
+  /// - If `num_args < max_args`, initialize `params[4+num_args..4+max_args]` to `none`.
+  ///
+  /// Stack after initialization:
+  /// ```text,ignore
+  /// [0    ] <receiver>
+  /// [1    ] <function>
+  /// [2    ] argv
+  /// [3    ] kwargs
+  /// [4+0  ] params[0]
+  /// [4+...] params[...]
+  /// [4+N-1] params[N-1]
+  /// ```
+  ///
+  /// ### Operands
+  /// - `start` - keyword dictionary register index.
+  /// - `args` - number of positional arguments.
+  Call (start: Reg, args: uv),
+
+  /// Call `callee` with mixed positional and keyword arguments.
+  ///
+  /// The callee is stored in the accumulator.
+  ///
+  /// The stack should be:
+  /// ```text,ignore
+  /// [...]
+  /// 0 | kw
+  /// 1 | args[0]
+  /// * | args[*]
+  /// N | args[N-1]
+  /// ```
+  /// The `kw` is at `base+start`.
   ///
   /// Call operation:
   /// 1. Assert that `callee` is callable, or panic.
@@ -345,9 +403,9 @@ instructions! {
   /// ```
   ///
   /// ### Operands
-  /// - `callee` - register index of callee.
-  /// - `args` - number of arguments.
-  CallKw (callee: Reg, args: uv),
+  /// - `start` - keyword dictionary register index.
+  /// - `args` - number of positional arguments.
+  CallKw (start: Reg, args: uv),
 
   /// Sets the accumulator to `true` if `call_frame.num_args <= n`.
   ///

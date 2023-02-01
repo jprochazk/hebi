@@ -761,28 +761,35 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_call(&mut self, callee: u32, args: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let callee = callee as usize;
-    let args = args as usize;
-
-    let func = self.stack[base + callee].clone();
-    // TODO: remove `to_vec` somehow
-    let args = self.stack[base + callee + 1..base + callee + 1 + args].to_vec();
-    self.acc = self.call(func, &args, Value::from(Dict::new()))?;
+  fn op_call0(&mut self) -> Result<(), Self::Error> {
+    let func = self.acc.clone();
+    self.acc = self.call(func, &[], Value::none())?;
 
     Ok(())
   }
 
-  fn op_call_kw(&mut self, callee: u32, args: u32) -> Result<(), Self::Error> {
+  fn op_call(&mut self, start: u32, args: u32) -> Result<(), Self::Error> {
     let base = self.call_stack.last().unwrap().stack_base;
-    let callee = callee as usize;
+    let start = start as usize;
     let args = args as usize;
 
-    let func = self.stack[base + callee].clone();
-    let kwargs = self.stack[base + callee + 1].clone();
+    let func = self.acc.clone();
     // TODO: remove `to_vec` somehow
-    let args = self.stack[base + callee + 2..base + callee + 2 + args].to_vec();
+    let args = self.stack[base + start..base + start + args].to_vec();
+    self.acc = self.call(func, &args, Value::none())?;
+
+    Ok(())
+  }
+
+  fn op_call_kw(&mut self, start: u32, args: u32) -> Result<(), Self::Error> {
+    let base = self.call_stack.last().unwrap().stack_base;
+    let start = start as usize;
+    let args = args as usize;
+
+    let func = self.acc.clone();
+    let kwargs = self.stack[start].clone();
+    // TODO: remove `to_vec` somehow
+    let args = self.stack[base + start + 1..base + start + 1 + args].to_vec();
     self.acc = self.call(func, &args, kwargs)?;
 
     Ok(())

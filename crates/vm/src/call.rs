@@ -1,7 +1,7 @@
 use std::ptr::NonNull;
 
 use indexmap::IndexSet;
-use value::object::func;
+use value::object::{func, Dict};
 use value::Value;
 
 use crate::util::JoinIter;
@@ -15,7 +15,7 @@ impl<Io: std::io::Write> Isolate<Io> {
     }
 
     // # Check arguments
-    let params = check_args(f.clone(), args, &kw)?;
+    let param_info = check_args(f.clone(), args, &kw)?;
 
     let parent_pc = self.pc;
     let stack_base = match self.call_stack.last() {
@@ -31,7 +31,7 @@ impl<Io: std::io::Write> Isolate<Io> {
     self.call_stack.push(frame);
 
     // # Initialize params
-    init_params(f, &mut self.stack, stack_base, params, args, kw);
+    init_params(f, &mut self.stack, stack_base, param_info, args, kw);
 
     // # Dispatch
     self.pc = 0;
@@ -53,78 +53,96 @@ impl<Io: std::io::Write> Isolate<Io> {
   }
 }
 
-fn check_args(f: Value, args: &[Value], kw: &Value) -> Result<func::Params, Error> {
-  let Some(kw) = kw.as_dict() else {
-    return Err(Error::new("call <kw> slot was not a dictionary"));
-  };
-  // TODO: this should not be cloned
-  // use an inner function
-  let params = if let Some(f) = f.as_func() {
-    f.params().clone()
-  } else if let Some(f) = f.as_closure() {
-    f.params().clone()
+// Returns `(has_argv, max_params)`
+fn check_args(func: Value, args: &[Value], kw: &Value) -> Result<ParamInfo, Error> {
+  fn check_args_inner(
+    params: &func::Params,
+    args: &[Value],
+    kw: &Dict,
+  ) -> Result<ParamInfo, Error> {
+    let out_info = ParamInfo {
+      has_kw: !params.kw.is_empty(),
+      has_argv: params.argv,
+      max_params: params.max,
+    };
+
+    // check positional arguments
+    if args.len() < params.min {
+      return Err(Error::new(format!(
+        "missing required positional params: {}",
+        params.pos[args.len()..params.min].iter().join(", "),
+      )));
+    }
+    if !params.argv && args.len() > params.max {
+      return Err(Error::new(format!(
+        "expected at most {} args, got {}",
+        params.max,
+        args.len()
+      )));
+    }
+
+    // check kw arguments
+    let mut unknown = IndexSet::new();
+    let mut missing = IndexSet::new();
+    for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
+      if !params.kwargs && !params.kw.contains_key(&key[..]) {
+        unknown.insert(key.to_string());
+      }
+    }
+    for key in params
+      .kw
+      .iter()
+      .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
+    {
+      if !kw.contains_key(key) {
+        missing.insert(key.to_string());
+      }
+    }
+    if !unknown.is_empty() || !missing.is_empty() {
+      return Err(Error::new(format!(
+        "mismatched keyword params: {}{}{}",
+        if !unknown.is_empty() {
+          format!("could not recognize {}", unknown.iter().join(", "))
+        } else {
+          String::new()
+        },
+        if !unknown.is_empty() && !missing.is_empty() {
+          " and "
+        } else {
+          ""
+        },
+        if !missing.is_empty() {
+          format!("missing {}", missing.iter().join(", "))
+        } else {
+          String::new()
+        },
+      )));
+    }
+
+    Ok(out_info)
+  }
+
+  if let Some(f) = func.as_func() {
+    if let Some(kw) = kw.as_dict() {
+      check_args_inner(f.params(), args, &kw)
+    } else {
+      check_args_inner(f.params(), args, &Dict::new())
+    }
+  } else if let Some(f) = func.as_closure() {
+    if let Some(kw) = kw.as_dict() {
+      check_args_inner(&f.params(), args, &kw)
+    } else {
+      check_args_inner(&f.params(), args, &Dict::new())
+    }
   } else {
     unreachable!()
-  };
+  }
+}
 
-  if args.len() < params.min {
-    return Err(Error::new(format!(
-      "missing required positional params: {}",
-      params.pos[args.len()..params.min].iter().join(", "),
-    )));
-  }
-  if !params.argv && args.len() > params.max {
-    return Err(Error::new(format!(
-      "expected at most {} args, got {}",
-      params.max,
-      args.len()
-    )));
-  }
-  if params.kw.is_empty() && !kw.is_empty() {
-    return Err(Error::new(format!(
-      "missing required keyword params: {}",
-      params.kw.iter().map(|(k, _)| k).join(", "),
-    )));
-  }
-
-  let mut unknown = IndexSet::new();
-  let mut missing = IndexSet::new();
-  for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-    if !params.kwargs && !params.kw.contains_key(&key[..]) {
-      unknown.insert(key.to_string());
-    }
-  }
-  for key in params
-    .kw
-    .iter()
-    .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
-  {
-    if !kw.contains_key(key) {
-      missing.insert(key.to_string());
-    }
-  }
-  if !unknown.is_empty() || !missing.is_empty() {
-    return Err(Error::new(format!(
-      "mismatched keyword params: {}{}{}",
-      if !unknown.is_empty() {
-        format!("could not recognize {}", unknown.iter().join(", "))
-      } else {
-        String::new()
-      },
-      if !unknown.is_empty() && !missing.is_empty() {
-        " and "
-      } else {
-        ""
-      },
-      if !missing.is_empty() {
-        format!("missing {}", missing.iter().join(", "))
-      } else {
-        String::new()
-      },
-    )));
-  }
-
-  Ok(params)
+struct ParamInfo {
+  has_kw: bool,
+  has_argv: bool,
+  max_params: usize,
 }
 
 #[allow(clippy::identity_op)]
@@ -132,31 +150,32 @@ fn init_params(
   f: Value,
   stack: &mut [Value],
   stack_base: usize,
-  params: func::Params,
+  param_info: ParamInfo,
   args: &[Value],
   kw: Value,
 ) {
+  // TODO: init receiver
   // receiver + function
   stack[stack_base + 0] = Value::none();
   stack[stack_base + 1] = f;
   // argv
-  if params.argv && args.len() > params.max {
-    let argv = args[params.max..args.len()].to_vec();
+  if param_info.has_argv && args.len() > param_info.max_params {
+    let argv = args[param_info.max_params..args.len()].to_vec();
     stack[stack_base + 2] = Value::from(argv);
   } else {
     stack[stack_base + 2] = Value::from(vec![]);
   }
   // kwargs
-  stack[stack_base + 3] = kw;
-  // params
-  for i in 0..std::cmp::min(args.len(), params.max) {
-    stack[stack_base + 4 + i] = args[i].clone();
-  }
-  // TODO: is this necessary?
-  if args.len() < params.max {
-    for i in args.len()..params.max {
-      stack[stack_base + 4 + i] = Value::none();
+  if param_info.has_kw {
+    stack[stack_base + 3] = if kw.is_none() {
+      Value::from(Dict::new())
+    } else {
+      kw
     }
+  };
+  // params
+  for i in 0..std::cmp::min(args.len(), param_info.max_params) {
+    stack[stack_base + 4 + i] = args[i].clone();
   }
 }
 

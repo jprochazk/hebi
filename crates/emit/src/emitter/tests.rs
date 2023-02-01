@@ -97,6 +97,7 @@ fn call() {
   check!(r#"f(a=0, b=1, c=2)"#);
   check!(r#"f(a, b, c=2)"#);
   check!(r#"a(b(c()))"#);
+  check!(r#"f(a+b, c=a+b)"#);
 }
 
 #[test]

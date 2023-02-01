@@ -20,6 +20,9 @@ macro_rules! check {
         panic!("failed to emit func:\n{}", e.report(input));
       }
     };
+    if $print_func {
+      eprintln!("{}", func.as_func().unwrap().disassemble(op::disassemble, false));
+    }
     let mut vm = Isolate::with_io(Vec::new());
     let value = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
       Ok(v) => v,
@@ -28,12 +31,7 @@ macro_rules! check {
       }
     };
     let stdout = std::str::from_utf8(vm.io()).unwrap();
-    let snapshot = if $print_func {
-      let func = func.as_func().unwrap().disassemble(op::disassemble, false);
-      format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}\n\n# Func:\n{func}")
-    } else {
-      format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}")
-    };
+    let snapshot = format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}");
     insta::assert_snapshot!(snapshot);
   }};
 }
@@ -58,18 +56,16 @@ macro_rules! check_error {
         panic!("failed to emit func:\n{}", e.report(input));
       }
     };
+    if $print_func {
+      eprintln!("{}", func.as_func().unwrap().disassemble(op::disassemble, false));
+    }
     let mut vm = Isolate::with_io(Vec::<u8>::new());
     let error = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
       Ok(v) => panic!("call to func succeeded with {v}"),
       Err(e) => e.report(input),
     };
     let stdout = std::str::from_utf8(vm.io()).unwrap();
-    let snapshot = if $print_func {
-      let func = func.as_func().unwrap().disassemble(op::disassemble, false);
-      format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}\n\n# Func:\n{func}")
-    } else {
-      format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}")
-    };
+    let snapshot = format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}");
     insta::assert_snapshot!(snapshot);
   }};
 }
@@ -542,7 +538,7 @@ fn call_closure() {
         fn b():
           print v
         return b
-      
+  
       a()()
     "#
   }
