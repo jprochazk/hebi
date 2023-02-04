@@ -641,6 +641,16 @@ fn class_methods() {
       t1f()
     "#
   }
+
+  check! {
+    r#"
+      class T:
+        test():
+          print "test"
+      
+      T.test()
+    "#
+  }
 }
 
 /* #[test]

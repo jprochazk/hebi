@@ -167,6 +167,13 @@ impl ClassDef {
   pub fn params(&self) -> &Params {
     &self.params
   }
+
+  pub fn method<Q>(&self, key: &Q) -> Option<&Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.methods.get(key)
+  }
 }
 
 #[derive(Clone, Debug)]

@@ -1,0 +1,18 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+class T:
+  test():
+    print "test"
+
+T.test()
+
+
+# Result (success):
+none
+
+# Stdout:
+"test"
+
