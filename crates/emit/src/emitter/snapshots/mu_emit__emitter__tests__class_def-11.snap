@@ -4,28 +4,28 @@ expression: snapshot
 ---
 # Input:
 class T(U):
-  v
+  a = 0
+  b = 1
 
 
 # Func:
 function <[[main]]>:
   frame_size: 7
-  length: 17
-  const (length=4):
+  length: 24
+  const (length=3):
     0: <class desc T>
     1: "U"
-    2: "v"
-    3: "T"
+    2: "T"
   code:
      0 | load_global [1]
      2 | store_reg r4
-     4 | load_const [2]
-     6 | store_reg r5
-     8 | push_none 
-     9 | store_reg r6
-    11 | create_class [0], r4
-    14 | store_global [3]
-    16 | suspend 
+     4 | push_small_int value=0
+     9 | store_reg r5
+    11 | push_small_int value=1
+    16 | store_reg r6
+    18 | create_class [0], r4
+    21 | store_global [2]
+    23 | suspend 
 
 
 # Regalloc:

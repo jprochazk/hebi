@@ -3,7 +3,7 @@ source: crates/emit/src/emitter/tests.rs
 expression: snapshot
 ---
 # Input:
-class T:
+class T(U):
   v = 0
 
 
@@ -13,10 +13,10 @@ function <[[main]]>:
   length: 17
   const (length=3):
     0: <class desc T>
-    1: "v"
+    1: "U"
     2: "T"
   code:
-     0 | load_const [1]
+     0 | load_global [1]
      2 | store_reg r4
      4 | push_small_int value=0
      9 | store_reg r5
@@ -31,6 +31,6 @@ r1 │     ●━━━━━━━━━━━━━━━━━━━━━━
 r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
 r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
 r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━●
-r5 │                     ●━━━━━━━━━━━━━━━●
+r5 │                         ●━━━━━━━━━━━●
    ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  

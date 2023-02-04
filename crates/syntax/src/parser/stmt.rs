@@ -344,6 +344,7 @@ impl<'src> Parser<'src> {
     fields: &mut Vec<ast::Field<'src>>,
     funcs: &mut Vec<ast::Func<'src>>,
   ) -> Result<()> {
+    // TODO: ensure `fields` and `funcs` do not have duplicates
     if self.no_indent().is_ok() {
       // empty class (single line)
       self.expect(Kw_Pass)?;

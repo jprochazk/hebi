@@ -837,7 +837,7 @@ mod stmt {
         .map(|_| self.reg())
         .collect::<Vec<_>>();
       let fields = (0..stmt.fields.len())
-        .map(|_| (self.reg(), self.reg()))
+        .map(|_| self.reg())
         .collect::<Vec<_>>();
 
       // emit methods
@@ -847,10 +847,7 @@ mod stmt {
       }
 
       // emit field defaults
-      for (field, (key, value)) in stmt.fields.iter().zip(fields.iter()) {
-        let name = self.const_name(&field.name);
-        self.emit_op(LoadConst { slot: name });
-        self.emit_op(StoreReg { reg: key.index() });
+      for (field, value) in stmt.fields.iter().zip(fields.iter()) {
         match &field.default {
           Some(default) => self.emit_expr(default)?,
           None => self.emit_op(PushNone),
@@ -866,7 +863,7 @@ mod stmt {
         let start = methods[0].index();
         self.emit_op(CreateClass { descriptor, start })
       } else if !fields.is_empty() {
-        let start = fields[0].0.index();
+        let start = fields[0].index();
         self.emit_op(CreateClass { descriptor, start })
       } else {
         self.emit_op(CreateClassEmpty { descriptor });
@@ -885,9 +882,8 @@ mod stmt {
       // extend live intervals of methods and fields
       //   - this ensures that regalloc doesn't reallocate our argument registers to
       //     any potential intermediate registers in the argument expressions.
-      for (k, v) in fields.iter().rev() {
+      for v in fields.iter().rev() {
         v.index();
-        k.index();
       }
       for m in methods.iter().rev() {
         m.index();

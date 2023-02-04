@@ -1,14 +1,20 @@
+use std::hash::Hash;
+
+use indexmap::Equivalent;
+
+use super::dict::Key;
 use super::func::Params;
 use super::handle::Handle;
 use super::Dict;
-use crate::ptr::{Ref, RefMut};
+use crate::ptr::Ref;
 use crate::Value;
 
 #[derive(Clone)]
 pub struct Class {
   pub(super) name: String,
   pub(super) fields: Dict,
-  pub(super) parent: Handle<Class>,
+  pub(super) parent: Option<Handle<ClassDef>>,
+  is_frozen: bool,
 }
 
 impl Class {
@@ -16,9 +22,59 @@ impl Class {
     &self.name
   }
 
-  pub fn parent(&self) -> &Handle<Class> {
-    &self.parent
+  pub fn parent(&self) -> Option<&Handle<ClassDef>> {
+    self.parent.as_ref()
   }
+
+  pub fn has<Q>(&self, key: &Q) -> bool
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.fields.contains_key(key)
+  }
+
+  pub fn get<Q>(&self, key: &Q) -> Option<&Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.fields.get(key)
+  }
+
+  pub fn set<Q>(&mut self, key: &Q, value: Value) -> bool
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    let Some(slot) = self.fields.get_mut(key) else {
+      return false;
+    };
+    *slot = value;
+    true
+  }
+
+  pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
+    self.fields.insert(key, value)
+  }
+
+  pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.fields.remove(key)
+  }
+
+  pub fn is_frozen(&self) -> bool {
+    self.is_frozen
+  }
+
+  pub fn freeze(&mut self) {
+    self.is_frozen = true;
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct Method {
+  pub this: Handle<Class>,
+  pub func: Value, // Func or Closure
 }
 
 // TODO: Shape
@@ -51,6 +107,8 @@ impl ClassDef {
       .is_derived
       .then(|| Handle::from_value(args[parent_offset].clone()).unwrap());
 
+    // TODO: inherit non-overridden methods from parent by copying them
+
     let mut methods = Dict::with_capacity(descriptor.methods.len());
     for (k, v) in descriptor.methods.iter().zip(args[methods_offset..].iter()) {
       methods.insert(k.clone().into(), v.clone());
@@ -70,8 +128,31 @@ impl ClassDef {
     }
   }
 
+  pub fn instance(&self) -> Class {
+    let name = self.name.clone();
+    let parent = self.parent.clone();
+    let mut fields = Dict::with_capacity(self.methods.len() + self.fields.len());
+    for (k, v) in self.methods.iter() {
+      fields.insert(k.clone(), v.clone());
+    }
+    for (k, v) in self.fields.iter() {
+      dbg!(&v);
+      fields.insert(k.clone(), v.clone());
+    }
+    Class {
+      name,
+      fields,
+      parent,
+      is_frozen: false,
+    }
+  }
+
   pub fn name(&self) -> &str {
     &self.name
+  }
+
+  pub fn params(&self) -> &Params {
+    &self.params
   }
 }
 

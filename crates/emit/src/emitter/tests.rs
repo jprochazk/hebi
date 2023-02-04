@@ -389,7 +389,7 @@ fn method_call() {
 }
 
 #[test]
-fn class() {
+fn class_def() {
   check! {
     r#"
       class T: pass
@@ -491,6 +491,17 @@ fn class() {
           v = 0
           test(self):
             print self.v, u
+    "#
+  }
+}
+
+#[test]
+fn class_instance() {
+  check! {
+    r#"
+      class T: pass
+
+      T()
     "#
   }
 }

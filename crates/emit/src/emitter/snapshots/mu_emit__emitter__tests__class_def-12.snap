@@ -5,16 +5,31 @@ expression: snapshot
 # Input:
 class T(U):
   v = 0
+  test(self):
+    print self.v
 
 
 # Func:
+function <test>:
+  frame_size: 4
+  length: 7
+  const (length=1):
+    0: "v"
+  code:
+    0 | load_self 
+    1 | load_named [0]
+    3 | print 
+    4 | push_none 
+    5 | ret 
+    6 | suspend 
+
 function <[[main]]>:
   frame_size: 7
   length: 21
   const (length=4):
     0: <class desc T>
     1: "U"
-    2: "v"
+    2: <func test>
     3: "T"
   code:
      0 | load_global [1]

@@ -1,6 +1,7 @@
 use beef::lean::Cow;
 use indexmap::IndexMap;
 
+use super::handle::Handle;
 use crate::ptr::{Ref, RefMut};
 use crate::Value;
 
@@ -21,25 +22,15 @@ pub struct ClosureDesc {
 
 #[derive(Clone, Debug)]
 pub struct Closure {
-  pub(super) descriptor: Value,
+  pub(super) descriptor: Handle<ClosureDesc>,
   pub captures: Vec<Value>,
 }
 
 impl Closure {
   /// Create a new closure.
-  ///
-  /// # Panics
-  /// If `func.is_closure_desc()` is not `true`.
-  pub fn new(descriptor: Value) -> Self {
-    // QQQ: can this be encoded via the type system?
-    // TODO: yes, it can, use `Handle`
-    assert!(
-      descriptor.is_closure_desc(),
-      "closure may only be constructed from a closure descriptor"
-    );
-
+  pub fn new(descriptor: Handle<ClosureDesc>) -> Self {
     let captures = {
-      let descriptor = unsafe { descriptor.as_closure_desc().unwrap_unchecked() };
+      let descriptor = descriptor.borrow();
       let mut v = Vec::with_capacity(descriptor.num_captures as usize);
       for _ in 0..descriptor.num_captures {
         v.push(Value::none());
@@ -54,17 +45,11 @@ impl Closure {
   }
 
   fn func(&self) -> Ref<'_, Func> {
-    Ref::map(
-      unsafe { self.descriptor.as_closure_desc().unwrap_unchecked() },
-      |v| &v.func,
-    )
+    Ref::map(self.descriptor.borrow(), |v| &v.func)
   }
 
   fn func_mut(&mut self) -> RefMut<'_, Func> {
-    RefMut::map(
-      unsafe { self.descriptor.as_closure_desc_mut().unwrap_unchecked() },
-      |v| &mut v.func,
-    )
+    RefMut::map(self.descriptor.borrow_mut(), |v| &mut v.func)
   }
 
   pub fn name(&self) -> Ref<'_, str> {

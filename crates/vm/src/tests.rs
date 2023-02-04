@@ -591,4 +591,48 @@ fn class_def() {
       print T
     "#
   }
+
+  check! {
+    r#"
+      class T:
+        v = 10
+  
+      t0 = T()
+      t1 = T(v=20)
+  
+      print t0.v, t1.v
+    "#
+  }
+
+  check! {
+    r#"
+      class T:
+        init(self, *, v=10):
+          self.v = v
+          if v > 10:
+            print "large"
+          else:
+            print "small"
+      
+      t0 := T()
+      t1 := T(v=20)
+
+      print t0.v, t1.v
+    "#
+  }
 }
+
+/* #[test]
+fn _temp() {
+  check! {
+    r#"
+      class T:
+        v = 10
+
+      t0 = T()
+      t1 = T(v=20)
+
+      print t0.v, t1.v
+    "#
+  }
+} */

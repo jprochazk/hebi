@@ -4,7 +4,7 @@ use super::ObjectHandle;
 use crate::ptr::{Ref, RefMut};
 use crate::{Object, Ptr, Value};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Handle<T> {
   o: Ptr<Object>,
   _p: PhantomData<T>,

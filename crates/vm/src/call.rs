@@ -8,14 +8,15 @@ use crate::util::JoinIter;
 use crate::{Error, Isolate};
 
 impl<Io: std::io::Write> Isolate<Io> {
-  pub fn call(&mut self, f: Value, args: &[Value], kw: Value) -> Result<Value, Error> {
+  pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
     // # Check that callee is callable
-    if !f.is_func() && !f.is_closure() {
+    // TODO: trait
+    if !f.is_func() && !f.is_closure() && !f.is_method() {
       return Err(Error::new("value is not callable"));
     }
 
     // # Check arguments
-    let param_info = check_args(f.clone(), args, &kw)?;
+    let param_info = check_func_args(f.clone(), args, &kwargs)?;
 
     let parent_pc = self.pc;
     let stack_base = match self.call_stack.last() {
@@ -31,7 +32,7 @@ impl<Io: std::io::Write> Isolate<Io> {
     self.call_stack.push(frame);
 
     // # Initialize params
-    init_params(f, &mut self.stack, stack_base, param_info, args, kw);
+    init_params(f, &mut self.stack, stack_base, param_info, args, kwargs);
 
     // # Dispatch
     self.pc = 0;
@@ -54,92 +55,90 @@ impl<Io: std::io::Write> Isolate<Io> {
 }
 
 // Returns `(has_argv, max_params)`
-fn check_args(func: Value, args: &[Value], kw: &Value) -> Result<ParamInfo, Error> {
-  fn check_args_inner(
-    params: &func::Params,
-    args: &[Value],
-    kw: &Dict,
-  ) -> Result<ParamInfo, Error> {
-    let out_info = ParamInfo {
-      has_kw: !params.kw.is_empty(),
-      has_argv: params.argv,
-      max_params: params.max,
-    };
-
-    // check positional arguments
-    if args.len() < params.min {
-      return Err(Error::new(format!(
-        "missing required positional params: {}",
-        params.pos[args.len()..params.min].iter().join(", "),
-      )));
-    }
-    if !params.argv && args.len() > params.max {
-      return Err(Error::new(format!(
-        "expected at most {} args, got {}",
-        params.max,
-        args.len()
-      )));
-    }
-
-    // check kw arguments
-    let mut unknown = IndexSet::new();
-    let mut missing = IndexSet::new();
-    for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-      if !params.kwargs && !params.kw.contains_key(&key[..]) {
-        unknown.insert(key.to_string());
-      }
-    }
-    for key in params
-      .kw
-      .iter()
-      .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
-    {
-      if !kw.contains_key(key) {
-        missing.insert(key.to_string());
-      }
-    }
-    if !unknown.is_empty() || !missing.is_empty() {
-      return Err(Error::new(format!(
-        "mismatched keyword params: {}{}{}",
-        if !unknown.is_empty() {
-          format!("could not recognize {}", unknown.iter().join(", "))
-        } else {
-          String::new()
-        },
-        if !unknown.is_empty() && !missing.is_empty() {
-          " and "
-        } else {
-          ""
-        },
-        if !missing.is_empty() {
-          format!("missing {}", missing.iter().join(", "))
-        } else {
-          String::new()
-        },
-      )));
-    }
-
-    Ok(out_info)
-  }
-
+fn check_func_args(func: Value, args: &[Value], kwargs: &Value) -> Result<ParamInfo, Error> {
   if let Some(f) = func.as_func() {
-    if let Some(kw) = kw.as_dict() {
-      check_args_inner(f.params(), args, &kw)
+    if let Some(kw) = kwargs.as_dict() {
+      check_args(f.params(), args, &kw)
     } else {
-      check_args_inner(f.params(), args, &Dict::new())
+      check_args(f.params(), args, &Dict::new())
     }
   } else if let Some(f) = func.as_closure() {
-    if let Some(kw) = kw.as_dict() {
-      check_args_inner(&f.params(), args, &kw)
+    if let Some(kw) = kwargs.as_dict() {
+      check_args(&f.params(), args, &kw)
     } else {
-      check_args_inner(&f.params(), args, &Dict::new())
+      check_args(&f.params(), args, &Dict::new())
     }
+  } else if let Some(f) = func.as_method() {
+    check_func_args(f.func.clone(), args, kwargs)
   } else {
-    unreachable!()
+    panic!("check_func_args not implemented for {func}");
   }
 }
 
-struct ParamInfo {
+pub fn check_args(params: &func::Params, args: &[Value], kw: &Dict) -> Result<ParamInfo, Error> {
+  let out_info = ParamInfo {
+    has_kw: !params.kw.is_empty(),
+    has_argv: params.argv,
+    max_params: params.max,
+  };
+
+  // check positional arguments
+  if args.len() < params.min {
+    return Err(Error::new(format!(
+      "missing required positional params: {}",
+      params.pos[args.len()..params.min].iter().join(", "),
+    )));
+  }
+  if !params.argv && args.len() > params.max {
+    return Err(Error::new(format!(
+      "expected at most {} args, got {}",
+      params.max,
+      args.len()
+    )));
+  }
+
+  // check kw arguments
+  let mut unknown = IndexSet::new();
+  let mut missing = IndexSet::new();
+  for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
+    if !params.kwargs && !params.kw.contains_key(&key[..]) {
+      unknown.insert(key.to_string());
+    }
+  }
+  for key in params
+    .kw
+    .iter()
+    .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
+  {
+    if !kw.contains_key(key) {
+      missing.insert(key.to_string());
+    }
+  }
+  if !unknown.is_empty() || !missing.is_empty() {
+    return Err(Error::new(format!(
+      "mismatched keyword params: {}{}{}",
+      if !unknown.is_empty() {
+        format!("could not recognize {}", unknown.iter().join(", "))
+      } else {
+        String::new()
+      },
+      if !unknown.is_empty() && !missing.is_empty() {
+        " and "
+      } else {
+        ""
+      },
+      if !missing.is_empty() {
+        format!("missing {}", missing.iter().join(", "))
+      } else {
+        String::new()
+      },
+    )));
+  }
+
+  Ok(out_info)
+}
+
+pub struct ParamInfo {
   has_kw: bool,
   has_argv: bool,
   max_params: usize,
@@ -152,11 +151,16 @@ fn init_params(
   stack_base: usize,
   param_info: ParamInfo,
   args: &[Value],
-  kw: Value,
+  kwargs: Value,
 ) {
   // TODO: init receiver
-  // receiver + function
-  stack[stack_base + 0] = Value::none();
+  // receiver
+  if let Some(m) = f.as_method() {
+    stack[stack_base + 0] = Value::object(m.this.clone().widen());
+  } else {
+    stack[stack_base + 0] = Value::none();
+  }
+  // function
   stack[stack_base + 1] = f;
   // argv
   if param_info.has_argv && args.len() > param_info.max_params {
@@ -167,10 +171,10 @@ fn init_params(
   }
   // kwargs
   if param_info.has_kw {
-    stack[stack_base + 3] = if kw.is_none() {
+    stack[stack_base + 3] = if kwargs.is_none() {
       Value::from(Dict::new())
     } else {
-      kw
+      kwargs
     }
   };
   // params
@@ -231,6 +235,10 @@ impl CallFrame {
         frame_size,
         num_args,
       };
+    }
+
+    if let Some(f) = func.as_method() {
+      return CallFrame::new(f.func.clone(), parent_pc, stack_base, num_args);
     }
 
     panic!("attempted to create call frame from something that is not a function: {func:?}");

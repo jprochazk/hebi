@@ -9,7 +9,7 @@ print v.a
 
 
 # Result (error):
-[31merror[0m in code: undefined field "a"
+[31merror[0m in code: cannot get field `"a"` on value `{}`
 
 
 # Stdout:

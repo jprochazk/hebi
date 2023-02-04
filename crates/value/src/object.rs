@@ -15,7 +15,7 @@ use crate::{Ptr, Value};
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
-pub use class::{Class, ClassDef, ClassDesc};
+pub use class::{Class, ClassDef, ClassDesc, Method};
 pub use dict::Dict;
 pub use func::{Closure, ClosureDesc, Func};
 
@@ -35,6 +35,7 @@ object_repr! {
     Class,
     ClassDef,
     ClassDesc,
+    Method,
   }
 }
 
@@ -63,6 +64,7 @@ impl Hash for Object {
       Repr::Class(v) => (v as *const _ as usize).hash(state),
       Repr::ClassDef(v) => (v as *const _ as usize).hash(state),
       Repr::ClassDesc(v) => (v as *const _ as usize).hash(state),
+      Repr::Method(v) => (v as *const _ as usize).hash(state),
     }
   }
 }
@@ -116,15 +118,12 @@ impl std::fmt::Display for Object {
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
       Repr::Func(v) => write!(f, "<func {}>", v.name),
-      Repr::Closure(v) => write!(
-        f,
-        "<closure {}>",
-        v.descriptor.as_closure_desc().unwrap().func.name
-      ),
+      Repr::Closure(v) => write!(f, "<closure {}>", v.descriptor.borrow().func.name),
       Repr::ClosureDesc(v) => write!(f, "<closure desc {} n={}>", v.func.name, v.num_captures),
       Repr::Class(v) => write!(f, "<class {}>", v.name),
       Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),
       Repr::ClassDesc(v) => write!(f, "<class desc {}>", v.name),
+      Repr::Method(v) => write!(f, "{}", v.func),
     }
   }
 }

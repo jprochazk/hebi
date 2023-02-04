@@ -361,6 +361,12 @@ where
   }
 }
 
+impl From<Ptr<object::Object>> for Value {
+  fn from(value: Ptr<object::Object>) -> Self {
+    Value::object(value)
+  }
+}
+
 impl<T> From<Handle<T>> for Value
 where
   T: ObjectHandle,

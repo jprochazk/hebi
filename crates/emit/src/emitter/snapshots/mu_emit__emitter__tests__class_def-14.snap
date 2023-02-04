@@ -5,7 +5,7 @@ expression: snapshot
 # Input:
 fn test():
   u := 0
-  class T:
+  class T(U):
     v = 0
     test(self):
       print self.v, u
@@ -35,15 +35,15 @@ function <test>:
   length: 33
   const (length=3):
     0: <class desc T>
-    1: <closure desc test n=1>
-    2: "v"
+    1: "U"
+    2: <closure desc test n=1>
   code:
      0 | push_small_int value=0
      5 | store_reg r4
-     7 | create_closure [1]
-     9 | capture_reg r4, slot=0
-    12 | store_reg r5
-    14 | load_const [2]
+     7 | load_global [1]
+     9 | store_reg r5
+    11 | create_closure [2]
+    13 | capture_reg r4, slot=0
     16 | store_reg r6
     18 | push_small_int value=0
     23 | store_reg r7

@@ -1,0 +1,27 @@
+---
+source: crates/vm/src/tests.rs
+expression: snapshot
+---
+# Input:
+class T:
+  init(self, *, v=10):
+    self.v = v
+    if v > 10:
+      print "large"
+    else:
+      print "small"
+
+t0 := T()
+t1 := T(v=20)
+
+print t0.v, t1.v
+
+
+# Result (success):
+none
+
+# Stdout:
+"small"
+"large"
+10 20
+

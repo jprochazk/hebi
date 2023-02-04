@@ -1,7 +1,9 @@
 mod binop;
 mod call;
+mod class;
 mod cmp;
 mod error;
+mod field;
 mod truth;
 mod util;
 
@@ -150,22 +152,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    let value = {
-      // TODO: class
-      let Some(obj) = self.acc.as_dict() else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      let Some(value) = obj.get(&name) else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      value.clone()
-    };
-
-    self.acc = value;
+    dbg!(&self.acc);
+    self.acc = field::get(&self.acc, &name)?;
 
     Ok(())
   }
@@ -177,25 +165,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    // early exit if on `none`
-    if self.acc.is_none() {
-      return Ok(());
-    }
-
-    let value = {
-      // TODO: class
-      let Some(obj) = self.acc.as_dict() else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      match obj.get(&name) {
-        Some(v) => v.clone(),
-        None => Value::none(),
-      }
-    };
-
-    self.acc = value;
+    self.acc = field::get_opt(&self.acc, &name)?;
 
     Ok(())
   }
@@ -209,15 +179,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    // TODO: class
-    let Some(mut obj) = self.stack[base + obj].as_dict_mut() else {
-      // TODO: span
-      return Err(Error::new("value is not an object"));
-    };
+    let obj = &mut self.stack[base + obj];
 
-    obj.insert(name, self.acc.clone());
-
-    Ok(())
+    field::set(obj, name, self.acc.clone())
   }
 
   fn op_load_keyed(&mut self, key: u32) -> Result<(), Self::Error> {
@@ -230,22 +194,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       return Err(Error::new(format!("{name} is not a valid key")));
     };
 
-    let value = {
-      // TODO: class
-      let Some(obj) = self.acc.as_dict() else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      let Some(value) = obj.get(&name) else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      value.clone()
-    };
-
-    self.acc = value;
+    self.acc = field::get(&self.acc, &name)?;
 
     Ok(())
   }
@@ -260,25 +209,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       return Err(Error::new(format!("{name} is not a valid key")));
     };
 
-    // early exit if on `none`
-    if self.acc.is_none() {
-      return Ok(());
-    }
-
-    let value = {
-      // TODO: class
-      let Some(obj) = self.acc.as_dict() else {
-        // TODO: span
-        return Err(Error::new(format!("undefined field {name}")));
-      };
-
-      match obj.get(&name) {
-        Some(v) => v.clone(),
-        None => Value::none(),
-      }
-    };
-
-    self.acc = value;
+    self.acc = field::get_opt(&self.acc, &name)?;
 
     Ok(())
   }
@@ -294,15 +225,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       return Err(Error::new(format!("{name} is not a valid key")));
     };
 
-    // TODO: class
-    let Some(mut obj) = self.stack[base + obj].as_dict_mut() else {
-      // TODO: span
-      return Err(Error::new("value is not an object"));
-    };
+    let obj = &mut self.stack[base + obj];
 
-    obj.insert(name, self.acc.clone());
-
-    Ok(())
+    field::set(obj, name, self.acc.clone())
   }
 
   fn op_load_self(&mut self) -> Result<(), Self::Error> {
@@ -324,7 +249,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       // TODO: span
       return Err(Error::new("receiver is not a class"));
     };
-    self.acc = Value::from(this.parent().clone());
+    // parent class should always exist, because parser checks for parent class
+    self.acc = Value::object(this.parent().unwrap().clone().widen());
 
     Ok(())
   }
@@ -390,10 +316,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       return Err(Error::new(format!("{key} is not a valid key")));
     };
 
-    let Some(mut dict) = self.stack[base + dict].as_dict_mut() else {
-      // TODO: span
-      return Err(Error::new("value is not an object"));
-    };
+    let mut dict = self.stack[base + dict].as_dict_mut().unwrap();
 
     // `name` is a `Key` so this `unwrap` won't panic
     dict.insert(key, std::mem::take(&mut self.acc));
@@ -411,10 +334,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    let Some(mut dict) = self.stack[base + dict].as_dict_mut() else {
-      // TODO: span
-      return Err(Error::new("value is not an object"));
-    };
+    let mut dict = self.stack[base + dict].as_dict_mut().unwrap();
 
     // name used in named load is always a string
     dict.insert(name, std::mem::take(&mut self.acc));
@@ -426,6 +346,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let descriptor = descriptor as usize;
     let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
     let descriptor = const_pool[descriptor].clone();
+
+    // this should always be a closure descriptor
+    let descriptor = Handle::<object::ClosureDesc>::from_value(descriptor).unwrap();
 
     self.acc = Closure::new(descriptor).into();
 
@@ -475,7 +398,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  // ...
   fn op_create_class_empty(&mut self, descriptor: u32) -> Result<(), Self::Error> {
     let descriptor = descriptor as usize;
 
@@ -816,7 +738,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_call0(&mut self) -> Result<(), Self::Error> {
     let func = self.acc.clone();
-    self.acc = self.call(func, &[], Value::none())?;
+
+    if func.is_class_def() {
+      // class constructor
+      let def = Handle::from_value(func).unwrap();
+      self.acc = class::create_instance(self, def, &[], Value::none())?;
+    } else {
+      // regular function call
+      self.acc = self.call(func, &[], Value::none())?;
+    }
 
     Ok(())
   }
@@ -829,7 +759,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let func = self.acc.clone();
     // TODO: remove `to_vec` somehow
     let args = self.stack[base + start..base + start + args].to_vec();
-    self.acc = self.call(func, &args, Value::none())?;
+
+    if func.is_class_def() {
+      // class constructor
+      let def = Handle::from_value(func).unwrap();
+      self.acc = class::create_instance(self, def, &args, Value::none())?;
+    } else {
+      // regular function call
+      self.acc = self.call(func, &args, Value::none())?;
+    }
 
     Ok(())
   }
@@ -843,7 +781,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let kwargs = self.stack[start].clone();
     // TODO: remove `to_vec` somehow
     let args = self.stack[base + start + 1..base + start + 1 + args].to_vec();
-    self.acc = self.call(func, &args, kwargs)?;
+
+    if func.is_class_def() {
+      // class constructor
+      let def = Handle::from_value(func).unwrap();
+      self.acc = class::create_instance(self, def, &args, kwargs)?;
+    } else {
+      // regular function call
+      self.acc = self.call(func, &args, kwargs)?;
+    }
 
     Ok(())
   }
