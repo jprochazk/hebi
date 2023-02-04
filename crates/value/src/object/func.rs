@@ -14,7 +14,7 @@ pub struct Func {
 }
 
 #[derive(Clone, Debug)]
-pub struct ClosureDescriptor {
+pub struct ClosureDesc {
   pub func: Func,
   pub num_captures: u32,
 }
@@ -29,16 +29,17 @@ impl Closure {
   /// Create a new closure.
   ///
   /// # Panics
-  /// If `func.is_closure_descriptor()` is not `true`.
+  /// If `func.is_closure_desc()` is not `true`.
   pub fn new(descriptor: Value) -> Self {
-    // TODO: can this be encoded via the type system?
+    // QQQ: can this be encoded via the type system?
+    // TODO: yes, it can, use `Handle`
     assert!(
-      descriptor.is_closure_descriptor(),
+      descriptor.is_closure_desc(),
       "closure may only be constructed from a closure descriptor"
     );
 
     let captures = {
-      let descriptor = unsafe { descriptor.as_closure_descriptor().unwrap_unchecked() };
+      let descriptor = unsafe { descriptor.as_closure_desc().unwrap_unchecked() };
       let mut v = Vec::with_capacity(descriptor.num_captures as usize);
       for _ in 0..descriptor.num_captures {
         v.push(Value::none());
@@ -54,19 +55,14 @@ impl Closure {
 
   fn func(&self) -> Ref<'_, Func> {
     Ref::map(
-      unsafe { self.descriptor.as_closure_descriptor().unwrap_unchecked() },
+      unsafe { self.descriptor.as_closure_desc().unwrap_unchecked() },
       |v| &v.func,
     )
   }
 
   fn func_mut(&mut self) -> RefMut<'_, Func> {
     RefMut::map(
-      unsafe {
-        self
-          .descriptor
-          .as_closure_descriptor_mut()
-          .unwrap_unchecked()
-      },
+      unsafe { self.descriptor.as_closure_desc_mut().unwrap_unchecked() },
       |v| &mut v.func,
     )
   }
@@ -186,7 +182,7 @@ impl Func {
       if let Some(func) = v.as_func() {
         func.disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');
-      } else if let Some(descriptor) = v.as_closure_descriptor() {
+      } else if let Some(descriptor) = v.as_closure_desc() {
         descriptor
           .func
           .disassemble_inner(disassemble_instruction, f, print_bytes);

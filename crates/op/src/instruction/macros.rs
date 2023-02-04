@@ -200,9 +200,7 @@ macro_rules! handler_method {
       fn [<op_ $name:snake>](
         &mut self,
         $($operand : <$ty as Operand>::Decoded),*
-      ) -> Result<ControlFlow, Self::Error> {
-        unimplemented!()
-      }
+      ) -> Result<ControlFlow, Self::Error>;
     }
   };
   ($(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ident ),*)) => {
@@ -212,9 +210,7 @@ macro_rules! handler_method {
       fn [<op_ $name:snake>](
         &mut self,
         $($operand : <$ty as Operand>::Decoded),*
-      ) -> Result<(), Self::Error>  {
-        unimplemented!()
-      }
+      ) -> Result<(), Self::Error>;
     }
   };
 }

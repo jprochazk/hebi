@@ -1,20 +1,23 @@
 #[macro_use]
 mod macros;
+pub mod class;
 pub mod dict;
 pub mod func;
+pub mod handle;
 
-use std::cell::{Ref, RefMut};
 use std::hash::Hash;
 
 use beef::lean::Cow;
 use paste::paste;
 
-use crate::Value;
+use crate::ptr::{Ref, RefMut};
+use crate::{Ptr, Value};
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
+pub use class::{Class, ClassDef, ClassDesc};
 pub use dict::Dict;
-pub use func::{Closure, ClosureDescriptor, Func};
+pub use func::{Closure, ClosureDesc, Func};
 
 #[derive(Clone)]
 pub struct Object {
@@ -28,7 +31,10 @@ object_repr! {
     Dict,
     Func,
     Closure,
-    ClosureDescriptor,
+    ClosureDesc,
+    Class,
+    ClassDef,
+    ClassDesc,
   }
 }
 
@@ -53,7 +59,10 @@ impl Hash for Object {
       Repr::Dict(v) => (v as *const _ as usize).hash(state),
       Repr::Func(v) => (v as *const _ as usize).hash(state),
       Repr::Closure(v) => (v as *const _ as usize).hash(state),
-      Repr::ClosureDescriptor(v) => (v as *const _ as usize).hash(state),
+      Repr::ClosureDesc(v) => (v as *const _ as usize).hash(state),
+      Repr::Class(v) => (v as *const _ as usize).hash(state),
+      Repr::ClassDef(v) => (v as *const _ as usize).hash(state),
+      Repr::ClassDesc(v) => (v as *const _ as usize).hash(state),
     }
   }
 }
@@ -110,15 +119,24 @@ impl std::fmt::Display for Object {
       Repr::Closure(v) => write!(
         f,
         "<closure {}>",
-        v.descriptor.as_closure_descriptor().unwrap().func.name
+        v.descriptor.as_closure_desc().unwrap().func.name
       ),
-      Repr::ClosureDescriptor(v) => write!(
-        f,
-        "<closure descriptor {} n={}>",
-        v.func.name, v.num_captures
-      ),
+      Repr::ClosureDesc(v) => write!(f, "<closure desc {} n={}>", v.func.name, v.num_captures),
+      Repr::Class(v) => write!(f, "<class {}>", v.name),
+      Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),
+      Repr::ClassDesc(v) => write!(f, "<class desc {}>", v.name),
     }
   }
+}
+
+pub trait ObjectHandle: private::Sealed + Sized {
+  fn as_self(o: &Ptr<Object>) -> Option<Ref<'_, Self>>;
+  fn as_self_mut(o: &mut Ptr<Object>) -> Option<RefMut<'_, Self>>;
+  fn is_self(o: &Ptr<Object>) -> bool;
+}
+
+mod private {
+  pub trait Sealed {}
 }
 
 #[cfg(test)]

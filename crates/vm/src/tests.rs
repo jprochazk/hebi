@@ -574,3 +574,21 @@ fn call_closure() {
     "#
   }
 }
+
+#[test]
+fn class_def() {
+  check! {
+    r#"
+      class T: pass
+      print T
+    "#
+  }
+
+  check! {
+    r#"
+      class U: pass
+      class T(U): pass
+      print T
+    "#
+  }
+}

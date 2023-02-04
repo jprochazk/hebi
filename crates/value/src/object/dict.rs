@@ -357,6 +357,22 @@ impl Key {
       KeyRepr::Int(_) => None,
     }
   }
+
+  pub(crate) fn write_to_string(&self, s: &mut String) {
+    use std::fmt::Write;
+    match &self.0 {
+      KeyRepr::Int(v) => {
+        write!(s, "{v}").unwrap();
+      }
+      KeyRepr::String(v) => {
+        debug_assert!(v.borrow().is_string());
+        write!(s, "{}", unsafe {
+          v.borrow().as_string().unwrap_unchecked()
+        })
+        .unwrap();
+      }
+    }
+  }
 }
 
 /// The dictionary key type.
@@ -370,6 +386,7 @@ pub(crate) enum KeyRepr {
   ///
   /// The only way to create this variant is via `TryFrom<Value>`, which rejects
   /// anything that is not a string.
+  // TODO: use Handle<String>
   String(Ptr<Object>),
 }
 

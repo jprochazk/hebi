@@ -10,8 +10,9 @@ mod util;
 use std::mem::take;
 
 pub use error::Error;
+use value::object::handle::Handle;
 use value::object::{dict, Closure, Dict};
-use value::Value;
+use value::{object, Value};
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   // TODO: module registry
@@ -304,6 +305,30 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
+  fn op_load_self(&mut self) -> Result<(), Self::Error> {
+    let base = self.call_stack.last().unwrap().stack_base;
+
+    // receiver is always placed at the base of the current call frame's stack
+    self.acc = self.stack[base].clone();
+
+    Ok(())
+  }
+
+  fn op_load_super(&mut self) -> Result<(), Self::Error> {
+    let base = self.call_stack.last().unwrap().stack_base;
+
+    // receiver is always placed at the base of the current call frame's stack
+    let this = self.stack[base].clone();
+
+    let Some(this) = this.as_class() else {
+      // TODO: span
+      return Err(Error::new("receiver is not a class"));
+    };
+    self.acc = Value::from(this.parent().clone());
+
+    Ok(())
+  }
+
   fn op_push_none(&mut self) -> Result<(), Self::Error> {
     self.acc = Value::none();
 
@@ -446,6 +471,34 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       .captures;
 
     self_captures[self_slot] = parent_captures[parent_slot].clone();
+
+    Ok(())
+  }
+
+  // ...
+  fn op_create_class_empty(&mut self, descriptor: u32) -> Result<(), Self::Error> {
+    let descriptor = descriptor as usize;
+
+    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
+    let descriptor = const_pool[descriptor].clone();
+    // this should always be a class descriptor
+    let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
+
+    self.acc = Value::from(object::ClassDef::new(descriptor, &[]));
+
+    Ok(())
+  }
+
+  fn op_create_class(&mut self, descriptor: u32, start: u32) -> Result<(), Self::Error> {
+    let descriptor = descriptor as usize;
+    let start = start as usize;
+
+    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
+    let descriptor = const_pool[descriptor].clone();
+    // this should always be a class descriptor
+    let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
+
+    self.acc = Value::from(object::ClassDef::new(descriptor, &self.stack[start..]));
 
     Ok(())
   }

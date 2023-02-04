@@ -97,7 +97,7 @@ pub struct Class<'src> {
   pub name: Ident<'src>,
   pub parent: Option<Ident<'src>>,
   pub fields: Vec<Field<'src>>,
-  pub funcs: Vec<Func<'src>>,
+  pub methods: Vec<Func<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -509,7 +509,7 @@ pub fn class_stmt<'src>(
   name: Ident<'src>,
   parent: Option<Ident<'src>>,
   fields: Vec<Field<'src>>,
-  funcs: Vec<Func<'src>>,
+  methods: Vec<Func<'src>>,
 ) -> Stmt<'src> {
   Stmt::new(
     s,
@@ -517,7 +517,7 @@ pub fn class_stmt<'src>(
       name,
       parent,
       fields,
-      funcs,
+      methods,
     })),
   )
 }

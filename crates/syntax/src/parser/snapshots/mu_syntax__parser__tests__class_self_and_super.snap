@@ -9,7 +9,7 @@ Module {
                 name: "T",
                 parent: None,
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "f",
                         params: Params {
@@ -40,7 +40,7 @@ Module {
                     "U",
                 ),
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "f",
                         params: Params {
@@ -92,7 +92,7 @@ Module {
                         ),
                     },
                 ],
-                funcs: [],
+                methods: [],
             },
         ),
     ],

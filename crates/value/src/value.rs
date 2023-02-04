@@ -5,6 +5,8 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 use crate::object;
+use crate::object::handle::Handle;
+use crate::object::ObjectHandle;
 use crate::ptr::*;
 
 mod mask {
@@ -356,6 +358,15 @@ where
       Some(value) => Self::from(value),
       None => Self::none(),
     }
+  }
+}
+
+impl<T> From<Handle<T>> for Value
+where
+  T: ObjectHandle,
+{
+  fn from(value: Handle<T>) -> Self {
+    Value::object(value.widen())
   }
 }
 

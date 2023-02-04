@@ -1603,7 +1603,7 @@ Module {
                 name: "Test",
                 parent: None,
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {
@@ -1960,7 +1960,7 @@ Module {
                         ),
                     },
                 ],
-                funcs: [],
+                methods: [],
             },
         ),
         Print(
@@ -2036,7 +2036,7 @@ Module {
                         ),
                     },
                 ],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {
@@ -2111,7 +2111,7 @@ Module {
                 name: "C",
                 parent: None,
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {
@@ -2199,7 +2199,7 @@ Module {
                 name: "A",
                 parent: None,
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "inherited",
                         params: Params {
@@ -2234,7 +2234,7 @@ Module {
                     "A",
                 ),
                 fields: [],
-                funcs: [],
+                methods: [],
             },
         ),
         Expr(
@@ -2300,7 +2300,7 @@ Module {
                     "B",
                 ),
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "inherited",
                         params: Params {
@@ -2363,7 +2363,7 @@ Module {
                     "C",
                 ),
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "inherited",
                         params: Params {
@@ -2440,7 +2440,7 @@ Module {
                 name: "X",
                 parent: None,
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {
@@ -2479,7 +2479,7 @@ Module {
                     "X",
                 ),
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {
@@ -2518,7 +2518,7 @@ Module {
                     "X",
                 ),
                 fields: [],
-                funcs: [
+                methods: [
                     Func {
                         name: "init",
                         params: Params {

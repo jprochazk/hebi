@@ -11,6 +11,8 @@ use beef::lean::Cow;
 use paste::paste;
 use ty::*;
 
+// TODO: rename `descriptor` -> `desc`
+
 instructions! {
   Instruction, ops,
   Handler, run,
@@ -152,17 +154,23 @@ instructions! {
   /// - `self_slot` - slot in capture list of closure in the accumulator.
   CaptureSlot (parent_slot: uv, self_slot: uv),
 
-  /// Create a class from `descriptor`.
+  /// Create an empty class from `descriptor`.
   ///
   /// ### Operands
   /// - `descriptor` - constant pool index of descriptor.
-  CreateClass (descriptor: Const),
-  /// Create a class from `descriptor` and have it inherit from class stored in `parent`.
+  CreateClassEmpty (descriptor: Const),
+  /// Create a class from `descriptor`, methods, and fields.
+  ///
+  /// Parent is store at `base+start`, if `descriptor.is_derived` is `true`.
+  ///
+  /// Methods are stored at `base+start..base+start+#methods`, offset by `1` if `descriptor.is_derived` is `true`.
+  ///
+  /// Fields are stored at `base+start+#methods..base+start+#methods+#fields`, offset by `1` if `descriptor.is_derived` is `true`.
   ///
   /// ### Operands
   /// - `descriptor` - constant pool index of descriptor.
-  /// - `parent` - register index of the parent class.
-  CreateClassDerived (descriptor: Const, parent: Reg),
+  /// - `start` - register index of the first method.
+  CreateClass (descriptor: Const, start: Reg),
 
   // jumps
   /// Jump forward by `offset`.

@@ -388,6 +388,113 @@ fn method_call() {
   check!(r#"o.f(1,2,c=3)"#);
 }
 
+#[test]
+fn class() {
+  check! {
+    r#"
+      class T: pass
+    "#
+  }
+  check! {
+    r#"
+      class T:
+        v
+    "#
+  }
+  check! {
+    r#"
+      class T:
+        v = 0
+    "#
+  }
+  check! {
+    r#"
+      class T:
+        a = 0
+        b = 1
+    "#
+  }
+  check! {
+    r#"
+      class T:
+        v = 0
+        test(self):
+          print self.v
+    "#
+  }
+  check! {
+    r#"
+      u := 0
+      class T:
+        v = 0
+        test(self):
+          print self.v, u
+    "#
+  }
+  check! {
+    r#"
+      fn test():
+        u := 0
+        class T:
+          v = 0
+          test(self):
+            print self.v, u
+    "#
+  }
+
+  check! {
+    r#"
+      class T(U): pass
+    "#
+  }
+  check! {
+    r#"
+      class T(U):
+        v
+    "#
+  }
+  check! {
+    r#"
+      class T(U):
+        v = 0
+    "#
+  }
+  check! {
+    r#"
+      class T(U):
+        a = 0
+        b = 1
+    "#
+  }
+  check! {
+    r#"
+      class T(U):
+        v = 0
+        test(self):
+          print self.v
+    "#
+  }
+  check! {
+    r#"
+      u := 0
+      class T(U):
+        v = 0
+        test(self):
+          print self.v, u
+    "#
+  }
+  check! {
+    r#"
+      fn test():
+        u := 0
+        class T(U):
+          v = 0
+          test(self):
+            print self.v, u
+    "#
+  }
+}
+
 /* #[test]
 fn _temp() {
   check! {

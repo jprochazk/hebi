@@ -73,6 +73,26 @@ macro_rules! object_repr {
             Object::[<$ty:snake>](v)
           }
         }
+
+
+        impl private::Sealed for $ty {}
+        impl ObjectHandle for $ty {
+          fn as_self(o: &Ptr<Object>) -> Option<Ref<Self>> {
+            if !o.borrow().[<is_ $ty:snake>]() {
+              return None;
+            }
+            Some(Ref::map(o.borrow(), |v| v.[<as_ $ty:snake>]().unwrap()))
+          }
+          fn as_self_mut(o: &mut Ptr<Object>) -> Option<RefMut<Self>> {
+            if !o.borrow().[<is_ $ty:snake>]() {
+              return None;
+            }
+            Some(RefMut::map(o.borrow_mut(), |v| v.[<as_ $ty:snake _mut>]().unwrap()))
+          }
+          fn is_self(o: &Ptr<Object>) -> bool {
+            o.borrow().[<is_ $ty:snake>]()
+          }
+        }
       )*
     }
   }

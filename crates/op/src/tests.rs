@@ -181,6 +181,262 @@ fn dispatch() {
     fn op_ret(&mut self) -> Result<(), Self::Error> {
       Ok(())
     }
+
+    fn op_load_capture(
+      &mut self,
+      slot: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_store_capture(
+      &mut self,
+      slot: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_global(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_store_global(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_named(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_named_opt(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_store_named(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+      obj: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_keyed(&mut self, key: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_keyed_opt(
+      &mut self,
+      key: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_store_keyed(
+      &mut self,
+      key: <ty::Reg as ty::Operand>::Decoded,
+      obj: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_self(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_super(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_push_none(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_push_true(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_push_false(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_create_empty_dict(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_insert_to_dict(
+      &mut self,
+      key: <ty::Reg as ty::Operand>::Decoded,
+      dict: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_insert_to_dict_named(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+      dict: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_create_closure(
+      &mut self,
+      descriptor: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_capture_reg(
+      &mut self,
+      reg: <ty::Reg as ty::Operand>::Decoded,
+      slot: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_capture_slot(
+      &mut self,
+      parent_slot: <ty::uv as ty::Operand>::Decoded,
+      self_slot: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_add(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_mul(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_div(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_rem(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_pow(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_unary_plus(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_unary_minus(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_unary_not(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_eq(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_neq(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_gt(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_ge(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_lt(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_cmp_le(&mut self, lhs: <ty::Reg as ty::Operand>::Decoded) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_is_none(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_print_list(
+      &mut self,
+      list: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_call0(&mut self) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_call(
+      &mut self,
+      start: <ty::Reg as ty::Operand>::Decoded,
+      args: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_call_kw(
+      &mut self,
+      start: <ty::Reg as ty::Operand>::Decoded,
+      args: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_is_pos_param_not_set(
+      &mut self,
+      index: <ty::uv as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_is_kw_param_not_set(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_kw_param(
+      &mut self,
+      name: <ty::Const as ty::Operand>::Decoded,
+      param: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_create_class_empty(
+      &mut self,
+      descriptor: <ty::Const as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_create_class(
+      &mut self,
+      descriptor: <ty::Const as ty::Operand>::Decoded,
+      start: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
   }
 
   let mut b = Builder::<Value>::new("test");

@@ -3,6 +3,9 @@ use indoc::indoc;
 use super::*;
 use crate::lexer::Lexer;
 
+// TODO: emit input expression in snapshot
+// do this for all snapshots tests that don't do it already
+
 macro_rules! check_module {
   ($input:literal) => {
     let input = indoc!($input);

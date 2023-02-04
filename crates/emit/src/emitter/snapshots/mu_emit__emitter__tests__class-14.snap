@@ -1,0 +1,77 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn test():
+  u := 0
+  class T(U):
+    v = 0
+    test(self):
+      print self.v, u
+
+
+# Func:
+function <test>:
+  frame_size: 5
+  length: 17
+  const (length=1):
+    0: "v"
+  code:
+     0 | create_empty_list 
+     1 | store_reg r4
+     3 | load_self 
+     4 | load_named [0]
+     6 | push_to_list r4
+     8 | load_capture slot=0
+    10 | push_to_list r4
+    12 | print_list r4
+    14 | push_none 
+    15 | ret 
+    16 | suspend 
+
+function <test>:
+  frame_size: 9
+  length: 37
+  const (length=4):
+    0: <class desc T>
+    1: "U"
+    2: <closure desc test n=1>
+    3: "v"
+  code:
+     0 | push_small_int value=0
+     5 | store_reg r4
+     7 | load_global [1]
+     9 | store_reg r5
+    11 | create_closure [2]
+    13 | capture_reg r4, slot=0
+    16 | store_reg r6
+    18 | load_const [3]
+    20 | store_reg r7
+    22 | push_small_int value=0
+    27 | store_reg r8
+    29 | create_class [0], r5
+    32 | store_reg r4
+    34 | push_none 
+    35 | ret 
+    36 | suspend 
+
+function <[[main]]>:
+  frame_size: 4
+  length: 5
+  const (length=2):
+    0: <func test>
+    1: "test"
+  code:
+    0 | load_const [0]
+    2 | store_global [1]
+    4 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  
