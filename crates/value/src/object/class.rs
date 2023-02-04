@@ -128,23 +128,36 @@ impl ClassDef {
     }
   }
 
-  pub fn instance(&self) -> Class {
+  pub fn instance(&self) -> Handle<Class> {
     let name = self.name.clone();
     let parent = self.parent.clone();
-    let mut fields = Dict::with_capacity(self.methods.len() + self.fields.len());
+    let mut class = unsafe {
+      Handle::<Class>::from_value(
+        Class {
+          name,
+          fields: Dict::with_capacity(self.methods.len() + self.fields.len()),
+          parent,
+          is_frozen: false,
+        }
+        .into(),
+      )
+      .unwrap_unchecked()
+    };
+
     for (k, v) in self.methods.iter() {
-      fields.insert(k.clone(), v.clone());
+      let v = Method {
+        this: class.clone(),
+        func: v.clone(),
+      }
+      .into();
+      class.borrow_mut().fields.insert(k.clone(), v);
     }
     for (k, v) in self.fields.iter() {
       dbg!(&v);
-      fields.insert(k.clone(), v.clone());
+      class.borrow_mut().fields.insert(k.clone(), v.clone());
     }
-    Class {
-      name,
-      fields,
-      parent,
-      is_frozen: false,
-    }
+
+    class
   }
 
   pub fn name(&self) -> &str {
@@ -173,7 +186,11 @@ impl std::fmt::Debug for Class {
     for (k, v) in self.fields.iter() {
       key.clear();
       k.write_to_string(&mut key);
-      d.field(&key, v);
+      if v.is_method() {
+        d.field(&key, &v.as_method().unwrap().func);
+      } else {
+        d.field(&key, v);
+      }
     }
 
     d.finish()

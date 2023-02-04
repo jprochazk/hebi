@@ -1,5 +1,5 @@
 use value::object::handle::Handle;
-use value::object::{Class, ClassDef, Dict, Method};
+use value::object::{Class, ClassDef, Dict};
 use value::Value;
 
 use crate::{call, Error, Isolate};
@@ -17,10 +17,6 @@ pub fn create_instance<Io: std::io::Write>(
   if class.borrow().has("init") {
     // call initializer
     let init = unsafe { class.borrow().get("init").cloned().unwrap_unchecked() };
-    let init = Value::from(Method {
-      this: class.clone(),
-      func: init,
-    });
     vm.call(init, args, kwargs)?;
   } else {
     // assign kwargs to fields

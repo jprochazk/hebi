@@ -622,6 +622,27 @@ fn class_def() {
   }
 }
 
+#[test]
+fn class_methods() {
+  check! {
+    r#"
+      class T:
+        v = 10
+        test(self):
+          print self.v
+      
+      t0 := T()
+      t1 := T(v=20)
+      t0.test()
+      t1.test()
+      t0f := t0.test
+      t1f := t1.test
+      t0f()
+      t1f()
+    "#
+  }
+}
+
 /* #[test]
 fn _temp() {
   check! {
