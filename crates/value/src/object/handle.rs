@@ -18,6 +18,13 @@ impl<T: ObjectHandle> Handle<T> {
     Some(Self { o, _p: PhantomData })
   }
 
+  /// ### Safety
+  /// `o` must be an instance of `T`
+  pub unsafe fn from_ptr_unchecked(o: Ptr<Object>) -> Self {
+    debug_assert!(<T as ObjectHandle>::is_self(&o));
+    Self { o, _p: PhantomData }
+  }
+
   pub fn from_value(v: Value) -> Option<Self> {
     v.into_object().and_then(Handle::from_ptr)
   }

@@ -13,6 +13,7 @@ use std::ops::{Index, IndexMut, RangeBounds};
 use beef::lean::Cow;
 use indexmap::{map, Equivalent, IndexMap};
 
+use super::handle::Handle;
 use crate::ptr::Ref;
 use crate::{Object, Ptr, Value};
 
@@ -350,10 +351,7 @@ pub struct Key(pub(crate) KeyRepr);
 impl Key {
   pub fn as_str(&self) -> Option<Ref<'_, str>> {
     match &self.0 {
-      KeyRepr::String(v) => Some(Ref::map(v.borrow(), |v| {
-        debug_assert!(v.is_string());
-        unsafe { v.as_string().unwrap_unchecked().as_str() }
-      })),
+      KeyRepr::String(v) => Some(Ref::map(v.borrow(), |v| v.as_str())),
       KeyRepr::Int(_) => None,
     }
   }
@@ -361,16 +359,8 @@ impl Key {
   pub(crate) fn write_to_string(&self, s: &mut String) {
     use std::fmt::Write;
     match &self.0 {
-      KeyRepr::Int(v) => {
-        write!(s, "{v}").unwrap();
-      }
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        write!(s, "{}", unsafe {
-          v.borrow().as_string().unwrap_unchecked()
-        })
-        .unwrap();
-      }
+      KeyRepr::Int(v) => write!(s, "{v}").unwrap(),
+      KeyRepr::String(v) => write!(s, "{}", v.borrow()).unwrap(),
     }
   }
 }
@@ -387,7 +377,7 @@ pub(crate) enum KeyRepr {
   /// The only way to create this variant is via `TryFrom<Value>`, which rejects
   /// anything that is not a string.
   // TODO: use Handle<String>
-  String(Ptr<Object>),
+  String(Handle<String>),
 }
 
 impl From<i32> for Key {
@@ -398,19 +388,28 @@ impl From<i32> for Key {
 
 impl<'a> From<&'a str> for Key {
   fn from(value: &'a str) -> Self {
-    Key(KeyRepr::String(Ptr::new(Object::string(value))))
+    // SAFETY: The object is guaranteed to be a String
+    Key(KeyRepr::String(unsafe {
+      Handle::from_ptr_unchecked(Ptr::new(Object::string(value)))
+    }))
   }
 }
 
 impl<'a> From<Cow<'a, str>> for Key {
   fn from(value: Cow<'a, str>) -> Self {
-    Key(KeyRepr::String(Ptr::new(Object::string(value.to_string()))))
+    // SAFETY: The object is guaranteed to be a String
+    Key(KeyRepr::String(unsafe {
+      Handle::from_ptr_unchecked(Ptr::new(Object::string(value.to_string())))
+    }))
   }
 }
 
 impl From<String> for Key {
   fn from(value: String) -> Self {
-    Key(KeyRepr::String(Ptr::new(Object::string(value))))
+    // SAFETY: The object is guaranteed to be a String
+    Key(KeyRepr::String(unsafe {
+      Handle::from_ptr_unchecked(Ptr::new(Object::string(value)))
+    }))
   }
 }
 
@@ -418,11 +417,9 @@ impl TryFrom<Value> for Key {
   type Error = InvalidKeyType;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {
-    let value = value.into_object().ok_or(InvalidKeyType)?;
-    if !value.borrow().is_string() {
-      return Err(InvalidKeyType);
-    }
-    Ok(Key(KeyRepr::String(value)))
+    Handle::from_value(value)
+      .map(|v| Key(KeyRepr::String(v)))
+      .ok_or(InvalidKeyType)
   }
 }
 
@@ -430,10 +427,7 @@ impl Equivalent<Key> for str {
   fn equivalent(&self, key: &Key) -> bool {
     match &key.0 {
       KeyRepr::Int(_) => false,
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        unsafe { v.borrow().as_string().unwrap_unchecked().as_str() == self }
-      }
+      KeyRepr::String(v) => v.borrow().as_str() == self,
     }
   }
 }
@@ -453,14 +447,7 @@ impl PartialEq for Key {
   fn eq(&self, other: &Self) -> bool {
     match (&self.0, &other.0) {
       (KeyRepr::Int(a), KeyRepr::Int(b)) => a == b,
-      // SAFETY: This is safe because both `a` and `b` are guaranteed to be strings.
-      (KeyRepr::String(a), KeyRepr::String(b)) => {
-        debug_assert!(a.borrow().is_string());
-        debug_assert!(b.borrow().is_string());
-        unsafe {
-          a.borrow().as_string().unwrap_unchecked() == b.borrow().as_string().unwrap_unchecked()
-        }
-      }
+      (KeyRepr::String(a), KeyRepr::String(b)) => a.borrow().as_str() == b.borrow().as_str(),
       _ => false,
     }
   }
@@ -475,14 +462,7 @@ impl PartialOrd for Key {
       (KeyRepr::Int(_), KeyRepr::String(_)) => Some(std::cmp::Ordering::Less),
       (KeyRepr::String(_), KeyRepr::Int(_)) => Some(std::cmp::Ordering::Greater),
       (KeyRepr::String(a), KeyRepr::String(b)) => {
-        debug_assert!(a.borrow().is_string());
-        debug_assert!(b.borrow().is_string());
-        unsafe {
-          a.borrow()
-            .as_string()
-            .unwrap_unchecked()
-            .partial_cmp(b.borrow().as_string().unwrap_unchecked())
-        }
+        a.borrow().as_str().partial_cmp(b.borrow().as_str())
       }
     }
   }
@@ -498,11 +478,7 @@ impl Hash for Key {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     match &self.0 {
       KeyRepr::Int(v) => v.hash(state),
-      // SAFETY: This is safe because both `a` and `b` are guaranteed to be strings.
-      KeyRepr::String(v) => {
-        debug_assert!(v.borrow().is_string());
-        unsafe { v.borrow().as_string().unwrap_unchecked().hash(state) }
-      }
+      KeyRepr::String(v) => v.borrow().hash(state),
     }
   }
 }
