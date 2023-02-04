@@ -651,19 +651,41 @@ fn class_methods() {
       T.test()
     "#
   }
+
+  check! {
+    r#"
+      class A:
+        v = 10
+      class B:
+        init(self, *items):
+          self.items = items
+      class C:
+        init(self, **entries):
+          self.entries = entries
+
+      print A().v
+      print B(0, 1, 2).items
+      print C(a=0, b=1, c=2).entries
+    "#
+  }
 }
 
 /* #[test]
 fn _temp() {
   check! {
     r#"
-      class T:
+      class A:
         v = 10
+      class B:
+        init(self, *items):
+          self.items = items
+      class C:
+        init(self, **entries):
+          self.entries = entries
 
-      t0 = T()
-      t1 = T(v=20)
-
-      print t0.v, t1.v
+      print A().v
+      print B(0, 1, 2).items
+      print C(a=0, b=1, c=2).entries
     "#
   }
 } */

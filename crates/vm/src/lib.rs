@@ -782,6 +782,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // TODO: remove `to_vec` somehow
     let args = self.stack[base + start + 1..base + start + 1 + args].to_vec();
 
+    dbg!(&kwargs);
     if func.is_class_def() {
       // class constructor
       let def = Handle::from_value(func).unwrap();

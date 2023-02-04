@@ -77,7 +77,7 @@ fn check_func_args(func: Value, args: &[Value], kwargs: &Value) -> Result<ParamI
 
 pub fn check_args(params: &func::Params, args: &[Value], kw: &Dict) -> Result<ParamInfo, Error> {
   let out_info = ParamInfo {
-    has_kw: !params.kw.is_empty(),
+    has_kw: params.kwargs || !params.kw.is_empty(),
     has_argv: params.argv,
     max_params: params.max,
   };
