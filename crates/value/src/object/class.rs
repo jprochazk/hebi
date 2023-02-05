@@ -104,9 +104,7 @@ impl ClassDef {
 
     let parent = desc
       .is_derived
-      .then(|| Handle::from_value(args[parent_offset].clone()).unwrap());
-
-    // TODO: inherit non-overridden methods from parent by copying them
+      .then(|| Handle::<ClassDef>::from_value(args[parent_offset].clone()).unwrap());
 
     let mut methods = Dict::with_capacity(desc.methods.len());
     for (k, v) in desc.methods.iter().zip(args[methods_offset..].iter()) {
@@ -116,6 +114,15 @@ impl ClassDef {
     let mut fields = Dict::with_capacity(desc.fields.len());
     for (k, v) in desc.fields.iter().zip(args[fields_offset..].iter()) {
       fields.insert(k.clone().into(), v.clone());
+    }
+
+    if let Some(parent) = &parent {
+      for (k, v) in parent.borrow().methods.iter() {
+        methods.entry(k.clone()).or_insert_with(|| v.clone());
+      }
+      for (k, v) in parent.borrow().fields.iter() {
+        fields.entry(k.clone()).or_insert_with(|| v.clone());
+      }
     }
 
     Self {
