@@ -306,7 +306,7 @@ fn dispatch() {
 
     fn op_create_closure(
       &mut self,
-      descriptor: <ty::Const as ty::Operand>::Decoded,
+      desc: <ty::Const as ty::Operand>::Decoded,
     ) -> Result<(), Self::Error> {
       todo!()
     }
@@ -440,14 +440,14 @@ fn dispatch() {
 
     fn op_create_class_empty(
       &mut self,
-      descriptor: <ty::Const as ty::Operand>::Decoded,
+      desc: <ty::Const as ty::Operand>::Decoded,
     ) -> Result<(), Self::Error> {
       todo!()
     }
 
     fn op_create_class(
       &mut self,
-      descriptor: <ty::Const as ty::Operand>::Decoded,
+      desc: <ty::Const as ty::Operand>::Decoded,
       start: <ty::Reg as ty::Operand>::Decoded,
     ) -> Result<(), Self::Error> {
       todo!()

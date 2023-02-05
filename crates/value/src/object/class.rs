@@ -91,33 +91,30 @@ pub struct ClassDef {
 }
 
 impl ClassDef {
-  pub fn new(descriptor: Handle<ClassDesc>, args: &[Value]) -> Self {
-    let descriptor = descriptor.borrow();
-    assert!(
-      args.len()
-        >= descriptor.is_derived as usize + descriptor.methods.len() + descriptor.fields.len()
-    );
+  pub fn new(desc: Handle<ClassDesc>, args: &[Value]) -> Self {
+    let desc = desc.borrow();
+    assert!(args.len() >= desc.is_derived as usize + desc.methods.len() + desc.fields.len());
 
-    let name = descriptor.name.clone();
-    let params = descriptor.params.clone();
+    let name = desc.name.clone();
+    let params = desc.params.clone();
 
     let parent_offset = 0;
-    let methods_offset = parent_offset + descriptor.is_derived as usize;
-    let fields_offset = methods_offset + descriptor.methods.len();
+    let methods_offset = parent_offset + desc.is_derived as usize;
+    let fields_offset = methods_offset + desc.methods.len();
 
-    let parent = descriptor
+    let parent = desc
       .is_derived
       .then(|| Handle::from_value(args[parent_offset].clone()).unwrap());
 
     // TODO: inherit non-overridden methods from parent by copying them
 
-    let mut methods = Dict::with_capacity(descriptor.methods.len());
-    for (k, v) in descriptor.methods.iter().zip(args[methods_offset..].iter()) {
+    let mut methods = Dict::with_capacity(desc.methods.len());
+    for (k, v) in desc.methods.iter().zip(args[methods_offset..].iter()) {
       methods.insert(k.clone().into(), v.clone());
     }
 
-    let mut fields = Dict::with_capacity(descriptor.fields.len());
-    for (k, v) in descriptor.fields.iter().zip(args[fields_offset..].iter()) {
+    let mut fields = Dict::with_capacity(desc.fields.len());
+    for (k, v) in desc.fields.iter().zip(args[fields_offset..].iter()) {
       fields.insert(k.clone().into(), v.clone());
     }
 

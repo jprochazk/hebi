@@ -20,8 +20,6 @@ pub fn emit<'src>(
 }
 
 // TODO: make infallible
-// TODO: look at regalloc graphs for emitter tests
-// they don't seem to be right
 
 use crate::regalloc::{RegAlloc, Register};
 use crate::{Context, Error, Result};
@@ -768,11 +766,11 @@ mod stmt {
         let func = self.const_value(result.func);
         self.emit_op(LoadConst { slot: func });
       } else {
-        let descriptor = self.const_value(func::ClosureDesc {
+        let desc = self.const_value(func::ClosureDesc {
           func: result.func,
           num_captures: result.captures.len() as u32,
         });
-        self.emit_op(CreateClosure { descriptor });
+        self.emit_op(CreateClosure { desc });
         for (_, info) in result.captures.iter() {
           match &info.kind {
             UpvalueKind::Register(reg) => self.emit_op(CaptureReg {
@@ -808,7 +806,7 @@ mod stmt {
     }
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
-      let descriptor = self.const_value(class::ClassDesc {
+      let desc = self.const_value(class::ClassDesc {
         name: stmt.name.to_string(),
         params: ast_class_to_params(stmt),
         is_derived: stmt.parent.is_some(),
@@ -861,15 +859,15 @@ mod stmt {
       // emit create class op
       if let Some(parent) = &parent {
         let start = parent.index();
-        self.emit_op(CreateClass { descriptor, start });
+        self.emit_op(CreateClass { desc, start });
       } else if !methods.is_empty() {
         let start = methods[0].index();
-        self.emit_op(CreateClass { descriptor, start })
+        self.emit_op(CreateClass { desc, start })
       } else if !fields.is_empty() {
         let start = fields[0].index();
-        self.emit_op(CreateClass { descriptor, start })
+        self.emit_op(CreateClass { desc, start })
       } else {
-        self.emit_op(CreateClassEmpty { descriptor });
+        self.emit_op(CreateClassEmpty { desc });
       }
 
       let name = stmt.name.deref().clone();

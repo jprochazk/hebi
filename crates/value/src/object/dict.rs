@@ -376,7 +376,6 @@ pub(crate) enum KeyRepr {
   ///
   /// The only way to create this variant is via `TryFrom<Value>`, which rejects
   /// anything that is not a string.
-  // TODO: use Handle<String>
   String(Handle<String>),
 }
 

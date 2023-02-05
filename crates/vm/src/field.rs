@@ -3,8 +3,6 @@ use value::Value;
 
 use crate::Error;
 
-// TODO: get/set on ClassDef = static method
-
 pub fn set(obj: &mut Value, key: Key, value: Value) -> Result<(), Error> {
   if let Some(mut class) = obj.as_class_mut() {
     if class.has(&key) {

@@ -22,34 +22,31 @@ pub struct ClosureDesc {
 
 #[derive(Clone, Debug)]
 pub struct Closure {
-  pub(super) descriptor: Handle<ClosureDesc>,
+  pub(super) desc: Handle<ClosureDesc>,
   pub captures: Vec<Value>,
 }
 
 impl Closure {
   /// Create a new closure.
-  pub fn new(descriptor: Handle<ClosureDesc>) -> Self {
+  pub fn new(desc: Handle<ClosureDesc>) -> Self {
     let captures = {
-      let descriptor = descriptor.borrow();
-      let mut v = Vec::with_capacity(descriptor.num_captures as usize);
-      for _ in 0..descriptor.num_captures {
+      let desc = desc.borrow();
+      let mut v = Vec::with_capacity(desc.num_captures as usize);
+      for _ in 0..desc.num_captures {
         v.push(Value::none());
       }
       v
     };
 
-    Self {
-      descriptor,
-      captures,
-    }
+    Self { desc, captures }
   }
 
   fn func(&self) -> Ref<'_, Func> {
-    Ref::map(self.descriptor.borrow(), |v| &v.func)
+    Ref::map(self.desc.borrow(), |v| &v.func)
   }
 
   fn func_mut(&mut self) -> RefMut<'_, Func> {
-    RefMut::map(self.descriptor.borrow_mut(), |v| &mut v.func)
+    RefMut::map(self.desc.borrow_mut(), |v| &mut v.func)
   }
 
   pub fn name(&self) -> Ref<'_, str> {
@@ -167,8 +164,8 @@ impl Func {
       if let Some(func) = v.as_func() {
         func.disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');
-      } else if let Some(descriptor) = v.as_closure_desc() {
-        descriptor
+      } else if let Some(desc) = v.as_closure_desc() {
+        desc
           .func
           .disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');

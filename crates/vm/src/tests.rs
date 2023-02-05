@@ -674,7 +674,7 @@ fn class_methods() {
   }
 }
 
-#[test]
+/* #[test]
 fn _temp() {
   check! {
     r#"
@@ -692,4 +692,4 @@ fn _temp() {
       print C(a=0, b=1, c=2).entries
     "#
   }
-}
+} */

@@ -48,7 +48,6 @@ fn print_variable() {
       print v # load_reg
     "#
   }
-  // TODO: capture + nested capture
   check! {
     r#"
       print v # load_global

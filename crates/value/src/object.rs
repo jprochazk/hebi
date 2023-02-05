@@ -2,6 +2,7 @@
 mod macros;
 pub mod class;
 pub mod dict;
+#[doc(hidden)]
 pub mod frame;
 pub mod func;
 pub mod handle;
@@ -123,7 +124,7 @@ impl std::fmt::Display for Object {
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
       Repr::Func(v) => write!(f, "<func {}>", v.name),
-      Repr::Closure(v) => write!(f, "<closure {}>", v.descriptor.borrow().func.name),
+      Repr::Closure(v) => write!(f, "<closure {}>", v.desc.borrow().func.name),
       Repr::ClosureDesc(v) => write!(f, "<closure desc {} n={}>", v.func.name, v.num_captures),
       Repr::Class(v) => write!(f, "<class {}>", v.name),
       Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),

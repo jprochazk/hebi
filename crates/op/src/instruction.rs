@@ -11,8 +11,6 @@ use beef::lean::Cow;
 use paste::paste;
 use ty::*;
 
-// TODO: rename `descriptor` -> `desc`
-
 instructions! {
   Instruction, ops,
   Handler, run,
@@ -144,11 +142,11 @@ instructions! {
   /// - `name` - constant pool index of name.
   /// - `dict` - register index of dict.
   InsertToDictNamed (name: Const, dict: Reg),
-  /// Create a closure from `descriptor`.
+  /// Create a closure from `desc`.
   ///
   /// ### Operands
-  /// - `descriptor` - constant pool index of descriptor.
-  CreateClosure (descriptor: Const),
+  /// - `desc` - constant pool index of descriptor.
+  CreateClosure (desc: Const),
   /// Capture `reg` and store it in the captures of the closure stored in the accumulator.
   ///
   /// ### Operands
@@ -162,23 +160,23 @@ instructions! {
   /// - `self_slot` - slot in capture list of closure in the accumulator.
   CaptureSlot (parent_slot: uv, self_slot: uv),
 
-  /// Create an empty class from `descriptor`.
+  /// Create an empty class from `desc`.
   ///
   /// ### Operands
-  /// - `descriptor` - constant pool index of descriptor.
-  CreateClassEmpty (descriptor: Const),
-  /// Create a class from `descriptor`, methods, and fields.
+  /// - `desc` - constant pool index of descriptor.
+  CreateClassEmpty (desc: Const),
+  /// Create a class from `desc`, methods, and fields.
   ///
-  /// Parent is store at `base+start`, if `descriptor.is_derived` is `true`.
+  /// Parent is store at `base+start`, if `desc.is_derived` is `true`.
   ///
-  /// Methods are stored at `base+start..base+start+#methods`, offset by `1` if `descriptor.is_derived` is `true`.
+  /// Methods are stored at `base+start..base+start+#methods`, offset by `1` if `desc.is_derived` is `true`.
   ///
-  /// Fields are stored at `base+start+#methods..base+start+#methods+#fields`, offset by `1` if `descriptor.is_derived` is `true`.
+  /// Fields are stored at `base+start+#methods..base+start+#methods+#fields`, offset by `1` if `desc.is_derived` is `true`.
   ///
   /// ### Operands
-  /// - `descriptor` - constant pool index of descriptor.
+  /// - `desc` - constant pool index of descriptor.
   /// - `start` - register index of the first method.
-  CreateClass (descriptor: Const, start: Reg),
+  CreateClass (desc: Const, start: Reg),
 
   // jumps
   /// Jump forward by `offset`.
@@ -314,16 +312,6 @@ instructions! {
   /// None.
   Call0 :call (),
 
-  // TODO: `Call` and `CallKw` should not take `callee` by register
-  // instead, the register should point to the first argument,
-  // and `args` remains as the number of arguments.
-  // emit will place the function load just before the call instruction
-  // this will put the function in the accumulator, which is good enough,
-  // but in return, it means that we will be able to peephole optimize:
-  //   <load_named_ic> / <load_keyed_ic>
-  //   <call>
-  // to just:
-  //   <call_named_ic> / <call_keyed_ic>
   /// Call `callee` using only positional arguments.
   ///
   /// The callee is stored in the accumulator.
@@ -444,9 +432,6 @@ instructions! {
   /// - `param` - register index of function parameter.
   LoadKwParam (name: Const, param: Reg),
 }
-
-// TODO: more instructions
-// TODO: see how V8 handles `??` and `a?.b`
 
 pub trait Opcode: private::Sealed {
   /// Returns the name of the operand for the purpose of `Display`.

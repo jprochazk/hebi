@@ -17,10 +17,15 @@ pub struct Frame {
   pub captures: Option<NonNull<[Value]>>,
 
   pub pc: usize,
-  // set by `call`
-  pub return_address: usize,
+  pub on_return: Return,
   pub stack: Stack,
   pub num_args: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Return {
+  Swap(usize),
+  Yield,
 }
 
 impl Frame {
@@ -29,13 +34,13 @@ impl Frame {
   /// # Panics
   ///
   /// If `func` is not a function, closure, or method.
-  pub fn new(func: Value, num_args: usize) -> Self {
-    Self::with_stack(func, num_args, Stack::with_capacity(256))
+  pub fn new(func: Value, num_args: usize, on_return: Return) -> Self {
+    Self::with_stack(func, num_args, on_return, Stack::with_capacity(256))
   }
 
-  pub fn with_stack(mut func: Value, num_args: usize, mut stack: Stack) -> Self {
+  pub fn with_stack(mut func: Value, num_args: usize, on_return: Return, mut stack: Stack) -> Self {
     if let Some(f) = func.as_method() {
-      return Frame::new(f.func.clone(), num_args);
+      return Frame::with_stack(f.func.clone(), num_args, on_return, stack);
     }
 
     let Parts {
@@ -52,7 +57,7 @@ impl Frame {
       code,
       const_pool,
       pc: 0,
-      return_address: 0,
+      on_return,
       stack,
       captures,
       frame_size,
@@ -186,6 +191,9 @@ impl Default for Stack {
 
 impl std::fmt::Debug for Frame {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Frame").field("func", &self.func).finish()
+    f.debug_struct("Frame")
+      .field("func", &self.func)
+      .field("on_return", &self.on_return)
+      .finish()
   }
 }

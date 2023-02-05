@@ -3,7 +3,7 @@ use std::ptr::NonNull;
 use indexmap::IndexSet;
 use value::object::frame::{Frame, Stack};
 use value::object::handle::Handle;
-use value::object::{func, Dict};
+use value::object::{frame, func, Dict};
 use value::Value;
 
 use crate::util::JoinIter;
@@ -11,36 +11,23 @@ use crate::{Control, Error, Isolate};
 
 impl<Io: std::io::Write> Isolate<Io> {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
-    let return_address = self
-      .frames
-      .last()
-      .map(|f| f.borrow().return_address)
-      .unwrap_or(0);
-    let frame = self.prepare_call_frame(f, args, kwargs, return_address)?;
+    let frame = self.prepare_call_frame(f, args, kwargs, frame::Return::Yield)?;
+    dbg!(&frame);
     self.frames.push(frame);
 
     self.pc = 0;
     self.dispatch()?;
 
-    self.frames.pop();
-    if let Some(frame) = self.frames.last() {
-      self.pc = frame.borrow().pc;
-    } else {
-      self.pc = 0;
-    }
-
     // # Return
     Ok(std::mem::take(&mut self.acc))
   }
-
-  // TODO: move call handling here and dispatch class.init through it
 
   pub(crate) fn prepare_call_frame(
     &mut self,
     f: Value,
     args: &[Value],
     kwargs: Value,
-    return_address: usize,
+    on_return: frame::Return,
   ) -> Result<Handle<Frame>, Error> {
     // # Check that callee is callable
     // TODO: trait
@@ -53,15 +40,14 @@ impl<Io: std::io::Write> Isolate<Io> {
 
     let stack = match self.frames.last_mut() {
       Some(frame) => {
-        let mut frame = frame.borrow_mut();
-        frame.return_address = return_address;
+        let frame = frame.borrow();
         Stack::view(&frame.stack, frame.stack_base() + frame.frame_size)
       }
       None => Stack::new(),
     };
 
     // # Create a new call frame
-    let mut frame = Frame::with_stack(f.clone(), args.len(), stack);
+    let mut frame = Frame::with_stack(f.clone(), args.len(), on_return, stack);
 
     // # Initialize params
     init_params(f, &mut frame.stack, param_info, args, kwargs);
@@ -182,7 +168,6 @@ pub struct ParamInfo {
 
 #[allow(clippy::identity_op, clippy::needless_range_loop)]
 fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value], kwargs: Value) {
-  // TODO: init receiver
   // receiver
   if let Some(m) = f.as_method() {
     stack.set(0, Value::object(m.this.clone().widen()));

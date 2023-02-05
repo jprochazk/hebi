@@ -15,14 +15,8 @@ use std::mem::take;
 pub use error::Error;
 use value::object::frame::{Frame, Stack};
 use value::object::handle::Handle;
-use value::object::{dict, Closure, Dict, Registry};
+use value::object::{dict, frame, Closure, Dict, Registry};
 use value::{object, Value};
-
-// TODO: stackless VM
-// - `CallFrame` -> `Frame`, wrap in `Handle`
-// - put `pc` and `stack` in `Frame`
-// - somehow make it so that you can swap the running dispatch loop's code and
-//   pc pointers
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   // TODO: module registry
@@ -340,13 +334,13 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_create_closure(&mut self, descriptor: u32) -> Result<(), Self::Error> {
-    let descriptor = self.get_const(descriptor);
+  fn op_create_closure(&mut self, desc: u32) -> Result<(), Self::Error> {
+    let desc = self.get_const(desc);
 
     // this should always be a closure descriptor
-    let descriptor = Handle::<object::ClosureDesc>::from_value(descriptor).unwrap();
+    let desc = Handle::<object::ClosureDesc>::from_value(desc).unwrap();
 
-    self.acc = Closure::new(descriptor).into();
+    self.acc = Closure::new(desc).into();
 
     Ok(())
   }
@@ -381,23 +375,23 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_create_class_empty(&mut self, descriptor: u32) -> Result<(), Self::Error> {
-    let descriptor = self.get_const(descriptor);
+  fn op_create_class_empty(&mut self, desc: u32) -> Result<(), Self::Error> {
+    let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
+    let desc = Handle::<object::ClassDesc>::from_value(desc).unwrap();
 
-    self.acc = Value::from(object::ClassDef::new(descriptor, &[]));
+    self.acc = Value::from(object::ClassDef::new(desc, &[]));
 
     Ok(())
   }
 
-  fn op_create_class(&mut self, descriptor: u32, start: u32) -> Result<(), Self::Error> {
-    let descriptor = self.get_const(descriptor);
+  fn op_create_class(&mut self, desc: u32, start: u32) -> Result<(), Self::Error> {
+    let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
+    let desc = Handle::<object::ClassDesc>::from_value(desc).unwrap();
 
     let value = Value::from(object::ClassDef::new(
-      descriptor,
+      desc,
       &self.stack().slice(start as usize..),
     ));
     self.acc = value;
@@ -646,9 +640,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     dbg!(&func);
 
     if func.is_class_def() {
-      if let Some(frame) = self.frames.last_mut() {
-        frame.borrow_mut().return_address = return_address;
-      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &[], Value::none())?;
@@ -657,7 +648,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     }
 
     // regular function call
-    let frame = self.prepare_call_frame(func, &[], Value::none(), return_address)?;
+    let frame = self.prepare_call_frame(
+      func,
+      &[],
+      Value::none(),
+      frame::Return::Swap(return_address),
+    )?;
     self.frames.push(frame);
     self.pc = 0;
     Err(Control::SwapFrame)
@@ -673,9 +669,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       .to_vec();
 
     if func.is_class_def() {
-      if let Some(frame) = self.frames.last_mut() {
-        frame.borrow_mut().return_address = return_address;
-      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &args, Value::none())?;
@@ -684,7 +677,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     }
 
     // regular function call
-    let frame = self.prepare_call_frame(func, &args, Value::none(), return_address)?;
+    let frame = self.prepare_call_frame(
+      func,
+      &args,
+      Value::none(),
+      frame::Return::Swap(return_address),
+    )?;
     self.frames.push(frame);
     self.pc = 0;
     Err(Control::SwapFrame)
@@ -706,9 +704,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       .to_vec();
 
     if func.is_class_def() {
-      if let Some(frame) = self.frames.last_mut() {
-        frame.borrow_mut().return_address = return_address;
-      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &args, kwargs)?;
@@ -717,7 +712,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     }
 
     // regular function call
-    let frame = self.prepare_call_frame(func, &args, kwargs, return_address)?;
+    let frame =
+      self.prepare_call_frame(func, &args, kwargs, frame::Return::Swap(return_address))?;
     self.frames.push(frame);
     self.pc = 0;
     Err(Control::SwapFrame)
@@ -759,13 +755,16 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_ret(&mut self) -> Result<(), Self::Error> {
-    self.frames.pop();
-    if let Some(frame) = self.frames.last() {
-      self.pc = frame.borrow().return_address;
-      Err(Control::SwapFrame)
+    if let Some(frame) = self.frames.pop() {
+      match frame.borrow().on_return {
+        frame::Return::Swap(return_address) => {
+          self.pc = return_address;
+          Err(Control::SwapFrame)
+        }
+        frame::Return::Yield => Err(Control::Yield),
+      }
     } else {
-      self.pc = 0;
-      Err(Control::Yield)
+      unreachable!()
     }
   }
 }
