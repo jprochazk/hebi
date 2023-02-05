@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-// TODO: maybe deduplicate with `value`
-
 pub struct Join<Iter, Sep>(pub Iter, pub Sep);
 
 impl<Iter, Sep> Display for Join<Iter, Sep>

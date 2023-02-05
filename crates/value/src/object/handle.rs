@@ -45,6 +45,13 @@ impl<T: ObjectHandle> Handle<T> {
   }
 }
 
+impl<T: ObjectHandle + Into<Object>> From<T> for Handle<T> {
+  fn from(value: T) -> Self {
+    let obj = Ptr::new(value.into());
+    unsafe { Handle::from_ptr_unchecked(obj) }
+  }
+}
+
 impl<T: ObjectHandle> std::fmt::Debug for Handle<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     std::fmt::Debug::fmt(&self.o, f)

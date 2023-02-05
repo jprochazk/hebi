@@ -1,0 +1,44 @@
+---
+source: crates/emit/src/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn main():
+  import test.symbol
+
+  print symbol
+
+
+# Func:
+function <main>:
+  frame_size: 5
+  length: 9
+  const (length=1):
+    0: <path test.symbol>
+  code:
+    0 | load_module [0], r4
+    3 | load_reg r4
+    5 | print 
+    6 | push_none 
+    7 | ret 
+    8 | suspend 
+
+function <[[main]]>:
+  frame_size: 4
+  length: 5
+  const (length=2):
+    0: <func main>
+    1: "main"
+  code:
+    0 | load_const [0]
+    2 | store_global [1]
+    4 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

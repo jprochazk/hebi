@@ -16,7 +16,8 @@ use ty::*;
 instructions! {
   Instruction, ops,
   Handler, run,
-  Nop, Wide, ExtraWide, Suspend,
+  Nop, Wide, ExtraWide,
+  Ret, Suspend,
   disassemble, update_registers;
 
   // loads/stores
@@ -99,6 +100,13 @@ instructions! {
   /// - `key` - register index of key.
   /// - `obj` - register index of target object.
   StoreKeyed (key: Reg, obj: Reg),
+
+  /// Load a symbol found at `path` into `dest`.
+  ///
+  /// ### Operands
+  /// - `path` - constant pool index of the path.
+  /// - `dest` - register index of the destination.
+  LoadModule (path: Const, dest: Reg),
 
   LoadSelf (),
   LoadSuper (),
@@ -304,7 +312,7 @@ instructions! {
   /// ### Operands
   ///
   /// None.
-  Call0 (),
+  Call0 :call (),
 
   // TODO: `Call` and `CallKw` should not take `callee` by register
   // instead, the register should point to the first argument,
@@ -363,7 +371,7 @@ instructions! {
   /// ### Operands
   /// - `start` - keyword dictionary register index.
   /// - `args` - number of positional arguments.
-  Call (start: Reg, args: uv),
+  Call :call (start: Reg, args: uv),
 
   /// Call `callee` with mixed positional and keyword arguments.
   ///
@@ -413,7 +421,7 @@ instructions! {
   /// ### Operands
   /// - `start` - keyword dictionary register index.
   /// - `args` - number of positional arguments.
-  CallKw (start: Reg, args: uv),
+  CallKw :call (start: Reg, args: uv),
 
   /// Sets the accumulator to `true` if `call_frame.num_args <= n`.
   ///
@@ -435,9 +443,6 @@ instructions! {
   /// - `name` - constant pool index of name.
   /// - `param` - register index of function parameter.
   LoadKwParam (name: Const, param: Reg),
-
-  /// Pop a call frame off the stack.
-  Ret (),
 }
 
 // TODO: more instructions

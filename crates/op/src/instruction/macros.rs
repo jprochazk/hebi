@@ -39,7 +39,7 @@ macro_rules! impl_encode_into_for_jump {
       }
     }
   };
-  ( $name:ident ($( $operand:ident : $ty:ident ),*) ) => {};
+  ( $(:$flag:ident)? $name:ident ($( $operand:ident : $ty:ident ),*) ) => {};
 }
 
 macro_rules! disassembly_operand_kind {
@@ -57,7 +57,7 @@ macro_rules! disassembly_operand_kind {
 macro_rules! instruction_base {
   (
     $Instruction:ident, $Handler:ident;
-    $(:$jump:ident)? $name:ident ($( $operand:ident : $ty:ident )*) $(= $index:literal)?
+    $(:$flag:ident)? $name:ident ($( $operand:ident : $ty:ident )*) $(= $index:literal)?
   ) => {
     instruction_struct!($name ($($operand : $ty),*));
 
@@ -129,7 +129,7 @@ macro_rules! instruction_base {
       }
     }
 
-    impl_encode_into_for_jump!($(:$jump)? $name ($($operand : $ty),*));
+    impl_encode_into_for_jump!($(:$flag)? $name ($($operand : $ty),*));
 
     impl private::Sealed for $name {}
   }
@@ -190,6 +190,44 @@ macro_rules! instruction_dispatch {
       }
     }
   };
+  ($Handler:ident; :call $name:ident, ()) => {
+    paste! {
+      #[allow(clippy::ptr_arg)]
+      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+        vm: &mut H,
+        _: std::ptr::NonNull<[u8]>,
+        pc: std::ptr::NonNull<usize>,
+        width: &mut Width,
+        result: &mut Result<(), H::Error>,
+      ) {
+        // VM sets `PC`
+        *result = vm.[<op_ $name:snake>](
+          *pc.as_ptr() + 1 + <$name as Decode>::Operands::size(*width)
+        );
+        *width = Width::Single;
+      }
+    }
+  };
+  ($Handler:ident; :call $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
+    paste! {
+      #[allow(clippy::ptr_arg)]
+      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+        vm: &mut H,
+        bc: std::ptr::NonNull<[u8]>,
+        pc: std::ptr::NonNull<usize>,
+        width: &mut Width,
+        result: &mut Result<(), H::Error>,
+      ) {
+        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
+        // VM sets `PC`
+        *result = vm.[<op_ $name:snake>](
+          $($operand,)*
+          *pc.as_ptr() + 1 + <$name as Decode>::Operands::size(*width)
+        );
+        *width = Width::Single;
+      }
+    }
+  };
 }
 
 macro_rules! handler_method {
@@ -201,6 +239,17 @@ macro_rules! handler_method {
         &mut self,
         $($operand : <$ty as Operand>::Decoded),*
       ) -> Result<ControlFlow, Self::Error>;
+    }
+  };
+  (:call $(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ident ),*)) => {
+    paste! {
+      #[allow(unused_variables)]
+      $(#[$meta])*
+      fn [<op_ $name:snake>](
+        &mut self,
+        $($operand : <$ty as Operand>::Decoded,)*
+        return_address: usize,
+      ) -> Result<(), Self::Error>;
     }
   };
   ($(#[$meta:meta])* $name:ident, ($( $operand:ident : $ty:ident ),*)) => {
@@ -226,11 +275,12 @@ macro_rules! instructions {
   (
     $Instruction:ident, $ops:ident,
     $Handler:ident, $run:ident,
-    $Nop:ident, $Wide:ident, $ExtraWide:ident, $Suspend:ident,
+    $Nop:ident, $Wide:ident, $ExtraWide:ident,
+    $Ret:ident, $Suspend:ident,
     $disassemble:ident, $update_registers:ident;
     $(
       $(#[$meta:meta])*
-      $name:ident $(:$jump:ident)? ($( $operand:ident : $ty:ident ),*) $(= $index:literal)?
+      $name:ident $(:$flag:ident)? ($( $operand:ident : $ty:ident ),*) $(= $index:literal)?
     ),* $(,)?
   ) => {
 
@@ -238,6 +288,7 @@ macro_rules! instructions {
     enum _Kind {
       $Nop = 0,
       $( $name $( = $index )? ),*,
+      $Ret = 254,
       $Suspend = 255,
     }
 
@@ -246,7 +297,8 @@ macro_rules! instructions {
     pub enum $Instruction {
       /// Do nothing.
       $Nop($Nop) = _Kind::$Nop as u8,
-      $( $(#[$meta])* $name($name) = _Kind::$name as u8 ),*,
+      $( $(#[$meta])* $name($name) = _Kind::$name as u8 ,)*
+      $Ret($Ret) = _Kind::$Ret as u8,
       /// Suspend the dispatch loop.
       $Suspend($Suspend) = _Kind::$Suspend as u8,
     }
@@ -256,6 +308,7 @@ macro_rules! instructions {
         match self {
           $Instruction::$Nop(v) => v.encode(buf, force_max_width),
           $( $Instruction::$name(v) => v.encode(buf, force_max_width), )*
+          $Instruction::$Ret(v) => v.encode(buf, force_max_width),
           $Instruction::$Suspend(v) => v.encode(buf, force_max_width),
         }
       }
@@ -286,6 +339,8 @@ macro_rules! instructions {
       pub const $ExtraWide: u8 = 0x02;
 
       $( $(#[$meta])* pub const $name: u8 = _Kind::$name as u8; )*
+
+      pub const $Ret: u8 = _Kind::$Ret as u8;
 
       /// Suspend the dispatch loop.
       pub const $Suspend: u8 = _Kind::$Suspend as u8;
@@ -332,6 +387,23 @@ macro_rules! instructions {
       *width = Width::Quad;
     }
 
+    #[allow(clippy::ptr_arg)]
+    unsafe fn op_ret<H: Handler>(
+      vm: &mut H,
+      _: std::ptr::NonNull<[u8]>,
+      _: std::ptr::NonNull<usize>,
+      width: &mut Width,
+      result: &mut Result<(), H::Error>,
+    ) {
+      *result = vm.op_ret();
+      *width = Width::Single;
+    }
+
+    instruction_base!(
+      $Instruction, $Handler;
+      $Ret () = 254
+    );
+
     instruction_base!(
       $Instruction, $Handler;
       $Suspend () = 255
@@ -340,10 +412,10 @@ macro_rules! instructions {
     $(
       instruction_base!(
         $Instruction, $Handler;
-        $(:$jump)? $name ($( $operand : $ty )*) $(= $index)?
+        $(:$flag)? $name ($( $operand : $ty )*) $(= $index)?
       );
 
-      instruction_dispatch!($Handler; $(:$jump)? $name, ($($operand : ty),*));
+      instruction_dispatch!($Handler; $(:$flag)? $name, ($($operand : ty),*));
     )*
 
     impl private::Sealed for Instruction {}
@@ -352,7 +424,9 @@ macro_rules! instructions {
       pub trait $Handler {
         type Error;
 
-        $( handler_method!($(:$jump)? $(#[$meta])* $name, ($($operand : $ty),*)); )*
+        $( handler_method!($(:$flag)? $(#[$meta])* $name, ($($operand : $ty),*)); )*
+
+        fn op_ret(&mut self) -> Result<(), Self::Error>;
       }
     }
 
@@ -385,6 +459,7 @@ macro_rules! instructions {
           $(
             ops::$name => paste!([<op_ $name:snake>])(vm, bc, pc, width, result),
           )*
+          ops::$Ret => op_ret(vm, bc, pc, width, result),
           ops::$Suspend => break,
           _ => panic!("malformed bytecode: invalid opcode {}", opcode),
         }
@@ -405,6 +480,7 @@ macro_rules! instructions {
         $(
           ops::$name => <$name>::disassemble(buf, offset, width),
         )*
+        ops::$Ret => <$Ret>::disassemble(buf, offset, width),
         ops::$Suspend => <$Suspend>::disassemble(buf, offset, width),
         opcode => panic!("malformed bytecode: invalid opcode 0x{opcode:02x}"),
       };
@@ -423,6 +499,7 @@ macro_rules! instructions {
         $(
           ops::$name => offset + 1 + <$name as Decode>::Operands::size(width),
         )*
+        ops::$Ret => offset + 1,
         ops::$Suspend => offset + 1,
         opcode => panic!("malformed bytecode: invalid opcode 0x{opcode:02x}"),
       }
@@ -437,6 +514,7 @@ macro_rules! instructions {
             $( update_register!(map, inner, $operand : $ty); )*
           },
         )*
+        $Instruction::$Ret(_) => {}
         $Instruction::$Suspend(_) => {}
       }
     }

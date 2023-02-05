@@ -2,8 +2,10 @@
 mod macros;
 pub mod class;
 pub mod dict;
+pub mod frame;
 pub mod func;
 pub mod handle;
+pub mod module;
 
 use std::hash::Hash;
 
@@ -11,13 +13,16 @@ use beef::lean::Cow;
 use paste::paste;
 
 use crate::ptr::{Ref, RefMut};
+use crate::util::join::JoinIter;
 use crate::{Ptr, Value};
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
 pub use class::{Class, ClassDef, ClassDesc, Method};
 pub use dict::Dict;
+use frame::Frame;
 pub use func::{Closure, ClosureDesc, Func};
+pub use module::{Module, Path, Registry};
 
 #[derive(Clone)]
 pub struct Object {
@@ -36,6 +41,10 @@ object_repr! {
     ClassDef,
     ClassDesc,
     Method,
+    Module,
+    Path,
+    Registry,
+    Frame,
   }
 }
 
@@ -45,8 +54,7 @@ impl PartialEq for Object {
       (Repr::String(a), Repr::String(b)) => a == b,
       (Repr::List(a), Repr::List(b)) => a == b,
       (Repr::Dict(a), Repr::Dict(b)) => a == b,
-      (Repr::Func(a), Repr::Func(b)) => std::ptr::eq(a, b),
-      _ => false,
+      (a, b) => std::ptr::eq(a, b),
     }
   }
 }
@@ -57,16 +65,13 @@ impl Hash for Object {
     match &self.repr {
       Repr::String(v) => v.hash(state),
       Repr::List(v) => v.hash(state),
-      Repr::Dict(v) => (v as *const _ as usize).hash(state),
-      Repr::Func(v) => (v as *const _ as usize).hash(state),
-      Repr::Closure(v) => (v as *const _ as usize).hash(state),
-      Repr::ClosureDesc(v) => (v as *const _ as usize).hash(state),
-      Repr::Class(v) => (v as *const _ as usize).hash(state),
-      Repr::ClassDef(v) => (v as *const _ as usize).hash(state),
-      Repr::ClassDesc(v) => (v as *const _ as usize).hash(state),
-      Repr::Method(v) => (v as *const _ as usize).hash(state),
+      v => hash_ptr(v, state),
     }
   }
+}
+
+fn hash_ptr<T, H: std::hash::Hasher>(v: &T, state: &mut H) {
+  (v as *const _ as usize).hash(state)
 }
 
 impl<'a> From<&'a str> for Object {
@@ -124,6 +129,10 @@ impl std::fmt::Display for Object {
       Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),
       Repr::ClassDesc(v) => write!(f, "<class desc {}>", v.name),
       Repr::Method(v) => write!(f, "{}", v.func),
+      Repr::Module(v) => write!(f, "<module {}>", v.name()),
+      Repr::Path(v) => write!(f, "<path {}>", v.segments().iter().join(".")),
+      Repr::Registry(_) => write!(f, "<registry>"),
+      Repr::Frame(_) => write!(f, "<frame>"),
     }
   }
 }

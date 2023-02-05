@@ -1,3 +1,5 @@
+use std::ptr::NonNull;
+
 use crate::instruction::*;
 
 macro_rules! check {
@@ -107,6 +109,7 @@ fn dispatch() {
 
   struct VM {
     stdout: Vec<u8>,
+    pc: usize,
     a: Value,
     r: Vec<Value>,
     c: Vec<Value>,
@@ -179,6 +182,8 @@ fn dispatch() {
     }
 
     fn op_ret(&mut self) -> Result<(), Self::Error> {
+      self.pc += 1;
+
       Ok(())
     }
 
@@ -247,6 +252,14 @@ fn dispatch() {
       &mut self,
       key: <ty::Reg as ty::Operand>::Decoded,
       obj: <ty::Reg as ty::Operand>::Decoded,
+    ) -> Result<(), Self::Error> {
+      todo!()
+    }
+
+    fn op_load_module(
+      &mut self,
+      path: <ty::Const as ty::Operand>::Decoded,
+      dest: <ty::Reg as ty::Operand>::Decoded,
     ) -> Result<(), Self::Error> {
       todo!()
     }
@@ -381,7 +394,7 @@ fn dispatch() {
       todo!()
     }
 
-    fn op_call0(&mut self) -> Result<(), Self::Error> {
+    fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
       todo!()
     }
 
@@ -389,6 +402,7 @@ fn dispatch() {
       &mut self,
       start: <ty::Reg as ty::Operand>::Decoded,
       args: <ty::uv as ty::Operand>::Decoded,
+      return_address: usize,
     ) -> Result<(), Self::Error> {
       todo!()
     }
@@ -397,6 +411,7 @@ fn dispatch() {
       &mut self,
       start: <ty::Reg as ty::Operand>::Decoded,
       args: <ty::uv as ty::Operand>::Decoded,
+      return_address: usize,
     ) -> Result<(), Self::Error> {
       todo!()
     }
@@ -498,14 +513,16 @@ fn dispatch() {
     ..
   } = chunk;
   let mut vm = VM {
+    pc: 0,
     stdout: Vec::new(),
     a: Value::Number(0),
     r: vec![Value::Number(0); 2],
     c: const_pool,
   };
 
-  let mut pc = 0;
-  unsafe { run(&mut vm, (&mut bytecode[..]).into(), (&mut pc).into()) }.unwrap();
+  let bc = NonNull::from(&mut bytecode[..]);
+  let pc = NonNull::from(&mut vm.pc);
+  unsafe { run(&mut vm, bc, pc) }.unwrap();
 
   let stdout = String::from_utf8(vm.stdout).unwrap();
   insta::assert_snapshot!(stdout);

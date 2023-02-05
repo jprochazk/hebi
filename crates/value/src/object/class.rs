@@ -9,6 +9,8 @@ use super::Dict;
 use crate::ptr::Ref;
 use crate::Value;
 
+// TODO: inheritance + super
+
 #[derive(Clone)]
 pub struct Class {
   pub(super) name: String,
@@ -131,18 +133,12 @@ impl ClassDef {
   pub fn instance(&self) -> Handle<Class> {
     let name = self.name.clone();
     let parent = self.parent.clone();
-    let mut class = unsafe {
-      Handle::<Class>::from_value(
-        Class {
-          name,
-          fields: Dict::with_capacity(self.methods.len() + self.fields.len()),
-          parent,
-          is_frozen: false,
-        }
-        .into(),
-      )
-      .unwrap_unchecked()
-    };
+    let mut class = Handle::from(Class {
+      name,
+      fields: Dict::with_capacity(self.methods.len() + self.fields.len()),
+      parent,
+      is_frozen: false,
+    });
 
     for (k, v) in self.methods.iter() {
       let v = Method {
@@ -153,7 +149,6 @@ impl ClassDef {
       class.borrow_mut().fields.insert(k.clone(), v);
     }
     for (k, v) in self.fields.iter() {
-      dbg!(&v);
       class.borrow_mut().fields.insert(k.clone(), v.clone());
     }
 

@@ -506,15 +506,62 @@ fn class_instance() {
   }
 }
 
+#[test]
+fn imports() {
+  check! {
+    r#"
+      fn main():
+        import test
+
+        print test.symbol
+    "#
+  }
+  check! {
+    r#"
+      fn main():
+        import test.symbol
+
+        print symbol
+    "#
+  }
+  check! {
+    r#"
+      fn main():
+        import test.{a,b}
+
+        print a, b
+    "#
+  }
+  check! {
+    r#"
+      fn main():
+        import test.{
+          a0.{a1, a2},
+          b0.{b1, b2}
+        }
+
+        print a1, a2
+        print b1, b2
+    "#
+  }
+}
+
 /* #[test]
 fn _temp() {
   check! {
     r#"
-      fn f(*, a, b=10):
-        print a, b
+      class A:
+        v = 10
+      class B:
+        init(self, *items):
+          self.items = items
+      class C:
+        init(self, **entries):
+          self.entries = entries
 
-      f(a=1)
-      f(a=1, b=2)
+      print A().v
+      print B(0, 1, 2).items
+      print C(a=0, b=1, c=2).entries
     "#
   }
 } */

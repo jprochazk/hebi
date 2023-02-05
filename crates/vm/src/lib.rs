@@ -9,38 +9,45 @@ mod util;
 
 // TODO: make the VM panic-less (other than debug asserts for unsafe things)
 
+use std::cell::{Ref, RefMut};
 use std::mem::take;
 
 pub use error::Error;
+use value::object::frame::{Frame, Stack};
 use value::object::handle::Handle;
-use value::object::{dict, Closure, Dict};
+use value::object::{dict, Closure, Dict, Registry};
 use value::{object, Value};
+
+// TODO: stackless VM
+// - `CallFrame` -> `Frame`, wrap in `Handle`
+// - put `pc` and `stack` in `Frame`
+// - somehow make it so that you can swap the running dispatch loop's code and
+//   pc pointers
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   // TODO: module registry
-  globals: Dict,
+  registry: Handle<Registry>,
+  globals: Handle<Dict>,
   pc: usize,
   acc: Value,
-  stack: Vec<Value>,
-  call_stack: Vec<call::CallFrame>,
+  frames: Vec<Handle<Frame>>,
   io: Io,
 }
 
 impl Isolate<std::io::Stdout> {
-  #[allow(clippy::new_without_default)]
-  pub fn new() -> Isolate<std::io::Stdout> {
-    Isolate::<std::io::Stdout>::with_io(std::io::stdout())
+  pub fn new(registry: Handle<Registry>) -> Isolate<std::io::Stdout> {
+    Isolate::<std::io::Stdout>::with_io(registry, std::io::stdout())
   }
 }
 
 impl<Io: std::io::Write> Isolate<Io> {
-  pub fn with_io(io: Io) -> Isolate<Io> {
+  pub fn with_io(registry: Handle<Registry>, io: Io) -> Isolate<Io> {
     Isolate {
-      globals: Dict::new(),
+      registry,
+      globals: Dict::new().into(),
       pc: 0,
       acc: Value::none(),
-      stack: vec![],
-      call_stack: vec![],
+      frames: vec![],
       io,
     }
   }
@@ -52,116 +59,125 @@ impl<Io: std::io::Write> Isolate<Io> {
   pub fn print(&mut self, args: std::fmt::Arguments<'_>) -> std::io::Result<()> {
     self.io.write_fmt(args)
   }
+
+  fn current_frame(&self) -> Ref<'_, Frame> {
+    self.frames.last().unwrap().borrow()
+  }
+
+  fn current_frame_mut(&mut self) -> RefMut<'_, Frame> {
+    self.frames.last_mut().unwrap().borrow_mut()
+  }
+
+  fn get_const(&self, slot: u32) -> Value {
+    let frame = self.current_frame();
+    unsafe { frame.const_pool.as_ref()[slot as usize].clone() }
+  }
+
+  fn get_reg(&self, index: u32) -> Value {
+    let frame = self.current_frame();
+    let value = frame.stack.get(index as usize).clone();
+    value
+  }
+
+  fn set_reg(&mut self, index: u32, value: Value) {
+    let mut frame = self.current_frame_mut();
+    frame.stack.set(index as usize, value);
+  }
+
+  fn get_capture(&self, slot: u32) -> Value {
+    let frame = self.current_frame();
+    unsafe { frame.captures.unwrap().as_ref()[slot as usize].clone() }
+  }
+
+  fn set_capture(&mut self, slot: u32, value: Value) {
+    let frame = self.current_frame_mut();
+    unsafe { frame.captures.unwrap().as_mut()[slot as usize] = value }
+  }
+
+  fn stack(&self) -> Ref<'_, Stack> {
+    Ref::map(self.current_frame(), |v| &v.stack)
+  }
+}
+
+pub enum Control {
+  Error(Error),
+  SwapFrame,
+  Yield,
+}
+
+impl From<Error> for Control {
+  fn from(value: Error) -> Self {
+    Self::Error(value)
+  }
 }
 
 impl<Io: std::io::Write> op::Handler for Isolate<Io> {
-  type Error = Error;
+  type Error = Control;
 
   fn op_load_const(&mut self, slot: u32) -> Result<(), Self::Error> {
-    let slot = slot as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-
-    self.acc = const_pool[slot].clone();
+    self.acc = self.get_const(slot);
 
     Ok(())
   }
 
   fn op_load_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let reg = reg as usize;
-
-    self.acc = self.stack[base + reg].clone();
+    self.acc = self.get_reg(reg);
 
     Ok(())
   }
 
   fn op_store_reg(&mut self, reg: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let reg = reg as usize;
-
-    self.stack[base + reg] = self.acc.clone();
+    self.set_reg(reg, self.acc.clone());
 
     Ok(())
   }
 
   fn op_load_capture(&mut self, slot: u32) -> Result<(), Self::Error> {
-    let slot = slot as usize;
-    let captures = unsafe {
-      self
-        .call_stack
-        .last()
-        .unwrap()
-        .captures
-        .map(|ptr| ptr.as_ref())
-    }
-    .expect("attempted to load capture in function which is not a closure");
-
-    self.acc = captures[slot].clone();
+    self.acc = self.get_capture(slot);
 
     Ok(())
   }
 
   fn op_store_capture(&mut self, slot: u32) -> Result<(), Self::Error> {
-    let slot = slot as usize;
-
-    let captures = unsafe {
-      self
-        .call_stack
-        .last_mut()
-        .unwrap()
-        .captures
-        .map(|mut ptr| ptr.as_mut())
-    }
-    .expect("attempted to store capture in function which is not a closure");
-
-    captures[slot] = self.acc.clone();
+    self.set_capture(slot, self.acc.clone());
 
     Ok(())
   }
 
   fn op_load_global(&mut self, name: u32) -> Result<(), Self::Error> {
-    let name = name as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // global name is always a string
     let name = dict::Key::try_from(name).unwrap();
-    match self.globals.get(&name) {
+    match self.globals.borrow().get(&name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
-      None => return Err(Error::new(format!("undefined global {name}"))),
+      None => return Err(Error::new(format!("undefined global {name}")).into()),
     }
 
     Ok(())
   }
 
   fn op_store_global(&mut self, name: u32) -> Result<(), Self::Error> {
-    let name = name as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // global name is always a string
     let name = dict::Key::try_from(name).unwrap();
-    self.globals.insert(name, self.acc.clone());
+    self.globals.borrow_mut().insert(name, self.acc.clone());
 
     Ok(())
   }
 
   fn op_load_named(&mut self, name: u32) -> Result<(), Self::Error> {
-    let name = name as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    dbg!(&self.acc);
     self.acc = field::get(&self.acc, &name)?;
 
     Ok(())
   }
 
   fn op_load_named_opt(&mut self, name: u32) -> Result<(), Self::Error> {
-    let name = name as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
@@ -171,27 +187,22 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_store_named(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let name = name as usize;
-    let obj = obj as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    let obj = &mut self.stack[base + obj];
+    let mut obj = self.get_reg(obj);
 
-    field::set(obj, name, self.acc.clone())
+    field::set(&mut obj, name, self.acc.clone())?;
+
+    Ok(())
   }
 
   fn op_load_keyed(&mut self, key: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let key = key as usize;
-
-    let name = self.stack[base + key].clone();
+    let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")));
+      return Err(Error::new(format!("{name} is not a valid key")).into());
     };
 
     self.acc = field::get(&self.acc, &name)?;
@@ -200,13 +211,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_load_keyed_opt(&mut self, key: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let key = key as usize;
-
-    let name = self.stack[base + key].clone();
+    let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")));
+      return Err(Error::new(format!("{name} is not a valid key")).into());
     };
 
     self.acc = field::get_opt(&self.acc, &name)?;
@@ -215,39 +223,37 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_store_keyed(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let key = key as usize;
-    let obj = obj as usize;
-
-    let name = self.stack[base + key].clone();
+    let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")));
+      return Err(Error::new(format!("{name} is not a valid key")).into());
     };
 
-    let obj = &mut self.stack[base + obj];
+    let mut obj = self.get_reg(obj);
 
-    field::set(obj, name, self.acc.clone())
+    field::set(&mut obj, name, self.acc.clone())?;
+
+    Ok(())
+  }
+
+  fn op_load_module(&mut self, path: u32, dest: u32) -> Result<(), Self::Error> {
+    todo!()
   }
 
   fn op_load_self(&mut self) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-
     // receiver is always placed at the base of the current call frame's stack
-    self.acc = self.stack[base].clone();
+    self.acc = self.get_reg(0);
 
     Ok(())
   }
 
   fn op_load_super(&mut self) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-
     // receiver is always placed at the base of the current call frame's stack
-    let this = self.stack[base].clone();
+    let this = self.get_reg(0);
 
     let Some(this) = this.as_class() else {
       // TODO: span
-      return Err(Error::new("receiver is not a class"));
+      return Err(Error::new("receiver is not a class").into());
     };
     // parent class should always exist, because parser checks for parent class
     self.acc = Value::object(this.parent().unwrap().clone().widen());
@@ -286,15 +292,14 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_push_to_list(&mut self, list: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let list = list as usize;
+    let mut list = self.get_reg(list);
 
-    let Some(mut list) = self.stack[base + list].as_list_mut() else {
+    let Some(mut list) = list.as_list_mut() else {
       // TODO: span
-      return Err(Error::new("value is not a list"));
+      return Err(Error::new("value is not a list").into());
     };
 
-    list.push(std::mem::take(&mut self.acc));
+    list.push(take(&mut self.acc));
 
     Ok(())
   }
@@ -306,46 +311,37 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_insert_to_dict(&mut self, key: u32, dict: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let key = key as usize;
-    let dict = dict as usize;
-
-    let key = self.stack[base + key].clone();
+    let key = self.get_reg(key);
     let Ok(key) = dict::Key::try_from(key.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{key} is not a valid key")));
+      return Err(Error::new(format!("{key} is not a valid key")).into());
     };
 
-    let mut dict = self.stack[base + dict].as_dict_mut().unwrap();
+    let mut dict = self.get_reg(dict);
+    let mut dict = dict.as_dict_mut().unwrap();
 
     // `name` is a `Key` so this `unwrap` won't panic
-    dict.insert(key, std::mem::take(&mut self.acc));
+    dict.insert(key, take(&mut self.acc));
 
     Ok(())
   }
 
   fn op_insert_to_dict_named(&mut self, name: u32, dict: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let name = name as usize;
-    let dict = dict as usize;
-
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
 
-    let mut dict = self.stack[base + dict].as_dict_mut().unwrap();
+    let mut dict = self.get_reg(dict);
+    let mut dict = dict.as_dict_mut().unwrap();
 
     // name used in named load is always a string
-    dict.insert(name, std::mem::take(&mut self.acc));
+    dict.insert(name, take(&mut self.acc));
 
     Ok(())
   }
 
   fn op_create_closure(&mut self, descriptor: u32) -> Result<(), Self::Error> {
-    let descriptor = descriptor as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let descriptor = const_pool[descriptor].clone();
+    let descriptor = self.get_const(descriptor);
 
     // this should always be a closure descriptor
     let descriptor = Handle::<object::ClosureDesc>::from_value(descriptor).unwrap();
@@ -356,9 +352,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_capture_reg(&mut self, reg: u32, slot: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let reg = reg as usize;
-    let slot = slot as usize;
+    let value = self.get_reg(reg);
 
     // should not panic as long as bytecode is valid
     let captures = &mut self
@@ -367,24 +361,13 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       .expect("attempted to capture register for value which is not a closure")
       .captures;
 
-    captures[slot] = self.stack[base + reg].clone();
+    captures[slot as usize] = value;
 
     Ok(())
   }
 
   fn op_capture_slot(&mut self, parent_slot: u32, self_slot: u32) -> Result<(), Self::Error> {
-    let parent_slot = parent_slot as usize;
-    let self_slot = self_slot as usize;
-
-    let parent_captures = unsafe {
-      self
-        .call_stack
-        .last_mut()
-        .unwrap()
-        .captures
-        .map(|mut ptr| ptr.as_mut())
-    }
-    .expect("attempted to store capture in function which is not a closure");
+    let value = self.get_capture(parent_slot);
 
     // should not panic as long as bytecode is valid
     let self_captures = &mut self
@@ -393,16 +376,13 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       .expect("attempted to capture register for value which is not a closure")
       .captures;
 
-    self_captures[self_slot] = parent_captures[parent_slot].clone();
+    self_captures[self_slot as usize] = value;
 
     Ok(())
   }
 
   fn op_create_class_empty(&mut self, descriptor: u32) -> Result<(), Self::Error> {
-    let descriptor = descriptor as usize;
-
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let descriptor = const_pool[descriptor].clone();
+    let descriptor = self.get_const(descriptor);
     // this should always be a class descriptor
     let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
 
@@ -412,15 +392,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_create_class(&mut self, descriptor: u32, start: u32) -> Result<(), Self::Error> {
-    let descriptor = descriptor as usize;
-    let start = start as usize;
-
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let descriptor = const_pool[descriptor].clone();
+    let descriptor = self.get_const(descriptor);
     // this should always be a class descriptor
     let descriptor = Handle::<object::ClassDesc>::from_value(descriptor).unwrap();
 
-    self.acc = Value::from(object::ClassDef::new(descriptor, &self.stack[start..]));
+    let value = Value::from(object::ClassDef::new(
+      descriptor,
+      &self.stack().slice(start as usize..),
+    ));
+    self.acc = value;
 
     Ok(())
   }
@@ -436,7 +416,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
     let Some(value) = self.acc.as_bool() else {
       // TODO: span
-      return Err(Error::new("value is not a bool"));
+      return Err(Error::new("value is not a bool").into());
     };
 
     match value {
@@ -446,97 +426,61 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_add(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
-    let rhs = std::mem::take(&mut self.acc);
+    let lhs = self.get_reg(lhs);
+    let rhs = take(&mut self.acc);
 
-    match binop::add(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::add(lhs, rhs)?;
 
     Ok(())
   }
 
   fn op_sub(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
-    let rhs = std::mem::take(&mut self.acc);
+    let lhs = self.get_reg(lhs);
+    let rhs = take(&mut self.acc);
 
-    match binop::sub(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::sub(lhs, rhs)?;
 
     Ok(())
   }
 
   fn op_mul(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
-    let rhs = std::mem::take(&mut self.acc);
+    let lhs = self.get_reg(lhs);
+    let rhs = take(&mut self.acc);
 
-    match binop::mul(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::mul(lhs, rhs)?;
 
     Ok(())
   }
 
   fn op_div(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
-    let rhs = std::mem::take(&mut self.acc);
+    let lhs = self.get_reg(lhs);
+    let rhs = take(&mut self.acc);
 
-    match binop::div(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::div(lhs, rhs)?;
 
     Ok(())
   }
 
   fn op_rem(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
-    let rhs = std::mem::take(&mut self.acc);
+    let lhs = self.get_reg(lhs);
+    let rhs = take(&mut self.acc);
 
-    match binop::rem(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::rem(lhs, rhs)?;
 
     Ok(())
   }
 
   fn op_pow(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    match binop::pow(lhs, rhs) {
-      Ok(value) => self.acc = value,
-      Err(e) => return Err(e),
-    }
+    self.acc = binop::pow(lhs, rhs)?;
 
     Ok(())
   }
@@ -574,17 +518,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_eq(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(matches!(ord, Some(cmp::Ordering::Equal)));
 
@@ -592,17 +530,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_neq(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(!matches!(ord, Some(cmp::Ordering::Equal)));
 
@@ -610,17 +542,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_gt(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(matches!(ord, Some(cmp::Ordering::Greater)));
 
@@ -628,17 +554,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_ge(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(matches!(
       ord,
@@ -649,17 +569,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_lt(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(matches!(ord, Some(cmp::Ordering::Less)));
 
@@ -667,17 +581,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_cmp_le(&mut self, lhs: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let lhs = lhs as usize;
-
     // TODO: object overload
-    let lhs = self.stack[base + lhs].clone();
+    let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    let ord = match cmp::partial_cmp(lhs, rhs) {
-      Ok(v) => v,
-      Err(e) => return Err(e),
-    };
+    let ord = cmp::partial_cmp(lhs, rhs)?;
 
     self.acc = Value::bool(matches!(
       ord,
@@ -703,11 +611,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_print_list(&mut self, list: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let list = list as usize;
-
-    let list = self.stack[base + list].clone();
-    let list = list.as_list().expect("print_list argument is not a list");
+    let list = self.get_reg(list);
+    let list = list.as_list().unwrap();
 
     // print is a statement so should not leave a value in `acc`
     let _ = take(&mut self.acc);
@@ -736,83 +641,104 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_call0(&mut self) -> Result<(), Self::Error> {
+  fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let func = self.acc.clone();
+    dbg!(&func);
 
     if func.is_class_def() {
+      if let Some(frame) = self.frames.last_mut() {
+        frame.borrow_mut().return_address = return_address;
+      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &[], Value::none())?;
-    } else {
-      // regular function call
-      self.acc = self.call(func, &[], Value::none())?;
+      self.pc = return_address;
+      return Ok(());
     }
 
-    Ok(())
+    // regular function call
+    let frame = self.prepare_call_frame(func, &[], Value::none(), return_address)?;
+    self.frames.push(frame);
+    self.pc = 0;
+    Err(Control::SwapFrame)
   }
 
-  fn op_call(&mut self, start: u32, args: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let start = start as usize;
-    let args = args as usize;
-
+  fn op_call(&mut self, start: u32, args: u32, return_address: usize) -> Result<(), Self::Error> {
     let func = self.acc.clone();
+    dbg!(&func);
     // TODO: remove `to_vec` somehow
-    let args = self.stack[base + start..base + start + args].to_vec();
+    let args = self
+      .stack()
+      .slice(start as usize..start as usize + args as usize)
+      .to_vec();
 
     if func.is_class_def() {
+      if let Some(frame) = self.frames.last_mut() {
+        frame.borrow_mut().return_address = return_address;
+      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &args, Value::none())?;
-    } else {
-      // regular function call
-      self.acc = self.call(func, &args, Value::none())?;
+      self.pc = return_address;
+      return Ok(());
     }
 
-    Ok(())
+    // regular function call
+    let frame = self.prepare_call_frame(func, &args, Value::none(), return_address)?;
+    self.frames.push(frame);
+    self.pc = 0;
+    Err(Control::SwapFrame)
   }
 
-  fn op_call_kw(&mut self, start: u32, args: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let start = start as usize;
-    let args = args as usize;
-
+  fn op_call_kw(
+    &mut self,
+    start: u32,
+    args: u32,
+    return_address: usize,
+  ) -> Result<(), Self::Error> {
     let func = self.acc.clone();
-    let kwargs = self.stack[start].clone();
+    dbg!(&func);
+    let kwargs = self.get_reg(start);
     // TODO: remove `to_vec` somehow
-    let args = self.stack[base + start + 1..base + start + 1 + args].to_vec();
+    let args = self
+      .stack()
+      .slice(start as usize + 1..start as usize + 1 + args as usize)
+      .to_vec();
 
-    dbg!(&kwargs);
     if func.is_class_def() {
+      if let Some(frame) = self.frames.last_mut() {
+        frame.borrow_mut().return_address = return_address;
+      }
       // class constructor
       let def = Handle::from_value(func).unwrap();
       self.acc = class::create_instance(self, def, &args, kwargs)?;
-    } else {
-      // regular function call
-      self.acc = self.call(func, &args, kwargs)?;
+      self.pc = return_address;
+      return Ok(());
     }
 
-    Ok(())
+    // regular function call
+    let frame = self.prepare_call_frame(func, &args, kwargs, return_address)?;
+    self.frames.push(frame);
+    self.pc = 0;
+    Err(Control::SwapFrame)
   }
 
   fn op_is_pos_param_not_set(&mut self, index: u32) -> Result<(), Self::Error> {
-    let frame = self.call_stack.last().unwrap();
+    let frame = self.frames.last().unwrap();
     let index = index as usize;
 
-    self.acc = Value::bool(frame.num_args <= index);
+    self.acc = Value::bool(frame.borrow().num_args <= index);
 
     Ok(())
   }
 
   fn op_is_kw_param_not_set(&mut self, name: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let name = name as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name is always a string here
     let name = dict::Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let kwargs = self.stack[base + 3].as_dict().unwrap();
+    let kwargs = self.get_reg(3);
+    let kwargs = kwargs.as_dict().unwrap();
 
     self.acc = Value::bool(!kwargs.contains_key(&name));
 
@@ -820,25 +746,27 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_load_kw_param(&mut self, name: u32, param: u32) -> Result<(), Self::Error> {
-    let base = self.call_stack.last().unwrap().stack_base;
-    let name = name as usize;
-    let param = param as usize;
-    let const_pool = unsafe { self.call_stack.last().unwrap().const_pool.as_ref() };
-    let name = const_pool[name].clone();
+    let name = self.get_const(name);
     // name is always a string here
     let name = dict::Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let mut kwargs = self.stack[base + 3].clone();
+    let mut kwargs = self.get_reg(3);
     let mut kwargs = kwargs.as_dict_mut().unwrap();
 
-    self.stack[base + param] = kwargs.remove(&name).unwrap();
+    self.set_reg(param, kwargs.remove(&name).unwrap());
 
     Ok(())
   }
 
   fn op_ret(&mut self) -> Result<(), Self::Error> {
-    // TODO: change this if you stop using c-stack for mu calls
-    Ok(())
+    self.frames.pop();
+    if let Some(frame) = self.frames.last() {
+      self.pc = frame.borrow().return_address;
+      Err(Control::SwapFrame)
+    } else {
+      self.pc = 0;
+      Err(Control::Yield)
+    }
   }
 }
 

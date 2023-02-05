@@ -130,6 +130,7 @@
 
 pub mod object;
 pub mod ptr;
+mod util;
 pub mod value;
 
 pub use object::Object;

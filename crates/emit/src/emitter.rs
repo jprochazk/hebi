@@ -4,19 +4,22 @@ use beef::lean::Cow;
 use indexmap::IndexMap;
 use op::*;
 use syntax::ast;
-use value::object::{func, Func};
+use value::object::handle::Handle;
+use value::object::{func, Func, Module};
 use value::Value;
 
 pub fn emit<'src>(
   ctx: &Context,
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
-) -> Result<Value> {
-  Emitter::new(ctx, name, module)
-    .emit_main()
-    .map(|result| Value::from(result.func))
+) -> Result<Handle<Module>> {
+  let name = name.into();
+  let result = Emitter::new(ctx, name.clone(), module).emit_main()?;
+
+  Ok(Module::new(name.to_string(), result.func.into()).into())
 }
 
+// TODO: make infallible
 // TODO: look at regalloc graphs for emitter tests
 // they don't seem to be right
 
@@ -525,7 +528,7 @@ impl<'src> Function<'src> {
 }
 
 mod stmt {
-  use value::object::class;
+  use value::object::{class, module};
 
   use super::*;
 
@@ -934,7 +937,24 @@ mod stmt {
     }
 
     fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) -> Result<()> {
-      todo!()
+      for symbol in stmt.symbols.iter() {
+        let segments = symbol.path.iter().map(|s| s.to_string()).collect();
+        let path = self.const_value(module::Path::new(segments));
+
+        let name = match &symbol.alias {
+          Some(alias) => alias,
+          None => symbol.path.last().unwrap(),
+        };
+        let dest = self.reg();
+        self.state.declare_local(name.deref().clone(), dest.clone());
+
+        self.emit_op(LoadModule {
+          path,
+          dest: dest.index(),
+        });
+      }
+
+      Ok(())
     }
   }
 }

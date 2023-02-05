@@ -14,17 +14,19 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let func = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
-      Ok(func) => func,
+    let module = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
+      Ok(module) => module,
       Err(e) => {
-        panic!("failed to emit func:\n{}", e.report(input));
+        panic!("failed to emit module:\n{}", e.report(input));
       }
     };
+    let module = module.borrow();
+    let func = module.main();
     if $print_func {
-      eprintln!("{}", func.as_func().unwrap().disassemble(op::disassemble, false));
+      eprintln!("{}", func.borrow().disassemble(op::disassemble, false));
     }
-    let mut vm = Isolate::with_io(Vec::new());
-    let value = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
+    let mut vm = Isolate::with_io(Registry::new().into(), Vec::new());
+    let value = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
       Ok(v) => v,
       Err(e) => {
         panic!("call to func failed with:\n{}", e.report(input));
@@ -50,17 +52,19 @@ macro_rules! check_error {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let func = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
-      Ok(func) => func,
+    let module = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
+      Ok(module) => module,
       Err(e) => {
-        panic!("failed to emit func:\n{}", e.report(input));
+        panic!("failed to emit module:\n{}", e.report(input));
       }
     };
+    let module = module.borrow();
+    let func = module.main();
     if $print_func {
-      eprintln!("{}", func.as_func().unwrap().disassemble(op::disassemble, false));
+      eprintln!("{}", func.borrow().disassemble(op::disassemble, false));
     }
-    let mut vm = Isolate::with_io(Vec::<u8>::new());
-    let error = match vm.call(func.clone(), &[], Value::from(Dict::new())) {
+    let mut vm = Isolate::with_io(Registry::new().into(), Vec::<u8>::new());
+    let error = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
       Ok(v) => panic!("call to func succeeded with {v}"),
       Err(e) => e.report(input),
     };
@@ -647,7 +651,7 @@ fn class_methods() {
       class T:
         test():
           print "test"
-      
+
       T.test()
     "#
   }
@@ -670,7 +674,7 @@ fn class_methods() {
   }
 }
 
-/* #[test]
+#[test]
 fn _temp() {
   check! {
     r#"
@@ -688,4 +692,4 @@ fn _temp() {
       print C(a=0, b=1, c=2).entries
     "#
   }
-} */
+}
