@@ -6,10 +6,10 @@ expression: snapshot
 class A:
   v = 10
 class B:
-  init(self, *items):
+  fn init(self, *items):
     self.items = items
 class C:
-  init(self, **entries):
+  fn init(self, **entries):
     self.entries = entries
 
 print A().v

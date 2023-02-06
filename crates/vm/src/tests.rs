@@ -611,7 +611,7 @@ fn class_def() {
   check! {
     r#"
       class T:
-        init(self, *, v=10):
+        fn init(self, *, v=10):
           self.v = v
           if v > 10:
             print "large"
@@ -632,7 +632,7 @@ fn class_methods() {
     r#"
       class T:
         v = 10
-        test(self):
+        fn test(self):
           print self.v
       
       t0 := T()
@@ -649,7 +649,7 @@ fn class_methods() {
   check! {
     r#"
       class T:
-        test():
+        fn test():
           print "test"
 
       T.test()
@@ -661,10 +661,10 @@ fn class_methods() {
       class A:
         v = 10
       class B:
-        init(self, *items):
+        fn init(self, *items):
           self.items = items
       class C:
-        init(self, **entries):
+        fn init(self, **entries):
           self.entries = entries
 
       print A().v
@@ -681,10 +681,10 @@ fn _temp() {
       class A:
         v = 10
       class B:
-        init(self, *items):
+        fn init(self, *items):
           self.items = items
       class C:
-        init(self, **entries):
+        fn init(self, **entries):
           self.entries = entries
 
       print A().v

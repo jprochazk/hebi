@@ -6,7 +6,7 @@ expression: snapshot
 u := 0
 class T(U):
   v = 0
-  test(self):
+  fn test(self):
     print self.v, u
 
 

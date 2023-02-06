@@ -417,7 +417,7 @@ fn class_def() {
     r#"
       class T:
         v = 0
-        test(self):
+        fn test(self):
           print self.v
     "#
   }
@@ -426,7 +426,7 @@ fn class_def() {
       u := 0
       class T:
         v = 0
-        test(self):
+        fn test(self):
           print self.v, u
     "#
   }
@@ -436,7 +436,7 @@ fn class_def() {
         u := 0
         class T:
           v = 0
-          test(self):
+          fn test(self):
             print self.v, u
     "#
   }
@@ -469,7 +469,7 @@ fn class_def() {
     r#"
       class T(U):
         v = 0
-        test(self):
+        fn test(self):
           print self.v
     "#
   }
@@ -478,7 +478,7 @@ fn class_def() {
       u := 0
       class T(U):
         v = 0
-        test(self):
+        fn test(self):
           print self.v, u
     "#
   }
@@ -488,7 +488,7 @@ fn class_def() {
         u := 0
         class T(U):
           v = 0
-          test(self):
+          fn test(self):
             print self.v, u
     "#
   }

@@ -347,7 +347,9 @@ impl<'src> Parser<'src> {
     // TODO: ensure `fields` and `funcs` do not have duplicates
     if self.no_indent().is_ok() {
       // empty class (single line)
-      self.expect(Kw_Pass)?;
+      self
+        .expect(Kw_Pass)
+        .map_err(|e| Error::new("invalid indentation", e.span))?;
       return Ok(());
     }
 
@@ -366,16 +368,26 @@ impl<'src> Parser<'src> {
         self.no_indent()?;
         let default = Some(self.expr()?);
         fields.push(ast::Field { name, default });
-      } else if self.current().is(Brk_ParenL) {
-        self.no_indent()?; // func's opening paren must be unindented
-        let f = self.func(name)?;
-        funcs.push(f);
       } else {
         fields.push(ast::Field {
           name,
           default: None,
         });
       }
+    }
+
+    while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
+      self.expect(Kw_Fn)?;
+      let name = self.ident()?;
+      self.no_indent()?; // func's opening paren must be unindented
+      let f = self.func(name)?;
+      funcs.push(f);
+    }
+    if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
+      return Err(Error::new(
+        "fields may not appear after methods",
+        self.current().span,
+      ));
     }
 
     self.dedent()?;

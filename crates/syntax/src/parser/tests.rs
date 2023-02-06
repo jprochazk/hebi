@@ -672,10 +672,10 @@ fn class_stmt() {
       class T:
         pass
       class T:
-        f(v): pass
+        fn f(v): pass
       class T:
         a = b
-        f(v): pass
+        fn f(v): pass
       class T(U): pass
       class T(U):
         pass
@@ -683,11 +683,11 @@ fn class_stmt() {
         a = b
       class T(U):
         a = b
-        f(v): pass
+        fn f(v): pass
       class T(U):
-        f(v):
-          pass
         a = b
+        fn f(v):
+          pass
       class T:
         a
       class T(U):
@@ -717,7 +717,7 @@ fn class_stmt() {
 
   check_error! {
     r#"
-      class T: fn(v): pass
+      class T: fn f(v): pass
     "#
   }
 
@@ -734,6 +734,14 @@ fn class_stmt() {
         : pass
     "#
   }
+
+  check_error! {
+    r#"
+      class T(U):
+        fn f(v): pass
+        a = b
+    "#
+  }
 }
 
 #[test]
@@ -741,11 +749,11 @@ fn class_self_and_super() {
   check_module! {
     r#"
       class T:
-        f(self):
+        fn f(self):
           print self
       
       class T(U):
-        f(self):
+        fn f(self):
           print self, super
 
       class T(U):
@@ -776,7 +784,7 @@ fn class_self_and_super() {
   check_error! {
     r#"
       class T:
-        f():
+        fn f():
           print self
     "#
   }
@@ -797,7 +805,7 @@ fn class_self_and_super() {
   check_error! {
     r#"
       class T:
-        f():
+        fn f():
           print self
     "#
   }
@@ -908,16 +916,16 @@ fn whole_module() {
         print("very large")
 
       class Test:
-        init(self, n):
+        fn init(self, n):
           self.n = n
 
-        get_n(self):
+        fn get_n(self):
           return self.n
 
-        test1(self):
+        fn test1(self):
           print("instance", self)
 
-        test0():
+        fn test0():
           print("static", Test)
 
       v = Test()
@@ -948,7 +956,7 @@ fn whole_module() {
       # data class, implicit initializer
       class A:
         a = 100
-        # init(self, a = 100):
+        # fn init(self, a = 100):
         #   self.a = a
 
       print(A().a)     # 100
@@ -956,7 +964,7 @@ fn whole_module() {
 
       class B:
         a = 100
-        init(self): # override the implicit initializer
+        fn init(self): # override the implicit initializer
           pass
 
       print(B().a)   # 100
@@ -968,14 +976,14 @@ fn whole_module() {
         # and may be added in the initializer
         # after `init` is called, the class is frozen
         # no fields/methods may be added or removed
-        init(self):
+        fn init(self):
           self.a = 10
 
       print(C().a) # 10
       C().b = 10 # error: cannot add new field `b` to class `C`
 
       class A:
-        inherited(self):
+        fn inherited(self):
           print("test 0")
 
       class B(A): pass
@@ -984,13 +992,13 @@ fn whole_module() {
       B().inherited() # test 0
 
       class C(B):
-        inherited(self): # override
+        fn inherited(self): # override
           print("test 1")
 
       C().inherited() # test 1
 
       class D(C):
-        inherited(self): # override with call to super
+        fn inherited(self): # override with call to super
           super.inherited()
           print("test 2")
 
@@ -998,15 +1006,15 @@ fn whole_module() {
                       # test 2
 
       class X:
-        init(self):
+       fn init(self):
           self.v = 10
 
       class Y(X):
-        init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
+        fn init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
           self.v = 10
 
       class Z(X):
-        init(self, v):
+        fn init(self, v):
           super.init(self)
           self.v += v
 
@@ -1014,3 +1022,12 @@ fn whole_module() {
     "#
   }
 }
+
+/* #[test]
+fn _temp() {
+  check_error! {
+    r#"
+      class T: fn f(v): pass
+    "#
+  }
+} */

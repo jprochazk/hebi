@@ -106,16 +106,16 @@ fn clamp(v, min, max):
   else: v
 
 class Test:
-  init(self, n):
+  fn init(self, n):
     self.n = n
 
-  get_n(self):
+  fn get_n(self):
     self.n
 
-  test0():
+  fn test0():
     print("static", Test)
 
-  test1(self):
+  fn test1(self):
     print("instance", self)
 
 v = Test()
