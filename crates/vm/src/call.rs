@@ -12,7 +12,6 @@ use crate::{Control, Error, Isolate};
 impl<Io: std::io::Write> Isolate<Io> {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
     let frame = self.prepare_call_frame(f, args, kwargs, frame::Return::Yield)?;
-    dbg!(&frame);
     self.frames.push(frame);
 
     self.pc = 0;

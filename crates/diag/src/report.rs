@@ -147,7 +147,7 @@ impl<'a> Report<'a> {
   }
 
   /// Emit the report to `w`.
-  pub fn emit<W: Write>(self, w: &mut W) -> Result<(), EmitError> {
+  pub fn emit<W: ?Sized + Write>(self, w: &mut W) -> Result<(), EmitError> {
     // examples:
 
     // single line span

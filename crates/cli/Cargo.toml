@@ -1,0 +1,17 @@
+[package]
+name = "mu_cli"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustyline = "10.1.0"
+rustyline-derive = "0.7.0"
+
+
+syntax = { path = "../syntax", package = "mu_syntax" }
+emit = { path = "../emit", package = "mu_emit" }
+vm = { path = "../vm", package = "mu_vm" }
+diag = { path = "../diag", package = "mu_diag" }
+value = { path = "../value", package = "mu_value" }

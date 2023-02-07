@@ -5,6 +5,7 @@ pub mod ast;
 pub mod lexer;
 pub mod parser;
 
+pub use ast::Module;
 pub use parser::parse;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -34,6 +35,19 @@ impl Error {
       .span(self.span)
       .build()
       .emit_to_string()
+      .unwrap()
+  }
+
+  pub fn report_to<'a, W>(&self, source: impl Into<diag::Source<'a>>, writer: &mut W)
+  where
+    W: ?Sized + std::fmt::Write,
+  {
+    diag::Report::error()
+      .source(source)
+      .message(format!("{self}"))
+      .span(self.span)
+      .build()
+      .emit(writer)
       .unwrap()
   }
 }

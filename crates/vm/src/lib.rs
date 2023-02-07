@@ -8,6 +8,8 @@ mod truth;
 mod util;
 
 // TODO: make the VM panic-less (other than debug asserts for unsafe things)
+// TODO: stack unwinding
+// TODO: module registry
 
 use std::cell::{Ref, RefMut};
 use std::mem::take;
@@ -19,7 +21,6 @@ use value::object::{dict, frame, Closure, Dict, Registry};
 use value::{object, Value};
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
-  // TODO: module registry
   registry: Handle<Registry>,
   globals: Handle<Dict>,
   pc: usize,
@@ -637,7 +638,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let func = self.acc.clone();
-    dbg!(&func);
 
     if func.is_class_def() {
       // class constructor
@@ -661,7 +661,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_call(&mut self, start: u32, args: u32, return_address: usize) -> Result<(), Self::Error> {
     let func = self.acc.clone();
-    dbg!(&func);
     // TODO: remove `to_vec` somehow
     let args = self
       .stack()
@@ -695,7 +694,6 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     return_address: usize,
   ) -> Result<(), Self::Error> {
     let func = self.acc.clone();
-    dbg!(&func);
     let kwargs = self.get_reg(start);
     // TODO: remove `to_vec` somehow
     let args = self
