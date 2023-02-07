@@ -29,11 +29,19 @@ impl Repl {
   }
 
   fn read_multi_line_input(&mut self, buffer: &mut String) -> Result<(), Error> {
-    // first line
-    buffer.clear();
+    let mut prev_line = String::new();
     loop {
       buffer.push('\n');
-      let line = self.editor.readline("> ").map_err(Error::Readline)?;
+      let ws = &prev_line[..prev_line
+        .chars()
+        .take_while(|c| c.is_ascii_whitespace())
+        .count()];
+      let line = self
+        .editor
+        .readline_with_initial("> ", (ws, ""))
+        .map_err(Error::Readline)?;
+      prev_line.clear();
+      prev_line.push_str(&line);
       self.editor.add_history_entry(&line);
       buffer.push_str(&line);
 
@@ -97,12 +105,17 @@ fn main() -> rustyline::Result<()> {
   let mut repl = Repl::new();
   let mut buffer = String::new();
 
-  println!("Mu {VERSION} REPL. Press CTRL-D to exit.");
+  println!("Mu REPL v{VERSION}\nPress CTRL-D to exit");
 
   loop {
     if let Err(e) = repl.read_multi_line_input(&mut buffer) {
       match e {
-        Error::Readline(e) => return Err(e),
+        Error::Readline(e) => match e {
+          rustyline::error::ReadlineError::Eof => return Ok(()),
+          rustyline::error::ReadlineError::Interrupted => return Ok(()),
+          rustyline::error::ReadlineError::WindowResized => continue,
+          e => return Err(e),
+        },
         Error::Parse(e) => {
           println!("{e}");
           continue;
@@ -116,5 +129,7 @@ fn main() -> rustyline::Result<()> {
         println!("{}", e.report(buffer.clone()))
       }
     }
+
+    buffer.clear();
   }
 }
