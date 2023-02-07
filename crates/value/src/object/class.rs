@@ -10,6 +10,7 @@ use crate::ptr::Ref;
 use crate::Value;
 
 // TODO: inheritance + super
+// TODO: call instance methods like `Test.func(receiver, ...args)`
 
 #[derive(Clone)]
 pub struct Class {
