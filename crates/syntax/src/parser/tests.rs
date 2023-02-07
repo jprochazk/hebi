@@ -868,14 +868,14 @@ fn whole_module() {
 
       v = add(0, 1)
 
-      fn fib(n):
+      fn fact(n):
         if n < 2:
           return n
         else:
-          return n * fib(n - 1)
+          return n * fact(n - 1)
 
-      fn print_fib(n):
-        print(fib(n))
+      fn print_fact(n):
+        print(fact(n))
 
       # loops
       # range is an object

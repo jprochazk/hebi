@@ -995,7 +995,7 @@ Module {
         ),
         Func(
             Func {
-                name: "fib",
+                name: "fact",
                 params: Params {
                     has_self: false,
                     pos: [
@@ -1063,7 +1063,7 @@ Module {
                                                                 Call {
                                                                     target: GetVar(
                                                                         GetVar {
-                                                                            name: "fib",
+                                                                            name: "fact",
                                                                         },
                                                                     ),
                                                                     args: Args {
@@ -1104,7 +1104,7 @@ Module {
         ),
         Func(
             Func {
-                name: "print_fib",
+                name: "print_fact",
                 params: Params {
                     has_self: false,
                     pos: [
@@ -1125,7 +1125,7 @@ Module {
                                     Call {
                                         target: GetVar(
                                             GetVar {
-                                                name: "fib",
+                                                name: "fact",
                                             },
                                         ),
                                         args: Args {

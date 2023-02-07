@@ -54,11 +54,11 @@ fn add(a, b):
 
 v = add(0, 1)
 
-fn fib(n):
+fn fact(n):
   if n < 2: n
-  else: n * fib(n - 1)
-fn print_fib(n):
-  print(fib(n))
+  else: n * fact(n - 1)
+fn print fact(n):
+  print fact(n))
 
 # loops
 # range is an object
