@@ -9,8 +9,6 @@ use super::Dict;
 use crate::ptr::Ref;
 use crate::Value;
 
-// TODO: inheritance + super
-
 #[derive(Clone)]
 pub struct Class {
   pub(super) name: String,
