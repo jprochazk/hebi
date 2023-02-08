@@ -18,8 +18,10 @@ use std::mem::take;
 pub use error::Error;
 use value::object::frame::{Frame, Stack};
 use value::object::handle::Handle;
-use value::object::{dict, frame, Closure, Dict, Registry};
-use value::{object, Value};
+use value::object::{
+  dict, frame, Class, ClassDef, ClassDesc, Closure, ClosureDesc, Dict, Proxy, Registry,
+};
+use value::Value;
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   registry: Handle<Registry>,
@@ -238,7 +240,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_load_self(&mut self) -> Result<(), Self::Error> {
     // receiver is always placed at the base of the current call frame's stack
-    self.acc = self.get_reg(3);
+    let this = self.get_reg(3);
+
+    if let Some(proxy) = this.as_proxy() {
+      self.acc = proxy.class().clone().into();
+      return Ok(());
+    }
+
+    assert!(this.is_class());
+    self.acc = this;
 
     Ok(())
   }
@@ -247,12 +257,30 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // receiver is always placed at the base of the current call frame's stack
     let this = self.get_reg(3);
 
-    let Some(this) = this.as_class() else {
+    // all parent class `unwrap()`s here should never panic,
+    // because parser checks for parent class
+
+    if let Some(proxy) = this.as_proxy() {
+      // we're in a super class
+      // proxy to the next super class in the chain
+      self.acc = Proxy::new(
+        proxy.class().clone(),
+        //    current           next
+        //    |                 |
+        proxy.parent().borrow().parent().unwrap().clone(),
+      )
+      .into();
+      return Ok(());
+    }
+
+    // we're not in a super class yet,
+    // proxy to the first super class in the chain
+    let Some(this) = Handle::<Class>::from_value(this) else {
       // TODO: span
       return Err(Error::new("receiver is not a class").into());
     };
-    // parent class should always exist, because parser checks for parent class
-    self.acc = Value::object(this.parent().unwrap().clone().widen());
+    let parent = this.borrow().parent().unwrap().clone();
+    self.acc = Proxy::new(this, parent).into();
 
     Ok(())
   }
@@ -340,7 +368,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let desc = self.get_const(desc);
 
     // this should always be a closure descriptor
-    let desc = Handle::<object::ClosureDesc>::from_value(desc).unwrap();
+    let desc = Handle::<ClosureDesc>::from_value(desc).unwrap();
 
     self.acc = Closure::new(desc).into();
 
@@ -380,9 +408,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_create_class_empty(&mut self, desc: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = Handle::<object::ClassDesc>::from_value(desc).unwrap();
+    let desc = Handle::<ClassDesc>::from_value(desc).unwrap();
 
-    self.acc = Value::from(object::ClassDef::new(desc, &[]));
+    self.acc = Value::from(ClassDef::new(desc, &[]));
 
     Ok(())
   }
@@ -390,12 +418,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_create_class(&mut self, desc: u32, start: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = Handle::<object::ClassDesc>::from_value(desc).unwrap();
+    let desc = Handle::<ClassDesc>::from_value(desc).unwrap();
 
-    let value = Value::from(object::ClassDef::new(
-      desc,
-      &self.stack().slice(start as usize..),
-    ));
+    let value = Value::from(ClassDef::new(desc, &self.stack().slice(start as usize..)));
     self.acc = value;
 
     Ok(())

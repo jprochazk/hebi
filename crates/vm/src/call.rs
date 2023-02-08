@@ -219,7 +219,7 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
   // params
   let mut params_base = 3;
   if let Some(m) = f.as_method() {
-    stack.set(params_base, Value::object(m.this.clone().widen()));
+    stack.set(params_base, m.this.clone());
     params_base += 1;
   }
   for i in 0..std::cmp::min(args.len(), param_info.max_params) {

@@ -1,4 +1,5 @@
 use value::object::dict::Key;
+use value::object::{Method, Proxy};
 use value::Value;
 
 use crate::Error;
@@ -54,6 +55,20 @@ pub fn get(obj: &Value, key: &Key) -> Result<Value, Error> {
       )));
     };
     return Ok(value);
+  }
+
+  if let Some(proxy) = obj.as_proxy() {
+    let Some(value) = proxy.parent().borrow().method(key).cloned() else {
+      return Err(Error::new(format!(
+        "cannot get field `{key}` on value `{obj}`"
+      )));
+    };
+    assert!(value.is_func() || value.is_closure());
+    let value = Method {
+      this: proxy.clone().into(),
+      func: value,
+    };
+    return Ok(value.into());
   }
 
   Err(Error::new(format!(

@@ -200,7 +200,7 @@ class Y(X):
 
 class Z(X):
   fn init(self, v):
-    super.init(self)
+    super.init()
     self.v += v
 
 print(Z(v=15).v) # 25

@@ -2544,9 +2544,7 @@ Module {
                                             },
                                         ),
                                         args: Args {
-                                            pos: [
-                                                GetSelf,
-                                            ],
+                                            pos: [],
                                             kw: [],
                                         },
                                     },

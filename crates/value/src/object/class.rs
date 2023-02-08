@@ -19,6 +19,26 @@ pub struct Class {
   is_frozen: bool,
 }
 
+#[derive(Clone)]
+pub struct Proxy {
+  pub(super) class: Handle<Class>,
+  pub(super) parent: Handle<ClassDef>,
+}
+
+impl Proxy {
+  pub fn new(class: Handle<Class>, parent: Handle<ClassDef>) -> Handle<Self> {
+    Self { class, parent }.into()
+  }
+
+  pub fn class(&self) -> &Handle<Class> {
+    &self.class
+  }
+
+  pub fn parent(&self) -> &Handle<ClassDef> {
+    &self.parent
+  }
+}
+
 impl Class {
   pub fn name(&self) -> &str {
     &self.name
@@ -75,7 +95,7 @@ impl Class {
 
 #[derive(Clone, Debug)]
 pub struct Method {
-  pub this: Handle<Class>,
+  pub this: Value, // Class or Proxy
   pub func: Value, // Func or Closure
 }
 
@@ -146,7 +166,7 @@ impl ClassDef {
 
     for (k, v) in self.methods.iter() {
       let v = Method {
-        this: class.clone(),
+        this: class.clone().into(),
         func: v.clone(),
       }
       .into();
@@ -172,6 +192,10 @@ impl ClassDef {
     Q: ?Sized + Hash + Equivalent<Key>,
   {
     self.methods.get(key)
+  }
+
+  pub fn parent(&self) -> Option<&Handle<ClassDef>> {
+    self.parent.as_ref()
   }
 }
 
@@ -216,5 +240,11 @@ impl std::fmt::Debug for ClassDef {
           .map(|p| Ref::map(p.borrow(), |v| v.name())),
       )
       .finish()
+  }
+}
+
+impl std::fmt::Debug for Proxy {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    std::fmt::Debug::fmt(&self.parent, f)
   }
 }

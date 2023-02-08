@@ -19,7 +19,7 @@ use crate::{Ptr, Value};
 
 pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
-pub use class::{Class, ClassDef, ClassDesc, Method};
+pub use class::{Class, ClassDef, ClassDesc, Method, Proxy};
 pub use dict::Dict;
 use frame::Frame;
 pub use func::{Closure, ClosureDesc, Func};
@@ -42,6 +42,7 @@ object_repr! {
     ClassDef,
     ClassDesc,
     Method,
+    Proxy,
     Module,
     Path,
     Registry,
@@ -130,6 +131,7 @@ impl std::fmt::Display for Object {
       Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),
       Repr::ClassDesc(v) => write!(f, "<class desc {}>", v.name),
       Repr::Method(v) => write!(f, "{}", v.func),
+      Repr::Proxy(v) => write!(f, "{}", v.parent),
       Repr::Module(v) => write!(f, "<module {}>", v.name()),
       Repr::Path(v) => write!(f, "<path {}>", v.segments().iter().join(".")),
       Repr::Registry(_) => write!(f, "<registry>"),
