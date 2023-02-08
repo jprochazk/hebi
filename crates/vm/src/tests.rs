@@ -697,7 +697,7 @@ fn class_methods() {
 
 #[test]
 fn class_inheritance() {
-  check! { :print_func
+  check! {
     r#"
       class A:
         v = 0
