@@ -16,9 +16,6 @@ pub fn create_instance<Io: std::io::Write>(
   if class.borrow().has("init") {
     // call initializer
     let init = unsafe { class.borrow().get("init").cloned().unwrap_unchecked() };
-    // FIXME: the initializer never returns back here, it goes straight back to the
-    // interpreter there needs to be some way to mark that a `Ret` should
-    // actually `Yield` instead of `SwapFrame`
     vm.call(init, args, kwargs)?;
   } else {
     // assign kwargs to fields
