@@ -11,7 +11,7 @@ print ?v.a.b.c
 # Func:
 function <[[main]]>:
   frame_size: 5
-  length: 22
+  length: 23
   const (length=4):
     0: "v"
     1: "a"
@@ -30,7 +30,8 @@ function <[[main]]>:
     16 | load_named_opt [3]
     18 | load_named_opt [2]
     20 | print 
-    21 | suspend 
+    21 | ret 
+    22 | suspend 
 
 
 # Regalloc:

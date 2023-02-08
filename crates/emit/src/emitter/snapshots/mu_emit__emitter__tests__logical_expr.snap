@@ -25,18 +25,18 @@ fn f3(a, b, c, d):
 
 # Func:
 function <f0>:
-  frame_size: 7
+  frame_size: 6
   length: 50
   const: <empty>
   code:
-     0 | load_reg r4
+     0 | load_reg r3
      2 | jump_if_false offset=8
      4 | nop 
      5 | nop 
      6 | nop 
      7 | nop 
-     8 | load_reg r5
-    10 | load_reg r4
+     8 | load_reg r4
+    10 | load_reg r3
     12 | jump_if_false offset=12
     14 | nop 
     15 | nop 
@@ -47,38 +47,38 @@ function <f0>:
     21 | nop 
     22 | nop 
     23 | nop 
-    24 | load_reg r5
-    26 | load_reg r4
-    28 | store_reg r6
+    24 | load_reg r4
+    26 | load_reg r3
+    28 | store_reg r5
     30 | is_none 
     31 | jump_if_false offset=14
     33 | nop 
     34 | nop 
     35 | nop 
     36 | nop 
-    37 | load_reg r5
+    37 | load_reg r4
     39 | jump offset=8
     41 | nop 
     42 | nop 
     43 | nop 
     44 | nop 
-    45 | load_reg r6
+    45 | load_reg r5
     47 | push_none 
     48 | ret 
     49 | suspend 
 
 function <f1_a>:
-  frame_size: 8
+  frame_size: 7
   length: 35
   const: <empty>
   code:
-     0 | load_reg r4
+     0 | load_reg r3
      2 | jump_if_false offset=8
      4 | nop 
      5 | nop 
      6 | nop 
      7 | nop 
-     8 | load_reg r5
+     8 | load_reg r4
     10 | jump_if_false offset=12
     12 | nop 
     13 | nop 
@@ -89,29 +89,29 @@ function <f1_a>:
     19 | nop 
     20 | nop 
     21 | nop 
-    22 | load_reg r6
+    22 | load_reg r5
     24 | jump_if_false offset=8
     26 | nop 
     27 | nop 
     28 | nop 
     29 | nop 
-    30 | load_reg r7
+    30 | load_reg r6
     32 | push_none 
     33 | ret 
     34 | suspend 
 
 function <f1_b>:
-  frame_size: 8
+  frame_size: 7
   length: 35
   const: <empty>
   code:
-     0 | load_reg r4
+     0 | load_reg r3
      2 | jump_if_false offset=8
      4 | nop 
      5 | nop 
      6 | nop 
      7 | nop 
-     8 | load_reg r5
+     8 | load_reg r4
     10 | jump_if_false offset=12
     12 | nop 
     13 | nop 
@@ -122,23 +122,23 @@ function <f1_b>:
     19 | nop 
     20 | nop 
     21 | nop 
-    22 | load_reg r6
+    22 | load_reg r5
     24 | jump_if_false offset=8
     26 | nop 
     27 | nop 
     28 | nop 
     29 | nop 
-    30 | load_reg r7
+    30 | load_reg r6
     32 | push_none 
     33 | ret 
     34 | suspend 
 
 function <f2_a>:
-  frame_size: 8
+  frame_size: 7
   length: 41
   const: <empty>
   code:
-     0 | load_reg r4
+     0 | load_reg r3
      2 | jump_if_false offset=12
      4 | nop 
      5 | nop 
@@ -149,13 +149,13 @@ function <f2_a>:
     11 | nop 
     12 | nop 
     13 | nop 
-    14 | load_reg r5
+    14 | load_reg r4
     16 | jump_if_false offset=8
     18 | nop 
     19 | nop 
     20 | nop 
     21 | nop 
-    22 | load_reg r6
+    22 | load_reg r5
     24 | jump_if_false offset=12
     26 | nop 
     27 | nop 
@@ -166,17 +166,17 @@ function <f2_a>:
     33 | nop 
     34 | nop 
     35 | nop 
-    36 | load_reg r7
+    36 | load_reg r6
     38 | push_none 
     39 | ret 
     40 | suspend 
 
 function <f2_b>:
-  frame_size: 8
+  frame_size: 7
   length: 41
   const: <empty>
   code:
-     0 | load_reg r4
+     0 | load_reg r3
      2 | jump_if_false offset=12
      4 | nop 
      5 | nop 
@@ -187,13 +187,13 @@ function <f2_b>:
     11 | nop 
     12 | nop 
     13 | nop 
-    14 | load_reg r5
+    14 | load_reg r4
     16 | jump_if_false offset=8
     18 | nop 
     19 | nop 
     20 | nop 
     21 | nop 
-    22 | load_reg r6
+    22 | load_reg r5
     24 | jump_if_false offset=12
     26 | nop 
     27 | nop 
@@ -204,52 +204,52 @@ function <f2_b>:
     33 | nop 
     34 | nop 
     35 | nop 
-    36 | load_reg r7
+    36 | load_reg r6
     38 | push_none 
     39 | ret 
     40 | suspend 
 
 function <f3>:
-  frame_size: 9
+  frame_size: 8
   length: 43
   const: <empty>
   code:
-     0 | load_reg r4
-     2 | store_reg r8
+     0 | load_reg r3
+     2 | store_reg r7
      4 | is_none 
      5 | jump_if_false offset=14
      7 | nop 
      8 | nop 
      9 | nop 
     10 | nop 
-    11 | load_reg r5
+    11 | load_reg r4
     13 | jump offset=8
     15 | nop 
     16 | nop 
     17 | nop 
     18 | nop 
-    19 | load_reg r8
-    21 | store_reg r7
+    19 | load_reg r7
+    21 | store_reg r6
     23 | is_none 
     24 | jump_if_false offset=14
     26 | nop 
     27 | nop 
     28 | nop 
     29 | nop 
-    30 | load_reg r6
+    30 | load_reg r5
     32 | jump offset=8
     34 | nop 
     35 | nop 
     36 | nop 
     37 | nop 
-    38 | load_reg r7
+    38 | load_reg r6
     40 | push_none 
     41 | ret 
     42 | suspend 
 
 function <[[main]]>:
   frame_size: 4
-  length: 25
+  length: 26
   const (length=12):
     0: <func f0>
     1: "f0"
@@ -276,7 +276,8 @@ function <[[main]]>:
     18 | store_global [9]
     20 | load_const [10]
     22 | store_global [11]
-    24 | suspend 
+    24 | ret 
+    25 | suspend 
 
 
 # Regalloc:

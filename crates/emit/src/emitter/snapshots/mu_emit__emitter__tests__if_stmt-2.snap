@@ -13,7 +13,7 @@ else:
 # Func:
 function <[[main]]>:
   frame_size: 5
-  length: 25
+  length: 26
   const (length=2):
     0: "a"
     1: "b"
@@ -35,7 +35,8 @@ function <[[main]]>:
     20 | nop 
     21 | load_global [1]
     23 | print 
-    24 | suspend 
+    24 | ret 
+    25 | suspend 
 
 
 # Regalloc:

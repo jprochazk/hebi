@@ -11,7 +11,7 @@ print ?v["a"]["b"]["c"]
 # Func:
 function <[[main]]>:
   frame_size: 7
-  length: 38
+  length: 39
   const (length=4):
     0: "v"
     1: "a"
@@ -38,7 +38,8 @@ function <[[main]]>:
     32 | load_keyed_opt r5
     34 | load_keyed_opt r4
     36 | print 
-    37 | suspend 
+    37 | ret 
+    38 | suspend 
 
 
 # Regalloc:

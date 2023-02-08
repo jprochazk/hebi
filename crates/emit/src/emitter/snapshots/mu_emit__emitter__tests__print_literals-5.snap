@@ -8,7 +8,7 @@ print { a: 0, b: 1, c: 2 }
 # Func:
 function <[[main]]>:
   frame_size: 6
-  length: 43
+  length: 44
   const (length=3):
     0: "a"
     1: "b"
@@ -30,7 +30,8 @@ function <[[main]]>:
     36 | insert_to_dict r5, r4
     39 | load_reg r4
     41 | print 
-    42 | suspend 
+    42 | ret 
+    43 | suspend 
 
 
 # Regalloc:

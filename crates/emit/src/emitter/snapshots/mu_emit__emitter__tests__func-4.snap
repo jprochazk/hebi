@@ -11,26 +11,26 @@ test(1, b=2)
 
 # Func:
 function <test>:
-  frame_size: 7
+  frame_size: 6
   length: 19
   const (length=1):
     0: "b"
   code:
-     0 | load_kw_param [0], r5
+     0 | load_kw_param [0], r4
      3 | create_empty_list 
-     4 | store_reg r6
-     6 | load_reg r4
-     8 | push_to_list r6
-    10 | load_reg r5
-    12 | push_to_list r6
-    14 | print_list r6
+     4 | store_reg r5
+     6 | load_reg r3
+     8 | push_to_list r5
+    10 | load_reg r4
+    12 | push_to_list r5
+    14 | print_list r5
     16 | push_none 
     17 | ret 
     18 | suspend 
 
 function <[[main]]>:
   frame_size: 6
-  length: 28
+  length: 29
   const (length=3):
     0: <func test>
     1: "test"
@@ -46,7 +46,8 @@ function <[[main]]>:
     19 | insert_to_dict_named [2], r4
     22 | load_global [1]
     24 | call_kw r4, args=1
-    27 | suspend 
+    27 | ret 
+    28 | suspend 
 
 
 # Regalloc:

@@ -549,18 +549,10 @@ fn imports() {
 fn _temp() {
   check! {
     r#"
-      class A:
-        v = 10
-      class B:
-        init(self, *items):
-          self.items = items
-      class C:
-        init(self, **entries):
-          self.entries = entries
-
-      print A().v
-      print B(0, 1, 2).items
-      print C(a=0, b=1, c=2).entries
+      fn test2():
+        print "test (without self)"
+      class Test2:
+        test = test2
     "#
   }
 } */

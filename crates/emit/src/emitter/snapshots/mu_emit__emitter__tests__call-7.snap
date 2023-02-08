@@ -8,7 +8,7 @@ a(b(c()))
 # Func:
 function <[[main]]>:
   frame_size: 6
-  length: 18
+  length: 19
   const (length=3):
     0: "c"
     1: "b"
@@ -22,7 +22,8 @@ function <[[main]]>:
     10 | store_reg r4
     12 | load_global [2]
     14 | call r4, args=1
-    17 | suspend 
+    17 | ret 
+    18 | suspend 
 
 
 # Regalloc:

@@ -32,7 +32,7 @@ function <test>:
 
 function <[[main]]>:
   frame_size: 7
-  length: 28
+  length: 29
   const (length=5):
     0: "u"
     1: <class desc T>
@@ -50,7 +50,8 @@ function <[[main]]>:
     20 | store_reg r6
     22 | create_class [1], r4
     25 | store_global [4]
-    27 | suspend 
+    27 | ret 
+    28 | suspend 
 
 
 # Regalloc:

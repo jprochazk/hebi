@@ -11,14 +11,14 @@ fn main():
 
 # Func:
 function <main>:
-  frame_size: 5
+  frame_size: 4
   length: 11
   const (length=2):
     0: <path test>
     1: "symbol"
   code:
-     0 | load_module [0], r4
-     3 | load_reg r4
+     0 | load_module [0], r3
+     3 | load_reg r3
      5 | load_named [1]
      7 | print 
      8 | push_none 
@@ -27,14 +27,15 @@ function <main>:
 
 function <[[main]]>:
   frame_size: 4
-  length: 5
+  length: 6
   const (length=2):
     0: <func main>
     1: "main"
   code:
     0 | load_const [0]
     2 | store_global [1]
-    4 | suspend 
+    4 | ret 
+    5 | suspend 
 
 
 # Regalloc:

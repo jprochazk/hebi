@@ -23,13 +23,13 @@ pub fn create_instance<Io: std::io::Write>(
   } else {
     // assign kwargs to fields
     if let Some(kwargs) = kwargs.as_dict() {
-      call::check_args(def.borrow().params(), args, &kwargs)?;
+      call::check_args(true, def.borrow().params(), args, &kwargs)?;
       let mut class = class.borrow_mut();
       for (k, v) in kwargs.iter() {
         class.insert(k.clone(), v.clone());
       }
     } else {
-      call::check_args(def.borrow().params(), args, &Dict::new())?;
+      call::check_args(true, def.borrow().params(), args, &Dict::new())?;
     }
   }
   class.borrow_mut().freeze();

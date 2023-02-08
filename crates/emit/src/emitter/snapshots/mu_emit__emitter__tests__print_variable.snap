@@ -10,7 +10,7 @@ print v # load_reg
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 11
+  length: 12
   const (length=1):
     0: "v"
   code:
@@ -18,7 +18,8 @@ function <[[main]]>:
      5 | store_global [0]
      7 | load_global [0]
      9 | print 
-    10 | suspend 
+    10 | ret 
+    11 | suspend 
 
 
 # Regalloc:

@@ -12,7 +12,7 @@ test(1, 2)
 
 # Func:
 function <test>:
-  frame_size: 7
+  frame_size: 6
   length: 31
   const: <empty>
   code:
@@ -23,21 +23,21 @@ function <test>:
      6 | nop 
      7 | nop 
      8 | push_small_int value=10
-    13 | store_reg r5
+    13 | store_reg r4
     15 | create_empty_list 
-    16 | store_reg r6
-    18 | load_reg r4
-    20 | push_to_list r6
-    22 | load_reg r5
-    24 | push_to_list r6
-    26 | print_list r6
+    16 | store_reg r5
+    18 | load_reg r3
+    20 | push_to_list r5
+    22 | load_reg r4
+    24 | push_to_list r5
+    26 | print_list r5
     28 | push_none 
     29 | ret 
     30 | suspend 
 
 function <[[main]]>:
   frame_size: 6
-  length: 36
+  length: 37
   const (length=2):
     0: <func test>
     1: "test"
@@ -54,7 +54,8 @@ function <[[main]]>:
     28 | store_reg r5
     30 | load_global [1]
     32 | call r4, args=2
-    35 | suspend 
+    35 | ret 
+    36 | suspend 
 
 
 # Regalloc:

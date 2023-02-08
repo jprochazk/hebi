@@ -8,12 +8,13 @@ print 0
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 7
+  length: 8
   const: <empty>
   code:
     0 | push_small_int value=0
     5 | print 
-    6 | suspend 
+    6 | ret 
+    7 | suspend 
 
 
 # Regalloc:

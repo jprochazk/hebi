@@ -11,7 +11,7 @@ v["a"] = 1
 # Func:
 function <[[main]]>:
   frame_size: 6
-  length: 45
+  length: 46
   const (length=2):
     0: "a"
     1: "v"
@@ -35,7 +35,8 @@ function <[[main]]>:
     34 | store_reg r4
     36 | push_small_int value=1
     41 | store_keyed r5, r4
-    44 | suspend 
+    44 | ret 
+    45 | suspend 
 
 
 # Regalloc:

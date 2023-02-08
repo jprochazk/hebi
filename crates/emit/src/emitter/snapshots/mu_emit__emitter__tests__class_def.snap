@@ -9,14 +9,15 @@ class T: pass
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 5
+  length: 6
   const (length=2):
     0: <class desc T>
     1: "T"
   code:
     0 | create_class_empty [0]
     2 | store_global [1]
-    4 | suspend 
+    4 | ret 
+    5 | suspend 
 
 
 # Regalloc:

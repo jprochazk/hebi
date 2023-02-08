@@ -10,7 +10,7 @@ for i in 0..10:
 # Func:
 function <[[main]]>:
   frame_size: 6
-  length: 55
+  length: 56
   const: <empty>
   code:
      0 | push_small_int value=0
@@ -44,7 +44,8 @@ function <[[main]]>:
     51 | nop 
     52 | nop 
     53 | nop 
-    54 | suspend 
+    54 | ret 
+    55 | suspend 
 
 
 # Regalloc:

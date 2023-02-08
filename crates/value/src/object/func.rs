@@ -89,6 +89,7 @@ impl Closure {
 
 #[derive(Clone, Debug)]
 pub struct Params {
+  pub has_self: bool,
   pub min: usize,
   pub max: usize,
   pub argv: bool,

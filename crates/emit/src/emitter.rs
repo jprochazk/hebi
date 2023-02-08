@@ -20,6 +20,7 @@ pub fn emit<'src>(
 }
 
 // TODO: make infallible
+// TODO: do not emit argv/kwargs registers if they are unused
 
 use crate::regalloc::{RegAlloc, Register};
 use crate::{Context, Error, Result};
@@ -47,14 +48,18 @@ impl<'src> Emitter<'src> {
   }
 
   fn emit_main(mut self) -> Result<EmitResult<'src>> {
-    let regs = [self.reg(), self.reg(), self.reg(), self.reg()];
+    // TODO: remove these registers (they aren't needed)
+    let regs = [self.reg(), self.reg(), self.reg(), self.reg()]
+      .into_iter()
+      .map(Some);
     self.state.preserve.extend(regs);
 
     for stmt in self.module.body.iter() {
       self.emit_stmt(stmt)?;
     }
+    self.emit_op(Ret);
 
-    for reg in self.state.preserve.iter().rev() {
+    for reg in self.state.preserve.iter().rev().filter_map(|v| v.as_ref()) {
       reg.index();
     }
 
@@ -80,6 +85,7 @@ impl<'src> Emitter<'src> {
         bytecode,
         const_pool,
         func::Params {
+          has_self: false,
           min: 0,
           max: 0,
           argv: false,
@@ -107,7 +113,7 @@ impl<'src> Emitter<'src> {
         this.emit_stmt(stmt)?;
       }
 
-      for reg in this.state.preserve.iter().rev() {
+      for reg in this.state.preserve.iter().rev().filter_map(|v| v.as_ref()) {
         reg.index();
       }
 
@@ -165,10 +171,10 @@ impl<'src> Emitter<'src> {
     // NOTE: params are already checked by `call` instruction
 
     // allocate registers
-    let receiver = self.reg();
     let this_func = self.reg();
     let argv = self.reg();
     let kwargs = self.reg();
+    let receiver = func.params.has_self.then(|| self.reg());
     let pos = func
       .params
       .pos
@@ -184,10 +190,10 @@ impl<'src> Emitter<'src> {
 
     // preserve the first 4
     self.state.preserve.extend([
+      Some(this_func.clone()),
+      Some(argv.clone()),
+      Some(kwargs.clone()),
       receiver.clone(),
-      this_func.clone(),
-      argv.clone(),
-      kwargs.clone(),
     ]);
 
     // only pos params with defaults need emit
@@ -254,7 +260,9 @@ impl<'src> Emitter<'src> {
     self
       .state
       .declare_local(func.name.deref().clone(), this_func);
-    self.state.declare_local("self", receiver);
+    if let Some(receiver) = receiver {
+      self.state.declare_local("self", receiver);
+    }
 
     Ok(())
   }
@@ -311,6 +319,7 @@ impl<'src> Emitter<'src> {
 
 fn ast_params_to_func_params(params: &ast::Params) -> func::Params {
   func::Params {
+    has_self: params.has_self,
     // min = number of positional arguments without defaults
     min: params.pos.iter().filter(|v| v.1.is_none()).count(),
     // max = number of positional arguments OR none, if `argv` exists
@@ -333,6 +342,7 @@ fn ast_class_to_params(class: &ast::Class) -> func::Params {
     .find(|m| m.name.deref() == "init")
     .map(|m| ast_params_to_func_params(&m.params))
     .unwrap_or_else(|| func::Params {
+      has_self: false,
       min: 0,
       max: 0,
       argv: false,
@@ -379,7 +389,7 @@ struct Function<'src> {
   regalloc: RegAlloc,
 
   /// List of registers to keep alive for the entire scope of the function.
-  preserve: Vec<Register>,
+  preserve: Vec<Option<Register>>,
 
   // TODO: use a better data structure for this
   /// Map of variable name to register.

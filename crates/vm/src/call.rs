@@ -75,45 +75,71 @@ impl<Io: std::io::Write> Isolate<Io> {
   }
 }
 
+// TODO: maybe refactor this to not be as unsightly
+
 // Returns `(has_argv, max_params)`
 fn check_func_args(func: Value, args: &[Value], kwargs: &Value) -> Result<ParamInfo, Error> {
-  if let Some(f) = func.as_func() {
-    if let Some(kw) = kwargs.as_dict() {
-      check_args(f.params(), args, &kw)
+  fn check_func_args_inner(
+    has_implicit_receiver: bool,
+    func: Value,
+    args: &[Value],
+    kwargs: &Value,
+  ) -> Result<ParamInfo, Error> {
+    if let Some(f) = func.as_func() {
+      if let Some(kw) = kwargs.as_dict() {
+        check_args(has_implicit_receiver, f.params(), args, &kw)
+      } else {
+        check_args(has_implicit_receiver, f.params(), args, &Dict::new())
+      }
+    } else if let Some(f) = func.as_closure() {
+      if let Some(kw) = kwargs.as_dict() {
+        check_args(has_implicit_receiver, &f.params(), args, &kw)
+      } else {
+        check_args(has_implicit_receiver, &f.params(), args, &Dict::new())
+      }
     } else {
-      check_args(f.params(), args, &Dict::new())
+      panic!("check_func_args not implemented for {func}");
     }
-  } else if let Some(f) = func.as_closure() {
-    if let Some(kw) = kwargs.as_dict() {
-      check_args(&f.params(), args, &kw)
-    } else {
-      check_args(&f.params(), args, &Dict::new())
-    }
-  } else if let Some(f) = func.as_method() {
-    check_func_args(f.func.clone(), args, kwargs)
-  } else {
-    panic!("check_func_args not implemented for {func}");
   }
+  if let Some(m) = func.as_method() {
+    return check_func_args_inner(true, m.func.clone(), args, kwargs);
+  }
+  check_func_args_inner(false, func, args, kwargs)
 }
 
-pub fn check_args(params: &func::Params, args: &[Value], kw: &Dict) -> Result<ParamInfo, Error> {
+pub fn check_args(
+  has_implicit_receiver: bool,
+  params: &func::Params,
+  args: &[Value],
+  kw: &Dict,
+) -> Result<ParamInfo, Error> {
+  let has_self_param = params.has_self && !has_implicit_receiver;
+
+  let (min, max) = (
+    has_self_param as usize + params.min,
+    has_self_param as usize + params.max,
+  );
+
   let out_info = ParamInfo {
     has_kw: params.kwargs || !params.kw.is_empty(),
     has_argv: params.argv,
-    max_params: params.max,
+    max_params: max,
   };
 
   // check positional arguments
-  if args.len() < params.min {
+  if args.len() < min {
     return Err(Error::new(format!(
       "missing required positional params: {}",
-      params.pos[args.len()..params.min].iter().join(", "),
+      if has_self_param { Some("self") } else { None }
+        .into_iter()
+        .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
+        .join(", "),
     )));
   }
-  if !params.argv && args.len() > params.max {
+  if !params.argv && args.len() > max {
     return Err(Error::new(format!(
       "expected at most {} args, got {}",
-      params.max,
+      max,
       args.len()
     )));
   }
@@ -167,25 +193,21 @@ pub struct ParamInfo {
 
 #[allow(clippy::identity_op, clippy::needless_range_loop)]
 fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value], kwargs: Value) {
-  // receiver
-  if let Some(m) = f.as_method() {
-    stack.set(0, Value::object(m.this.clone().widen()));
-  } else {
-    stack.set(0, Value::none());
-  }
   // function
-  stack.set(1, f);
+  stack.set(0, f.clone());
+
   // argv
   if param_info.has_argv && args.len() > param_info.max_params {
     let argv = args[param_info.max_params..args.len()].to_vec();
-    stack.set(2, Value::from(argv));
+    stack.set(1, Value::from(argv));
   } else {
-    stack.set(2, Value::from(vec![]));
+    stack.set(1, Value::from(vec![]));
   }
+
   // kwargs
   if param_info.has_kw {
     stack.set(
-      3,
+      2,
       if kwargs.is_none() {
         Value::from(Dict::new())
       } else {
@@ -193,8 +215,14 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
       },
     )
   };
+
   // params
+  let mut params_base = 3;
+  if let Some(m) = f.as_method() {
+    stack.set(params_base, Value::object(m.this.clone().widen()));
+    params_base += 1;
+  }
   for i in 0..std::cmp::min(args.len(), param_info.max_params) {
-    stack.set(4 + i, args[i].clone());
+    stack.set(params_base + i, args[i].clone());
   }
 }

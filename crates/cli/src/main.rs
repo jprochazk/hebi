@@ -1,135 +1,24 @@
-use rustyline::Editor;
-use value::object::Registry;
-use value::Value;
-use vm::Isolate;
+mod repl;
 
-struct Repl {
-  emit_ctx: emit::Context,
-  vm: Isolate,
-  editor: Editor<()>,
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+  #[command(subcommand)]
+  cmd: Option<Cmd>,
 }
 
-enum ParseResult {
-  Incomplete,
-  Complete,
+#[derive(Subcommand)]
+enum Cmd {
+  Repl,
 }
 
-enum Error {
-  Readline(rustyline::error::ReadlineError),
-  Parse(String),
-}
-
-impl Repl {
-  fn new() -> Self {
-    Self {
-      emit_ctx: emit::Context::new(),
-      vm: Isolate::new(Registry::new().into()),
-      editor: Editor::new().unwrap(),
-    }
-  }
-
-  fn read_multi_line_input(&mut self, buffer: &mut String) -> Result<(), Error> {
-    let mut prev_line = String::new();
-    loop {
-      buffer.push('\n');
-      let ws = &prev_line[..prev_line
-        .chars()
-        .take_while(|c| c.is_ascii_whitespace())
-        .count()];
-      let line = self
-        .editor
-        .readline_with_initial("> ", (ws, ""))
-        .map_err(Error::Readline)?;
-      prev_line.clear();
-      prev_line.push_str(&line);
-      self.editor.add_history_entry(&line);
-      buffer.push_str(&line);
-
-      match self.validate(buffer.as_str()).map_err(Error::Parse)? {
-        ParseResult::Incomplete => continue,
-        ParseResult::Complete => break Ok(()),
-      }
-    }
-  }
-
-  fn eval(&mut self, input: &str) -> Result<Value, vm::Error> {
-    let module = syntax::parse(input).unwrap();
-    let module = emit::emit(&self.emit_ctx, "code", &module).unwrap();
-    let main = module.borrow().main().clone();
-    self.vm.call(main.into(), &[], Value::none())
-  }
-
-  fn validate(&mut self, input: &str) -> Result<ParseResult, String> {
-    use ParseResult::*;
-
-    fn is_empty(line: &str) -> bool {
-      line.trim().is_empty()
-    }
-
-    fn is_indented(line: &str) -> bool {
-      line
-        .trim_start_matches(|c| c == '\n')
-        .starts_with(|c: char| c.is_ascii_whitespace())
-    }
-
-    fn begins_block(line: &str) -> bool {
-      line.trim_end_matches(|c| c == '\n').ends_with(':')
-    }
-
-    let is_multi_line = input.find('\n').is_some();
-    if is_multi_line {
-      let last_line = input.split('\n').last().unwrap();
-      if !is_empty(last_line) && (is_indented(last_line) || begins_block(last_line)) {
-        return Ok(Incomplete);
-      }
-    } else if begins_block(input) {
-      return Ok(Incomplete);
-    }
-
-    match syntax::parse(input) {
-      Ok(_) => Ok(ParseResult::Complete),
-      Err(errors) => {
-        let mut out = String::new();
-        for error in errors {
-          error.report_to(input, &mut out);
-        }
-        Err(out)
-      }
-    }
-  }
-}
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-fn main() -> rustyline::Result<()> {
-  let mut repl = Repl::new();
-  let mut buffer = String::new();
-
-  println!("Mu REPL v{VERSION}\nPress CTRL-D to exit");
-
-  loop {
-    if let Err(e) = repl.read_multi_line_input(&mut buffer) {
-      match e {
-        Error::Readline(e) => match e {
-          rustyline::error::ReadlineError::Eof => return Ok(()),
-          rustyline::error::ReadlineError::Interrupted => return Ok(()),
-          rustyline::error::ReadlineError::WindowResized => continue,
-          e => return Err(e),
-        },
-        Error::Parse(e) => {
-          println!("{e}");
-          continue;
-        }
-      }
-    };
-
-    match repl.eval(&buffer) {
-      Ok(v) => println!("{v}"),
-      Err(e) => {
-        println!("{}", e.report(buffer.clone()))
-      }
-    }
-
-    buffer.clear();
+fn main() -> anyhow::Result<()> {
+  let args = Cli::parse();
+  match args.cmd {
+    Some(Cmd::Repl) | None => Ok(repl::run()?),
+    _ => Ok(()),
   }
 }

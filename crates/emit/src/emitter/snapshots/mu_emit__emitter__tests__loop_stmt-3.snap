@@ -10,7 +10,7 @@ loop:
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 13
+  length: 14
   const: <empty>
   code:
      0 | jump offset=12
@@ -23,7 +23,8 @@ function <[[main]]>:
      9 | nop 
     10 | nop 
     11 | nop 
-    12 | suspend 
+    12 | ret 
+    13 | suspend 
 
 
 # Regalloc:

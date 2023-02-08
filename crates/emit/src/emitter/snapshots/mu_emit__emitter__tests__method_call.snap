@@ -8,7 +8,7 @@ o.f()
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 6
+  length: 7
   const (length=2):
     0: "f"
     1: "o"
@@ -16,7 +16,8 @@ function <[[main]]>:
     0 | load_global [1]
     2 | load_named [0]
     4 | call0 
-    5 | suspend 
+    5 | ret 
+    6 | suspend 
 
 
 # Regalloc:

@@ -12,7 +12,7 @@ loop:
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 32
+  length: 33
   const: <empty>
   code:
      0 | push_true 
@@ -41,7 +41,8 @@ function <[[main]]>:
     28 | nop 
     29 | nop 
     30 | nop 
-    31 | suspend 
+    31 | ret 
+    32 | suspend 
 
 
 # Regalloc:

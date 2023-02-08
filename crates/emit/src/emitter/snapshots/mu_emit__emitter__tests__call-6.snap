@@ -8,7 +8,7 @@ f(a, b, c=2)
 # Func:
 function <[[main]]>:
   frame_size: 7
-  length: 25
+  length: 26
   const (length=4):
     0: "a"
     1: "b"
@@ -25,7 +25,8 @@ function <[[main]]>:
     16 | insert_to_dict_named [2], r4
     19 | load_global [3]
     21 | call_kw r4, args=2
-    24 | suspend 
+    24 | ret 
+    25 | suspend 
 
 
 # Regalloc:

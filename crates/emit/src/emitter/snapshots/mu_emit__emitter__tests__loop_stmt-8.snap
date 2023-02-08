@@ -12,7 +12,7 @@ while true:
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 39
+  length: 40
   const: <empty>
   code:
      0 | push_true 
@@ -47,7 +47,8 @@ function <[[main]]>:
     35 | nop 
     36 | nop 
     37 | nop 
-    38 | suspend 
+    38 | ret 
+    39 | suspend 
 
 
 # Regalloc:

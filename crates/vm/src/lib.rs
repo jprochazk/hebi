@@ -10,6 +10,7 @@ mod util;
 // TODO: make the VM panic-less (other than debug asserts for unsafe things)
 // TODO: stack unwinding
 // TODO: module registry
+// TODO: store the reserved stack slots as constants somewhere (??)
 
 use std::cell::{Ref, RefMut};
 use std::mem::take;
@@ -237,14 +238,14 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_load_self(&mut self) -> Result<(), Self::Error> {
     // receiver is always placed at the base of the current call frame's stack
-    self.acc = self.get_reg(0);
+    self.acc = self.get_reg(3);
 
     Ok(())
   }
 
   fn op_load_super(&mut self) -> Result<(), Self::Error> {
     // receiver is always placed at the base of the current call frame's stack
-    let this = self.get_reg(0);
+    let this = self.get_reg(3);
 
     let Some(this) = this.as_class() else {
       // TODO: span
@@ -731,7 +732,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name is always a string here
     let name = dict::Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let kwargs = self.get_reg(3);
+    let kwargs = self.get_reg(2);
     let kwargs = kwargs.as_dict().unwrap();
 
     self.acc = Value::bool(!kwargs.contains_key(&name));
@@ -744,7 +745,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // name is always a string here
     let name = dict::Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let mut kwargs = self.get_reg(3);
+    let mut kwargs = self.get_reg(2);
     let mut kwargs = kwargs.as_dict_mut().unwrap();
 
     self.set_reg(param, kwargs.remove(&name).unwrap());

@@ -11,7 +11,7 @@ class T:
 # Func:
 function <[[main]]>:
   frame_size: 6
-  length: 20
+  length: 21
   const (length=2):
     0: <class desc T>
     1: "T"
@@ -22,7 +22,8 @@ function <[[main]]>:
     12 | store_reg r5
     14 | create_class [0], r4
     17 | store_global [1]
-    19 | suspend 
+    19 | ret 
+    20 | suspend 
 
 
 # Regalloc:

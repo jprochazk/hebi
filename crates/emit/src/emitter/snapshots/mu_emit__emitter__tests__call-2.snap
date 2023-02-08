@@ -8,7 +8,7 @@ f(0)
 # Func:
 function <[[main]]>:
   frame_size: 5
-  length: 13
+  length: 14
   const (length=1):
     0: "f"
   code:
@@ -16,7 +16,8 @@ function <[[main]]>:
      5 | store_reg r4
      7 | load_global [0]
      9 | call r4, args=1
-    12 | suspend 
+    12 | ret 
+    13 | suspend 
 
 
 # Regalloc:

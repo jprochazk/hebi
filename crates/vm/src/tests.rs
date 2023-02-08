@@ -672,24 +672,42 @@ fn class_methods() {
       print C(a=0, b=1, c=2).entries
     "#
   }
-}
 
-/* #[test]
-fn _temp() {
   check! {
     r#"
       class A:
         v = 10
-      class B:
-        fn init(self, *items):
-          self.items = items
-      class C:
-        fn init(self, **entries):
-          self.entries = entries
+        fn test(self):
+          print self.v
+      
+      a := A(v=20)
+      a.test()
+      A.test(a)
 
-      print A().v
-      print B(0, 1, 2).items
-      print C(a=0, b=1, c=2).entries
+      fn test():
+        print "test"
+
+      class B:
+        test = test
+      
+      B().test()
     "#
   }
+}
+
+/* #[test]
+fn _temp() {
+  let emit_ctx = emit::Context::new();
+  let mut vm = Isolate::with_io(Registry::new().into(), <Vec<u8>>::new());
+
+  fn eval_with(emit_ctx: &emit::Context, vm: &mut Isolate<Vec<u8>>, src: &str) {
+    let ast = syntax::parse("fn test(): print \"test\"").unwrap();
+    let code = emit::emit(emit_ctx, "code", &ast).unwrap();
+    vm.call(code.borrow().main().clone().into(), &[], Default::default())
+      .map_err(|e| e.report(src))
+      .unwrap();
+  }
+
+  eval_with(&emit_ctx, &mut vm, "fn test(): print \"test\"");
+  eval_with(&emit_ctx, &mut vm, "class Test:\n  test = test");
 } */

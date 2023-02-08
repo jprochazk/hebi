@@ -8,13 +8,14 @@ print 2.5
 # Func:
 function <[[main]]>:
   frame_size: 4
-  length: 4
+  length: 5
   const (length=1):
     0: 2.5
   code:
     0 | load_const [0]
     2 | print 
-    3 | suspend 
+    3 | ret 
+    4 | suspend 
 
 
 # Regalloc:
