@@ -6,6 +6,7 @@ use crate::ptr::{Ref, RefMut};
 use crate::Value;
 
 #[derive(Clone, Debug)]
+// 192 bytes
 pub struct Func {
   pub(super) name: Cow<'static, str>,
   pub(super) frame_size: u32,

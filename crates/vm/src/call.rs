@@ -1,21 +1,23 @@
-use std::ptr::NonNull;
-
 use indexmap::IndexSet;
 use value::object::frame::{Frame, Stack};
-use value::object::handle::Handle;
 use value::object::{frame, func, Dict};
 use value::Value;
 
 use crate::util::JoinIter;
-use crate::{Control, Error, Isolate};
+use crate::{Error, Isolate};
+
+// TODO: factor `method` out of this process, so `invoke` can be implemented as
+// a fast-track, all it needs to do is place the receiver. currently it's
+// allocating an extra object.
 
 impl<Io: std::io::Write> Isolate<Io> {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
-    let frame = self.prepare_call_frame(f, args, kwargs, frame::Return::Yield)?;
-    self.frames.push(frame);
+    let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
+    self.push_frame(frame);
 
+    self.width = op::Width::Single;
     self.pc = 0;
-    self.dispatch()?;
+    self.run_dispatch_loop()?;
 
     // # Return
     Ok(std::mem::take(&mut self.acc))
@@ -26,8 +28,8 @@ impl<Io: std::io::Write> Isolate<Io> {
     f: Value,
     args: &[Value],
     kwargs: Value,
-    on_return: frame::Return,
-  ) -> Result<Handle<Frame>, Error> {
+    on_return: frame::OnReturn,
+  ) -> Result<Frame, Error> {
     // # Check that callee is callable
     // TODO: trait
     if !f.is_func() && !f.is_closure() && !f.is_method() {
@@ -38,10 +40,7 @@ impl<Io: std::io::Write> Isolate<Io> {
     let param_info = check_func_args(f.clone(), args, &kwargs)?;
 
     let stack = match self.frames.last_mut() {
-      Some(frame) => {
-        let frame = frame.borrow();
-        Stack::view(&frame.stack, frame.stack_base() + frame.frame_size)
-      }
+      Some(frame) => Stack::view(&frame.stack, frame.stack_base() + frame.frame_size),
       None => Stack::new(),
     };
 
@@ -51,27 +50,34 @@ impl<Io: std::io::Write> Isolate<Io> {
     // # Initialize params
     init_params(f, &mut frame.stack, param_info, args, kwargs);
 
-    Ok(frame.into())
+    Ok(frame)
   }
 
-  fn dispatch(&mut self) -> Result<(), Error> {
-    // SAFETY:
-    // - `bc` is a valid pointer because of the invariants of `CallFrame::new`
-    //   constructor
-    // - `pc` is a valid pointer because it is constructed from a mutable reference,
-    //   which always results in a valid non-null pointer.
-    let mut bc = self.frames.last().unwrap().borrow().code;
-    let pc = NonNull::from(&mut self.pc);
-    loop {
-      match unsafe { op::run(self, bc, pc) } {
-        Ok(()) => return Ok(()),
+  fn run_dispatch_loop(&mut self) -> Result<(), Error> {
+    let result = loop {
+      let code = unsafe { self.current_frame_mut().code.as_mut() };
+      match op::dispatch(self, code, self.pc, self.width) {
+        Ok(flow) => match flow {
+          (op::ControlFlow::Jump(offset), w) => {
+            self.width = w;
+            self.pc += offset;
+          }
+          (op::ControlFlow::Loop(offset), w) => {
+            self.width = w;
+            self.pc -= offset;
+          }
+          (op::ControlFlow::Yield, _) => break Ok(()),
+          (op::ControlFlow::Nop, w) => {
+            self.width = w;
+          }
+        },
         Err(e) => match e {
-          Control::Error(e) => return Err(e),
-          Control::SwapFrame => bc = self.frames.last().unwrap().borrow().code,
-          Control::Yield => return Ok(()),
+          crate::Control::Error(e) => break Err(e),
+          crate::Control::Yield => break Ok(()),
         },
       };
-    }
+    };
+    result
   }
 }
 

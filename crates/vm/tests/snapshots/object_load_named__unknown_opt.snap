@@ -1,0 +1,15 @@
+---
+source: crates/vm/tests/object_load_named.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v.a
+
+
+# Result (success):
+none
+
+# Stdout:
+none
+

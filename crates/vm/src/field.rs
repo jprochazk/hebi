@@ -31,12 +31,21 @@ pub fn set(obj: &mut Value, key: Key, value: Value) -> Result<(), Error> {
 
 pub fn get(obj: &Value, key: &Key) -> Result<Value, Error> {
   if let Some(class) = obj.as_class() {
-    let Some(value) = class.get(key).cloned() else {
-      return  Err(Error::new(format!(
-        "cannot get field `{key}` on value `{obj}`"
-      )));
+    if let Some(value) = class.get(key).cloned() {
+      return Ok(value);
     };
-    return Ok(value);
+    if let Some(method) = class.method(key).cloned() {
+      return Ok(
+        Method {
+          this: class.clone().into(),
+          func: method,
+        }
+        .into(),
+      );
+    }
+    return Err(Error::new(format!(
+      "cannot get field `{key}` on value `{obj}`"
+    )));
   }
 
   if let Some(dict) = obj.as_dict() {
@@ -83,10 +92,19 @@ pub fn get_opt(obj: &Value, key: &Key) -> Result<Value, Error> {
   }
 
   if let Some(class) = obj.as_class() {
-    let Some(value) = class.get(key).cloned() else {
-      return Ok(Value::none());
+    if let Some(value) = class.get(key).cloned() {
+      return Ok(value);
     };
-    return Ok(value);
+    if let Some(method) = class.method(key).cloned() {
+      return Ok(
+        Method {
+          this: class.clone().into(),
+          func: method,
+        }
+        .into(),
+      );
+    }
+    return Ok(Value::none());
   }
 
   if let Some(dict) = obj.as_dict() {

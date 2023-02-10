@@ -1,0 +1,12 @@
+---
+source: crates/vm/tests/precedence.rs
+expression: snapshot
+---
+# Input:
+3 * 2 + 1
+
+# Result (success):
+7
+
+# Stdout:
+

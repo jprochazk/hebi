@@ -1,5 +1,4 @@
-use std::ptr::NonNull;
-
+use crate::instruction::ty::Width;
 use crate::instruction::*;
 
 macro_rules! check {
@@ -73,7 +72,7 @@ fn test_builder() {
 }
 
 #[test]
-fn dispatch() {
+fn dispatch_loop() {
   #[derive(Clone, Hash, PartialEq, Eq, Debug)]
   enum Value {
     Number(i32),
@@ -133,19 +132,19 @@ fn dispatch() {
     }
 
     fn op_jump(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
-      Ok(ControlFlow::Jump(offset))
+      Ok(ControlFlow::Jump(offset as usize))
     }
 
     fn op_jump_back(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
-      Ok(ControlFlow::Loop(offset))
+      Ok(ControlFlow::Loop(offset as usize))
     }
 
     fn op_jump_if_false(&mut self, offset: u32) -> Result<ControlFlow, Self::Error> {
       let value = *self.a.as_number().ok_or(())?;
       Ok(if value == 0 {
-        ControlFlow::Jump(offset)
+        ControlFlow::Jump(offset as usize)
       } else {
-        ControlFlow::Next
+        ControlFlow::Nop
       })
     }
 
@@ -508,7 +507,7 @@ fn dispatch() {
   check!(chunk);
 
   let Chunk {
-    mut bytecode,
+    bytecode,
     const_pool,
     ..
   } = chunk;
@@ -520,9 +519,26 @@ fn dispatch() {
     c: const_pool,
   };
 
-  let bc = NonNull::from(&mut bytecode[..]);
-  let pc = NonNull::from(&mut vm.pc);
-  unsafe { run(&mut vm, bc, pc) }.unwrap();
+  let mut pc = 0;
+  let mut width = Width::Single;
+  loop {
+    match dispatch(&mut vm, &bytecode[..], pc, width).unwrap() {
+      (ControlFlow::Jump(offset), w) => {
+        width = w;
+        pc += offset;
+      }
+      (ControlFlow::Loop(offset), w) => {
+        width = w;
+        pc -= offset;
+      }
+      (ControlFlow::Yield, _) => {
+        break;
+      }
+      (ControlFlow::Nop, w) => {
+        width = w;
+      }
+    }
+  }
 
   let stdout = String::from_utf8(vm.stdout).unwrap();
   insta::assert_snapshot!(stdout);

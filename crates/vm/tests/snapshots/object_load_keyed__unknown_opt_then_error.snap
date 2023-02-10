@@ -1,0 +1,17 @@
+---
+source: crates/vm/tests/object_load_keyed.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v["a"]
+print v["a"]
+
+
+# Result (error):
+[31merror[0m in code: cannot get field `"a"` on value `{}`
+
+
+# Stdout:
+none
+

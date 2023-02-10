@@ -1,0 +1,15 @@
+---
+source: crates/vm/tests/object_load_keyed.rs
+expression: snapshot
+---
+# Input:
+v := { a: { b: 10 } }
+print ?v["a"]["b"]
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+

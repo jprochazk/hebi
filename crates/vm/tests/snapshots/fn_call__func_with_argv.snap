@@ -1,0 +1,19 @@
+---
+source: crates/vm/tests/fn_call.rs
+expression: snapshot
+---
+# Input:
+fn f(a, *rest):
+  print a, rest
+
+f(0)
+f(0, 1, 2)
+
+
+# Result (success):
+none
+
+# Stdout:
+0 []
+0 [1, 2]
+

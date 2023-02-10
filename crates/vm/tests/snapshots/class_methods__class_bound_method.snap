@@ -1,0 +1,29 @@
+---
+source: crates/vm/tests/class_methods.rs
+expression: snapshot
+---
+# Input:
+class T:
+  v = 10
+  fn test(self):
+    print self.v
+
+t0 := T()
+t1 := T(v=20)
+t0.test()
+t1.test()
+t0f := t0.test
+t1f := t1.test
+t0f()
+t1f()
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+20
+10
+20
+

@@ -13,6 +13,7 @@ use crate::Value;
 pub struct Class {
   pub(super) name: String,
   pub(super) fields: Dict,
+  pub(super) methods: Dict,
   pub(super) parent: Option<Handle<ClassDef>>,
   is_frozen: bool,
 }
@@ -82,6 +83,13 @@ impl Class {
     self.fields.remove(key)
   }
 
+  pub fn method<Q>(&self, key: &Q) -> Option<&Value>
+  where
+    Q: ?Sized + Hash + Equivalent<Key>,
+  {
+    self.methods.get(key)
+  }
+
   pub fn is_frozen(&self) -> bool {
     self.is_frozen
   }
@@ -134,6 +142,7 @@ impl ClassDef {
       fields.insert(k.clone().into(), v.clone());
     }
 
+    // inherit methods and field defaults
     if let Some(parent) = &parent {
       for (k, v) in parent.borrow().methods.iter() {
         methods.entry(k.clone()).or_insert_with(|| v.clone());
@@ -155,26 +164,15 @@ impl ClassDef {
   pub fn instance(&self) -> Handle<Class> {
     let name = self.name.clone();
     let parent = self.parent.clone();
-    let mut class = Handle::from(Class {
+
+    Class {
       name,
-      fields: Dict::with_capacity(self.methods.len() + self.fields.len()),
+      fields: self.fields.clone(),
+      methods: self.methods.clone(),
       parent,
       is_frozen: false,
-    });
-
-    for (k, v) in self.methods.iter() {
-      let v = Method {
-        this: class.clone().into(),
-        func: v.clone(),
-      }
-      .into();
-      class.borrow_mut().fields.insert(k.clone(), v);
     }
-    for (k, v) in self.fields.iter() {
-      class.borrow_mut().fields.insert(k.clone(), v.clone());
-    }
-
-    class
+    .into()
   }
 
   pub fn name(&self) -> &str {

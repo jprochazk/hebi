@@ -43,6 +43,10 @@ impl<T: ObjectHandle> Handle<T> {
   pub fn widen(self) -> Ptr<Object> {
     self.o
   }
+
+  pub fn strong_count(&self) -> usize {
+    Ptr::strong_count(&self.o)
+  }
 }
 
 impl<T: ObjectHandle + Into<Object>> From<T> for Handle<T> {

@@ -1,0 +1,12 @@
+---
+source: crates/vm/tests/literals.rs
+expression: snapshot
+---
+# Input:
+{a:0, b:1, c:2}
+
+# Result (success):
+{"a": 0, "b": 1, "c": 2}
+
+# Stdout:
+

@@ -1,0 +1,31 @@
+---
+source: crates/vm/tests/class_methods.rs
+expression: snapshot
+---
+# Input:
+class A:
+  v = 10
+  fn test(self):
+    print self.v
+
+a := A(v=20)
+a.test()
+A.test(a)
+
+fn test():
+  print "test"
+
+class B:
+  test = test
+
+B().test()
+
+
+# Result (success):
+none
+
+# Stdout:
+20
+20
+"test"
+

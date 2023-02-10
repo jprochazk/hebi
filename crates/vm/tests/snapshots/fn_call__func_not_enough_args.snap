@@ -1,0 +1,17 @@
+---
+source: crates/vm/tests/fn_call.rs
+expression: snapshot
+---
+# Input:
+fn f(a, b, c):
+  print a, b, c
+
+f()
+
+
+# Result (error):
+[31merror[0m in code: missing required positional params: a, b, c
+
+
+# Stdout:
+

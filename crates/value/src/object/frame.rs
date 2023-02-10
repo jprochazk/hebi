@@ -16,15 +16,14 @@ pub struct Frame {
   pub frame_size: usize,
   pub captures: Option<NonNull<[Value]>>,
 
-  pub pc: usize,
-  pub on_return: Return,
+  pub on_return: OnReturn,
   pub stack: Stack,
   pub num_args: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Return {
-  Swap(usize),
+pub enum OnReturn {
+  Jump(usize),
   Yield,
 }
 
@@ -34,11 +33,16 @@ impl Frame {
   /// # Panics
   ///
   /// If `func` is not a function, closure, or method.
-  pub fn new(func: Value, num_args: usize, on_return: Return) -> Self {
+  pub fn new(func: Value, num_args: usize, on_return: OnReturn) -> Self {
     Self::with_stack(func, num_args, on_return, Stack::with_capacity(256))
   }
 
-  pub fn with_stack(mut func: Value, num_args: usize, on_return: Return, mut stack: Stack) -> Self {
+  pub fn with_stack(
+    mut func: Value,
+    num_args: usize,
+    on_return: OnReturn,
+    mut stack: Stack,
+  ) -> Self {
     if let Some(f) = func.as_method() {
       return Frame::with_stack(f.func.clone(), num_args, on_return, stack);
     }
@@ -56,7 +60,6 @@ impl Frame {
       func,
       code,
       const_pool,
-      pc: 0,
       on_return,
       stack,
       captures,

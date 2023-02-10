@@ -12,8 +12,8 @@ mod util;
 // TODO: module registry
 // TODO: store the reserved stack slots as constants somewhere (??)
 
-use std::cell::{Ref, RefMut};
 use std::mem::take;
+use std::ptr::NonNull;
 
 pub use error::Error;
 use value::object::frame::{Frame, Stack};
@@ -26,9 +26,13 @@ use value::Value;
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   registry: Handle<Registry>,
   globals: Handle<Dict>,
+
+  width: op::Width,
   pc: usize,
+
   acc: Value,
-  frames: Vec<Handle<Frame>>,
+  frames: Vec<Frame>,
+  current_frame: Option<NonNull<Frame>>,
   io: Io,
 }
 
@@ -43,9 +47,13 @@ impl<Io: std::io::Write> Isolate<Io> {
     Isolate {
       registry,
       globals: Dict::new().into(),
+
+      width: op::Width::Single,
       pc: 0,
+
       acc: Value::none(),
       frames: vec![],
+      current_frame: None,
       io,
     }
   }
@@ -58,12 +66,25 @@ impl<Io: std::io::Write> Isolate<Io> {
     self.io.write_fmt(args)
   }
 
-  fn current_frame(&self) -> Ref<'_, Frame> {
-    self.frames.last().unwrap().borrow()
+  fn push_frame(&mut self, frame: Frame) {
+    self.frames.push(frame);
+    self.current_frame = Some(NonNull::from(unsafe {
+      self.frames.last_mut().unwrap_unchecked()
+    }));
   }
 
-  fn current_frame_mut(&mut self) -> RefMut<'_, Frame> {
-    self.frames.last_mut().unwrap().borrow_mut()
+  fn pop_frame(&mut self) -> Frame {
+    let frame = self.frames.pop().expect("call stack underflow");
+    self.current_frame = self.frames.last_mut().map(NonNull::from);
+    frame
+  }
+
+  fn current_frame(&self) -> &Frame {
+    unsafe { &*self.current_frame.unwrap().as_ptr() }
+  }
+
+  fn current_frame_mut(&mut self) -> &mut Frame {
+    unsafe { &mut *self.current_frame.unwrap().as_ptr() }
   }
 
   fn get_const(&self, slot: u32) -> Value {
@@ -92,14 +113,13 @@ impl<Io: std::io::Write> Isolate<Io> {
     unsafe { frame.captures.unwrap().as_mut()[slot as usize] = value }
   }
 
-  fn stack(&self) -> Ref<'_, Stack> {
-    Ref::map(self.current_frame(), |v| &v.stack)
+  fn stack(&self) -> &Stack {
+    &self.current_frame().stack
   }
 }
 
 pub enum Control {
   Error(Error),
-  SwapFrame,
   Yield,
 }
 
@@ -427,11 +447,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_jump(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
-    Ok(op::ControlFlow::Jump(offset))
+    Ok(op::ControlFlow::Jump(offset as usize))
   }
 
   fn op_jump_back(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
-    Ok(op::ControlFlow::Loop(offset))
+    Ok(op::ControlFlow::Loop(offset as usize))
   }
 
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
@@ -441,8 +461,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     };
 
     match value {
-      true => Ok(op::ControlFlow::Next),
-      false => Ok(op::ControlFlow::Jump(offset)),
+      true => Ok(op::ControlFlow::Nop),
+      false => Ok(op::ControlFlow::Jump(offset as usize)),
     }
   }
 
@@ -678,11 +698,11 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       func,
       &[],
       Value::none(),
-      frame::Return::Swap(return_address),
+      frame::OnReturn::Jump(return_address),
     )?;
-    self.frames.push(frame);
+    self.push_frame(frame);
     self.pc = 0;
-    Err(Control::SwapFrame)
+    Ok(())
   }
 
   fn op_call(&mut self, start: u32, args: u32, return_address: usize) -> Result<(), Self::Error> {
@@ -706,11 +726,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       func,
       &args,
       Value::none(),
-      frame::Return::Swap(return_address),
+      frame::OnReturn::Jump(return_address),
     )?;
-    self.frames.push(frame);
+    self.push_frame(frame);
+    self.width = op::Width::Single;
     self.pc = 0;
-    Err(Control::SwapFrame)
+    Ok(())
   }
 
   fn op_call_kw(
@@ -737,17 +758,18 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     // regular function call
     let frame =
-      self.prepare_call_frame(func, &args, kwargs, frame::Return::Swap(return_address))?;
-    self.frames.push(frame);
+      self.prepare_call_frame(func, &args, kwargs, frame::OnReturn::Jump(return_address))?;
+    self.push_frame(frame);
+    self.width = op::Width::Single;
     self.pc = 0;
-    Err(Control::SwapFrame)
+    Ok(())
   }
 
   fn op_is_pos_param_not_set(&mut self, index: u32) -> Result<(), Self::Error> {
-    let frame = self.frames.last().unwrap();
+    let frame = self.current_frame();
     let index = index as usize;
 
-    self.acc = Value::bool(frame.borrow().num_args <= index);
+    self.acc = Value::bool(frame.num_args <= index);
 
     Ok(())
   }
@@ -779,19 +801,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_ret(&mut self) -> Result<(), Self::Error> {
-    if let Some(frame) = self.frames.pop() {
-      match frame.borrow().on_return {
-        frame::Return::Swap(return_address) => {
-          self.pc = return_address;
-          Err(Control::SwapFrame)
-        }
-        frame::Return::Yield => Err(Control::Yield),
+    match self.pop_frame().on_return {
+      frame::OnReturn::Jump(offset) => {
+        self.pc = offset;
+        Ok(())
       }
-    } else {
-      unreachable!()
+      frame::OnReturn::Yield => Err(Control::Yield),
     }
   }
 }
-
-#[cfg(test)]
-mod tests;

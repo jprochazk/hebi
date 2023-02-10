@@ -1,0 +1,21 @@
+---
+source: crates/vm/tests/fn_call_default.rs
+expression: snapshot
+---
+# Input:
+fn f(a, b=10, *c):
+  print a, b, c
+
+f(1)
+f(1,2)
+f(1,2,3)
+
+
+# Result (success):
+none
+
+# Stdout:
+1 10 []
+1 2 []
+1 2 [3]
+

@@ -1,0 +1,17 @@
+---
+source: crates/vm/tests/fn_call_kw.rs
+expression: snapshot
+---
+# Input:
+fn f(*, a, b):
+  print a, b
+
+f()
+
+
+# Result (error):
+[31merror[0m in code: mismatched keyword params: missing a, b
+
+
+# Stdout:
+

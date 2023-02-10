@@ -31,6 +31,16 @@ impl<T> Ptr<T> {
   pub fn weak_count(this: &Ptr<T>) -> usize {
     Rc::weak_count(&this.0)
   }
+
+  pub(crate) unsafe fn increment_strong_count(addr: usize) {
+    let ptr = addr as *const _;
+    unsafe { Rc::<RefCell<T>>::increment_strong_count(ptr) }
+  }
+
+  pub(crate) unsafe fn decrement_strong_count(addr: usize) {
+    let ptr = addr as *const _;
+    unsafe { Rc::<RefCell<T>>::decrement_strong_count(ptr) }
+  }
 }
 
 impl<T> Deref for Ptr<T> {
@@ -38,18 +48,6 @@ impl<T> Deref for Ptr<T> {
 
   fn deref(&self) -> &Self::Target {
     &self.0
-  }
-}
-
-impl Ptr<()> {
-  pub(crate) unsafe fn increment_strong_count(addr: usize) {
-    let ptr = addr as *const ();
-    unsafe { Rc::increment_strong_count(ptr) }
-  }
-
-  pub(crate) unsafe fn decrement_strong_count(addr: usize) {
-    let ptr = addr as *const ();
-    unsafe { Rc::decrement_strong_count(ptr) }
   }
 }
 
@@ -85,5 +83,5 @@ impl<T: std::fmt::Display> std::fmt::Display for Ptr<T> {
 // `Value` doesn't work on 32-bit systems, so this doubles
 // as an architecture check
 const _: fn() = || {
-  let _ = std::mem::transmute::<Ptr<()>, u64>;
+  let _ = std::mem::transmute::<Ptr<crate::object::Object>, u64>;
 };

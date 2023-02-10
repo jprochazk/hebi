@@ -1,0 +1,27 @@
+---
+source: crates/vm/tests/class_methods.rs
+expression: snapshot
+---
+# Input:
+class A:
+  v = 10
+class B:
+  fn init(self, *items):
+    self.items = items
+class C:
+  fn init(self, **entries):
+    self.entries = entries
+
+print A().v
+print B(0, 1, 2).items
+print C(a=0, b=1, c=2).entries
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+[0, 1, 2]
+{"a": 0, "b": 1, "c": 2}
+

@@ -1,0 +1,16 @@
+---
+source: crates/vm/tests/class_def.rs
+expression: snapshot
+---
+# Input:
+class U: pass
+class T(U): pass
+print T
+
+
+# Result (success):
+none
+
+# Stdout:
+<class def T>
+

@@ -1,0 +1,23 @@
+---
+source: crates/vm/tests/fn_call_kw.rs
+expression: snapshot
+---
+# Input:
+fn f(*, a, b=10, **kw):
+  print a, b, kw
+
+f(a=1, c=3)
+f(c=3, a=1)
+f(a=1, b=2, c=3)
+f(c=3, b=2, a=1)
+
+
+# Result (success):
+none
+
+# Stdout:
+1 10 {"c": 3}
+1 10 {"c": 3}
+1 2 {"c": 3}
+1 2 {"c": 3}
+

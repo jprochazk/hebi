@@ -13,7 +13,7 @@ use ty::*;
 
 instructions! {
   Instruction, ops,
-  Handler, run,
+  Handler, dispatch,
   Nop, Wide, ExtraWide,
   Ret, Suspend,
   disassemble, update_registers;
@@ -459,40 +459,17 @@ pub trait EncodeInto: Decode + private::Sealed {
   fn encode_into(buf: &mut [u8], operands: Self::Decoded);
 }
 
-unsafe fn handle_jump<E>(
-  value: Result<ControlFlow, E>,
-  pc: std::ptr::NonNull<usize>,
-  size_of_operands: usize,
-  result: &mut Result<(), E>,
-) {
-  let _jump = match value {
-    Ok(jump) => jump,
-    Err(e) => {
-      *result = Err(e);
-      ControlFlow::Next
-    }
-  };
-  match _jump {
-    ControlFlow::Next => *pc.as_ptr() += 1 + size_of_operands,
-    ControlFlow::Jump(offset) => *pc.as_ptr() += offset as usize,
-    ControlFlow::Loop(offset) => *pc.as_ptr() -= offset as usize,
-  }
-}
-
 pub enum ControlFlow {
-  /// Jump forward by `offset`.
-  ///
-  /// Note: This must land the dispatch loop on a valid opcode.
-  Jump(u32),
-  /// Jump backward by `offset`.
-  ///
-  /// Note: This must land the dispatch loop on a valid opcode.
-  Loop(u32),
-  /// Go to the next instruction.
-  ///
-  /// This is equivalent to
-  /// `ControlFlow::Goto(pc + 1 + size_of_operands(opcode))`.
-  Next,
+  /// Dispatch an instruction after updating the program counter by adding
+  /// `offset` from it.
+  Jump(usize),
+  /// Dispatch an instruction after updating the program counter by subtracting
+  /// `offset` from it.
+  Loop(usize),
+  /// Stop the dispatch loop.
+  Yield,
+  /// Dispatch an instruction without updating the program counter.
+  Nop,
 }
 
 pub struct Builder<Value: Hash + Eq + Clone> {

@@ -139,92 +139,90 @@ macro_rules! instruction_dispatch {
   ($Handler:ident; $name:ident, ()) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+      fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        _: std::ptr::NonNull<[u8]>,
-        pc: std::ptr::NonNull<usize>,
-        width: &mut Width,
-        result: &mut Result<(), H::Error>,
-      ) {
-        *result = vm.[<op_ $name:snake>]();
-        *pc.as_ptr() += 1;
-        *width = Width::Single;
+        _: &[u8],
+        _: usize,
+        _: Width,
+      ) -> Result<(ControlFlow, Width), H::Error> {
+        vm.[<op_ $name:snake>]().map(|_| (ControlFlow::Jump(1), Width::Single))
       }
     }
   };
   ($Handler:ident; $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+      fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: std::ptr::NonNull<[u8]>,
-        pc: std::ptr::NonNull<usize>,
-        width: &mut Width,
-        result: &mut Result<(), H::Error>,
-      ) {
-        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
-        *result = vm.[<op_ $name:snake>]($($operand),*);
-        *pc.as_ptr() += 1 + <$name as Decode>::Operands::size(*width);
-        *width = Width::Single;
+        code: &[u8],
+        pc: usize,
+        width: Width,
+      ) -> Result<(ControlFlow, Width), H::Error> {
+        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
+        vm.[<op_ $name:snake>]($($operand),*).map(|_| (
+          ControlFlow::Jump(1 + <$name as Decode>::Operands::size(width)),
+          Width::Single
+        ))
       }
     }
   };
   ($Handler:ident; :jump $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+      fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: std::ptr::NonNull<[u8]>,
-        pc: std::ptr::NonNull<usize>,
-        width: &mut Width,
-        result: &mut Result<(), H::Error>,
-      ) {
-        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
-        handle_jump(
-          vm.[<op_ $name:snake>]($($operand),*),
-          pc,
-          <$name as Decode>::Operands::size(*width),
-          result
-        );
-        *width = Width::Single;
+        code: &[u8],
+        pc: usize,
+        width: Width,
+      ) -> Result<(ControlFlow, Width), H::Error> {
+        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
+        vm.[<op_ $name:snake>](
+          $($operand),*
+        )
+          .map(|f| (
+            if matches!(f, ControlFlow::Nop) {
+              ControlFlow::Jump(1 + <$name as Decode>::Operands::size(width))
+            } else {
+              f
+            },
+            Width::Single
+          ))
       }
     }
   };
   ($Handler:ident; :call $name:ident, ()) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+      fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        _: std::ptr::NonNull<[u8]>,
-        pc: std::ptr::NonNull<usize>,
-        width: &mut Width,
-        result: &mut Result<(), H::Error>,
-      ) {
+        _: &[u8],
+        pc: usize,
+        width: Width,
+      ) -> Result<(ControlFlow, Width), H::Error> {
         // VM sets `PC`
-        *result = vm.[<op_ $name:snake>](
-          *pc.as_ptr() + 1 + <$name as Decode>::Operands::size(*width)
-        );
-        *width = Width::Single;
+        vm.[<op_ $name:snake>](
+          pc + 1 + <$name as Decode>::Operands::size(width)
+        )
+          .map(|_| (ControlFlow::Nop, Width::Single))
       }
     }
   };
   ($Handler:ident; :call $name:ident, ($( $operand:ident : $ty:ident ),+)) => {
     paste! {
       #[allow(clippy::ptr_arg)]
-      unsafe fn [<op_ $name:snake>]<H: $Handler>(
+      fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        bc: std::ptr::NonNull<[u8]>,
-        pc: std::ptr::NonNull<usize>,
-        width: &mut Width,
-        result: &mut Result<(), H::Error>,
-      ) {
-        let ($($operand),*) = <$name>::decode(bc.as_ref(), (*pc.as_ptr()) + 1, *width);
+        code: &[u8],
+        pc: usize,
+        width: Width,
+      ) -> Result<(ControlFlow, Width), H::Error> {
+        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
         // VM sets `PC`
-        *result = vm.[<op_ $name:snake>](
+        vm.[<op_ $name:snake>](
           $($operand,)*
-          *pc.as_ptr() + 1 + <$name as Decode>::Operands::size(*width)
-        );
-        *width = Width::Single;
+          pc + 1 + <$name as Decode>::Operands::size(width)
+        )
+          .map(|_| (ControlFlow::Nop, Width::Single))
       }
     }
   };
@@ -274,7 +272,7 @@ macro_rules! update_register {
 macro_rules! instructions {
   (
     $Instruction:ident, $ops:ident,
-    $Handler:ident, $run:ident,
+    $Handler:ident, $dispatch:ident,
     $Nop:ident, $Wide:ident, $ExtraWide:ident,
     $Ret:ident, $Suspend:ident,
     $disassemble:ident, $update_registers:ident;
@@ -352,51 +350,43 @@ macro_rules! instructions {
     );
 
     #[allow(clippy::ptr_arg)]
-    unsafe fn op_nop<H: $Handler>(
+    fn op_nop<H: $Handler>(
       _: &mut H,
-      _: std::ptr::NonNull<[u8]>,
-      pc: std::ptr::NonNull<usize>,
-      width: &mut Width,
-      _: &mut Result<(), H::Error>,
-    ) {
-      *pc.as_ptr() += 1;
-      *width = Width::Single;
+      _: &[u8],
+      _: usize,
+      _: Width,
+    ) -> Result<(ControlFlow, Width), H::Error> {
+      Ok((ControlFlow::Jump(1), Width::Single))
     }
 
     #[allow(clippy::ptr_arg)]
-    unsafe fn op_wide<H: $Handler>(
+    fn op_wide<H: $Handler>(
       _: &mut H,
-      _: std::ptr::NonNull<[u8]>,
-      pc: std::ptr::NonNull<usize>,
-      width: &mut Width,
-      _: &mut Result<(), H::Error>,
-    ) {
-      *pc.as_ptr() += 1;
-      *width = Width::Double;
+      _: &[u8],
+      _: usize,
+      _: Width,
+    ) -> Result<(ControlFlow, Width), H::Error> {
+      Ok((ControlFlow::Jump(1), Width::Double))
     }
 
     #[allow(clippy::ptr_arg)]
-    unsafe fn op_extra_wide<H: $Handler>(
+    fn op_extra_wide<H: $Handler>(
       _: &mut H,
-      _: std::ptr::NonNull<[u8]>,
-      pc: std::ptr::NonNull<usize>,
-      width: &mut Width,
-      _: &mut Result<(), H::Error>,
-    ) {
-      *pc.as_ptr() += 1;
-      *width = Width::Quad;
+      _: &[u8],
+      _: usize,
+      _: Width,
+    ) -> Result<(ControlFlow, Width), H::Error> {
+      Ok((ControlFlow::Jump(1), Width::Quad))
     }
 
     #[allow(clippy::ptr_arg)]
-    unsafe fn op_ret<H: Handler>(
+    fn op_ret<H: Handler>(
       vm: &mut H,
-      _: std::ptr::NonNull<[u8]>,
-      _: std::ptr::NonNull<usize>,
-      width: &mut Width,
-      result: &mut Result<(), H::Error>,
-    ) {
-      *result = vm.op_ret();
-      *width = Width::Single;
+      _: &[u8],
+      _: usize,
+      _: Width,
+    ) -> Result<(ControlFlow, Width), H::Error> {
+      vm.op_ret().map(|_| (ControlFlow::Nop, Width::Single))
     }
 
     instruction_base!(
@@ -430,42 +420,18 @@ macro_rules! instructions {
       }
     }
 
-    /// Execute bytecode in `bc` starting at `pc`.
-    ///
-    /// Handles decoding variable-width operands,
-    /// and delegates implementation to `vm`.
-    ///
-    /// # Safety
-    ///
-    /// `bc` and `pc` must be valid pointers, as defined in https://doc.rust-lang.org/std/ptr/index.html#safety.
-    #[inline(never)]
-    pub unsafe fn $run<H: $Handler>(vm: &mut H, bc: std::ptr::NonNull<[u8]>, pc: std::ptr::NonNull<usize>) -> Result<(), H::Error> {
-      #[inline]
-      unsafe fn read_at(a: std::ptr::NonNull<[u8]>, i: std::ptr::NonNull<usize>) -> u8 {
-        let i = std::ptr::read(i.as_ptr());
-        std::ptr::read(a.cast::<u8>().as_ptr().add(i))
+    pub fn $dispatch<H: $Handler>(vm: &mut H, code: &[u8], pc: usize, width: Width) -> Result<(ControlFlow, Width), H::Error> {
+      match code[pc] {
+        ops::$Nop => op_nop(vm, code, pc, width),
+        ops::$Wide => op_wide(vm, code, pc, width),
+        ops::$ExtraWide => op_extra_wide(vm, code, pc, width),
+        $(
+          ops::$name => paste!([<op_ $name:snake>])(vm, code, pc, width),
+        )*
+        ops::$Ret => op_ret(vm, code, pc, width),
+        ops::$Suspend => return Ok((ControlFlow::Yield, Width::Single)),
+        _ => panic!("malformed bytecode: invalid opcode {}", code[pc]),
       }
-
-      let mut opcode = read_at(bc, pc);
-      let mut width = Width::Single;
-      let mut result = Ok(());
-      while result.is_ok() {
-        let width = &mut width;
-        let result = &mut result;
-        match opcode {
-          ops::$Nop => op_nop(vm, bc, pc, width, result),
-          ops::$Wide => op_wide(vm, bc, pc, width, result),
-          ops::$ExtraWide => op_extra_wide(vm, bc, pc, width, result),
-          $(
-            ops::$name => paste!([<op_ $name:snake>])(vm, bc, pc, width, result),
-          )*
-          ops::$Ret => op_ret(vm, bc, pc, width, result),
-          ops::$Suspend => break,
-          _ => panic!("malformed bytecode: invalid opcode {}", opcode),
-        }
-        opcode = read_at(bc, pc);
-      }
-      result
     }
 
     pub fn $disassemble(buf: &[u8], offset: usize) -> (usize, Disassembly) {
