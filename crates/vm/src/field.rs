@@ -31,21 +31,21 @@ pub fn set(obj: &mut Value, key: Key, value: Value) -> Result<(), Error> {
 
 pub fn get(obj: &Value, key: &Key) -> Result<Value, Error> {
   if let Some(class) = obj.as_class() {
-    if let Some(value) = class.get(key).cloned() {
-      return Ok(value);
+    let Some(value) = class.get(key).cloned() else {
+      return Err(Error::new(format!(
+        "cannot get field `{key}` on value `{obj}`"
+      )));
     };
-    if let Some(method) = class.method(key).cloned() {
+    if is_fn_like(&value) {
       return Ok(
         Method {
           this: obj.clone(),
-          func: method,
+          func: value,
         }
         .into(),
       );
     }
-    return Err(Error::new(format!(
-      "cannot get field `{key}` on value `{obj}`"
-    )));
+    return Ok(value);
   }
 
   if let Some(dict) = obj.as_dict() {
@@ -72,9 +72,9 @@ pub fn get(obj: &Value, key: &Key) -> Result<Value, Error> {
         "cannot get field `{key}` on value `{obj}`"
       )));
     };
-    assert!(value.is_func() || value.is_closure());
+    assert!(is_fn_like(&value));
     let value = Method {
-      this: proxy.clone().into(),
+      this: obj.clone(),
       func: value,
     };
     return Ok(value.into());
@@ -92,19 +92,19 @@ pub fn get_opt(obj: &Value, key: &Key) -> Result<Value, Error> {
   }
 
   if let Some(class) = obj.as_class() {
-    if let Some(value) = class.get(key).cloned() {
-      return Ok(value);
+    let Some(value) = class.get(key).cloned() else {
+      return Ok(Value::none());
     };
-    if let Some(method) = class.method(key).cloned() {
+    if is_fn_like(&value) {
       return Ok(
         Method {
           this: obj.clone(),
-          func: method,
+          func: value,
         }
         .into(),
       );
     }
-    return Ok(Value::none());
+    return Ok(value);
   }
 
   if let Some(dict) = obj.as_dict() {
@@ -121,7 +121,23 @@ pub fn get_opt(obj: &Value, key: &Key) -> Result<Value, Error> {
     return Ok(value);
   }
 
+  if let Some(proxy) = obj.as_proxy() {
+    let Some(value) = proxy.parent().borrow().method(key).cloned() else {
+      return Ok(Value::none());
+    };
+    assert!(is_fn_like(&value));
+    let value = Method {
+      this: obj.clone(),
+      func: value,
+    };
+    return Ok(value.into());
+  }
+
   Err(Error::new(format!(
     "cannot get field `{key}` on value `{obj}`"
   )))
+}
+
+fn is_fn_like(v: &Value) -> bool {
+  v.is_func() || v.is_closure() || v.is_method()
 }

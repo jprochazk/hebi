@@ -11,11 +11,11 @@ test(0)
 
 # Func:
 function <test>:
-  frame_size: 4
+  frame_size: 5
   length: 6
   const: <empty>
   code:
-    0 | load_reg r3
+    0 | load_reg r4
     2 | print 
     3 | push_none 
     4 | ret 

@@ -58,16 +58,16 @@ check! {
       fn test(self):
         print self.v
     
-    a := A(v=20)
-    a.test()
-    A.test(a)
 
     fn test():
       print "test"
 
     class B:
       test = test
-    
-    B().test()
+
+    A().test() # params_base = 4 + implicit receiver
+    A.test(A()) # params_base = 3
+    test() # params_base = 4
+    B().test() # params_base = 4 + implicit receiver
   "#
 }

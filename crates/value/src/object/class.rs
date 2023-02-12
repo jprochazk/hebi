@@ -13,7 +13,6 @@ use crate::Value;
 pub struct Class {
   pub(super) name: String,
   pub(super) fields: Dict,
-  pub(super) methods: Dict,
   pub(super) parent: Option<Handle<ClassDef>>,
   is_frozen: bool,
 }
@@ -83,13 +82,6 @@ impl Class {
     self.fields.remove(key)
   }
 
-  pub fn method<Q>(&self, key: &Q) -> Option<&Value>
-  where
-    Q: ?Sized + Hash + Equivalent<Key>,
-  {
-    self.methods.get(key)
-  }
-
   pub fn is_frozen(&self) -> bool {
     self.is_frozen
   }
@@ -98,6 +90,8 @@ impl Class {
     self.is_frozen = true;
   }
 }
+
+// TODO: move this into `func.rs` and rename to BoundFunc or something
 
 #[derive(Clone, Debug)]
 pub struct Method {
@@ -165,10 +159,14 @@ impl ClassDef {
     let name = self.name.clone();
     let parent = self.parent.clone();
 
+    let mut fields = Dict::with_capacity(self.fields.len() + self.methods.len());
+    for (k, v) in self.fields.iter().chain(self.methods.iter()) {
+      fields.insert(k.clone(), v.clone());
+    }
+
     Class {
       name,
-      fields: self.fields.clone(),
-      methods: self.methods.clone(),
+      fields,
       parent,
       is_frozen: false,
     }

@@ -1,0 +1,11 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: errors
+---
+[31merror[0m: duplicate field a
+[34m>[0m code:3
+[34m|[0m 
+[34m|[0m   [31;4ma[0m = 1
+[34m|[0m 
+
+

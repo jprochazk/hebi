@@ -812,6 +812,31 @@ fn class_self_and_super() {
 }
 
 #[test]
+fn duplicate_fields() {
+  check_error! {
+    r#"
+      class Test:
+        a = 0
+        a = 1
+    "#
+  }
+  check_error! {
+    r#"
+      class Test:
+        a = 0
+        fn a(): pass
+    "#
+  }
+  check_error! {
+    r#"
+      class Test:
+        fn a(): pass
+        fn a(): pass
+    "#
+  }
+}
+
+#[test]
 fn whole_module() {
   check_module! {
     r#"

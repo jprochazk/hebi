@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::*;
 
 impl<'src> Parser<'src> {
@@ -344,7 +346,6 @@ impl<'src> Parser<'src> {
     fields: &mut Vec<ast::Field<'src>>,
     funcs: &mut Vec<ast::Func<'src>>,
   ) -> Result<()> {
-    // TODO: ensure `fields` and `funcs` do not have duplicates
     if self.no_indent().is_ok() {
       // empty class (single line)
       self
@@ -360,8 +361,19 @@ impl<'src> Parser<'src> {
       return Ok(());
     }
 
+    let mut names = HashSet::new();
+
     while self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       let name = self.ident()?;
+
+      if names.contains(&name) {
+        self
+          .errors
+          .push(Error::new(format!("duplicate field {name}"), name.span));
+      } else {
+        names.insert(name.clone());
+      }
+
       if self.current().is(Op_Equal) {
         self.no_indent()?; // op_equal must be unindented
         self.bump(); // bump op_equal
@@ -379,6 +391,13 @@ impl<'src> Parser<'src> {
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
       self.expect(Kw_Fn)?;
       let name = self.ident()?;
+      if names.contains(&name) {
+        self
+          .errors
+          .push(Error::new(format!("duplicate field {name}"), name.span));
+      } else {
+        names.insert(name.clone());
+      }
       self.no_indent()?; // func's opening paren must be unindented
       let f = self.func(name)?;
       funcs.push(f);

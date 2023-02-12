@@ -2,6 +2,7 @@
 mod macros;
 pub mod class;
 pub mod dict;
+pub mod error;
 #[doc(hidden)]
 pub mod frame;
 pub mod func;
@@ -11,6 +12,7 @@ pub mod module;
 use std::hash::Hash;
 
 use beef::lean::Cow;
+use indexmap::Equivalent;
 use paste::paste;
 
 use crate::ptr::{Ref, RefMut};
@@ -21,9 +23,24 @@ pub type String = std::string::String;
 pub type List = std::vec::Vec<Value>;
 pub use class::{Class, ClassDef, ClassDesc, Method, Proxy};
 pub use dict::Dict;
+pub use error::Error;
 use frame::Frame;
 pub use func::{Closure, ClosureDesc, Func};
 pub use module::{Module, Path, Registry};
+
+use self::dict::Key;
+
+// TODO: force all in `Repr` to implement this
+
+pub trait Access {
+  fn get<Q>(&self, key: &Q) -> Result<Option<&Value>, Error>
+  where
+    Q: Equivalent<Key> + Hash;
+
+  fn set<Q>(&mut self, key: &Q, value: Value) -> Result<(), Error>
+  where
+    Q: Equivalent<Key> + Hash;
+}
 
 #[derive(Clone)]
 pub struct Object {
@@ -47,6 +64,7 @@ object_repr! {
     Path,
     Registry,
     Frame,
+    Error,
   }
 }
 
@@ -136,6 +154,7 @@ impl std::fmt::Display for Object {
       Repr::Path(v) => write!(f, "<path {}>", v.segments().iter().join(".")),
       Repr::Registry(_) => write!(f, "<registry>"),
       Repr::Frame(_) => write!(f, "<frame>"),
+      Repr::Error(_) => write!(f, "<error>"),
     }
   }
 }

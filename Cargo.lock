@@ -400,6 +400,7 @@ dependencies = [
  "indexmap",
  "indoc",
  "insta",
+ "mu_span",
  "paste",
 ]
 

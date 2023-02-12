@@ -11,13 +11,13 @@ fn main():
 
 # Func:
 function <main>:
-  frame_size: 4
+  frame_size: 5
   length: 9
   const (length=1):
     0: <path test.symbol>
   code:
-    0 | load_module [0], r3
-    3 | load_reg r3
+    0 | load_module [0], r4
+    3 | load_reg r4
     5 | print 
     6 | push_none 
     7 | ret 

@@ -174,7 +174,7 @@ impl<'src> Emitter<'src> {
     let this_func = self.reg();
     let argv = self.reg();
     let kwargs = self.reg();
-    let receiver = func.params.has_self.then(|| self.reg());
+    let receiver = self.reg();
     let pos = func
       .params
       .pos
@@ -193,7 +193,7 @@ impl<'src> Emitter<'src> {
       Some(this_func.clone()),
       Some(argv.clone()),
       Some(kwargs.clone()),
-      receiver.clone(),
+      Some(receiver.clone()),
     ]);
 
     // only pos params with defaults need emit
@@ -260,7 +260,7 @@ impl<'src> Emitter<'src> {
     self
       .state
       .declare_local(func.name.deref().clone(), this_func);
-    if let Some(receiver) = receiver {
+    if func.params.has_self {
       self.state.declare_local("self", receiver);
     }
 

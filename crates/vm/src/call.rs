@@ -129,6 +129,7 @@ pub fn check_args(
   let out_info = ParamInfo {
     has_kw: params.kwargs || !params.kw.is_empty(),
     has_argv: params.argv,
+    has_self: params.has_self,
     max_params: max,
   };
 
@@ -194,6 +195,7 @@ pub fn check_args(
 pub struct ParamInfo {
   has_kw: bool,
   has_argv: bool,
+  has_self: bool,
   max_params: usize,
 }
 
@@ -225,9 +227,20 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
   // params
   let mut params_base = 3;
   if let Some(m) = f.as_method() {
+    // method call - set implicit receiver
+    // because we set it, it can't be part of `args`
+    // so we also bump `params_base` to `4`
     stack.set(params_base, m.this.clone());
     params_base += 1;
+  } else if !param_info.has_self {
+    // regular function call without `self`
+    // there is no `self` implicitly nor explicitly passed in
+    // the first non-self param is at `4`, so we bump `params_base`
+    params_base += 1;
   }
+  // `args` contains just the params, or in the case of a static call of a method,
+  // it will also contain `self`. if it contains `self`, `params_base` must be
+  // `3`, because `self` is always at `stack_base + 3`.
   for i in 0..std::cmp::min(args.len(), param_info.max_params) {
     stack.set(params_base + i, args[i].clone());
   }

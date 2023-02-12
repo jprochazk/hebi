@@ -11,7 +11,7 @@ test()
 
 # Func:
 function <test>:
-  frame_size: 3
+  frame_size: 4
   length: 3
   const: <empty>
   code:

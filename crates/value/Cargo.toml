@@ -13,6 +13,8 @@ beef = "0.5.2"
 indexmap = "1.9.2"
 paste = "1.0.11"
 
+span = { path = "../span", package = "mu_span" }
+
 [dev-dependencies]
 indoc = "1.0.8"
 insta = "1.23.0"

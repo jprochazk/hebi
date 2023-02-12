@@ -31,7 +31,7 @@ function <test>:
     16 | suspend 
 
 function <test>:
-  frame_size: 7
+  frame_size: 8
   length: 33
   const (length=3):
     0: <class desc T>
@@ -39,16 +39,16 @@ function <test>:
     2: <closure desc test n=1>
   code:
      0 | push_small_int value=0
-     5 | store_reg r3
+     5 | store_reg r4
      7 | load_global [1]
-     9 | store_reg r4
+     9 | store_reg r5
     11 | create_closure [2]
-    13 | capture_reg r3, slot=0
-    16 | store_reg r5
+    13 | capture_reg r4, slot=0
+    16 | store_reg r6
     18 | push_small_int value=0
-    23 | store_reg r6
-    25 | create_class [0], r4
-    28 | store_reg r3
+    23 | store_reg r7
+    25 | create_class [0], r5
+    28 | store_reg r4
     30 | push_none 
     31 | ret 
     32 | suspend 

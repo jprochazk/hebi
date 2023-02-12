@@ -31,21 +31,21 @@ function <test>:
     16 | suspend 
 
 function <test>:
-  frame_size: 6
+  frame_size: 7
   length: 29
   const (length=2):
     0: <class desc T>
     1: <closure desc test n=1>
   code:
      0 | push_small_int value=0
-     5 | store_reg r3
+     5 | store_reg r4
      7 | create_closure [1]
-     9 | capture_reg r3, slot=0
-    12 | store_reg r4
+     9 | capture_reg r4, slot=0
+    12 | store_reg r5
     14 | push_small_int value=0
-    19 | store_reg r5
-    21 | create_class [0], r4
-    24 | store_reg r3
+    19 | store_reg r6
+    21 | create_class [0], r5
+    24 | store_reg r4
     26 | push_none 
     27 | ret 
     28 | suspend 

@@ -14,7 +14,7 @@ a()()
 
 # Func:
 function <b>:
-  frame_size: 3
+  frame_size: 4
   length: 6
   const: <empty>
   code:
@@ -25,17 +25,17 @@ function <b>:
     5 | suspend 
 
 function <a>:
-  frame_size: 4
+  frame_size: 5
   length: 18
   const (length=1):
     0: <closure desc b n=1>
   code:
      0 | push_small_int value=0
-     5 | store_reg r3
+     5 | store_reg r4
      7 | create_closure [0]
-     9 | capture_reg r3, slot=0
-    12 | store_reg r3
-    14 | load_reg r3
+     9 | capture_reg r4, slot=0
+    12 | store_reg r4
+    14 | load_reg r4
     16 | ret 
     17 | suspend 
 

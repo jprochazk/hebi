@@ -13,8 +13,8 @@ pub fn create_instance<Io: std::io::Write>(
   // create instance
   let mut class = def.borrow().instance();
 
-  if class.borrow().method("init").is_some() {
-    let init = class.borrow().method("init").unwrap().clone();
+  if class.borrow().get("init").is_some() {
+    let init = class.borrow().get("init").unwrap().clone();
     // call initializer
     // TODO: don't allocate temp object here
     vm.call(
