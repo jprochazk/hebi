@@ -13,11 +13,18 @@ use crate::{Error, Isolate};
 impl<Io: std::io::Write> Isolate<Io> {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
     let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
+    let frame_depth = self.frames.len();
     self.push_frame(frame);
 
     self.width = op::Width::Single;
     self.pc = 0;
-    self.run_dispatch_loop()?;
+    if let Err(mut e) = self.run_dispatch_loop() {
+      for _ in frame_depth..self.frames.len() {
+        let frame = self.pop_frame();
+        e.add_trace(frame.name());
+      }
+      return Err(e);
+    }
 
     // # Return
     Ok(std::mem::take(&mut self.acc))

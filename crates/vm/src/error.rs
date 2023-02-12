@@ -7,7 +7,13 @@ impl Error {
     Self(value::object::Error::new(message))
   }
 
-  pub fn report<'a>(&self, source: impl Into<diag::Source<'a>>) -> String {
+  pub fn add_trace(&mut self, s: String) {
+    self.0.add_trace(s)
+  }
+
+  pub fn traceback<'a>(&self, source: impl Into<diag::Source<'a>>) -> String {
+    use std::fmt::Write;
+
     // TODO: use trace
     let mut report = diag::Report::error()
       .source(source)
@@ -17,6 +23,13 @@ impl Error {
       report = report.span(span);
     }
 
-    report.build().emit_to_string().unwrap()
+    let mut trace = String::new();
+
+    for s in self.0.trace.iter().rev() {
+      writeln!(&mut trace, "in {s}").unwrap();
+    }
+    write!(&mut trace, "{}", report.build().emit_to_string().unwrap()).unwrap();
+
+    trace
   }
 }

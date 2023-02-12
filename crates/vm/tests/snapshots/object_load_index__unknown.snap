@@ -8,6 +8,7 @@ print v["a"]
 
 
 # Result (error):
+in [[main]]
 [31merror[0m in code: cannot get field `"a"` on value `{}`
 
 

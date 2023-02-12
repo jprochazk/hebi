@@ -36,7 +36,7 @@ macro_rules! check {
       let value = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
         Ok(v) => v,
         Err(e) => {
-          panic!("call to func failed with:\n{}", e.report(input));
+          panic!("call to func failed with:\n{}", e.traceback(input));
         }
       };
       let stdout = std::str::from_utf8(vm.io()).unwrap();
@@ -84,7 +84,7 @@ macro_rules! check_error {
       let mut vm = Isolate::with_io(Registry::new().into(), Vec::<u8>::new());
       let error = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
         Ok(v) => panic!("call to func succeeded with {v}"),
-        Err(e) => e.report(input),
+        Err(e) => e.traceback(input),
       };
       let stdout = std::str::from_utf8(vm.io()).unwrap();
       let snapshot = format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}");

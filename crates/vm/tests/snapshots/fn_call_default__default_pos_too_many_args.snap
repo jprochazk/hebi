@@ -10,6 +10,7 @@ f(1,2)
 
 
 # Result (error):
+in [[main]]
 [31merror[0m in code: expected at most 1 args, got 2
 
 

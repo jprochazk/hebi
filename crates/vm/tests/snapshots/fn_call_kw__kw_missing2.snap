@@ -10,6 +10,7 @@ f()
 
 
 # Result (error):
+in [[main]]
 [31merror[0m in code: mismatched keyword params: missing a, b
 
 

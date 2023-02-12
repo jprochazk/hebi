@@ -71,6 +71,22 @@ impl Frame {
   pub fn stack_base(&self) -> usize {
     self.stack.base
   }
+
+  pub fn name(&self) -> String {
+    func_name(&self.func)
+  }
+}
+
+fn func_name(f: &Value) -> String {
+  if let Some(f) = f.as_func() {
+    f.name().to_string()
+  } else if let Some(f) = f.as_closure() {
+    f.name().to_string()
+  } else if let Some(f) = f.as_method() {
+    func_name(&f.func)
+  } else {
+    panic!("{f} is not callable")
+  }
 }
 
 struct Parts {
