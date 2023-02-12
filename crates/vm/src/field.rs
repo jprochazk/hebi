@@ -1,5 +1,5 @@
 use value::object::dict::Key;
-use value::object::{Method, Proxy};
+use value::object::Method;
 use value::Value;
 
 use crate::Error;
@@ -37,7 +37,7 @@ pub fn get(obj: &Value, key: &Key) -> Result<Value, Error> {
     if let Some(method) = class.method(key).cloned() {
       return Ok(
         Method {
-          this: class.clone().into(),
+          this: obj.clone(),
           func: method,
         }
         .into(),
@@ -98,7 +98,7 @@ pub fn get_opt(obj: &Value, key: &Key) -> Result<Value, Error> {
     if let Some(method) = class.method(key).cloned() {
       return Ok(
         Method {
-          this: class.clone().into(),
+          this: obj.clone(),
           func: method,
         }
         .into(),
