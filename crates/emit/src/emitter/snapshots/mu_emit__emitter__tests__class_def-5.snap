@@ -17,7 +17,7 @@ function <test>:
     0: "v"
   code:
     0 | load_self 
-    1 | load_named [0]
+    1 | load_field [0]
     3 | print 
     4 | push_none 
     5 | ret 

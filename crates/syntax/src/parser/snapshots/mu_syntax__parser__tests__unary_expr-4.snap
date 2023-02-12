@@ -7,12 +7,12 @@ Unary(
         op: Opt,
         right: Call(
             Call {
-                target: GetNamed(
-                    GetNamed {
-                        target: GetKeyed(
-                            GetKeyed {
-                                target: GetNamed(
-                                    GetNamed {
+                target: GetField(
+                    GetField {
+                        target: GetIndex(
+                            GetIndex {
+                                target: GetField(
+                                    GetField {
                                         target: GetVar(
                                             GetVar {
                                                 name: "a",

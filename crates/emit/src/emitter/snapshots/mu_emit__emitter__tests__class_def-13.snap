@@ -21,7 +21,7 @@ function <test>:
      0 | create_empty_list 
      1 | store_reg r4
      3 | load_self 
-     4 | load_named [0]
+     4 | load_field [0]
      6 | push_to_list r4
      8 | load_global [1]
     10 | push_to_list r4

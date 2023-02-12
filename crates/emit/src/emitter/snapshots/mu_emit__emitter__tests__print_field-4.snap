@@ -25,7 +25,7 @@ function <[[main]]>:
      7 | load_const [1]
      9 | store_reg r4
     11 | load_global [0]
-    13 | load_keyed_opt r4
+    13 | load_index_opt r4
     15 | print 
     16 | load_const [2]
     18 | store_reg r4
@@ -34,9 +34,9 @@ function <[[main]]>:
     24 | load_const [1]
     26 | store_reg r6
     28 | load_global [0]
-    30 | load_keyed_opt r6
-    32 | load_keyed_opt r5
-    34 | load_keyed_opt r4
+    30 | load_index_opt r6
+    32 | load_index_opt r5
+    34 | load_index_opt r4
     36 | print 
     37 | ret 
     38 | suspend 

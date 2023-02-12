@@ -42,7 +42,7 @@ macro_rules! check {
       let stdout = std::str::from_utf8(vm.io()).unwrap();
       let snapshot =
         format!("# Input:\n{input}\n\n# Result (success):\n{value}\n\n# Stdout:\n{stdout}");
-      //insta::assert_snapshot!(snapshot);
+      insta::assert_snapshot!(snapshot);
     }
   };
 }
@@ -88,7 +88,7 @@ macro_rules! check_error {
       };
       let stdout = std::str::from_utf8(vm.io()).unwrap();
       let snapshot = format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}");
-      //insta::assert_snapshot!(snapshot);
+      insta::assert_snapshot!(snapshot);
     }
   };
 }

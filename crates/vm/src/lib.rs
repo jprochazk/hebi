@@ -184,7 +184,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_load_named(&mut self, name: u32) -> Result<(), Self::Error> {
+  fn op_load_field(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
@@ -194,7 +194,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_load_named_opt(&mut self, name: u32) -> Result<(), Self::Error> {
+  fn op_load_field_opt(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
@@ -204,7 +204,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_store_named(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
+  fn op_store_field(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
     let name = dict::Key::try_from(name).unwrap();
@@ -216,7 +216,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_load_keyed(&mut self, key: u32) -> Result<(), Self::Error> {
+  fn op_load_index(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
@@ -228,7 +228,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_load_keyed_opt(&mut self, key: u32) -> Result<(), Self::Error> {
+  fn op_load_index_opt(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
@@ -240,7 +240,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     Ok(())
   }
 
-  fn op_store_keyed(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
+  fn op_store_index(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span

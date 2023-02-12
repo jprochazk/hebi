@@ -5,9 +5,9 @@ expression: module
 Module {
     body: [
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -24,9 +24,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -37,8 +37,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Add,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -58,9 +58,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -71,8 +71,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Sub,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -92,9 +92,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -105,8 +105,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Div,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -126,9 +126,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -139,8 +139,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Mul,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -160,9 +160,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -173,8 +173,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Rem,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -194,9 +194,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -207,8 +207,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Pow,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -228,9 +228,9 @@ Module {
             ),
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",
@@ -241,8 +241,8 @@ Module {
                     value: Binary(
                         Binary {
                             op: Maybe,
-                            left: GetNamed(
-                                GetNamed {
+                            left: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",

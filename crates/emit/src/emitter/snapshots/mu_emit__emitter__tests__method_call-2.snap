@@ -16,7 +16,7 @@ function <[[main]]>:
      0 | push_small_int value=0
      5 | store_reg r4
      7 | load_global [1]
-     9 | load_named [0]
+     9 | load_field [0]
     11 | call r4, args=1
     14 | ret 
     15 | suspend 

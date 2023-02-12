@@ -982,10 +982,10 @@ mod expr {
         ast::ExprKind::Unary(v) => self.emit_unary_expr(v),
         ast::ExprKind::GetVar(v) => self.emit_get_var_expr(v),
         ast::ExprKind::SetVar(v) => self.emit_set_var_expr(v),
-        ast::ExprKind::GetNamed(v) => self.emit_get_named_expr(v),
-        ast::ExprKind::SetNamed(v) => self.emit_set_named_expr(v),
-        ast::ExprKind::GetKeyed(v) => self.emit_get_keyed_expr(v),
-        ast::ExprKind::SetKeyed(v) => self.emit_set_keyed_expr(v),
+        ast::ExprKind::GetField(v) => self.emit_get_field_expr(v),
+        ast::ExprKind::SetField(v) => self.emit_set_field_expr(v),
+        ast::ExprKind::GetIndex(v) => self.emit_get_index_expr(v),
+        ast::ExprKind::SetIndex(v) => self.emit_set_index_expr(v),
         ast::ExprKind::Yield(v) => self.emit_yield_expr(v),
         ast::ExprKind::Call(v) => self.emit_call_expr(v),
         ast::ExprKind::GetSelf => self.emit_get_self_expr(),
@@ -1196,25 +1196,25 @@ mod expr {
       Ok(())
     }
 
-    fn emit_get_named_expr(&mut self, expr: &'src ast::GetNamed<'src>) -> Result<()> {
+    fn emit_get_field_expr(&mut self, expr: &'src ast::GetField<'src>) -> Result<()> {
       let name = self.const_name(&expr.name);
       self.emit_expr(&expr.target)?;
       if self.state.is_in_opt_expr {
-        self.emit_op(LoadNamedOpt { name });
+        self.emit_op(LoadFieldOpt { name });
       } else {
-        self.emit_op(LoadNamed { name });
+        self.emit_op(LoadField { name });
       }
 
       Ok(())
     }
 
-    fn emit_set_named_expr(&mut self, expr: &'src ast::SetNamed<'src>) -> Result<()> {
+    fn emit_set_field_expr(&mut self, expr: &'src ast::SetField<'src>) -> Result<()> {
       let obj = self.reg();
       let name = self.const_name(&expr.target.name);
       self.emit_expr(&expr.target.target)?;
       self.emit_op(StoreReg { reg: obj.index() });
       self.emit_expr(&expr.value)?;
-      self.emit_op(StoreNamed {
+      self.emit_op(StoreField {
         name,
         obj: obj.index(),
       });
@@ -1222,21 +1222,21 @@ mod expr {
       Ok(())
     }
 
-    fn emit_get_keyed_expr(&mut self, expr: &'src ast::GetKeyed<'src>) -> Result<()> {
+    fn emit_get_index_expr(&mut self, expr: &'src ast::GetIndex<'src>) -> Result<()> {
       let key = self.reg();
       self.emit_expr(&expr.key)?;
       self.emit_op(StoreReg { reg: key.index() });
       self.emit_expr(&expr.target)?;
       if self.state.is_in_opt_expr {
-        self.emit_op(LoadKeyedOpt { key: key.index() });
+        self.emit_op(LoadIndexOpt { key: key.index() });
       } else {
-        self.emit_op(LoadKeyed { key: key.index() });
+        self.emit_op(LoadIndex { key: key.index() });
       }
 
       Ok(())
     }
 
-    fn emit_set_keyed_expr(&mut self, expr: &'src ast::SetKeyed<'src>) -> Result<()> {
+    fn emit_set_index_expr(&mut self, expr: &'src ast::SetIndex<'src>) -> Result<()> {
       let obj = self.reg();
       let key = self.reg();
       self.emit_expr(&expr.target.key)?;
@@ -1244,7 +1244,7 @@ mod expr {
       self.emit_expr(&expr.target.target)?;
       self.emit_op(StoreReg { reg: obj.index() });
       self.emit_expr(&expr.value)?;
-      self.emit_op(StoreKeyed {
+      self.emit_op(StoreIndex {
         key: key.index(),
         obj: obj.index(),
       });

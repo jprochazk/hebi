@@ -1,9 +1,10 @@
 ---
-source: crates/vm/tests/object_load_keyed.rs
+source: crates/vm/tests/object_load_index.rs
 expression: snapshot
 ---
 # Input:
 v := {}
+print ?v["a"]
 print v["a"]
 
 
@@ -12,4 +13,5 @@ print v["a"]
 
 
 # Stdout:
+none
 

@@ -161,12 +161,12 @@ impl<'src> Parser<'src> {
           self.bump(); // bump `[`
           let key = self.expr()?;
           self.expect(Brk_SquareR)?;
-          expr = ast::expr_get_keyed(expr.span.start..self.previous().span.end, expr, key);
+          expr = ast::expr_get_index(expr.span.start..self.previous().span.end, expr, key);
         }
         Op_Dot => {
           self.bump(); // bump `.`
           let name = self.ident().context("field key")?;
-          expr = ast::expr_get_named(expr.span.start..name.span.end, expr, name);
+          expr = ast::expr_get_field(expr.span.start..name.span.end, expr, name);
         }
         _ => break,
       }

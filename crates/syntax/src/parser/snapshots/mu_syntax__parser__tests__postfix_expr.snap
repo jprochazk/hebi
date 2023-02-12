@@ -2,12 +2,12 @@
 source: crates/syntax/src/parser/tests.rs
 expression: module
 ---
-GetNamed(
-    GetNamed {
-        target: GetKeyed(
-            GetKeyed {
-                target: GetNamed(
-                    GetNamed {
+GetField(
+    GetField {
+        target: GetIndex(
+            GetIndex {
+                target: GetField(
+                    GetField {
                         target: GetVar(
                             GetVar {
                                 name: "a",

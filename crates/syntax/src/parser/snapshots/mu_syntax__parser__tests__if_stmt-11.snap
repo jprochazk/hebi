@@ -36,8 +36,8 @@ Module {
                                 ),
                                 right: Call(
                                     Call {
-                                        target: GetNamed(
-                                            GetNamed {
+                                        target: GetField(
+                                            GetField {
                                                 target: GetVar(
                                                     GetVar {
                                                         name: "which_are_complex",

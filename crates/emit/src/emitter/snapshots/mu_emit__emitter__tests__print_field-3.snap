@@ -23,12 +23,12 @@ function <[[main]]>:
      3 | load_reg r4
      5 | store_global [0]
      7 | load_global [0]
-     9 | load_named_opt [1]
+     9 | load_field_opt [1]
     11 | print 
     12 | load_global [0]
-    14 | load_named_opt [1]
-    16 | load_named_opt [3]
-    18 | load_named_opt [2]
+    14 | load_field_opt [1]
+    16 | load_field_opt [3]
+    18 | load_field_opt [2]
     20 | print 
     21 | ret 
     22 | suspend 

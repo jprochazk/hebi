@@ -25,12 +25,12 @@ function <[[main]]>:
     15 | load_reg r4
     17 | store_global [1]
     19 | load_global [1]
-    21 | load_named [0]
+    21 | load_field [0]
     23 | print 
     24 | load_global [1]
     26 | store_reg r4
     28 | push_small_int value=1
-    33 | store_named [0], r4
+    33 | store_field [0], r4
     36 | ret 
     37 | suspend 
 

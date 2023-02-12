@@ -5,12 +5,12 @@ expression: module
 Module {
     body: [
         Expr(
-            GetNamed(
-                GetNamed {
-                    target: GetKeyed(
-                        GetKeyed {
-                            target: GetNamed(
-                                GetNamed {
+            GetField(
+                GetField {
+                    target: GetIndex(
+                        GetIndex {
+                            target: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",
@@ -31,12 +31,12 @@ Module {
             ),
         ),
         Expr(
-            GetNamed(
-                GetNamed {
-                    target: GetKeyed(
-                        GetKeyed {
-                            target: GetNamed(
-                                GetNamed {
+            GetField(
+                GetField {
+                    target: GetIndex(
+                        GetIndex {
+                            target: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "a",

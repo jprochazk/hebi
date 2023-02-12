@@ -14,7 +14,7 @@ function <[[main]]>:
     1: "o"
   code:
     0 | load_global [1]
-    2 | load_named [0]
+    2 | load_field [0]
     4 | call0 
     5 | ret 
     6 | suspend 

@@ -77,8 +77,8 @@ Module {
                         default: Some(
                             Call(
                                 Call {
-                                    target: GetNamed(
-                                        GetNamed {
+                                    target: GetField(
+                                        GetField {
                                             target: GetSuper,
                                             name: "f",
                                         },

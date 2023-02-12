@@ -865,8 +865,8 @@ Module {
             ),
         ),
         Expr(
-            GetNamed(
-                GetNamed {
+            GetField(
+                GetField {
                     target: GetVar(
                         GetVar {
                             name: "v",
@@ -877,8 +877,8 @@ Module {
             ),
         ),
         Expr(
-            GetKeyed(
-                GetKeyed {
+            GetIndex(
+                GetIndex {
                     target: GetVar(
                         GetVar {
                             name: "v",
@@ -1620,9 +1620,9 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetNamed(
-                                    SetNamed {
-                                        target: GetNamed {
+                                SetField(
+                                    SetField {
+                                        target: GetField {
                                             target: GetSelf,
                                             name: "n",
                                         },
@@ -1651,8 +1651,8 @@ Module {
                                 Return(
                                     Return {
                                         value: Some(
-                                            GetNamed(
-                                                GetNamed {
+                                            GetField(
+                                                GetField {
                                                     target: GetSelf,
                                                     name: "n",
                                                 },
@@ -1751,8 +1751,8 @@ Module {
                             op: Eq,
                             left: Call(
                                 Call {
-                                    target: GetNamed(
-                                        GetNamed {
+                                    target: GetField(
+                                        GetField {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "v",
@@ -1769,8 +1769,8 @@ Module {
                             ),
                             right: Call(
                                 Call {
-                                    target: GetNamed(
-                                        GetNamed {
+                                    target: GetField(
+                                        GetField {
                                             target: GetVar(
                                                 GetVar {
                                                     name: "Test",
@@ -1830,8 +1830,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: GetVar(
                                 GetVar {
                                     name: "Test",
@@ -1850,8 +1850,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: GetVar(
                                 GetVar {
                                     name: "v",
@@ -1908,8 +1908,8 @@ Module {
                     },
                     value: Call(
                         Call {
-                            target: GetNamed(
-                                GetNamed {
+                            target: GetField(
+                                GetField {
                                     target: GetVar(
                                         GetVar {
                                             name: "json",
@@ -1966,8 +1966,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetNamed(
-                        GetNamed {
+                    GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -1990,8 +1990,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetNamed(
-                        GetNamed {
+                    GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2057,8 +2057,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetNamed(
-                        GetNamed {
+                    GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2123,9 +2123,9 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetNamed(
-                                    SetNamed {
-                                        target: GetNamed {
+                                SetField(
+                                    SetField {
+                                        target: GetField {
                                             target: GetSelf,
                                             name: "a",
                                         },
@@ -2146,8 +2146,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetNamed(
-                        GetNamed {
+                    GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2168,9 +2168,9 @@ Module {
             },
         ),
         Expr(
-            SetNamed(
-                SetNamed {
-                    target: GetNamed {
+            SetField(
+                SetField {
+                    target: GetField {
                         target: Call(
                             Call {
                                 target: GetVar(
@@ -2240,8 +2240,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2268,8 +2268,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2331,8 +2331,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2377,8 +2377,8 @@ Module {
                             Expr(
                                 Call(
                                     Call {
-                                        target: GetNamed(
-                                            GetNamed {
+                                        target: GetField(
+                                            GetField {
                                                 target: GetSuper,
                                                 name: "inherited",
                                             },
@@ -2410,8 +2410,8 @@ Module {
         Expr(
             Call(
                 Call {
-                    target: GetNamed(
-                        GetNamed {
+                    target: GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(
@@ -2452,9 +2452,9 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetNamed(
-                                    SetNamed {
-                                        target: GetNamed {
+                                SetField(
+                                    SetField {
+                                        target: GetField {
                                             target: GetSelf,
                                             name: "v",
                                         },
@@ -2491,9 +2491,9 @@ Module {
                         },
                         body: [
                             Expr(
-                                SetNamed(
-                                    SetNamed {
-                                        target: GetNamed {
+                                SetField(
+                                    SetField {
+                                        target: GetField {
                                             target: GetSelf,
                                             name: "v",
                                         },
@@ -2537,8 +2537,8 @@ Module {
                             Expr(
                                 Call(
                                     Call {
-                                        target: GetNamed(
-                                            GetNamed {
+                                        target: GetField(
+                                            GetField {
                                                 target: GetSuper,
                                                 name: "init",
                                             },
@@ -2551,17 +2551,17 @@ Module {
                                 ),
                             ),
                             Expr(
-                                SetNamed(
-                                    SetNamed {
-                                        target: GetNamed {
+                                SetField(
+                                    SetField {
+                                        target: GetField {
                                             target: GetSelf,
                                             name: "v",
                                         },
                                         value: Binary(
                                             Binary {
                                                 op: Add,
-                                                left: GetNamed(
-                                                    GetNamed {
+                                                left: GetField(
+                                                    GetField {
                                                         target: GetSelf,
                                                         name: "v",
                                                     },
@@ -2585,8 +2585,8 @@ Module {
         Print(
             Print {
                 values: [
-                    GetNamed(
-                        GetNamed {
+                    GetField(
+                        GetField {
                             target: Call(
                                 Call {
                                     target: GetVar(

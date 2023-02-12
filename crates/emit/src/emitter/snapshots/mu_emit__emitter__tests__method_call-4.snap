@@ -23,7 +23,7 @@ function <[[main]]>:
     17 | push_small_int value=3
     22 | insert_to_dict_named [0], r4
     25 | load_global [2]
-    27 | load_named [1]
+    27 | load_field [1]
     29 | call_kw r4, args=2
     32 | ret 
     33 | suspend 

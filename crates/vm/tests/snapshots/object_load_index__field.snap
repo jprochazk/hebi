@@ -1,10 +1,10 @@
 ---
-source: crates/vm/tests/object_load_named.rs
+source: crates/vm/tests/object_load_index.rs
 expression: snapshot
 ---
 # Input:
-v := { a: { b: 10 } }
-print ?v.a.b
+v := { a: 10 }
+print v["a"]
 
 
 # Result (success):

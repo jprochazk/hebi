@@ -27,14 +27,14 @@ function <[[main]]>:
     19 | load_const [0]
     21 | store_reg r4
     23 | load_global [1]
-    25 | load_keyed r4
+    25 | load_index r4
     27 | print 
     28 | load_const [0]
     30 | store_reg r5
     32 | load_global [1]
     34 | store_reg r4
     36 | push_small_int value=1
-    41 | store_keyed r5, r4
+    41 | store_index r5, r4
     44 | ret 
     45 | suspend 
 

@@ -61,7 +61,7 @@ instructions! {
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
-  LoadNamed (name: Const),
+  LoadField (name: Const),
   /// Load a field by name into the accumulator.
   ///
   /// Load `none` into the accumulator if the object in
@@ -69,13 +69,13 @@ instructions! {
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
-  LoadNamedOpt (name: Const),
+  LoadFieldOpt (name: Const),
   /// Store the accumulator in a field by name.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   /// - `obj` - register index of target object.
-  StoreNamed (name: Const, obj: Reg),
+  StoreField (name: Const, obj: Reg),
   /// Load a field by key into the accumulator.
   ///
   /// Panic if the object in the accumulator does not
@@ -83,7 +83,7 @@ instructions! {
   ///
   /// ### Operands
   /// - `key` - register index of key.
-  LoadKeyed (key: Reg),
+  LoadIndex (key: Reg),
   /// Load a field by key into the accumulator.
   ///
   /// Load `none` into the accumulator if the object in
@@ -91,13 +91,13 @@ instructions! {
   ///
   /// ### Operands
   /// - `key` - register index of key.
-  LoadKeyedOpt (key: Reg),
+  LoadIndexOpt (key: Reg),
   /// Store the accumulator in a field by key.
   ///
   /// ### Operands
   /// - `key` - register index of key.
   /// - `obj` - register index of target object.
-  StoreKeyed (key: Reg, obj: Reg),
+  StoreIndex (key: Reg, obj: Reg),
 
   /// Load a symbol found at `path` into `dest`.
   ///
