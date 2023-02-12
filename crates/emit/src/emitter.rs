@@ -3,10 +3,10 @@ use std::ops::Deref;
 use beef::lean::Cow;
 use indexmap::IndexMap;
 use op::*;
+use runtime::value::object::handle::Handle;
+use runtime::value::object::{func, Func, Module};
+use runtime::value::Value;
 use syntax::ast;
-use value::object::handle::Handle;
-use value::object::{func, Func, Module};
-use value::Value;
 
 pub fn emit<'src>(
   ctx: &Context,
@@ -536,7 +536,7 @@ impl<'src> Function<'src> {
 }
 
 mod stmt {
-  use value::object::{class, module};
+  use runtime::value::object::{class, module};
 
   use super::*;
 

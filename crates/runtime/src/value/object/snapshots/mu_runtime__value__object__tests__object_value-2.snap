@@ -1,0 +1,27 @@
+---
+source: crates/runtime/src/value/object/tests.rs
+expression: "format!(\"display:\\n{v}\\n\\ndebug:\\n{v:#?}\")"
+---
+display:
+{"a": 0, "b": 1}
+
+debug:
+Value {
+    type: "object",
+    value: Dict(
+        {
+            String(
+                "a",
+            ): Value {
+                type: "int",
+                value: 0,
+            },
+            String(
+                "b",
+            ): Value {
+                type: "int",
+                value: 1,
+            },
+        },
+    ),
+}

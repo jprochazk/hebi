@@ -3,10 +3,9 @@ members = [
   "crates/diag",
   "crates/emit",
   "crates/op",
+  "crates/runtime",
   "crates/span",
   "crates/syntax",
-  "crates/value",
-  "crates/vm",
   "crates/cli",
 ]
 resolver = "2"

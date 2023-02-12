@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use indexmap::IndexMap;
-use value::Value;
+use runtime::value::Value;
 
 // TODO: turn this into `Isolate`
 

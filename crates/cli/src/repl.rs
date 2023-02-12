@@ -1,7 +1,6 @@
+use runtime::value::object::Registry;
+use runtime::{Error as MuError, Isolate, Value};
 use rustyline::Editor;
-use value::object::Registry;
-use value::Value;
-use vm::Isolate;
 
 struct Repl {
   emit_ctx: emit::Context,
@@ -79,7 +78,7 @@ impl Repl {
     }
   }
 
-  fn eval(&mut self, input: &str) -> Result<Value, vm::Error> {
+  fn eval(&mut self, input: &str) -> Result<Value, MuError> {
     let module = syntax::parse(input).unwrap();
     let module = emit::emit(&self.emit_ctx, "code", &module).unwrap();
     let main = module.borrow().main().clone();

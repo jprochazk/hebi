@@ -331,9 +331,8 @@ dependencies = [
  "mu_diag",
  "mu_emit",
  "mu_op",
+ "mu_runtime",
  "mu_syntax",
- "mu_value",
- "mu_vm",
  "rustyline",
  "rustyline-derive",
 ]
@@ -359,9 +358,9 @@ dependencies = [
  "insta",
  "mu_diag",
  "mu_op",
+ "mu_runtime",
  "mu_span",
  "mu_syntax",
- "mu_value",
 ]
 
 [[package]]
@@ -372,6 +371,22 @@ dependencies = [
  "indexmap",
  "indoc",
  "insta",
+ "paste",
+]
+
+[[package]]
+name = "mu_runtime"
+version = "0.0.0"
+dependencies = [
+ "beef",
+ "indexmap",
+ "indoc",
+ "insta",
+ "mu_diag",
+ "mu_emit",
+ "mu_op",
+ "mu_span",
+ "mu_syntax",
  "paste",
 ]
 
@@ -390,34 +405,6 @@ dependencies = [
  "mu_diag",
  "mu_span",
  "stacker",
-]
-
-[[package]]
-name = "mu_value"
-version = "0.0.0"
-dependencies = [
- "beef",
- "indexmap",
- "indoc",
- "insta",
- "mu_span",
- "paste",
-]
-
-[[package]]
-name = "mu_vm"
-version = "0.0.0"
-dependencies = [
- "beef",
- "indexmap",
- "indoc",
- "insta",
- "mu_diag",
- "mu_emit",
- "mu_op",
- "mu_span",
- "mu_syntax",
- "mu_value",
 ]
 
 [[package]]

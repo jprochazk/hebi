@@ -12,9 +12,8 @@ rustyline-derive = "0.7.0"
 
 syntax = { path = "../syntax", package = "mu_syntax" }
 emit = { path = "../emit", package = "mu_emit" }
-vm = { path = "../vm", package = "mu_vm" }
+runtime = { path = "../runtime", package = "mu_runtime" }
 diag = { path = "../diag", package = "mu_diag" }
-value = { path = "../value", package = "mu_value" }
 op = { path = "../op", package = "mu_op" }
 anyhow = "1.0.69"
 clap = { version = "4.1.4", features = ["derive"] }
