@@ -54,7 +54,7 @@ instructions! {
   /// ### Operands
   /// - `name` - constant pool index of name.
   StoreGlobal (name: Const),
-  /// Load a field by name into the accumulator.
+  /// Load an object's field into the accumulator.
   ///
   /// Panic if the object in the accumulator does not
   /// have a field with key `name`.
@@ -62,7 +62,7 @@ instructions! {
   /// ### Operands
   /// - `name` - constant pool index of name.
   LoadField (name: Const),
-  /// Load a field by name into the accumulator.
+  /// Load an object's field into the accumulator.
   ///
   /// Load `none` into the accumulator if the object in
   /// the accumulator does not have a field with key `name`.
@@ -70,13 +70,13 @@ instructions! {
   /// ### Operands
   /// - `name` - constant pool index of name.
   LoadFieldOpt (name: Const),
-  /// Store the accumulator in a field by name.
+  /// Store the accumulator in the field of an object.
   ///
   /// ### Operands
   /// - `name` - constant pool index of name.
   /// - `obj` - register index of target object.
   StoreField (name: Const, obj: Reg),
-  /// Load a field by key into the accumulator.
+  /// Load a value from the object in the accumulator at the given index.
   ///
   /// Panic if the object in the accumulator does not
   /// have a field with key `key`.
@@ -84,7 +84,7 @@ instructions! {
   /// ### Operands
   /// - `key` - register index of key.
   LoadIndex (key: Reg),
-  /// Load a field by key into the accumulator.
+  /// Load a value from the object in the accumulator at the given index.
   ///
   /// Load `none` into the accumulator if the object in
   /// the accumulator does not have a field with key `key`.
@@ -92,7 +92,7 @@ instructions! {
   /// ### Operands
   /// - `key` - register index of key.
   LoadIndexOpt (key: Reg),
-  /// Store the accumulator in a field by key.
+  /// Store the accumulator in an object at the given index.
   ///
   /// ### Operands
   /// - `key` - register index of key.
