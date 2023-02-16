@@ -12,7 +12,18 @@ pub enum Constant {
   ClosureDesc(Handle<ClosureDesc>),
   ClassDesc(Handle<ClassDesc>),
   Path(Handle<Path>),
-  Float(f64),
+  Float(NonNaNFloat),
+}
+
+#[derive(Clone, Copy)]
+pub struct NonNaNFloat(f64);
+impl From<f64> for NonNaNFloat {
+  fn from(value: f64) -> Self {
+    if value.is_nan() {
+      panic!("value is NaN")
+    }
+    Self(value)
+  }
 }
 
 impl From<Constant> for Value {
@@ -23,7 +34,7 @@ impl From<Constant> for Value {
       Constant::ClosureDesc(v) => Value::from(v),
       Constant::ClassDesc(v) => Value::from(v),
       Constant::Path(v) => Value::from(v),
-      Constant::Float(v) => Value::from(v),
+      Constant::Float(v) => Value::from(v.0),
     }
   }
 }
@@ -52,7 +63,7 @@ impl_from!(Path);
 
 impl From<f64> for Constant {
   fn from(value: f64) -> Self {
-    Self::Float(value)
+    Self::Float(value.into())
   }
 }
 
@@ -67,7 +78,7 @@ impl PartialEq for Constant {
       }
       (Constant::ClassDesc(l), Constant::ClassDesc(r)) => std::ptr::eq(&l.borrow(), &r.borrow()),
       (Constant::Path(l), Constant::Path(r)) => l.borrow().segments() == r.borrow().segments(),
-      (Constant::Float(l), Constant::Float(r)) => l == r,
+      (Constant::Float(l), Constant::Float(r)) => l.0 == r.0,
       _ => false,
     }
   }
@@ -84,7 +95,7 @@ impl Hash for Constant {
       Constant::ClosureDesc(v) => ptr_hash(v, state),
       Constant::ClassDesc(v) => ptr_hash(v, state),
       Constant::Path(v) => v.borrow().segments().hash(state),
-      Constant::Float(v) => v.to_bits().hash(state),
+      Constant::Float(v) => v.0.to_bits().hash(state),
     }
   }
 }
@@ -101,7 +112,7 @@ impl Debug for Constant {
       Constant::ClosureDesc(v) => Debug::fmt(v, f),
       Constant::ClassDesc(v) => Debug::fmt(v, f),
       Constant::Path(v) => Debug::fmt(v, f),
-      Constant::Float(v) => Debug::fmt(v, f),
+      Constant::Float(v) => Debug::fmt(&v.0, f),
     }
   }
 }
@@ -114,7 +125,7 @@ impl Display for Constant {
       Constant::ClosureDesc(v) => Display::fmt(v, f),
       Constant::ClassDesc(v) => Display::fmt(v, f),
       Constant::Path(v) => Display::fmt(v, f),
-      Constant::Float(v) => Display::fmt(v, f),
+      Constant::Float(v) => Display::fmt(&v.0, f),
     }
   }
 }
