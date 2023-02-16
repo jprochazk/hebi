@@ -3,6 +3,7 @@ use std::ptr::NonNull;
 
 use super::handle::Handle;
 use super::List;
+use crate::value::constant::Constant;
 use crate::value::ptr::Ref;
 use crate::value::Value;
 
@@ -12,7 +13,7 @@ pub struct Frame {
   #[allow(dead_code)]
   func: Value,
   pub code: NonNull<[u8]>,
-  pub const_pool: NonNull<[Value]>,
+  pub const_pool: NonNull<[Constant]>,
   pub frame_size: usize,
   pub captures: Option<NonNull<[Value]>>,
 
@@ -91,7 +92,7 @@ fn func_name(f: &Value) -> String {
 
 struct Parts {
   code: NonNull<[u8]>,
-  const_pool: NonNull<[Value]>,
+  const_pool: NonNull<[Constant]>,
   frame_size: usize,
   captures: Option<NonNull<[Value]>>,
 }

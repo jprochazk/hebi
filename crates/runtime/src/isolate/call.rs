@@ -3,7 +3,7 @@ use indexmap::IndexSet;
 use super::{Control, Error, Isolate};
 use crate::util::JoinIter;
 use crate::value::object::frame::{Frame, Stack};
-use crate::value::object::{frame, func, Dict};
+use crate::value::object::{frame, func, Dict, List};
 use crate::value::Value;
 
 // TODO: factor `method` out of this process, so `invoke` can be implemented as
@@ -214,9 +214,9 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
   // argv
   if param_info.has_argv && args.len() > param_info.max_params {
     let argv = args[param_info.max_params..args.len()].to_vec();
-    stack.set(1, Value::from(argv));
+    stack.set(1, Value::from(List::from(argv)));
   } else {
-    stack.set(1, Value::from(vec![]));
+    stack.set(1, Value::from(List::new()));
   }
 
   // kwargs

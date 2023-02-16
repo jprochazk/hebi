@@ -3,6 +3,7 @@ use std::ops::Deref;
 use beef::lean::Cow;
 use indexmap::IndexMap;
 use op::*;
+use runtime::value::constant::Constant;
 use runtime::value::object::handle::Handle;
 use runtime::value::object::{func, Func, Module};
 use runtime::value::Value;
@@ -271,9 +272,9 @@ impl<'src> Emitter<'src> {
     self.state.builder.constant(self.ctx.alloc_string(str))
   }
 
-  fn const_value(&mut self, value: impl Into<Value>) -> u32 {
-    let value: Value = value.into();
-    if value.is_string() {
+  fn const_value(&mut self, value: impl Into<Constant>) -> u32 {
+    let value: Constant = value.into();
+    if matches!(value, Constant::Str(..)) {
       panic!("use `const_name` instead of `const_value` for constant strings");
     }
     self.state.builder.constant(value)
@@ -383,7 +384,7 @@ struct Loop {
 }
 
 struct Function<'src> {
-  builder: Builder<Value>,
+  builder: Builder<Constant>,
   name: Cow<'src, str>,
   parent: Option<Box<Function<'src>>>,
   regalloc: RegAlloc,
@@ -817,11 +818,19 @@ mod stmt {
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
       let desc = self.const_value(class::ClassDesc {
-        name: stmt.name.to_string(),
+        name: stmt.name.to_string().into(),
         params: ast_class_to_params(stmt),
         is_derived: stmt.parent.is_some(),
-        methods: stmt.methods.iter().map(|f| f.name.to_string()).collect(),
-        fields: stmt.fields.iter().map(|f| f.name.to_string()).collect(),
+        methods: stmt
+          .methods
+          .iter()
+          .map(|f| f.name.to_string().into())
+          .collect(),
+        fields: stmt
+          .fields
+          .iter()
+          .map(|f| f.name.to_string().into())
+          .collect(),
       });
 
       // emit parent
@@ -946,7 +955,7 @@ mod stmt {
 
     fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) -> Result<()> {
       for symbol in stmt.symbols.iter() {
-        let segments = symbol.path.iter().map(|s| s.to_string()).collect();
+        let segments = symbol.path.iter().map(|s| s.to_string().into()).collect();
         let path = self.const_value(module::Path::new(segments));
 
         let name = match &symbol.alias {

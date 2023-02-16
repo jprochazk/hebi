@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use super::handle::Handle;
-use super::{Dict, Func};
+use super::{Dict, Func, Str};
 
 #[derive(Clone, Debug)]
 pub struct Registry {
@@ -24,13 +24,13 @@ impl Default for Registry {
 
 #[derive(Clone, Debug)]
 pub struct Module {
-  name: String,
+  name: Str,
   main: Handle<Func>,
   pub globals: Handle<Dict>,
 }
 
 impl Module {
-  pub fn new(name: impl Into<String>, main: Handle<Func>) -> Self {
+  pub fn new(name: impl Into<Str>, main: Handle<Func>) -> Self {
     Self {
       name: name.into(),
       main,
@@ -39,7 +39,7 @@ impl Module {
   }
 
   pub fn name(&self) -> &str {
-    &self.name
+    self.name.as_str()
   }
 
   pub fn main(&self) -> &Handle<Func> {
@@ -49,15 +49,15 @@ impl Module {
 
 #[derive(Clone, Debug)]
 pub struct Path {
-  segments: Vec<String>,
+  segments: Vec<Str>,
 }
 
 impl Path {
-  pub fn new(segments: Vec<String>) -> Self {
+  pub fn new(segments: Vec<Str>) -> Self {
     Self { segments }
   }
 
-  pub fn segments(&self) -> &[String] {
+  pub fn segments(&self) -> &[Str] {
     &self.segments
   }
 }

@@ -8,13 +8,13 @@ display:
 debug:
 Dict(
     {
-        String(
+        Str(
             "a",
         ): Value {
             type: "int",
             value: 0,
         },
-        String(
+        Str(
             "b",
         ): Value {
             type: "int",

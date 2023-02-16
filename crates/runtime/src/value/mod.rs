@@ -1,10 +1,9 @@
 #![allow(clippy::unusual_byte_groupings)]
 
+pub mod constant;
 pub mod object;
 pub mod ptr;
 pub mod util;
-
-use std::hash::{Hash, Hasher};
 
 use object::handle::Handle;
 use object::ObjectHandle;
@@ -143,7 +142,7 @@ mod tests {
   use super::*;
 
   fn object() -> Object {
-    Object::string("test")
+    Object::str("test")
   }
 
   #[test]

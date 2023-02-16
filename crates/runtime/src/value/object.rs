@@ -7,27 +7,27 @@ pub mod error;
 pub mod frame;
 pub mod func;
 pub mod handle;
+pub mod list;
 pub mod module;
+pub mod string;
 
 use std::hash::Hash;
 
 use beef::lean::Cow;
-use indexmap::Equivalent;
-
-use super::ptr::{Ref, RefMut};
-use super::util::join::JoinIter;
-use super::{Ptr, Value};
-
-pub type String = std::string::String;
-pub type List = std::vec::Vec<Value>;
 pub use class::{Class, ClassDef, ClassDesc, Method, Proxy};
 pub use dict::Dict;
 pub use error::Error;
 use frame::Frame;
 pub use func::{Closure, ClosureDesc, Func};
+use indexmap::Equivalent;
+pub use list::List;
 pub use module::{Module, Path, Registry};
+pub use string::Str;
 
 use self::dict::Key;
+use super::ptr::{Ref, RefMut};
+use super::util::join::JoinIter;
+use super::{Ptr, Value};
 
 // TODO: force all in `Repr` to implement this
 
@@ -48,7 +48,7 @@ pub struct Object {
 
 object_repr! {
   enum Repr {
-    String,
+    Str,
     List,
     Dict,
     Func,
@@ -67,36 +67,10 @@ object_repr! {
   }
 }
 
-impl PartialEq for Object {
-  fn eq(&self, other: &Self) -> bool {
-    match (&self.repr, &other.repr) {
-      (Repr::String(a), Repr::String(b)) => a == b,
-      (Repr::List(a), Repr::List(b)) => a == b,
-      (Repr::Dict(a), Repr::Dict(b)) => a == b,
-      (a, b) => std::ptr::eq(a, b),
-    }
-  }
-}
-impl Eq for Object {}
-
-impl Hash for Object {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    match &self.repr {
-      Repr::String(v) => v.hash(state),
-      Repr::List(v) => v.hash(state),
-      v => hash_ptr(v, state),
-    }
-  }
-}
-
-fn hash_ptr<T, H: std::hash::Hasher>(v: &T, state: &mut H) {
-  (v as *const _ as usize).hash(state)
-}
-
 impl<'a> From<&'a str> for Object {
   fn from(value: &'a str) -> Self {
     Object {
-      repr: Repr::String(value.to_string()),
+      repr: Repr::Str(value.to_string().into()),
     }
   }
 }
@@ -104,7 +78,7 @@ impl<'a> From<&'a str> for Object {
 impl<'a> From<Cow<'a, str>> for Object {
   fn from(value: Cow<'a, str>) -> Self {
     Object {
-      repr: Repr::String(value.to_string()),
+      repr: Repr::Str(value.to_string().into()),
     }
   }
 }
@@ -138,7 +112,7 @@ impl std::fmt::Display for Object {
     }
 
     match &self.repr {
-      Repr::String(v) => write!(f, "\"{v}\""),
+      Repr::Str(v) => write!(f, "\"{v}\""),
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
       Repr::Func(v) => write!(f, "<func {}>", v.name),
@@ -158,7 +132,7 @@ impl std::fmt::Display for Object {
   }
 }
 
-pub trait ObjectHandle: private::Sealed + Sized {
+pub trait ObjectHandle: /* Access + */ private::Sealed + Sized {
   fn as_self(o: &Ptr<Object>) -> Option<Ref<'_, Self>>;
   fn as_self_mut(o: &mut Ptr<Object>) -> Option<RefMut<'_, Self>>;
   fn is_self(o: &Ptr<Object>) -> bool;

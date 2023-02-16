@@ -14,12 +14,12 @@ use beef::lean::Cow;
 use indexmap::{map, Equivalent, IndexMap};
 
 use super::handle::Handle;
-use super::{Object, Ptr, Value};
+use super::{Object, Ptr, Str, Value};
 use crate::value::ptr::Ref;
 
 type Inner = IndexMap<Key, Value>;
 
-#[derive(Clone, PartialEq, Eq, Default)]
+#[derive(Clone, Default)]
 pub struct Dict {
   inner: Inner,
 }
@@ -182,16 +182,16 @@ impl Dict {
   ///
   /// See also [`entry`](#method.entry) if you you want to insert *or* modify
   /// or if you need to get the index of the corresponding key-value pair.
-  pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
-    self.inner.insert(key, value)
+  pub fn insert(&mut self, key: impl Into<Key>, value: impl Into<Value>) -> Option<Value> {
+    self.inner.insert(key.into(), value.into())
   }
 
   /// Get the given key’s corresponding entry in the map for insertion and/or
   /// in-place manipulation.
   ///
   /// Computes in **O(1)** time (amortized average).
-  pub fn entry(&mut self, key: Key) -> map::Entry<'_, Key, Value> {
-    self.inner.entry(key)
+  pub fn entry(&mut self, key: impl Into<Key>) -> map::Entry<'_, Key, Value> {
+    self.inner.entry(key.into())
   }
 
   /// Return `true` if an equivalent to `key` exists in the map.
@@ -376,7 +376,7 @@ pub(crate) enum KeyRepr {
   ///
   /// The only way to create this variant is via `TryFrom<Value>`, which rejects
   /// anything that is not a string.
-  String(Handle<String>),
+  String(Handle<Str>),
 }
 
 impl From<i32> for Key {
@@ -389,7 +389,7 @@ impl<'a> From<&'a str> for Key {
   fn from(value: &'a str) -> Self {
     // SAFETY: The object is guaranteed to be a String
     Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::string(value)))
+      Handle::from_ptr_unchecked(Ptr::new(Object::str(value)))
     }))
   }
 }
@@ -398,16 +398,16 @@ impl<'a> From<Cow<'a, str>> for Key {
   fn from(value: Cow<'a, str>) -> Self {
     // SAFETY: The object is guaranteed to be a String
     Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::string(value.to_string())))
+      Handle::from_ptr_unchecked(Ptr::new(Object::str(value.to_string())))
     }))
   }
 }
 
-impl From<String> for Key {
-  fn from(value: String) -> Self {
+impl From<Str> for Key {
+  fn from(value: Str) -> Self {
     // SAFETY: The object is guaranteed to be a String
     Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::string(value)))
+      Handle::from_ptr_unchecked(Ptr::new(Object::str(value)))
     }))
   }
 }

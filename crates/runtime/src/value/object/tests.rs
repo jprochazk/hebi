@@ -8,7 +8,7 @@ fn test_object() {
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 
   let mut v = Object::dict([("a".into(), 0.into())]);
-  v.as_dict_mut().unwrap().insert("b".into(), 1.into());
+  v.as_dict_mut().unwrap().insert("b", 1);
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 }
 
@@ -19,10 +19,7 @@ fn test_object_ptr() {
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 
   let v = Ptr::new(Object::dict([("a".into(), 0.into())]));
-  v.borrow_mut()
-    .as_dict_mut()
-    .unwrap()
-    .insert("b".into(), 1.into());
+  v.borrow_mut().as_dict_mut().unwrap().insert("b", 1);
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 }
 
@@ -33,6 +30,6 @@ fn test_object_value() {
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 
   let mut v = Value::from(Object::dict([("a".into(), 0.into())]));
-  v.as_dict_mut().unwrap().insert("b".into(), 1.into());
+  v.as_dict_mut().unwrap().insert("b", 1);
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 }

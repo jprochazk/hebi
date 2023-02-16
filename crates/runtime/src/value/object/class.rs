@@ -5,13 +5,13 @@ use indexmap::Equivalent;
 use super::dict::Key;
 use super::func::Params;
 use super::handle::Handle;
-use super::Dict;
+use super::{Dict, Str};
 use crate::value::ptr::Ref;
 use crate::value::Value;
 
 #[derive(Clone)]
 pub struct Class {
-  pub(super) name: String,
+  pub(super) name: Str,
   pub(super) fields: Dict,
   pub(super) parent: Option<Handle<ClassDef>>,
   is_frozen: bool,
@@ -39,7 +39,7 @@ impl Proxy {
 
 impl Class {
   pub fn name(&self) -> &str {
-    &self.name
+    self.name.as_str()
   }
 
   pub fn parent(&self) -> Option<&Handle<ClassDef>> {
@@ -103,7 +103,7 @@ pub struct Method {
 
 #[derive(Clone)]
 pub struct ClassDef {
-  pub(super) name: String,
+  pub(super) name: Str,
   pub(super) params: Params,
   pub(super) methods: Dict,
   pub(super) fields: Dict,
@@ -128,12 +128,12 @@ impl ClassDef {
 
     let mut methods = Dict::with_capacity(desc.methods.len());
     for (k, v) in desc.methods.iter().zip(args[methods_offset..].iter()) {
-      methods.insert(k.clone().into(), v.clone());
+      methods.insert(k.clone(), v.clone());
     }
 
     let mut fields = Dict::with_capacity(desc.fields.len());
     for (k, v) in desc.fields.iter().zip(args[fields_offset..].iter()) {
-      fields.insert(k.clone().into(), v.clone());
+      fields.insert(k.clone(), v.clone());
     }
 
     // inherit methods and field defaults
@@ -174,7 +174,7 @@ impl ClassDef {
   }
 
   pub fn name(&self) -> &str {
-    &self.name
+    self.name.as_str()
   }
 
   pub fn params(&self) -> &Params {
@@ -195,11 +195,11 @@ impl ClassDef {
 
 #[derive(Clone, Debug)]
 pub struct ClassDesc {
-  pub name: String,
+  pub name: Str,
   pub params: Params,
   pub is_derived: bool,
-  pub methods: Vec<String>,
-  pub fields: Vec<String>,
+  pub methods: Vec<Str>,
+  pub fields: Vec<Str>,
 }
 
 impl std::fmt::Debug for Class {

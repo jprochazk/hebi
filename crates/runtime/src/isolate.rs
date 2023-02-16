@@ -19,7 +19,7 @@ pub use error::Error;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::handle::Handle;
 use crate::value::object::{
-  dict, frame, Class, ClassDef, ClassDesc, Closure, ClosureDesc, Dict, Proxy, Registry,
+  dict, frame, Class, ClassDef, ClassDesc, Closure, ClosureDesc, Dict, List, Proxy, Registry,
 };
 use crate::value::Value;
 
@@ -89,7 +89,8 @@ impl<Io: std::io::Write> Isolate<Io> {
 
   fn get_const(&self, slot: u32) -> Value {
     let frame = self.current_frame();
-    unsafe { frame.const_pool.as_ref()[slot as usize].clone() }
+    let const_pool = unsafe { frame.const_pool.as_ref() };
+    const_pool[slot as usize].clone().into()
   }
 
   fn get_reg(&self, index: u32) -> Value {
@@ -105,7 +106,8 @@ impl<Io: std::io::Write> Isolate<Io> {
 
   fn get_capture(&self, slot: u32) -> Value {
     let frame = self.current_frame();
-    unsafe { frame.captures.unwrap().as_ref()[slot as usize].clone() }
+    let captures = unsafe { frame.captures.unwrap().as_ref() };
+    captures[slot as usize].clone()
   }
 
   fn set_capture(&mut self, slot: u32, value: Value) {
@@ -330,7 +332,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_create_empty_list(&mut self) -> Result<(), Self::Error> {
-    self.acc = vec![].into();
+    self.acc = List::new().into();
 
     Ok(())
   }

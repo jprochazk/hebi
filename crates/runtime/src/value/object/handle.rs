@@ -3,13 +3,17 @@ use std::marker::PhantomData;
 use super::{Object, ObjectHandle, Ptr, Value};
 use crate::value::ptr::{Ref, RefMut};
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone)]
 pub struct Handle<T> {
   o: Ptr<Object>,
   _p: PhantomData<T>,
 }
 
 impl<T: ObjectHandle> Handle<T> {
+  pub fn new(o: impl Into<Object>) -> Self {
+    unsafe { Self::from_ptr_unchecked(Ptr::new(o.into())) }
+  }
+
   pub fn from_ptr(o: Ptr<Object>) -> Option<Self> {
     if !<T as ObjectHandle>::is_self(&o) {
       return None;

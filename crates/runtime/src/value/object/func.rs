@@ -2,6 +2,7 @@ use beef::lean::Cow;
 use indexmap::IndexMap;
 
 use super::handle::Handle;
+use crate::value::constant::Constant;
 use crate::value::ptr::{Ref, RefMut};
 use crate::value::Value;
 
@@ -11,7 +12,7 @@ pub struct Func {
   pub(super) name: Cow<'static, str>,
   pub(super) frame_size: u32,
   pub(super) code: Vec<u8>,
-  pub(super) const_pool: Vec<Value>,
+  pub(super) const_pool: Vec<Constant>,
   pub(super) params: Params,
 }
 
@@ -66,7 +67,7 @@ impl Closure {
     RefMut::map(self.func_mut(), |v| &mut v.code[..])
   }
 
-  pub fn const_pool(&self) -> Ref<'_, [Value]> {
+  pub fn const_pool(&self) -> Ref<'_, [Constant]> {
     Ref::map(self.func(), |v| &v.const_pool[..])
   }
 
@@ -104,7 +105,7 @@ impl Func {
     name: Cow<'static, str>,
     frame_size: u32,
     code: Vec<u8>,
-    const_pool: Vec<Value>,
+    const_pool: Vec<Constant>,
     params: Params,
   ) -> Self {
     Self {
@@ -132,7 +133,7 @@ impl Func {
     &mut self.code
   }
 
-  pub fn const_pool(&self) -> &[Value] {
+  pub fn const_pool(&self) -> &[Constant] {
     &self.const_pool
   }
 
@@ -163,11 +164,14 @@ impl Func {
     D: std::fmt::Display,
   {
     for v in self.const_pool.iter() {
-      if let Some(func) = v.as_func() {
-        func.disassemble_inner(disassemble_instruction, f, print_bytes);
+      if let Constant::Func(func) = v {
+        func
+          .borrow()
+          .disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');
-      } else if let Some(desc) = v.as_closure_desc() {
+      } else if let Constant::ClosureDesc(desc) = v {
         desc
+          .borrow()
           .func
           .disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');
