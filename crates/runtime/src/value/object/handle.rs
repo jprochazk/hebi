@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
 use super::{Object, ObjectHandle, Ptr, Value};
-use crate::value::ptr::{Ref, RefMut};
 
 #[derive(Clone)]
 pub struct Handle<T> {
@@ -32,16 +32,6 @@ impl<T: ObjectHandle> Handle<T> {
     v.into_object().and_then(Handle::from_ptr)
   }
 
-  pub fn borrow(&self) -> Ref<'_, T> {
-    // SAFETY: Valid by construction in `new`
-    unsafe { <T as ObjectHandle>::as_self(&self.o).unwrap_unchecked() }
-  }
-
-  pub fn borrow_mut(&mut self) -> RefMut<'_, T> {
-    // SAFETY: Valid by construction in `new`
-    unsafe { <T as ObjectHandle>::as_self_mut(&mut self.o).unwrap_unchecked() }
-  }
-
   /// Widen the type back to `Object`
   pub fn widen(self) -> Ptr<Object> {
     self.o
@@ -49,6 +39,22 @@ impl<T: ObjectHandle> Handle<T> {
 
   pub fn strong_count(&self) -> usize {
     Ptr::strong_count(&self.o)
+  }
+}
+
+impl<T: ObjectHandle> Deref for Handle<T> {
+  type Target = T;
+
+  fn deref(&self) -> &Self::Target {
+    // SAFETY: Valid by construction in `new`
+    unsafe { <T as ObjectHandle>::as_self(&self.o).unwrap_unchecked() }
+  }
+}
+
+impl<T: ObjectHandle> DerefMut for Handle<T> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    // SAFETY: Valid by construction in `new`
+    unsafe { <T as ObjectHandle>::as_self_mut(&mut self.o).unwrap_unchecked() }
   }
 }
 

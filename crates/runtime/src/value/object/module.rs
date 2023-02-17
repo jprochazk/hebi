@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use super::handle::Handle;
-use super::{Dict, Func, Str};
+use super::{Access, Dict, Func, Str};
 
 #[derive(Clone, Debug)]
 pub struct Registry {
@@ -22,6 +22,8 @@ impl Default for Registry {
   }
 }
 
+impl Access for Registry {}
+
 #[derive(Clone, Debug)]
 pub struct Module {
   name: Str,
@@ -29,6 +31,7 @@ pub struct Module {
   pub globals: Handle<Dict>,
 }
 
+// TODO: get globals from module
 impl Module {
   pub fn new(name: impl Into<Str>, main: Handle<Func>) -> Self {
     Self {
@@ -47,6 +50,8 @@ impl Module {
   }
 }
 
+impl Access for Module {}
+
 #[derive(Clone, Debug)]
 pub struct Path {
   segments: Vec<Str>,
@@ -61,3 +66,5 @@ impl Path {
     &self.segments
   }
 }
+
+impl Access for Path {}

@@ -1,6 +1,11 @@
 use std::fmt::{Debug, Display, Write};
+use std::hash::Hash;
 
-#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+use super::dict::Key;
+use super::Access;
+use crate::Value;
+
+#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Str(String);
 
 impl Str {
@@ -26,6 +31,15 @@ impl From<String> for Str {
 impl<'a> From<&'a str> for Str {
   fn from(value: &'a str) -> Self {
     Self(value.into())
+  }
+}
+
+impl Access for Str {
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(match key.as_str() {
+      Some("len") => Some((self.0.len() as i32).into()),
+      _ => None,
+    })
   }
 }
 

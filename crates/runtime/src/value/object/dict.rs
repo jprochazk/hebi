@@ -14,14 +14,35 @@ use beef::lean::Cow;
 use indexmap::{map, Equivalent, IndexMap};
 
 use super::handle::Handle;
-use super::{Object, Ptr, Str, Value};
-use crate::value::ptr::Ref;
+use super::{Access, Object, Ptr, Str, Value};
 
-type Inner = IndexMap<Key, Value>;
+type Inner = IndexMap<StaticKey, Value>;
 
 #[derive(Clone, Default)]
 pub struct Dict {
   inner: Inner,
+}
+
+impl Access for Dict {
+  fn is_frozen(&self) -> bool {
+    false
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(match key.as_str() {
+      Some("len") => Some((self.inner.len() as i32).into()),
+      _ => None,
+    })
+  }
+
+  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(self.inner.get(key).cloned())
+  }
+
+  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+    self.inner.insert(key, value);
+    Ok(())
+  }
 }
 
 impl Dict {
@@ -67,38 +88,38 @@ impl Dict {
   }
 
   /// Return an iterator over the key-value pairs of the map, in their order
-  pub fn iter(&self) -> map::Iter<'_, Key, Value> {
+  pub fn iter(&self) -> map::Iter<'_, StaticKey, Value> {
     self.inner.iter()
   }
 
   /// Return an iterator over the key-value pairs of the map, in their order
-  pub fn iter_mut(&mut self) -> map::IterMut<'_, Key, Value> {
+  pub fn iter_mut(&mut self) -> map::IterMut<'_, StaticKey, Value> {
     self.inner.iter_mut()
   }
 
   /// Return an iterator over the keys of the map, in their order
-  pub fn keys(&self) -> map::Keys<'_, Key, Value> {
+  pub fn keys(&self) -> map::Keys<'_, StaticKey, Value> {
     self.inner.keys()
   }
 
   /// Return an owning iterator over the keys of the map, in their order
-  pub fn into_keys(self) -> map::IntoKeys<Key, Value> {
+  pub fn into_keys(self) -> map::IntoKeys<StaticKey, Value> {
     self.inner.into_keys()
   }
 
   /// Return an iterator over the values of the map, in their order
-  pub fn values(&self) -> map::Values<'_, Key, Value> {
+  pub fn values(&self) -> map::Values<'_, StaticKey, Value> {
     self.inner.values()
   }
 
   /// Return an iterator over mutable references to the values of the map,
   /// in their order
-  pub fn values_mut(&mut self) -> map::ValuesMut<'_, Key, Value> {
+  pub fn values_mut(&mut self) -> map::ValuesMut<'_, StaticKey, Value> {
     self.inner.values_mut()
   }
 
   /// Return an owning iterator over the values of the map, in their order
-  pub fn into_values(self) -> map::IntoValues<Key, Value> {
+  pub fn into_values(self) -> map::IntoValues<StaticKey, Value> {
     self.inner.into_values()
   }
 
@@ -129,7 +150,7 @@ impl Dict {
   ///
   /// ***Panics*** if the starting point is greater than the end point or if
   /// the end point is greater than the length of the map.
-  pub fn drain<R>(&mut self, range: R) -> map::Drain<'_, Key, Value>
+  pub fn drain<R>(&mut self, range: R) -> map::Drain<'_, StaticKey, Value>
   where
     R: RangeBounds<usize>,
   {
@@ -182,7 +203,7 @@ impl Dict {
   ///
   /// See also [`entry`](#method.entry) if you you want to insert *or* modify
   /// or if you need to get the index of the corresponding key-value pair.
-  pub fn insert(&mut self, key: impl Into<Key>, value: impl Into<Value>) -> Option<Value> {
+  pub fn insert(&mut self, key: impl Into<StaticKey>, value: impl Into<Value>) -> Option<Value> {
     self.inner.insert(key.into(), value.into())
   }
 
@@ -190,7 +211,7 @@ impl Dict {
   /// in-place manipulation.
   ///
   /// Computes in **O(1)** time (amortized average).
-  pub fn entry(&mut self, key: impl Into<Key>) -> map::Entry<'_, Key, Value> {
+  pub fn entry(&mut self, key: impl Into<StaticKey>) -> map::Entry<'_, StaticKey, Value> {
     self.inner.entry(key.into())
   }
 
@@ -199,7 +220,7 @@ impl Dict {
   /// Computes in **O(1)** time (average).
   pub fn contains_key<Q>(&self, key: &Q) -> bool
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.inner.contains_key(key)
   }
@@ -210,14 +231,14 @@ impl Dict {
   /// Computes in **O(1)** time (average).
   pub fn get<Q>(&self, key: &Q) -> Option<&Value>
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.inner.get(key)
   }
 
   pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.inner.remove(key)
   }
@@ -228,14 +249,14 @@ impl Dict {
   /// Computes in **O(1)** time (average).
   pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&Key, &Value)>
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.inner.get_key_value(key)
   }
 
   pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.inner.get_mut(key)
   }
@@ -245,7 +266,7 @@ impl Dict {
   /// This preserves the order of the remaining elements.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn pop(&mut self) -> Option<(Key, Value)> {
+  pub fn pop(&mut self) -> Option<(StaticKey, Value)> {
     self.inner.pop()
   }
 
@@ -258,7 +279,7 @@ impl Dict {
   /// Computes in **O(n)** time (average).
   pub fn retain<F>(&mut self, keep: F)
   where
-    F: FnMut(&Key, &mut Value) -> bool,
+    F: FnMut(&StaticKey, &mut Value) -> bool,
   {
     self.inner.retain(keep);
   }
@@ -266,10 +287,7 @@ impl Dict {
   /// Sort the map’s key-value pairs by the default ordering of the keys.
   ///
   /// See [`sort_by`](Self::sort_by) for details.
-  pub fn sort_keys(&mut self)
-  where
-    Key: Ord,
-  {
+  pub fn sort_keys(&mut self) {
     self.inner.sort_keys()
   }
 
@@ -283,7 +301,7 @@ impl Dict {
   /// the length of the map and *c* the capacity. The sort is stable.
   pub fn sort_by<F>(&mut self, cmp: F)
   where
-    F: FnMut(&Key, &Value, &Key, &Value) -> Ordering,
+    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
   {
     self.inner.sort_by(cmp)
   }
@@ -292,9 +310,9 @@ impl Dict {
   /// the key-value pairs with the result.
   ///
   /// The sort is stable.
-  pub fn sorted_by<F>(self, cmp: F) -> map::IntoIter<Key, Value>
+  pub fn sorted_by<F>(self, cmp: F) -> map::IntoIter<StaticKey, Value>
   where
-    F: FnMut(&Key, &Value, &Key, &Value) -> Ordering,
+    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
   {
     self.inner.sorted_by(cmp)
   }
@@ -303,10 +321,7 @@ impl Dict {
   /// may not preserve the order of equal elements.
   ///
   /// See [`sort_unstable_by`](Self::sort_unstable_by) for details.
-  pub fn sort_unstable_keys(&mut self)
-  where
-    Key: Ord,
-  {
+  pub fn sort_unstable_keys(&mut self) {
     self.inner.sort_unstable_keys()
   }
 
@@ -320,7 +335,7 @@ impl Dict {
   /// the length of the map and *c* is the capacity. The sort is unstable.
   pub fn sort_unstable_by<F>(&mut self, cmp: F)
   where
-    F: FnMut(&Key, &Value, &Key, &Value) -> Ordering,
+    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
   {
     self.inner.sort_unstable_by(cmp)
   }
@@ -330,9 +345,9 @@ impl Dict {
   ///
   /// The sort is unstable.
   #[inline]
-  pub fn sorted_unstable_by<F>(self, cmp: F) -> map::IntoIter<Key, Value>
+  pub fn sorted_unstable_by<F>(self, cmp: F) -> map::IntoIter<StaticKey, Value>
   where
-    F: FnMut(&Key, &Value, &Key, &Value) -> Ordering,
+    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
   {
     self.inner.sorted_unstable_by(cmp)
   }
@@ -346,87 +361,98 @@ impl Dict {
 }
 
 #[derive(Clone)]
-pub struct Key(pub(crate) KeyRepr);
+pub enum Key<'a> {
+  Int(i32),
+  Str(Handle<Str>),
+  Ref(&'a str),
+}
 
-impl Key {
-  pub fn as_str(&self) -> Option<Ref<'_, str>> {
-    match &self.0 {
-      KeyRepr::String(v) => Some(Ref::map(v.borrow(), |v| v.as_str())),
-      KeyRepr::Int(_) => None,
+pub type StaticKey = Key<'static>;
+
+impl<'a> Key<'a> {
+  pub fn as_str(&self) -> Option<&str> {
+    match &self {
+      Key::Str(v) => Some(v.as_str()),
+      Key::Ref(v) => Some(v),
+      Key::Int(_) => None,
     }
   }
 
   pub(crate) fn write_to_string(&self, s: &mut String) {
     use std::fmt::Write;
-    match &self.0 {
-      KeyRepr::Int(v) => write!(s, "{v}").unwrap(),
-      KeyRepr::String(v) => write!(s, "{}", v.borrow()).unwrap(),
+    match &self {
+      Key::Int(v) => write!(s, "{v}").unwrap(),
+      Key::Str(v) => write!(s, "{v}").unwrap(),
+      Key::Ref(v) => write!(s, "{v}").unwrap(),
+    }
+  }
+
+  pub fn to_static(self) -> Key<'static> {
+    match self {
+      Key::Int(v) => Key::Int(v),
+      Key::Str(v) => Key::Str(v),
+      Key::Ref(v) => Key::Str(Handle::new(v)),
     }
   }
 }
 
-/// The dictionary key type.
-///
-/// Maybe an integer or a string.
-#[repr(align(16))]
-#[derive(Clone)]
-pub(crate) enum KeyRepr {
-  Int(i32),
-  /// This variant always contains a string.
-  ///
-  /// The only way to create this variant is via `TryFrom<Value>`, which rejects
-  /// anything that is not a string.
-  String(Handle<Str>),
-}
-
-impl From<i32> for Key {
+impl From<i32> for Key<'static> {
   fn from(value: i32) -> Self {
-    Key(KeyRepr::Int(value))
+    Key::Int(value)
   }
 }
 
-impl<'a> From<&'a str> for Key {
+impl<'a> From<&'a str> for Key<'a> {
   fn from(value: &'a str) -> Self {
     // SAFETY: The object is guaranteed to be a String
-    Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::str(value)))
-    }))
+    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value))) })
   }
 }
 
-impl<'a> From<Cow<'a, str>> for Key {
+impl<'a> From<Cow<'a, str>> for Key<'a> {
   fn from(value: Cow<'a, str>) -> Self {
     // SAFETY: The object is guaranteed to be a String
-    Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::str(value.to_string())))
-    }))
+    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value.to_string()))) })
   }
 }
 
-impl From<Str> for Key {
+impl From<Str> for Key<'static> {
   fn from(value: Str) -> Self {
     // SAFETY: The object is guaranteed to be a String
-    Key(KeyRepr::String(unsafe {
-      Handle::from_ptr_unchecked(Ptr::new(Object::str(value)))
-    }))
+    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value))) })
   }
 }
 
-impl TryFrom<Value> for Key {
+impl TryFrom<Value> for Key<'static> {
   type Error = InvalidKeyType;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {
-    Handle::from_value(value)
-      .map(|v| Key(KeyRepr::String(v)))
-      .ok_or(InvalidKeyType)
+    if let Some(v) = value.as_int() {
+      return Ok(Key::Int(v));
+    }
+    if let Some(v) = Handle::from_value(value) {
+      return Ok(Key::Str(v));
+    }
+    Err(InvalidKeyType)
   }
 }
 
-impl Equivalent<Key> for str {
+impl<'a> Equivalent<Key<'a>> for str {
   fn equivalent(&self, key: &Key) -> bool {
-    match &key.0 {
-      KeyRepr::Int(_) => false,
-      KeyRepr::String(v) => v.borrow().as_str() == self,
+    match key {
+      Key::Int(_) => false,
+      Key::Str(v) => v.as_str() == self,
+      Key::Ref(v) => *v == self,
+    }
+  }
+}
+
+impl<'a> Equivalent<Key<'a>> for i32 {
+  fn equivalent(&self, key: &Key<'a>) -> bool {
+    match key {
+      Key::Int(v) => self == v,
+      Key::Str(_) => false,
+      Key::Ref(_) => false,
     }
   }
 }
@@ -442,60 +468,67 @@ impl std::fmt::Display for InvalidKeyType {
 
 impl std::error::Error for InvalidKeyType {}
 
-impl PartialEq for Key {
+impl<'a> PartialEq for Key<'a> {
   fn eq(&self, other: &Self) -> bool {
-    match (&self.0, &other.0) {
-      (KeyRepr::Int(a), KeyRepr::Int(b)) => a == b,
-      (KeyRepr::String(a), KeyRepr::String(b)) => a.borrow().as_str() == b.borrow().as_str(),
+    match (&self, &other) {
+      (Key::Int(a), Key::Int(b)) => a == b,
+      (Key::Str(a), Key::Str(b)) => a.as_str() == b.as_str(),
+      (Key::Ref(a), Key::Ref(b)) => a == b,
       _ => false,
     }
   }
 }
 
-impl Eq for Key {}
+impl<'a> Eq for Key<'a> {}
 
-impl PartialOrd for Key {
+impl<'a> PartialOrd for Key<'a> {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    match (&self.0, &other.0) {
-      (KeyRepr::Int(a), KeyRepr::Int(b)) => a.partial_cmp(b),
-      (KeyRepr::Int(_), KeyRepr::String(_)) => Some(std::cmp::Ordering::Less),
-      (KeyRepr::String(_), KeyRepr::Int(_)) => Some(std::cmp::Ordering::Greater),
-      (KeyRepr::String(a), KeyRepr::String(b)) => {
-        a.borrow().as_str().partial_cmp(b.borrow().as_str())
-      }
+    match (&self, &other) {
+      (Key::Int(a), Key::Int(b)) => a.partial_cmp(b),
+      (Key::Int(_), Key::Str(_)) => Some(std::cmp::Ordering::Less),
+      (Key::Str(_), Key::Int(_)) => Some(std::cmp::Ordering::Greater),
+      (Key::Str(a), Key::Str(b)) => a.as_str().partial_cmp(b.as_str()),
+      (Key::Ref(a), Key::Str(b)) => a.partial_cmp(&b.as_str()),
+      (Key::Ref(a), Key::Ref(b)) => a.partial_cmp(b),
+      (Key::Str(a), Key::Ref(b)) => a.as_str().partial_cmp(*b),
+      (Key::Int(_), Key::Ref(_)) => Some(std::cmp::Ordering::Less),
+      (Key::Ref(_), Key::Int(_)) => Some(std::cmp::Ordering::Greater),
     }
   }
 }
 
-impl Ord for Key {
+impl<'a> Ord for Key<'a> {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     unsafe { self.partial_cmp(other).unwrap_unchecked() }
   }
 }
 
-impl Hash for Key {
+impl<'a> Hash for Key<'a> {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    match &self.0 {
-      KeyRepr::Int(v) => v.hash(state),
-      KeyRepr::String(v) => v.borrow().hash(state),
+    match &self {
+      Key::Int(v) => v.hash(state),
+      Key::Str(v) => v.hash(state),
+      Key::Ref(v) => v.hash(state),
     }
   }
 }
 
-impl std::fmt::Debug for Key {
+impl<'a> std::fmt::Debug for Key<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self.0 {
-      KeyRepr::Int(v) => std::fmt::Debug::fmt(v, f),
-      KeyRepr::String(v) => std::fmt::Debug::fmt(v, f),
+    match &self {
+      Key::Int(v) => std::fmt::Debug::fmt(v, f),
+      Key::Str(v) => std::fmt::Debug::fmt(v, f),
+      Key::Ref(v) => std::fmt::Debug::fmt(v, f),
     }
   }
 }
 
-impl std::fmt::Display for Key {
+impl<'a> std::fmt::Display for Key<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self.0 {
-      KeyRepr::Int(v) => std::fmt::Display::fmt(v, f),
-      KeyRepr::String(v) => std::fmt::Display::fmt(v, f),
+    match &self {
+      Key::Int(v) => std::fmt::Display::fmt(v, f),
+      Key::Str(v) => std::fmt::Display::fmt(v, f),
+      Key::Ref(v) => std::fmt::Display::fmt(v, f),
     }
   }
 }
@@ -507,34 +540,34 @@ impl std::fmt::Debug for Dict {
 }
 
 impl<'a> IntoIterator for &'a Dict {
-  type Item = (&'a Key, &'a Value);
-  type IntoIter = map::Iter<'a, Key, Value>;
+  type Item = (&'a StaticKey, &'a Value);
+  type IntoIter = map::Iter<'a, StaticKey, Value>;
   fn into_iter(self) -> Self::IntoIter {
     self.inner.iter()
   }
 }
 
 impl<'a> IntoIterator for &'a mut Dict {
-  type Item = (&'a Key, &'a mut Value);
-  type IntoIter = map::IterMut<'a, Key, Value>;
+  type Item = (&'a StaticKey, &'a mut Value);
+  type IntoIter = map::IterMut<'a, StaticKey, Value>;
   fn into_iter(self) -> Self::IntoIter {
     self.inner.iter_mut()
   }
 }
 
 impl IntoIterator for Dict {
-  type Item = (Key, Value);
+  type Item = (StaticKey, Value);
 
-  type IntoIter = map::IntoIter<Key, Value>;
+  type IntoIter = map::IntoIter<StaticKey, Value>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.inner.into_iter()
   }
 }
 
-impl<Q: ?Sized> Index<&Q> for Dict
+impl<Q> Index<&Q> for Dict
 where
-  Q: Hash + Equivalent<Key>,
+  Q: ?Sized + Hash + Equivalent<StaticKey>,
 {
   type Output = Value;
 
@@ -546,9 +579,9 @@ where
   }
 }
 
-impl<Q: ?Sized> IndexMut<&Q> for Dict
+impl<Q> IndexMut<&Q> for Dict
 where
-  Q: Hash + Equivalent<Key>,
+  Q: ?Sized + Hash + Equivalent<StaticKey>,
 {
   /// Returns a mutable reference to the value corresponding to the supplied
   /// `key`.
@@ -559,22 +592,22 @@ where
   }
 }
 
-impl FromIterator<(Key, Value)> for Dict {
-  fn from_iter<T: IntoIterator<Item = (Key, Value)>>(iter: T) -> Self {
+impl FromIterator<(StaticKey, Value)> for Dict {
+  fn from_iter<T: IntoIterator<Item = (StaticKey, Value)>>(iter: T) -> Self {
     Self {
       inner: Inner::from_iter(iter),
     }
   }
 }
 
-impl<const N: usize> From<[(Key, Value); N]> for Dict {
-  fn from(arr: [(Key, Value); N]) -> Self {
+impl<const N: usize> From<[(StaticKey, Value); N]> for Dict {
+  fn from(arr: [(StaticKey, Value); N]) -> Self {
     Self::from_iter(arr)
   }
 }
 
-impl Extend<(Key, Value)> for Dict {
-  fn extend<T: IntoIterator<Item = (Key, Value)>>(&mut self, iter: T) {
+impl Extend<(StaticKey, Value)> for Dict {
+  fn extend<T: IntoIterator<Item = (StaticKey, Value)>>(&mut self, iter: T) {
     self.inner.extend(iter)
   }
 }

@@ -1,16 +1,17 @@
 ---
-source: crates/vm/tests/object_load_field.rs
+source: crates/runtime/tests/object_load_field.rs
 expression: snapshot
 ---
 # Input:
-v := {}
+class T: pass
+v := T()
 print ?v.a
 print v.a
 
 
 # Result (error):
 in [[main]]
-[31merror[0m in code: cannot get field `"a"` on value `{}`
+[31merror[0m in code: cannot get field `a` on value `<class T>`
 
 
 # Stdout:

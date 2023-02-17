@@ -1,5 +1,6 @@
 #[macro_use]
 mod macros;
+
 pub mod class;
 pub mod dict;
 pub mod error;
@@ -11,7 +12,7 @@ pub mod list;
 pub mod module;
 pub mod string;
 
-use std::hash::Hash;
+use std::fmt::Debug;
 
 use beef::lean::Cow;
 pub use class::{Class, ClassDef, ClassDesc, Method, Proxy};
@@ -19,26 +20,52 @@ pub use dict::Dict;
 pub use error::Error;
 use frame::Frame;
 pub use func::{Closure, ClosureDesc, Func};
-use indexmap::Equivalent;
 pub use list::List;
 pub use module::{Module, Path, Registry};
 pub use string::Str;
 
-use self::dict::Key;
-use super::ptr::{Ref, RefMut};
+use self::dict::{Key, StaticKey};
 use super::util::join::JoinIter;
 use super::{Ptr, Value};
 
 // TODO: force all in `Repr` to implement this
 
 pub trait Access {
-  fn get<Q>(&self, key: &Q) -> Result<Option<&Value>, Error>
-  where
-    Q: Equivalent<Key> + Hash;
+  fn is_frozen(&self) -> bool {
+    true
+  }
 
-  fn set<Q>(&mut self, key: &Q, value: Value) -> Result<(), Error>
-  where
-    Q: Equivalent<Key> + Hash;
+  fn should_bind_methods(&self) -> bool {
+    true
+  }
+
+  /// Represents the `obj.key` operation.
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Err(crate::Error::new(format!("cannot get field `{key}`")))
+  }
+
+  /// Represents the `obj.key = value` operation.
+  fn field_set(&mut self, key: StaticKey, _: Value) -> Result<(), crate::Error> {
+    Err(crate::Error::new(format!("cannot set field `{key}`")))
+  }
+
+  /// Represents the `obj[key]` operation.
+  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    match key {
+      Key::Int(_) => Ok(None),
+      Key::Str(_) => self.field_get(key),
+      Key::Ref(_) => self.field_get(key),
+    }
+  }
+
+  /// Represents the `obj[key] = value` operation.
+  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+    match &key {
+      Key::Int(_) => Err(crate::Error::new(format!("cannot set index `{key}`"))),
+      Key::Str(_) => self.field_set(key, value),
+      Key::Ref(_) => self.field_set(key, value),
+    }
+  }
 }
 
 #[derive(Clone)]
@@ -116,7 +143,7 @@ impl std::fmt::Display for Object {
       Repr::List(v) => f.debug_list().entries(v.iter().map(unit)).finish(),
       Repr::Dict(v) => f.debug_map().entries(v.iter().map(tuple2)).finish(),
       Repr::Func(v) => write!(f, "<func {}>", v.name),
-      Repr::Closure(v) => write!(f, "<closure {}>", v.desc.borrow().func.name),
+      Repr::Closure(v) => write!(f, "<closure {}>", v.desc.func.name),
       Repr::ClosureDesc(v) => write!(f, "<closure desc {} n={}>", v.func.name, v.num_captures),
       Repr::Class(v) => write!(f, "<class {}>", v.name),
       Repr::ClassDef(v) => write!(f, "<class def {}>", v.name),
@@ -132,9 +159,9 @@ impl std::fmt::Display for Object {
   }
 }
 
-pub trait ObjectHandle: /* Access + */ private::Sealed + Sized {
-  fn as_self(o: &Ptr<Object>) -> Option<Ref<'_, Self>>;
-  fn as_self_mut(o: &mut Ptr<Object>) -> Option<RefMut<'_, Self>>;
+pub trait ObjectHandle: Access + private::Sealed + Sized {
+  fn as_self(o: &Ptr<Object>) -> Option<&Self>;
+  fn as_self_mut(o: &mut Ptr<Object>) -> Option<&mut Self>;
   fn is_self(o: &Ptr<Object>) -> bool;
 }
 

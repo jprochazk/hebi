@@ -14,12 +14,12 @@ fn test_object() {
 
 #[test]
 fn test_object_ptr() {
-  let v = Ptr::new(Object::list([0.into(), 1.into(), 2.into()]));
-  v.borrow_mut().as_list_mut().unwrap().push(3.into());
+  let mut v = Ptr::new(Object::list([0.into(), 1.into(), 2.into()]));
+  v.get_mut().as_list_mut().unwrap().push(3.into());
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 
-  let v = Ptr::new(Object::dict([("a".into(), 0.into())]));
-  v.borrow_mut().as_dict_mut().unwrap().insert("b", 1);
+  let mut v = Ptr::new(Object::dict([("a".into(), 0.into())]));
+  v.get_mut().as_dict_mut().unwrap().insert("b", 1);
   insta::assert_snapshot!(format!("display:\n{v}\n\ndebug:\n{v:#?}"));
 }
 

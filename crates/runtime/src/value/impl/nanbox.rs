@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
 use super::*;
@@ -154,27 +154,25 @@ impl Value {
     Some(ptr)
   }
 
-  pub(crate) fn as_object(&self) -> Option<Ref<'_, object::Object>> {
+  pub(crate) fn as_object(&self) -> Option<&object::Object> {
     if self.is_object() {
       let addr = self.value() as usize;
-      let ptr = addr as *const RefCell<object::Object>;
-      Some(unsafe { &*ptr }.borrow())
+      let ptr = addr as *const UnsafeCell<object::Object>;
+      let ptr = unsafe { &*ptr };
+      Some(unsafe { ptr.get().as_ref().unwrap_unchecked() })
     } else {
       None
     }
   }
 
   /// This is `pub(crate)` so that users may not break the invariant that
-  /// `value::object::dict::Key::String` is always a string by mutating the
-  /// object behind the pointer using `borrow_mut`.
-  ///
-  /// It's not necessary because `Value` has impls for `as_<repr>` where
-  /// `<repr>` is any of the possible object representations.
-  pub(crate) fn as_object_mut(&mut self) -> Option<RefMut<'_, object::Object>> {
+  /// the object behind a `Handle<T>` is always a `T`.
+  pub(crate) fn as_object_mut(&mut self) -> Option<&mut object::Object> {
     if self.is_object() {
       let addr = self.value() as usize;
-      let ptr = addr as *const RefCell<object::Object>;
-      Some(unsafe { &*ptr }.borrow_mut())
+      let ptr = addr as *mut UnsafeCell<object::Object>;
+      let ptr = unsafe { &mut *ptr };
+      Some(unsafe { ptr.get().as_mut().unwrap_unchecked() })
     } else {
       None
     }

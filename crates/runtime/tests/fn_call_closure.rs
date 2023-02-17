@@ -18,7 +18,9 @@ check! {
   counter,
   r#"
     fn counter(start=0, *, step=1):
-      state := { value: start }
+      class State:
+        value = start
+      state := State()
       fn inner():
         temp := state.value
         state.value += step

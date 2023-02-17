@@ -2,12 +2,11 @@ use beef::lean::Cow;
 use indexmap::IndexMap;
 
 use super::handle::Handle;
+use super::Access;
 use crate::value::constant::Constant;
-use crate::value::ptr::{Ref, RefMut};
 use crate::value::Value;
 
 #[derive(Clone, Debug)]
-// 192 bytes
 pub struct Func {
   pub(super) name: Cow<'static, str>,
   pub(super) frame_size: u32,
@@ -16,11 +15,15 @@ pub struct Func {
   pub(super) params: Params,
 }
 
+impl Access for Func {}
+
 #[derive(Clone, Debug)]
 pub struct ClosureDesc {
   pub func: Func,
   pub num_captures: u32,
 }
+
+impl Access for ClosureDesc {}
 
 #[derive(Clone, Debug)]
 pub struct Closure {
@@ -32,7 +35,6 @@ impl Closure {
   /// Create a new closure.
   pub fn new(desc: Handle<ClosureDesc>) -> Self {
     let captures = {
-      let desc = desc.borrow();
       let mut v = Vec::with_capacity(desc.num_captures as usize);
       for _ in 0..desc.num_captures {
         v.push(Value::none());
@@ -43,36 +45,36 @@ impl Closure {
     Self { desc, captures }
   }
 
-  fn func(&self) -> Ref<'_, Func> {
-    Ref::map(self.desc.borrow(), |v| &v.func)
+  fn func(&self) -> &Func {
+    &self.desc.func
   }
 
-  fn func_mut(&mut self) -> RefMut<'_, Func> {
-    RefMut::map(self.desc.borrow_mut(), |v| &mut v.func)
+  fn func_mut(&mut self) -> &mut Func {
+    &mut self.desc.func
   }
 
-  pub fn name(&self) -> Ref<'_, str> {
-    Ref::map(self.func(), |v| v.name.as_ref())
+  pub fn name(&self) -> &str {
+    self.func().name.as_ref()
   }
 
   pub fn frame_size(&self) -> u32 {
     self.func().frame_size
   }
 
-  pub fn code(&self) -> Ref<'_, [u8]> {
-    Ref::map(self.func(), |v| &v.code[..])
+  pub fn code(&self) -> &[u8] {
+    &self.func().code[..]
   }
 
-  pub fn code_mut(&mut self) -> RefMut<'_, [u8]> {
-    RefMut::map(self.func_mut(), |v| &mut v.code[..])
+  pub fn code_mut(&mut self) -> &mut [u8] {
+    &mut self.func_mut().code[..]
   }
 
-  pub fn const_pool(&self) -> Ref<'_, [Constant]> {
-    Ref::map(self.func(), |v| &v.const_pool[..])
+  pub fn const_pool(&self) -> &[Constant] {
+    &self.func().const_pool[..]
   }
 
-  pub fn params(&self) -> Ref<'_, Params> {
-    Ref::map(self.func(), |v| &v.params)
+  pub fn params(&self) -> &Params {
+    &self.func().params
   }
 
   pub fn disassemble<D>(
@@ -88,6 +90,8 @@ impl Closure {
       .disassemble(disassemble_instruction, print_bytes)
   }
 }
+
+impl Access for Closure {}
 
 #[derive(Clone, Debug)]
 pub struct Params {
@@ -165,13 +169,10 @@ impl Func {
   {
     for v in self.const_pool.iter() {
       if let Constant::Func(func) = v {
-        func
-          .borrow()
-          .disassemble_inner(disassemble_instruction, f, print_bytes);
+        func.disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');
       } else if let Constant::ClosureDesc(desc) = v {
         desc
-          .borrow()
           .func
           .disassemble_inner(disassemble_instruction, f, print_bytes);
         f.push('\n');

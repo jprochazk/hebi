@@ -1,12 +1,12 @@
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use indexmap::Equivalent;
 
-use super::dict::Key;
+use super::dict::{Key, StaticKey};
 use super::func::Params;
 use super::handle::Handle;
-use super::{Dict, Str};
-use crate::value::ptr::Ref;
+use super::{Access, Dict, Str};
 use crate::value::Value;
 
 #[derive(Clone)]
@@ -48,42 +48,25 @@ impl Class {
 
   pub fn has<Q>(&self, key: &Q) -> bool
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.fields.contains_key(key)
   }
 
-  pub fn get<Q>(&self, key: &Q) -> Option<&Value>
-  where
-    Q: ?Sized + Hash + Equivalent<Key>,
-  {
-    self.fields.get(key)
+  pub fn get(&self, key: impl Into<StaticKey>) -> Option<&Value> {
+    let key = key.into();
+    self.fields.get(&key)
   }
 
-  pub fn set<Q>(&mut self, key: &Q, value: Value) -> bool
-  where
-    Q: ?Sized + Hash + Equivalent<Key>,
-  {
-    let Some(slot) = self.fields.get_mut(key) else {
-      return false;
-    };
-    *slot = value;
-    true
-  }
-
-  pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
+  pub fn insert(&mut self, key: impl Into<StaticKey>, value: Value) -> Option<Value> {
     self.fields.insert(key, value)
   }
 
   pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
   where
-    Q: ?Sized + Hash + Equivalent<Key>,
+    Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.fields.remove(key)
-  }
-
-  pub fn is_frozen(&self) -> bool {
-    self.is_frozen
   }
 
   pub fn freeze(&mut self) {
@@ -91,7 +74,24 @@ impl Class {
   }
 }
 
-// TODO: move this into `func.rs` and rename to BoundFunc or something
+impl Access for Class {
+  fn is_frozen(&self) -> bool {
+    self.is_frozen
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(match key {
+      Key::Int(v) => self.fields.get(v).cloned(),
+      Key::Str(v) => self.fields.get(v.as_str()).cloned(),
+      Key::Ref(v) => self.fields.get(*v).cloned(),
+    })
+  }
+
+  fn field_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+    self.fields.insert(key, value);
+    Ok(())
+  }
+}
 
 #[derive(Clone, Debug)]
 pub struct Method {
@@ -112,7 +112,6 @@ pub struct ClassDef {
 
 impl ClassDef {
   pub fn new(desc: Handle<ClassDesc>, args: &[Value]) -> Self {
-    let desc = desc.borrow();
     assert!(args.len() >= desc.is_derived as usize + desc.methods.len() + desc.fields.len());
 
     let name = desc.name.clone();
@@ -138,10 +137,10 @@ impl ClassDef {
 
     // inherit methods and field defaults
     if let Some(parent) = &parent {
-      for (k, v) in parent.borrow().methods.iter() {
+      for (k, v) in parent.methods.iter() {
         methods.entry(k.clone()).or_insert_with(|| v.clone());
       }
-      for (k, v) in parent.borrow().fields.iter() {
+      for (k, v) in parent.fields.iter() {
         fields.entry(k.clone()).or_insert_with(|| v.clone());
       }
     }
@@ -181,15 +180,26 @@ impl ClassDef {
     &self.params
   }
 
-  pub fn method<Q>(&self, key: &Q) -> Option<&Value>
-  where
-    Q: ?Sized + Hash + Equivalent<Key>,
-  {
-    self.methods.get(key)
+  pub fn method(&self, key: &str) -> Option<Value> {
+    self.methods.get(key).cloned()
   }
 
   pub fn parent(&self) -> Option<&Handle<ClassDef>> {
     self.parent.as_ref()
+  }
+}
+
+impl Access for ClassDef {
+  fn should_bind_methods(&self) -> bool {
+    false
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(match key {
+      Key::Int(_) => None,
+      Key::Str(v) => self.method(v.as_str()),
+      Key::Ref(v) => self.method(v),
+    })
   }
 }
 
@@ -226,13 +236,7 @@ impl std::fmt::Debug for ClassDef {
     f.debug_struct("ClassDef")
       .field("defaults", &self.fields)
       .field("methods", &self.methods)
-      .field(
-        "parent",
-        &self
-          .parent
-          .as_ref()
-          .map(|p| Ref::map(p.borrow(), |v| v.name())),
-      )
+      .field("parent", &self.parent.as_ref().map(|p| p.name()))
       .finish()
   }
 }
@@ -242,3 +246,16 @@ impl std::fmt::Debug for Proxy {
     std::fmt::Debug::fmt(&self.parent, f)
   }
 }
+
+impl Access for Proxy {
+  fn is_frozen(&self) -> bool {
+    true
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    self.parent().field_get(key)
+  }
+}
+
+impl Access for Method {}
+impl Access for ClassDesc {}

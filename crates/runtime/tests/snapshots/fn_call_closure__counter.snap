@@ -1,10 +1,12 @@
 ---
-source: crates/vm/tests/fn_call_closure.rs
+source: crates/runtime/tests/fn_call_closure.rs
 expression: snapshot
 ---
 # Input:
 fn counter(start=0, *, step=1):
-  state := { value: start }
+  class State:
+    value = start
+  state := State()
   fn inner():
     temp := state.value
     state.value += step

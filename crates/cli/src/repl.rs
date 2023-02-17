@@ -81,9 +81,9 @@ impl Repl {
   fn eval(&mut self, input: &str) -> Result<Value, MuError> {
     let module = syntax::parse(input).unwrap();
     let module = emit::emit(&self.emit_ctx, "code", &module).unwrap();
-    let main = module.borrow().main().clone();
+    let main = module.main().clone();
     if self.state.print_bytecode {
-      println!("{}", main.borrow().disassemble(op::disassemble, false));
+      println!("{}", main.disassemble(op::disassemble, false));
     }
     self.vm.call(main.into(), &[], Value::none())
   }

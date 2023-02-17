@@ -71,13 +71,11 @@ impl PartialEq for Constant {
   fn eq(&self, other: &Self) -> bool {
     use std::ops::Deref;
     match (self, other) {
-      (Constant::Str(l), Constant::Str(r)) => l.borrow().deref() == r.borrow().deref(),
-      (Constant::Func(l), Constant::Func(r)) => std::ptr::eq(&l.borrow(), &r.borrow()),
-      (Constant::ClosureDesc(l), Constant::ClosureDesc(r)) => {
-        std::ptr::eq(&l.borrow(), &r.borrow())
-      }
-      (Constant::ClassDesc(l), Constant::ClassDesc(r)) => std::ptr::eq(&l.borrow(), &r.borrow()),
-      (Constant::Path(l), Constant::Path(r)) => l.borrow().segments() == r.borrow().segments(),
+      (Constant::Str(l), Constant::Str(r)) => l.deref() == r.deref(),
+      (Constant::Func(l), Constant::Func(r)) => std::ptr::eq(&l, &r),
+      (Constant::ClosureDesc(l), Constant::ClosureDesc(r)) => std::ptr::eq(&l, &r),
+      (Constant::ClassDesc(l), Constant::ClassDesc(r)) => std::ptr::eq(&l, &r),
+      (Constant::Path(l), Constant::Path(r)) => l.segments() == r.segments(),
       (Constant::Float(l), Constant::Float(r)) => l.0 == r.0,
       _ => false,
     }
@@ -90,11 +88,11 @@ impl Hash for Constant {
   fn hash<H: Hasher>(&self, state: &mut H) {
     core::mem::discriminant(self).hash(state);
     match self {
-      Constant::Str(v) => v.borrow().as_str().hash(state),
+      Constant::Str(v) => v.as_str().hash(state),
       Constant::Func(v) => ptr_hash(v, state),
       Constant::ClosureDesc(v) => ptr_hash(v, state),
       Constant::ClassDesc(v) => ptr_hash(v, state),
-      Constant::Path(v) => v.borrow().segments().hash(state),
+      Constant::Path(v) => v.segments().hash(state),
       Constant::Float(v) => v.0.to_bits().hash(state),
     }
   }

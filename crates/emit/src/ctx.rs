@@ -25,7 +25,7 @@ impl Context {
       str.clone()
     } else {
       let value = Handle::new(str);
-      inner.intern_table.insert(str.into(), value.clone());
+      inner.intern_table.insert(str.into(), Handle::clone(&value));
       value
     }
   }

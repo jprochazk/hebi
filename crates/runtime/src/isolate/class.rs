@@ -11,10 +11,10 @@ pub fn create_instance<Io: std::io::Write>(
   kwargs: Value,
 ) -> Result<Value, Error> {
   // create instance
-  let mut class = def.borrow().instance();
+  let mut class = def.instance();
 
-  if class.borrow().get("init").is_some() {
-    let init = class.borrow().get("init").unwrap().clone();
+  if class.get("init").is_some() {
+    let init = class.get("init").unwrap().clone();
     // call initializer
     // TODO: don't allocate temp object here
     vm.call(
@@ -29,16 +29,15 @@ pub fn create_instance<Io: std::io::Write>(
   } else {
     // assign kwargs to fields
     if let Some(kwargs) = kwargs.as_dict() {
-      call::check_args(true, def.borrow().params(), args, &kwargs)?;
-      let mut class = class.borrow_mut();
+      call::check_args(true, def.params(), args, kwargs)?;
       for (k, v) in kwargs.iter() {
         class.insert(k.clone(), v.clone());
       }
     } else {
-      call::check_args(true, def.borrow().params(), args, &Dict::new())?;
+      call::check_args(true, def.params(), args, &Dict::new())?;
     }
   }
 
-  class.borrow_mut().freeze();
+  class.freeze();
   Ok(class.widen().into())
 }

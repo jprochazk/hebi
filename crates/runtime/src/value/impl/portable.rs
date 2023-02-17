@@ -79,22 +79,18 @@ impl Value {
     }
   }
 
-  pub(crate) fn as_object(&self) -> Option<Ref<'_, object::Object>> {
+  pub(crate) fn as_object(&self) -> Option<&object::Object> {
     match self {
-      Value::Object(v) => Some(v.borrow()),
+      Value::Object(v) => Some(v),
       _ => None,
     }
   }
 
   /// This is `pub(crate)` so that users may not break the invariant that
-  /// `value::object::dict::Key::String` is always a string by mutating the
-  /// object behind the pointer using `borrow_mut`.
-  ///
-  /// It's not necessary because `Value` has impls for `as_<repr>` where
-  /// `<repr>` is any of the possible object representations.
-  pub(crate) fn as_object_mut(&mut self) -> Option<RefMut<'_, object::Object>> {
+  /// the object behind a `Handle<T>` is always a `T`.
+  pub(crate) fn as_object_mut(&mut self) -> Option<&mut object::Object> {
     match self {
-      Value::Object(v) => Some(v.borrow_mut()),
+      Value::Object(v) => Some(v),
       _ => None,
     }
   }
@@ -179,7 +175,7 @@ impl Hash for Value {
       Value::Int(v) => v.hash(state),
       Value::Bool(v) => v.hash(state),
       Value::None => 0.hash(state),
-      Value::Object(v) => v.borrow().hash(state),
+      Value::Object(v) => v.hash(state),
     }
   }
 }

@@ -98,18 +98,16 @@ fn check_func_args(func: Value, args: &[Value], kwargs: &Value) -> Result<ParamI
     args: &[Value],
     kwargs: &Value,
   ) -> Result<ParamInfo, Error> {
+    let temp_empty_kw = Dict::new();
+    let kw = if let Some(kw) = kwargs.as_dict() {
+      kw
+    } else {
+      &temp_empty_kw
+    };
     if let Some(f) = func.as_func() {
-      if let Some(kw) = kwargs.as_dict() {
-        check_args(has_implicit_receiver, f.params(), args, &kw)
-      } else {
-        check_args(has_implicit_receiver, f.params(), args, &Dict::new())
-      }
+      check_args(has_implicit_receiver, f.params(), args, kw)
     } else if let Some(f) = func.as_closure() {
-      if let Some(kw) = kwargs.as_dict() {
-        check_args(has_implicit_receiver, &f.params(), args, &kw)
-      } else {
-        check_args(has_implicit_receiver, &f.params(), args, &Dict::new())
-      }
+      check_args(has_implicit_receiver, f.params(), args, kw)
     } else {
       panic!("check_func_args not implemented for {func}");
     }
@@ -162,7 +160,7 @@ pub fn check_args(
   let mut unknown = IndexSet::new();
   let mut missing = IndexSet::new();
   for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
-    if !params.kwargs && !params.kw.contains_key(&key[..]) {
+    if !params.kwargs && !params.kw.contains_key(key) {
       unknown.insert(key.to_string());
     }
   }
@@ -209,26 +207,23 @@ pub struct ParamInfo {
 #[allow(clippy::identity_op, clippy::needless_range_loop)]
 fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value], kwargs: Value) {
   // function
-  stack.set(0, f.clone());
+  stack[0] = f.clone();
 
   // argv
   if param_info.has_argv && args.len() > param_info.max_params {
     let argv = args[param_info.max_params..args.len()].to_vec();
-    stack.set(1, Value::from(List::from(argv)));
+    stack[1] = Value::from(List::from(argv));
   } else {
-    stack.set(1, Value::from(List::new()));
+    stack[1] = Value::from(List::new());
   }
 
   // kwargs
   if param_info.has_kw {
-    stack.set(
-      2,
-      if kwargs.is_none() {
-        Value::from(Dict::new())
-      } else {
-        kwargs
-      },
-    )
+    stack[2] = if kwargs.is_none() {
+      Value::from(Dict::new())
+    } else {
+      kwargs
+    };
   };
 
   // params
@@ -237,7 +232,7 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
     // method call - set implicit receiver
     // because we set it, it can't be part of `args`
     // so we also bump `params_base` to `4`
-    stack.set(params_base, m.this.clone());
+    stack[params_base] = m.this.clone();
     params_base += 1;
   } else if !param_info.has_self {
     // regular function call without `self`
@@ -249,6 +244,6 @@ fn init_params(f: Value, stack: &mut Stack, param_info: ParamInfo, args: &[Value
   // it will also contain `self`. if it contains `self`, `params_base` must be
   // `3`, because `self` is always at `stack_base + 3`.
   for i in 0..std::cmp::min(args.len(), param_info.max_params) {
-    stack.set(params_base + i, args[i].clone());
+    stack[params_base + i] = args[i].clone();
   }
 }

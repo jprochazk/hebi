@@ -26,10 +26,9 @@ macro_rules! check {
           panic!("failed to emit module:\n{}", e.report(input));
         }
       };
-      let module = module.borrow();
       let func = module.main();
       if print_func {
-        eprintln!("{}", func.borrow().disassemble(op::disassemble, false));
+        eprintln!("{}", func.disassemble(op::disassemble, false));
       }
       let mut vm = Isolate::with_io(Registry::new().into(), Vec::new());
       let value = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
@@ -74,10 +73,9 @@ macro_rules! check_error {
           panic!("failed to emit module:\n{}", e.report(input));
         }
       };
-      let module = module.borrow();
       let func = module.main();
       if print_func {
-        eprintln!("{}", func.borrow().disassemble(op::disassemble, false));
+        eprintln!("{}", func.disassemble(op::disassemble, false));
       }
       let mut vm = Isolate::with_io(Registry::new().into(), Vec::<u8>::new());
       let error = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {

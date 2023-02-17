@@ -39,6 +39,44 @@ macro_rules! object_repr {
         )*
       }
 
+      impl Access for Object {
+        fn is_frozen(&self) -> bool {
+          match &self.repr {
+            $($Repr::$ty(inner) => inner.is_frozen(),)*
+          }
+        }
+
+        fn should_bind_methods(&self) -> bool {
+          match &self.repr {
+            $($Repr::$ty(inner) => inner.should_bind_methods(),)*
+          }
+        }
+
+        fn field_get<'a>(&self, key: &Key<'a>) -> Result<Option<Value>, crate::Error> {
+          match &self.repr {
+            $($Repr::$ty(inner) => inner.field_get(key),)*
+          }
+        }
+
+        fn field_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+          match &mut self.repr {
+            $($Repr::$ty(inner) => inner.field_set(key, value),)*
+          }
+        }
+
+        fn index_get<'a>(&self, key: &Key<'a>) -> Result<Option<Value>, crate::Error> {
+          match &self.repr {
+            $($Repr::$ty(inner) => inner.index_get(key),)*
+          }
+        }
+
+        fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+          match &mut self.repr {
+            $($Repr::$ty(inner) => inner.index_set(key, value),)*
+          }
+        }
+      }
+
       impl Value {
         $(
           pub fn [<is_ $ty:snake>](&self) -> bool {
@@ -46,21 +84,20 @@ macro_rules! object_repr {
             this.[<is_ $ty:snake>]()
           }
 
-          pub fn [<as_ $ty:snake>](&self) -> Option<Ref<'_, $ty>> {
+          pub fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
             let Some(this) = self.as_object() else { return None; };
             if !this.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(Ref::map(this, |v| v.[<as_ $ty:snake>]().unwrap()))
+            Some(this.[<as_ $ty:snake>]().unwrap())
           }
 
-
-          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<RefMut<'_, $ty>> {
+          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<&mut $ty> {
             let Some(this) = self.as_object_mut() else { return None; };
             if !this.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(RefMut::map(this, |v| v.[<as_ $ty:snake _mut>]().unwrap()))
+            Some(this.[<as_ $ty:snake _mut>]().unwrap())
           }
         )*
       }
@@ -75,20 +112,20 @@ macro_rules! object_repr {
 
         impl private::Sealed for $ty {}
         impl ObjectHandle for $ty {
-          fn as_self(o: &Ptr<Object>) -> Option<Ref<Self>> {
-            if !o.borrow().[<is_ $ty:snake>]() {
+          fn as_self(o: &Ptr<Object>) -> Option<&Self> {
+            if !o.get().[<is_ $ty:snake>]() {
               return None;
             }
-            Some(Ref::map(o.borrow(), |v| v.[<as_ $ty:snake>]().unwrap()))
+            Some(o.get().[<as_ $ty:snake>]().unwrap())
           }
-          fn as_self_mut(o: &mut Ptr<Object>) -> Option<RefMut<Self>> {
-            if !o.borrow().[<is_ $ty:snake>]() {
+          fn as_self_mut(o: &mut Ptr<Object>) -> Option<&mut Self> {
+            if !o.get_mut().[<is_ $ty:snake>]() {
               return None;
             }
-            Some(RefMut::map(o.borrow_mut(), |v| v.[<as_ $ty:snake _mut>]().unwrap()))
+            Some(o.get_mut().[<as_ $ty:snake _mut>]().unwrap())
           }
           fn is_self(o: &Ptr<Object>) -> bool {
-            o.borrow().[<is_ $ty:snake>]()
+            o.get().[<is_ $ty:snake>]()
           }
         }
       )*

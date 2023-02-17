@@ -2,6 +2,8 @@ use std::fmt::{Debug, Display};
 use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 
+use super::dict::{Key, StaticKey};
+use super::Access;
 use crate::Value;
 
 #[derive(Clone, Default)]
@@ -45,6 +47,10 @@ impl List {
 
   pub fn len(&self) -> usize {
     self.0.len()
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
   }
 }
 
@@ -97,5 +103,42 @@ where
   #[inline]
   fn index_mut(&mut self, index: Idx) -> &mut Self::Output {
     self.0.index_mut(index)
+  }
+}
+
+impl Access for List {
+  fn is_frozen(&self) -> bool {
+    false
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    // TODO: methods (push, pop, etc.)
+    Ok(match key.as_str() {
+      Some("len") => Some((self.0.len() as i32).into()),
+      _ => None,
+    })
+  }
+
+  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    // TODO: sparse array
+    let index = match key {
+      Key::Int(ref v) => *v as usize,
+      Key::Str(_) => return self.field_get(key),
+      Key::Ref(_) => return self.field_get(key),
+    };
+    Ok(self.0.get(index).cloned())
+  }
+
+  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+    // TODO: sparse array
+    let index = match key {
+      Key::Int(ref v) => *v as usize,
+      Key::Str(_) => return self.field_set(key, value),
+      Key::Ref(_) => return self.field_set(key, value),
+    };
+    if let Some(v) = self.0.get_mut(index) {
+      *v = value
+    }
+    Ok(())
   }
 }

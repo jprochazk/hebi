@@ -1,6 +1,8 @@
 use beef::lean::Cow;
 use span::Span;
 
+use super::Access;
+
 #[derive(Clone, Debug)]
 pub struct Error {
   pub message: Cow<'static, str>,
@@ -21,3 +23,5 @@ impl Error {
     self.trace.push(s);
   }
 }
+
+impl Access for Error {}
