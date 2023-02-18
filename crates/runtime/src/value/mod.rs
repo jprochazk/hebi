@@ -3,7 +3,6 @@
 pub mod constant;
 pub mod object;
 pub mod ptr;
-pub mod util;
 
 use object::handle::Handle;
 use object::ObjectHandle;

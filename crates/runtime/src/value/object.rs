@@ -25,8 +25,8 @@ pub use module::{Module, Path, Registry};
 pub use string::Str;
 
 use self::dict::{Key, StaticKey};
-use super::util::join::JoinIter;
 use super::{Ptr, Value};
+use crate::util::JoinIter;
 
 // TODO: force all in `Repr` to implement this
 
