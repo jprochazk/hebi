@@ -1,5 +1,4 @@
 // TODO: make the VM panic-less (other than debug asserts for unsafe things)
-// TODO: stack unwinding
 // TODO: module registry
 // TODO: store the reserved stack slots as constants somewhere (??)
 
@@ -7,7 +6,6 @@ mod binop;
 mod call;
 mod class;
 mod cmp;
-mod error;
 mod field;
 mod index;
 mod truth;
@@ -15,14 +13,13 @@ mod truth;
 use std::mem::take;
 use std::ptr::NonNull;
 
-pub use error::Error;
-
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::handle::Handle;
 use crate::value::object::{
   dict, frame, Class, ClassDef, ClassDesc, Closure, ClosureDesc, Dict, List, Proxy, Registry,
 };
 use crate::value::Value;
+use crate::Error;
 
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   registry: Handle<Registry>,
@@ -171,7 +168,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     match self.globals.get(&name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
-      None => return Err(Error::new(format!("undefined global {name}")).into()),
+      None => return Err(Error::new(format!("undefined global {name}"), 0..0).into()),
     }
 
     Ok(())
@@ -225,7 +222,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")).into());
+      return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
 
     self.acc = index::get(&self.acc, &name)?;
@@ -237,7 +234,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")).into());
+      return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
 
     self.acc = index::get_opt(&self.acc, &name)?;
@@ -249,7 +246,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let name = self.get_reg(key);
     let Ok(name) = dict::Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{name} is not a valid key")).into());
+      return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
 
     let mut obj = self.get_reg(obj);
@@ -302,7 +299,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // proxy to the first super class in the chain
     let Some(this) = Handle::<Class>::from_value(this) else {
       // TODO: span
-      return Err(Error::new("receiver is not a class").into());
+      return Err(Error::new("receiver is not a class", 0..0).into());
     };
     let parent = this.parent().unwrap().clone();
     self.acc = Proxy::new(this, parent).into();
@@ -345,7 +342,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
     let Some(list) = list.as_list_mut() else {
       // TODO: span
-      return Err(Error::new("value is not a list").into());
+      return Err(Error::new("value is not a list", 0..0).into());
     };
 
     list.push(take(&mut self.acc));
@@ -363,7 +360,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let key = self.get_reg(key);
     let Ok(key) = dict::Key::try_from(key.clone()) else {
       // TODO: span
-      return Err(Error::new(format!("{key} is not a valid key")).into());
+      return Err(Error::new(format!("{key} is not a valid key"), 0..0).into());
     };
 
     let mut dict = self.get_reg(dict);
@@ -462,7 +459,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
     let Some(value) = self.acc.as_bool() else {
       // TODO: span
-      return Err(Error::new("value is not a bool").into());
+      return Err(Error::new("value is not a bool", 0..0).into());
     };
 
     match value {
@@ -652,7 +649,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     self
       .print(format_args!("{value}\n"))
       // TODO: span
-      .map_err(|_| Error::new("failed to print value"))?;
+      .map_err(|_| Error::new("failed to print value", 0..0))?;
     Ok(())
   }
 
@@ -671,18 +668,18 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
         self
           .print(format_args!("{value} "))
           // TODO: span
-          .map_err(|_| Error::new("failed to print values"))?;
+          .map_err(|_| Error::new("failed to print values", 0..0))?;
       } else {
         self
           .print(format_args!("{value}"))
           // TODO: span
-          .map_err(|_| Error::new("failed to print values"))?;
+          .map_err(|_| Error::new("failed to print values", 0..0))?;
       }
     }
     self
       .print(format_args!("\n"))
       // TODO: span
-      .map_err(|_| Error::new("failed to print values"))?;
+      .map_err(|_| Error::new("failed to print values", 0..0))?;
 
     Ok(())
   }

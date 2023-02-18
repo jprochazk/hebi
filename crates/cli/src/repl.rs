@@ -157,7 +157,7 @@ pub fn run() -> rustyline::Result<()> {
     match repl.eval(&buffer) {
       Ok(v) => println!("{v}"),
       Err(e) => {
-        println!("{}", e.traceback(buffer.clone()))
+        println!("{}", e.stack_trace(Some(buffer.as_str().into())))
       }
     }
   }

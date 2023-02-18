@@ -1,8 +1,8 @@
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
-use super::*;
+use crate::{Error, Result, Value};
 
-pub fn add(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       return Ok(Value::int(lhs.add(rhs)));
@@ -18,10 +18,10 @@ pub fn add(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new(concat!("cannot add values")))
+  Err(Error::new("cannot add values", 0..0))
 }
 
-pub fn sub(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       return Ok(Value::int(lhs.sub(rhs)));
@@ -37,10 +37,10 @@ pub fn sub(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new(concat!("cannot subtract values")))
+  Err(Error::new("cannot subtract values", 0..0))
 }
 
-pub fn mul(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       return Ok(Value::int(lhs.mul(rhs)));
@@ -56,10 +56,10 @@ pub fn mul(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new(concat!("cannot multiply values")))
+  Err(Error::new("cannot multiply values", 0..0))
 }
 
-pub fn div(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       if rhs == 0 {
@@ -81,10 +81,10 @@ pub fn div(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new("cannot divide values"))
+  Err(Error::new("cannot divide values", 0..0))
 }
 
-pub fn rem(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       if rhs == 0 {
@@ -106,10 +106,10 @@ pub fn rem(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new("cannot divide values"))
+  Err(Error::new("cannot divide values", 0..0))
 }
 
-pub fn pow(lhs: Value, rhs: Value) -> Result<Value, Error> {
+pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       return if rhs < 0 {
@@ -132,5 +132,5 @@ pub fn pow(lhs: Value, rhs: Value) -> Result<Value, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new("cannot exponentiate value"))
+  Err(Error::new("cannot exponentiate value", 0..0))
 }

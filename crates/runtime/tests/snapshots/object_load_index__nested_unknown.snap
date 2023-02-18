@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/object_load_index.rs
+source: crates/runtime/tests/object_load_index.rs
 expression: snapshot
 ---
 # Input:
@@ -8,8 +8,8 @@ print v["a"]["b"]
 
 
 # Result (error):
-in [[main]]
-[31merror[0m in code: cannot get field `"b"` on value `{}`
+In test_func at 0..0
+Error: cannot get field `"b"` on value `{}`
 
 
 # Stdout:

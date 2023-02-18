@@ -1,17 +1,18 @@
 use indexmap::IndexSet;
 
-use super::{Control, Error, Isolate};
+use super::{Control, Isolate};
 use crate::util::JoinIter;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::{frame, func, Dict, List};
 use crate::value::Value;
+use crate::{Error, Result};
 
 // TODO: factor `method` out of this process, so `invoke` can be implemented as
 // a fast-track, all it needs to do is place the receiver. currently it's
 // allocating an extra object.
 
 impl<Io: std::io::Write> Isolate<Io> {
-  pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value, Error> {
+  pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value> {
     let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
     self.push_frame(frame);
@@ -21,7 +22,8 @@ impl<Io: std::io::Write> Isolate<Io> {
     if let Err(mut e) = self.run_dispatch_loop() {
       for _ in frame_depth..self.frames.len() {
         let frame = self.pop_frame();
-        e.add_trace(frame.name());
+        // TODO: Span and file name
+        e.push_trace(frame.name(), 0..0, None);
       }
       return Err(e);
     }
@@ -36,11 +38,12 @@ impl<Io: std::io::Write> Isolate<Io> {
     args: &[Value],
     kwargs: Value,
     on_return: frame::OnReturn,
-  ) -> Result<Frame, Error> {
+  ) -> Result<Frame> {
     // # Check that callee is callable
     // TODO: trait
     if !f.is_func() && !f.is_closure() && !f.is_method() {
-      return Err(Error::new("value is not callable"));
+      // TODO: span
+      return Err(Error::new("value is not callable", 0..0));
     }
 
     // # Check arguments
@@ -140,20 +143,22 @@ pub fn check_args(
 
   // check positional arguments
   if args.len() < min {
-    return Err(Error::new(format!(
-      "missing required positional params: {}",
-      if has_self_param { Some("self") } else { None }
-        .into_iter()
-        .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
-        .join(", "),
-    )));
+    return Err(Error::new(
+      format!(
+        "missing required positional params: {}",
+        if has_self_param { Some("self") } else { None }
+          .into_iter()
+          .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
+          .join(", "),
+      ),
+      0..0,
+    ));
   }
   if !params.argv && args.len() > max {
-    return Err(Error::new(format!(
-      "expected at most {} args, got {}",
-      max,
-      args.len()
-    )));
+    return Err(Error::new(
+      format!("expected at most {} args, got {}", max, args.len()),
+      0..0,
+    ));
   }
 
   // check kw arguments
@@ -174,24 +179,27 @@ pub fn check_args(
     }
   }
   if !unknown.is_empty() || !missing.is_empty() {
-    return Err(Error::new(format!(
-      "mismatched keyword params: {}{}{}",
-      if !unknown.is_empty() {
-        format!("could not recognize {}", unknown.iter().join(", "))
-      } else {
-        String::new()
-      },
-      if !unknown.is_empty() && !missing.is_empty() {
-        " and "
-      } else {
-        ""
-      },
-      if !missing.is_empty() {
-        format!("missing {}", missing.iter().join(", "))
-      } else {
-        String::new()
-      },
-    )));
+    return Err(Error::new(
+      format!(
+        "mismatched keyword params: {}{}{}",
+        if !unknown.is_empty() {
+          format!("could not recognize {}", unknown.iter().join(", "))
+        } else {
+          String::new()
+        },
+        if !unknown.is_empty() && !missing.is_empty() {
+          " and "
+        } else {
+          ""
+        },
+        if !missing.is_empty() {
+          format!("missing {}", missing.iter().join(", "))
+        } else {
+          String::new()
+        },
+      ),
+      0..0,
+    ));
   }
 
   Ok(out_info)

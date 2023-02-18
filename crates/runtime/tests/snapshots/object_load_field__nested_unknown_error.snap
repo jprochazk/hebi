@@ -10,8 +10,8 @@ print v.a.b
 
 
 # Result (error):
-in [[main]]
-[31merror[0m in code: cannot get field `b` on value `none`
+In test_func at 0..0
+Error: cannot get field `b` on value `none`
 
 
 # Stdout:

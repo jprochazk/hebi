@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/fn_call.rs
+source: crates/runtime/tests/fn_call.rs
 expression: snapshot
 ---
 # Input:
@@ -10,8 +10,8 @@ f()
 
 
 # Result (error):
-in [[main]]
-[31merror[0m in code: missing required positional params: a, b, c
+In test_func at 0..0
+Error: missing required positional params: a, b, c
 
 
 # Stdout:

@@ -1,8 +1,9 @@
 pub use std::cmp::Ordering;
 
 use super::*;
+use crate::{Error, Result};
 
-pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>, Error> {
+pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>> {
   if let Some(lhs) = lhs.as_int() {
     if let Some(rhs) = rhs.as_int() {
       return Ok(lhs.partial_cmp(&rhs));
@@ -18,5 +19,5 @@ pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>, Error> {
   }
 
   // TODO: span + print types
-  Err(Error::new("cannot compare values"))
+  Err(Error::new("cannot compare values", 0..0))
 }

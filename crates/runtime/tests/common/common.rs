@@ -20,7 +20,7 @@ macro_rules! check {
           panic!("Failed to parse source, see errors above.")
         }
       };
-      let module = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
+      let module = match emit::emit(&emit::Context::new(), "test_func", &module) {
         Ok(module) => module,
         Err(e) => {
           panic!("failed to emit module:\n{}", e.report(input));
@@ -34,7 +34,7 @@ macro_rules! check {
       let value = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
         Ok(v) => v,
         Err(e) => {
-          panic!("call to func failed with:\n{}", e.traceback(input));
+          panic!("call to func failed with:\n{}", e.stack_trace(Some(input.into())));
         }
       };
       let stdout = std::str::from_utf8(vm.io()).unwrap();
@@ -67,7 +67,7 @@ macro_rules! check_error {
           panic!("Failed to parse source, see errors above.")
         }
       };
-      let module = match emit::emit(&emit::Context::new(), "[[main]]", &module) {
+      let module = match emit::emit(&emit::Context::new(), "test_func", &module) {
         Ok(module) => module,
         Err(e) => {
           panic!("failed to emit module:\n{}", e.report(input));
@@ -80,7 +80,7 @@ macro_rules! check_error {
       let mut vm = Isolate::with_io(Registry::new().into(), Vec::<u8>::new());
       let error = match vm.call(func.clone().into(), &[], Value::from(Dict::new())) {
         Ok(v) => panic!("call to func succeeded with {v}"),
-        Err(e) => e.traceback(input),
+        Err(e) => e.stack_trace(Some(input.into())),
       };
       let stdout = std::str::from_utf8(vm.io()).unwrap();
       let snapshot = format!("# Input:\n{input}\n\n# Result (error):\n{error}\n\n# Stdout:\n{stdout}");

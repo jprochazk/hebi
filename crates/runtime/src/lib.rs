@@ -8,8 +8,6 @@ TODO: some cleanup after the vm+value merge
 - `util`
 - `error`
 
-finish the object access API
-
 
 TODO: carefully design the public API
 - Value
@@ -20,5 +18,8 @@ TODO: carefully design the public API
   - ?
 */
 
-pub use isolate::{Error, Isolate};
+pub use isolate::Isolate;
+pub use value::object::Error;
 pub use value::Value;
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;

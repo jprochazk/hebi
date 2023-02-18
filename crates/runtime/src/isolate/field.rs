@@ -1,9 +1,9 @@
-use super::error::Error;
 use crate::value::object::dict::Key;
 use crate::value::object::{Access, Method};
 use crate::value::Value;
+use crate::{Error, Result};
 
-pub fn set(obj: &mut Value, key: &str, value: Value) -> Result<(), Error> {
+pub fn set(obj: &mut Value, key: &str, value: Value) -> Result<()> {
   if let Some(obj) = obj.as_object_mut() {
     let key = Key::from(key);
     if obj.field_get(&key)?.is_some() || !obj.is_frozen() {
@@ -12,12 +12,13 @@ pub fn set(obj: &mut Value, key: &str, value: Value) -> Result<(), Error> {
     }
   };
 
-  Err(Error::new(format!(
-    "cannot set field `{key}` on value `{obj}`"
-  )))
+  Err(Error::new(
+    format!("cannot set field `{key}` on value `{obj}`"),
+    0..0,
+  ))
 }
 
-pub fn get(obj: &Value, key: &str) -> Result<Value, Error> {
+pub fn get(obj: &Value, key: &str) -> Result<Value> {
   if let Some(o) = obj.as_object() {
     let key = Key::from(key);
     if let Some(value) = o.field_get(&key)? {
@@ -34,12 +35,13 @@ pub fn get(obj: &Value, key: &str) -> Result<Value, Error> {
     }
   }
 
-  Err(Error::new(format!(
-    "cannot get field `{key}` on value `{obj}`"
-  )))
+  Err(Error::new(
+    format!("cannot get field `{key}` on value `{obj}`"),
+    0..0,
+  ))
 }
 
-pub fn get_opt(obj: &Value, key: &str) -> Result<Value, Error> {
+pub fn get_opt(obj: &Value, key: &str) -> Result<Value> {
   // early exit if on `none`
   if obj.is_none() {
     return Ok(Value::none());

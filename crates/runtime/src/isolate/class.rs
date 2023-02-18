@@ -1,15 +1,15 @@
-use super::error::Error;
 use super::{call, Isolate};
 use crate::value::object::handle::Handle;
 use crate::value::object::{ClassDef, Dict, Method};
 use crate::value::Value;
+use crate::Result;
 
 pub fn create_instance<Io: std::io::Write>(
   vm: &mut Isolate<Io>,
   def: Handle<ClassDef>,
   args: &[Value],
   kwargs: Value,
-) -> Result<Value, Error> {
+) -> Result<Value> {
   // create instance
   let mut class = def.instance();
 

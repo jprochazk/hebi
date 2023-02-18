@@ -41,12 +41,12 @@ pub trait Access {
 
   /// Represents the `obj.key` operation.
   fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
-    Err(crate::Error::new(format!("cannot get field `{key}`")))
+    Err(crate::Error::new(format!("cannot get field `{key}`"), 0..0))
   }
 
   /// Represents the `obj.key = value` operation.
   fn field_set(&mut self, key: StaticKey, _: Value) -> Result<(), crate::Error> {
-    Err(crate::Error::new(format!("cannot set field `{key}`")))
+    Err(crate::Error::new(format!("cannot set field `{key}`"), 0..0))
   }
 
   /// Represents the `obj[key]` operation.
@@ -61,7 +61,7 @@ pub trait Access {
   /// Represents the `obj[key] = value` operation.
   fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
     match &key {
-      Key::Int(_) => Err(crate::Error::new(format!("cannot set index `{key}`"))),
+      Key::Int(_) => Err(crate::Error::new(format!("cannot set index `{key}`"), 0..0)),
       Key::Str(_) => self.field_set(key, value),
       Key::Ref(_) => self.field_set(key, value),
     }

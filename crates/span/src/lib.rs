@@ -23,6 +23,17 @@ impl Span {
       end: other.end,
     }
   }
+
+  pub fn range(&self) -> Range<usize> {
+    Range {
+      start: self.start,
+      end: self.end,
+    }
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.start == self.end
+  }
 }
 
 impl From<Range<usize>> for Span {

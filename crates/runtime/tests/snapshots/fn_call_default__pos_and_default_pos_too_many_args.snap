@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/fn_call_default.rs
+source: crates/runtime/tests/fn_call_default.rs
 expression: snapshot
 ---
 # Input:
@@ -10,8 +10,8 @@ f(1,2,3)
 
 
 # Result (error):
-in [[main]]
-[31merror[0m in code: expected at most 2 args, got 3
+In test_func at 0..0
+Error: expected at most 2 args, got 3
 
 
 # Stdout:
