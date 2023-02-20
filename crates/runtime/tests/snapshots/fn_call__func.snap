@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/fn_call.rs
+source: crates/runtime/tests/fn_call.rs
 expression: snapshot
 ---
 # Input:
@@ -14,6 +14,6 @@ f()
 none
 
 # Stdout:
-"test"
-"test"
+test
+test
 

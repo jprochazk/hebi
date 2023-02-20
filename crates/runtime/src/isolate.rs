@@ -8,6 +8,7 @@ mod class;
 mod cmp;
 mod field;
 mod index;
+mod string;
 mod truth;
 
 use std::mem::take;
@@ -16,11 +17,12 @@ use std::ptr::NonNull;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::handle::Handle;
 use crate::value::object::{
-  dict, frame, Class, ClassDef, ClassDesc, Closure, ClosureDesc, Dict, List, Proxy, Registry,
+  frame, ClassDef, Closure, Dict, Key, List, ObjectType, Proxy, Registry,
 };
 use crate::value::Value;
 use crate::Error;
 
+// TODO: fields should be private, even to ops
 pub struct Isolate<Io: std::io::Write + Sized = std::io::Stdout> {
   registry: Handle<Registry>,
   globals: Handle<Dict>,
@@ -44,7 +46,7 @@ impl<Io: std::io::Write> Isolate<Io> {
   pub fn with_io(registry: Handle<Registry>, io: Io) -> Isolate<Io> {
     Isolate {
       registry,
-      globals: Dict::new().into(),
+      globals: Handle::alloc(Dict::new()),
 
       width: op::Width::Single,
       pc: 0,
@@ -54,6 +56,10 @@ impl<Io: std::io::Write> Isolate<Io> {
       current_frame: None,
       io,
     }
+  }
+
+  pub fn alloc<T: ObjectType>(&self, v: T) -> Handle<T> {
+    Handle::alloc(v)
   }
 
   pub fn io(&self) -> &Io {
@@ -164,7 +170,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_load_global(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // global name is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     match self.globals.get(&name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
@@ -177,7 +183,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_store_global(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // global name is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     self.globals.insert(name, self.acc.clone());
 
     Ok(())
@@ -186,7 +192,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_load_field(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     let name = name.as_str().unwrap();
 
     self.acc = field::get(&self.acc, name)?;
@@ -197,7 +203,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_load_field_opt(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     let name = name.as_str().unwrap();
 
     self.acc = field::get_opt(&self.acc, name)?;
@@ -208,7 +214,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_store_field(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     let name = name.as_str().unwrap();
 
     let mut obj = self.get_reg(obj);
@@ -220,7 +226,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_load_index(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = dict::Key::try_from(name.clone()) else {
+    let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
       return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
@@ -232,7 +238,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_load_index_opt(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = dict::Key::try_from(name.clone()) else {
+    let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
       return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
@@ -244,7 +250,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_store_index(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = dict::Key::try_from(name.clone()) else {
+    let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
       return Err(Error::new(format!("{name} is not a valid key"), 0..0).into());
     };
@@ -264,8 +270,8 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // receiver is always placed at the base of the current call frame's stack
     let this = self.get_reg(3);
 
-    if let Some(proxy) = this.as_proxy() {
-      self.acc = proxy.class().clone().into();
+    if let Some(proxy) = this.clone().to_proxy() {
+      self.acc = Value::object(proxy.class());
       return Ok(());
     }
 
@@ -282,27 +288,26 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     // all parent class `unwrap()`s here should never panic,
     // because parser checks for parent class
 
-    if let Some(proxy) = this.as_proxy() {
+    if let Some(proxy) = this.clone().to_proxy() {
       // we're in a super class
       // proxy to the next super class in the chain
-      self.acc = Proxy::new(
-        proxy.class().clone(),
-        //    current next
-        //    |       |
-        proxy.parent().parent().unwrap().clone(),
-      )
-      .into();
+      self.acc = Value::object(self.alloc(Proxy::new(
+        proxy.class(),
+        //    current  next
+        //    |        |
+        proxy.parent().parent().unwrap(),
+      )));
       return Ok(());
     }
 
     // we're not in a super class yet,
     // proxy to the first super class in the chain
-    let Some(this) = Handle::<Class>::from_value(this) else {
+    let Some(this) = this.to_class() else {
       // TODO: span
       return Err(Error::new("receiver is not a class", 0..0).into());
     };
-    let parent = this.parent().unwrap().clone();
-    self.acc = Proxy::new(this, parent).into();
+    let parent = this.parent().unwrap();
+    self.acc = Value::object(Handle::alloc(Proxy::new(this, parent)));
 
     Ok(())
   }
@@ -332,15 +337,15 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_create_empty_list(&mut self) -> Result<(), Self::Error> {
-    self.acc = List::new().into();
+    self.acc = Value::object(Handle::alloc(List::new()));
 
     Ok(())
   }
 
   fn op_push_to_list(&mut self, list: u32) -> Result<(), Self::Error> {
-    let mut list = self.get_reg(list);
+    let list = self.get_reg(list);
 
-    let Some(list) = list.as_list_mut() else {
+    let Some(mut list) = list.to_list() else {
       // TODO: span
       return Err(Error::new("value is not a list", 0..0).into());
     };
@@ -351,20 +356,20 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_create_empty_dict(&mut self) -> Result<(), Self::Error> {
-    self.acc = Dict::new().into();
+    self.acc = Value::object(Handle::alloc(Dict::new()));
 
     Ok(())
   }
 
   fn op_insert_to_dict(&mut self, key: u32, dict: u32) -> Result<(), Self::Error> {
     let key = self.get_reg(key);
-    let Ok(key) = dict::Key::try_from(key.clone()) else {
+    let Ok(key) = Key::try_from(key.clone()) else {
       // TODO: span
       return Err(Error::new(format!("{key} is not a valid key"), 0..0).into());
     };
 
-    let mut dict = self.get_reg(dict);
-    let dict = dict.as_dict_mut().unwrap();
+    let dict = self.get_reg(dict);
+    let mut dict = dict.to_dict().unwrap();
 
     // `name` is a `Key` so this `unwrap` won't panic
     dict.insert(key, take(&mut self.acc));
@@ -375,10 +380,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_insert_to_dict_named(&mut self, name: u32, dict: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
 
-    let mut dict = self.get_reg(dict);
-    let dict = dict.as_dict_mut().unwrap();
+    let dict = self.get_reg(dict);
+    let mut dict = dict.to_dict().unwrap();
 
     // name used in named load is always a string
     dict.insert(name, take(&mut self.acc));
@@ -390,9 +395,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let desc = self.get_const(desc);
 
     // this should always be a closure descriptor
-    let desc = Handle::<ClosureDesc>::from_value(desc).unwrap();
+    let desc = desc.to_closure_desc().unwrap();
 
-    self.acc = Closure::new(desc).into();
+    self.acc = Value::object(Handle::alloc(Closure::new(desc)));
 
     Ok(())
   }
@@ -400,13 +405,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_capture_reg(&mut self, reg: u32, slot: u32) -> Result<(), Self::Error> {
     let value = self.get_reg(reg);
 
-    // should not panic as long as bytecode is valid
-    let captures = &mut self
-      .acc
-      .as_closure_mut()
-      .expect("attempted to capture register for value which is not a closure")
-      .captures;
+    // this should always be a closure
+    let mut closure = self.acc.clone().to_closure().unwrap();
 
+    let captures = unsafe { closure.captures_mut() };
     captures[slot as usize] = value;
 
     Ok(())
@@ -416,13 +418,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     let value = self.get_capture(parent_slot);
 
     // should not panic as long as bytecode is valid
-    let self_captures = &mut self
-      .acc
-      .as_closure_mut()
-      .expect("attempted to capture register for value which is not a closure")
-      .captures;
+    let mut closure = self.acc.clone().to_closure().unwrap();
 
-    self_captures[self_slot as usize] = value;
+    let captures = unsafe { closure.captures_mut() };
+    captures[self_slot as usize] = value;
 
     Ok(())
   }
@@ -430,9 +429,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_create_class_empty(&mut self, desc: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = Handle::<ClassDesc>::from_value(desc).unwrap();
+    let desc = desc.to_class_desc().unwrap();
 
-    self.acc = Value::from(ClassDef::new(desc, &[]));
+    self.acc = Value::object(Handle::alloc(ClassDef::new(desc, &[])));
 
     Ok(())
   }
@@ -440,9 +439,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_create_class(&mut self, desc: u32, start: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = Handle::<ClassDesc>::from_value(desc).unwrap();
+    let desc = desc.to_class_desc().unwrap();
 
-    let value = Value::from(ClassDef::new(desc, &self.stack()[start as usize..]));
+    let value = Value::object(Handle::alloc(ClassDef::new(
+      desc,
+      &self.stack()[start as usize..],
+    )));
     self.acc = value;
 
     Ok(())
@@ -457,7 +459,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
-    let Some(value) = self.acc.as_bool() else {
+    let Some(value) = self.acc.clone().to_bool() else {
       // TODO: span
       return Err(Error::new("value is not a bool", 0..0).into());
     };
@@ -537,9 +539,9 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_unary_minus(&mut self) -> Result<(), Self::Error> {
     let value = take(&mut self.acc);
-    let value = if let Some(value) = value.as_int() {
+    let value = if let Some(value) = value.clone().to_int() {
       Value::int(-value)
-    } else if let Some(value) = value.as_float() {
+    } else if let Some(value) = value.to_float() {
       Value::float(-value)
     } else {
       // TODO: overload
@@ -647,7 +649,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_print(&mut self) -> Result<(), Self::Error> {
     let value = take(&mut self.acc);
     self
-      .print(format_args!("{value}\n"))
+      .print(format_args!("{}\n", string::stringify(value)))
       // TODO: span
       .map_err(|_| Error::new("failed to print value", 0..0))?;
     Ok(())
@@ -655,7 +657,7 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
 
   fn op_print_list(&mut self, list: u32) -> Result<(), Self::Error> {
     let list = self.get_reg(list);
-    let list = list.as_list().unwrap();
+    let list = list.to_list().unwrap();
 
     // print is a statement so should not leave a value in `acc`
     let _ = take(&mut self.acc);
@@ -666,12 +668,12 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
       if iter.peek().is_some() {
         // space at end
         self
-          .print(format_args!("{value} "))
+          .print(format_args!("{} ", string::stringify(value.clone())))
           // TODO: span
           .map_err(|_| Error::new("failed to print values", 0..0))?;
       } else {
         self
-          .print(format_args!("{value}"))
+          .print(format_args!("{}", string::stringify(value.clone())))
           // TODO: span
           .map_err(|_| Error::new("failed to print values", 0..0))?;
       }
@@ -685,19 +687,19 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
-    let func = self.acc.clone();
+    let callable = self.acc.clone();
 
-    if func.is_class_def() {
+    if callable.is_class_def() {
       // class constructor
-      let def = Handle::from_value(func).unwrap();
-      self.acc = class::create_instance(self, def, &[], Value::none())?;
+      let class_def = callable.to_class_def().unwrap();
+      self.acc = class::create_instance(self, class_def, &[], Value::none())?;
       self.pc = return_address;
       return Ok(());
     }
 
     // regular function call
     let frame = self.prepare_call_frame(
-      func,
+      callable,
       &[],
       Value::none(),
       frame::OnReturn::Jump(return_address),
@@ -708,21 +710,21 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   }
 
   fn op_call(&mut self, start: u32, args: u32, return_address: usize) -> Result<(), Self::Error> {
-    let func = self.acc.clone();
+    let callable = self.acc.clone();
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize..][..args as usize].to_vec();
 
-    if func.is_class_def() {
+    if callable.is_class_def() {
       // class constructor
-      let def = Handle::from_value(func).unwrap();
-      self.acc = class::create_instance(self, def, &args, Value::none())?;
+      let class_def = callable.to_class_def().unwrap();
+      self.acc = class::create_instance(self, class_def, &args, Value::none())?;
       self.pc = return_address;
       return Ok(());
     }
 
     // regular function call
     let frame = self.prepare_call_frame(
-      func,
+      callable,
       &args,
       Value::none(),
       frame::OnReturn::Jump(return_address),
@@ -739,22 +741,26 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
     args: u32,
     return_address: usize,
   ) -> Result<(), Self::Error> {
-    let func = self.acc.clone();
+    let callable = self.acc.clone();
     let kwargs = self.get_reg(start);
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize + 1..][..args as usize].to_vec();
 
-    if func.is_class_def() {
+    if callable.is_class_def() {
       // class constructor
-      let def = Handle::from_value(func).unwrap();
+      let def = callable.to_class_def().unwrap();
       self.acc = class::create_instance(self, def, &args, kwargs)?;
       self.pc = return_address;
       return Ok(());
     }
 
     // regular function call
-    let frame =
-      self.prepare_call_frame(func, &args, kwargs, frame::OnReturn::Jump(return_address))?;
+    let frame = self.prepare_call_frame(
+      callable,
+      &args,
+      kwargs,
+      frame::OnReturn::Jump(return_address),
+    )?;
     self.push_frame(frame);
     self.width = op::Width::Single;
     self.pc = 0;
@@ -773,10 +779,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_is_kw_param_not_set(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name is always a string here
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
     let kwargs = self.get_reg(2);
-    let kwargs = kwargs.as_dict().unwrap();
+    let kwargs = kwargs.to_dict().unwrap();
 
     self.acc = Value::bool(!kwargs.contains_key(&name));
 
@@ -786,10 +792,10 @@ impl<Io: std::io::Write> op::Handler for Isolate<Io> {
   fn op_load_kw_param(&mut self, name: u32, param: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name is always a string here
-    let name = dict::Key::try_from(name).unwrap();
+    let name = Key::try_from(name).unwrap();
     // base + 3 is always the kw dictionary
-    let mut kwargs = self.get_reg(2);
-    let kwargs = kwargs.as_dict_mut().unwrap();
+    let kwargs = self.get_reg(2);
+    let mut kwargs = kwargs.to_dict().unwrap();
 
     self.set_reg(param, kwargs.remove(&name).unwrap());
 

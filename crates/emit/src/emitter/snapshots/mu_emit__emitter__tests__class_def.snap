@@ -7,11 +7,11 @@ class T: pass
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <class desc T>
+    0: <class desc "T">
     1: "T"
   code:
     0 | create_class_empty [0]

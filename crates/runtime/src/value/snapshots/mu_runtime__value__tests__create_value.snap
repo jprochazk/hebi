@@ -1,28 +1,5 @@
 ---
 source: crates/runtime/src/value/mod.rs
-expression: values
+expression: snapshot
 ---
-[
-    Value {
-        type: "float",
-        value: 3.141592653589793,
-    },
-    Value {
-        type: "int",
-        value: -1000000,
-    },
-    Value {
-        type: "bool",
-        value: true,
-    },
-    Value {
-        type: "none",
-        value: "<none>",
-    },
-    Value {
-        type: "object",
-        value: Str(
-            "test",
-        ),
-    },
-]
+[3.141592653589793, -1000000, true, none, "test"]

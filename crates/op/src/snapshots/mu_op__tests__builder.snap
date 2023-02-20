@@ -2,7 +2,7 @@
 source: crates/op/src/tests.rs
 expression: chunk.disassemble(false)
 ---
-function <test>:
+function "test":
   length: 72
   const_pool (length=3):
     0 = "test"

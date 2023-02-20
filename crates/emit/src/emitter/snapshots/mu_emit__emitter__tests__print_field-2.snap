@@ -9,7 +9,7 @@ v["a"] = 1
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 6
   length: 46
   const (length=2):

@@ -1,7 +1,9 @@
+use std::fmt::Display;
 use std::ops::{Index, IndexMut};
 use std::ptr::NonNull;
 use std::slice::SliceIndex;
 
+use super::func::func_name;
 use super::handle::Handle;
 use super::{Access, List};
 use crate::value::constant::Constant;
@@ -38,14 +40,9 @@ impl Frame {
     Self::with_stack(func, num_args, on_return, Stack::with_capacity(256))
   }
 
-  pub fn with_stack(
-    mut func: Value,
-    num_args: usize,
-    on_return: OnReturn,
-    mut stack: Stack,
-  ) -> Self {
-    if let Some(f) = func.as_method() {
-      return Frame::with_stack(f.func.clone(), num_args, on_return, stack);
+  pub fn with_stack(func: Value, num_args: usize, on_return: OnReturn, stack: Stack) -> Self {
+    if let Some(f) = func.clone().to_method() {
+      return Frame::with_stack(f.func(), num_args, on_return, stack);
     }
 
     let Parts {
@@ -53,8 +50,9 @@ impl Frame {
       const_pool,
       frame_size,
       captures,
-    } = get_parts(&mut func);
+    } = get_parts(func.clone());
 
+    let mut stack = stack;
     stack.extend(frame_size);
 
     Frame {
@@ -78,18 +76,6 @@ impl Frame {
   }
 }
 
-fn func_name(f: &Value) -> String {
-  if let Some(f) = f.as_func() {
-    f.name().to_string()
-  } else if let Some(f) = f.as_closure() {
-    f.name().to_string()
-  } else if let Some(f) = f.as_method() {
-    func_name(&f.func)
-  } else {
-    panic!("{f} is not callable")
-  }
-}
-
 impl Access for Frame {}
 
 struct Parts {
@@ -99,11 +85,11 @@ struct Parts {
   captures: Option<NonNull<[Value]>>,
 }
 
-fn get_parts(f: &mut Value) -> Parts {
-  if let Some(f) = f.as_func_mut() {
-    let code = NonNull::from(f.code_mut());
-    let const_pool = NonNull::from(f.const_pool());
-    let frame_size = f.frame_size() as usize;
+fn get_parts(callable: Value) -> Parts {
+  if let Some(mut func) = callable.clone().to_func() {
+    let code = NonNull::from(unsafe { func.code_mut() });
+    let const_pool = NonNull::from(func.const_pool());
+    let frame_size = func.frame_size() as usize;
     let captures = None;
     return Parts {
       code,
@@ -113,11 +99,12 @@ fn get_parts(f: &mut Value) -> Parts {
     };
   }
 
-  if let Some(f) = f.as_closure_mut() {
-    let code = NonNull::from(f.code_mut());
-    let const_pool = NonNull::from(f.const_pool());
-    let frame_size = f.frame_size() as usize;
-    let captures = Some(NonNull::from(&mut f.captures[..]));
+  if let Some(mut closure) = callable.clone().to_closure() {
+    let mut func = closure.descriptor().func();
+    let code = NonNull::from(unsafe { func.code_mut() });
+    let const_pool = NonNull::from(func.const_pool());
+    let frame_size = func.frame_size() as usize;
+    let captures = Some(NonNull::from(unsafe { closure.captures_mut() }));
     return Parts {
       code,
       const_pool,
@@ -126,12 +113,18 @@ fn get_parts(f: &mut Value) -> Parts {
     };
   }
 
-  panic!("cannot create frame from {f}")
+  panic!("cannot create frame from {callable}")
 }
 
 impl Drop for Frame {
   fn drop(&mut self) {
     self.stack.truncate(self.stack_base())
+  }
+}
+
+impl Display for Frame {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<frame>")
   }
 }
 
@@ -144,14 +137,14 @@ pub struct Stack {
 impl Stack {
   pub fn new() -> Self {
     Self {
-      inner: List::new().into(),
+      inner: Handle::alloc(List::new()),
       base: 0,
     }
   }
 
   pub fn with_capacity(capacity: usize) -> Self {
     Self {
-      inner: List::with_capacity(capacity).into(),
+      inner: Handle::alloc(List::with_capacity(capacity)),
       base: 0,
     }
   }
@@ -179,15 +172,6 @@ impl Stack {
 impl Default for Stack {
   fn default() -> Self {
     Self::new()
-  }
-}
-
-impl std::fmt::Debug for Frame {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Frame")
-      .field("func", &self.func)
-      .field("on_return", &self.on_return)
-      .finish()
   }
 }
 

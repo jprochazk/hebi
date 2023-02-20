@@ -1,6 +1,7 @@
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
+use super::object::Object;
 use super::*;
 
 mod mask {
@@ -34,7 +35,7 @@ enum PhantomValue {
   Int(i32),
   Bool(bool),
   None,
-  Object(Ptr<object::Object>),
+  Object(Ptr<Object>),
 }
 
 /// Mu's core `Value` type.
@@ -82,8 +83,6 @@ impl Value {
     Self::new(bits)
   }
 
-  // 0b000000_00000000_01111111_00111001_00101000_00000000_00001101_00100000
-
   pub fn bool(v: bool) -> Self {
     let bits = v as u64;
     let bits = bits | ty::BOOL;
@@ -95,7 +94,11 @@ impl Value {
     Self::new(bits)
   }
 
-  pub fn object(v: Ptr<object::Object>) -> Self {
+  pub fn object<T: ObjectType>(v: Handle<T>) -> Self {
+    Self::object_raw(v.widen())
+  }
+
+  pub(crate) fn object_raw(v: Ptr<Object>) -> Self {
     let ptr = Ptr::into_addr(v) as u64;
     let bits = (ptr & mask::VALUE) | ty::OBJECT;
     Self::new(bits)
@@ -138,54 +141,15 @@ impl Value {
   pub fn is_object(&self) -> bool {
     self.type_tag() == ty::OBJECT
   }
-
-  /// This is `pub(crate)` so that users may not break the invariant that
-  /// `value::object::dict::Key::String` is always a string by mutating the
-  /// object behind the pointer using `borrow_mut`.
-  ///
-  /// It's not necessary because `Value` has impls for `as_<repr>` where
-  /// `<repr>` is any of the possible object representations.
-  pub(crate) fn into_object(self) -> Option<Ptr<object::Object>> {
-    if !self.is_object() {
-      return None;
-    }
-    let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
-    std::mem::forget(self);
-    Some(ptr)
-  }
-
-  pub(crate) fn as_object(&self) -> Option<&object::Object> {
-    if self.is_object() {
-      let addr = self.value() as usize;
-      let ptr = addr as *const UnsafeCell<object::Object>;
-      let ptr = unsafe { &*ptr };
-      Some(unsafe { ptr.get().as_ref().unwrap_unchecked() })
-    } else {
-      None
-    }
-  }
-
-  /// This is `pub(crate)` so that users may not break the invariant that
-  /// the object behind a `Handle<T>` is always a `T`.
-  pub(crate) fn as_object_mut(&mut self) -> Option<&mut object::Object> {
-    if self.is_object() {
-      let addr = self.value() as usize;
-      let ptr = addr as *mut UnsafeCell<object::Object>;
-      let ptr = unsafe { &mut *ptr };
-      Some(unsafe { ptr.get().as_mut().unwrap_unchecked() })
-    } else {
-      None
-    }
-  }
 }
 
 impl Clone for Value {
   fn clone(&self) -> Self {
     if self.is_object() {
       let addr = self.value() as usize;
-      unsafe { Ptr::<object::Object>::increment_strong_count(addr) }
+      unsafe { Ptr::<Object>::increment_strong_count(addr) }
       let ptr = unsafe { Ptr::from_addr(addr) };
-      Value::object(ptr)
+      Value::object_raw(ptr)
     } else {
       // SAFETY: this is not an object, so we don't need to increment the reference
       // count.
@@ -201,54 +165,62 @@ impl Drop for Value {
   fn drop(&mut self) {
     if self.is_object() {
       // Decrement the reference count of `self`
-      unsafe { Ptr::<object::Object>::decrement_strong_count(self.value() as usize) }
+      unsafe { Ptr::<Object>::decrement_strong_count(self.value() as usize) }
     }
   }
 }
 
 // Owned conversions
 impl Value {
-  pub fn as_float(&self) -> Option<f64> {
+  pub fn to_float(self) -> Option<f64> {
     if !self.is_float() {
       return None;
     }
     Some(f64::from_bits(self.bits))
   }
 
-  pub fn to_float(self) -> Option<f64> {
-    self.as_float()
-  }
-
-  pub fn as_int(&self) -> Option<i32> {
+  pub fn to_int(self) -> Option<i32> {
     if !self.is_int() {
       return None;
     }
     Some(self.value() as u32 as i32)
   }
 
-  pub fn to_int(self) -> Option<i32> {
-    self.as_int()
-  }
-
-  pub fn as_bool(&self) -> Option<bool> {
+  pub fn to_bool(self) -> Option<bool> {
     if !self.is_bool() {
       return None;
     }
     Some(self.value() == 1)
   }
 
-  pub fn to_bool(self) -> Option<bool> {
-    self.as_bool()
-  }
-
-  pub fn as_none(&self) -> Option<()> {
+  pub fn to_none(self) -> Option<()> {
     if !self.is_none() {
       return None;
     }
     Some(())
   }
 
-  pub fn to_none(self) -> Option<()> {
-    self.as_none()
+  pub fn to_object<T: ObjectType>(self) -> Option<Handle<T>> {
+    self.to_object_raw().and_then(Handle::from_ptr)
+  }
+
+  pub(crate) fn to_object_raw(self) -> Option<Ptr<Object>> {
+    if !self.is_object() {
+      return None;
+    }
+    let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
+    std::mem::forget(self);
+    Some(ptr)
+  }
+
+  pub(crate) fn as_object_raw(&self) -> Option<&Object> {
+    if self.is_object() {
+      let addr = self.value() as usize;
+      let ptr = addr as *const UnsafeCell<Object>;
+      let ptr = unsafe { &*ptr };
+      Some(unsafe { ptr.get().as_ref().unwrap_unchecked() })
+    } else {
+      None
+    }
   }
 }

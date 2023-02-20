@@ -1,3 +1,4 @@
+use super::object::Object;
 use super::*;
 
 // TODO: make this indistinguishable from nanbox value
@@ -30,7 +31,11 @@ impl Value {
     Self::None
   }
 
-  pub fn object(v: Ptr<object::Object>) -> Self {
+  pub fn object<T: ObjectType>(v: Handle<T>) -> Self {
+    Self::Object(v.widen())
+  }
+
+  pub(crate) fn object_raw(v: Ptr<Object>) -> Self {
     Self::Object(v)
   }
 }
@@ -61,121 +66,53 @@ impl Value {
   pub fn is_object(&self) -> bool {
     matches!(self, Self::Object(..))
   }
-
-  /// This is `pub(crate)` so that users may not break the invariant that
-  /// `value::object::dict::Key::String` is always a string by mutating the
-  /// object behind the pointer using `borrow_mut`.
-  ///
-  /// It's not necessary because `Value` has impls for `as_<repr>` where
-  /// `<repr>` is any of the possible object representations.
-  pub(crate) fn into_object(self) -> Option<Ptr<object::Object>> {
-    if !self.is_object() {
-      return None;
-    }
-
-    match self {
-      Value::Object(v) => Some(v),
-      _ => unreachable!(),
-    }
-  }
-
-  pub(crate) fn as_object(&self) -> Option<&object::Object> {
-    match self {
-      Value::Object(v) => Some(v),
-      _ => None,
-    }
-  }
-
-  /// This is `pub(crate)` so that users may not break the invariant that
-  /// the object behind a `Handle<T>` is always a `T`.
-  pub(crate) fn as_object_mut(&mut self) -> Option<&mut object::Object> {
-    match self {
-      Value::Object(v) => Some(v),
-      _ => None,
-    }
-  }
 }
 
 // Owned conversions
 impl Value {
-  pub fn as_float(&self) -> Option<f64> {
-    match self {
-      Value::Float(v) => Some(*v),
-      _ => None,
-    }
-  }
-
   pub fn to_float(self) -> Option<f64> {
-    self.as_float()
-  }
-
-  pub fn as_int(&self) -> Option<i32> {
     match self {
-      Value::Int(v) => Some(*v),
+      Value::Float(v) => Some(v),
       _ => None,
     }
   }
 
   pub fn to_int(self) -> Option<i32> {
-    self.as_int()
-  }
-
-  pub fn as_bool(&self) -> Option<bool> {
     match self {
-      Value::Bool(v) => Some(*v),
+      Value::Int(v) => Some(v),
       _ => None,
     }
   }
 
   pub fn to_bool(self) -> Option<bool> {
-    self.as_bool()
+    match self {
+      Value::Bool(v) => Some(v),
+      _ => None,
+    }
   }
 
-  pub fn as_none(&self) -> Option<()> {
+  pub fn to_none(self) -> Option<()> {
     match self {
       Value::None => Some(()),
       _ => None,
     }
   }
 
-  pub fn to_none(self) -> Option<()> {
-    self.as_none()
+  pub fn to_object<T: ObjectType>(self) -> Option<Handle<T>> {
+    self.to_object_raw().and_then(Handle::from_ptr)
   }
-}
 
-impl PartialEq<Value> for Value {
-  fn eq(&self, other: &Value) -> bool {
-    match (self, other) {
-      (Value::Float(a), Value::Float(b)) => a == b,
-      (Value::Int(a), Value::Int(b)) => a == b,
-      (Value::Bool(a), Value::Bool(b)) => a == b,
-      (Value::None, Value::None) => true,
-      (Value::Object(a), Value::Object(b)) => a == b,
-      (_, _) => false,
+  pub(crate) fn to_object_raw(self) -> Option<Ptr<Object>> {
+    match self {
+      Value::Object(v) => Some(v),
+      _ => None,
     }
   }
-}
-// Note: NaNs are not reflexive, but we close our eyes,
-// and pray that this doesn't break things too badly.
-// We do this to be able to store `Value` as a key in a `HashMap`.
-impl Eq for Value {}
 
-const QNAN: u64 = 0b01111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000;
-
-impl Hash for Value {
-  fn hash<H: Hasher>(&self, state: &mut H) {
+  pub(crate) fn as_object_raw(&self) -> Option<&Object> {
     match self {
-      Value::Float(v) => {
-        if v.is_nan() {
-          QNAN.hash(state)
-        } else {
-          v.to_bits().hash(state)
-        }
-      }
-      Value::Int(v) => v.hash(state),
-      Value::Bool(v) => v.hash(state),
-      Value::None => 0.hash(state),
-      Value::Object(v) => v.hash(state),
+      Value::Object(v) => Some(unsafe { v._get() }),
+      _ => None,
     }
   }
 }

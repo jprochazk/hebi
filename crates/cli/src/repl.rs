@@ -1,5 +1,5 @@
 use runtime::value::object::Registry;
-use runtime::{Error as MuError, Isolate, Value};
+use runtime::{Error as MuError, Handle, Isolate, Value};
 use rustyline::Editor;
 
 struct Repl {
@@ -33,7 +33,7 @@ impl Repl {
   fn new() -> Self {
     Self {
       emit_ctx: emit::Context::new(),
-      vm: Isolate::new(Registry::new().into()),
+      vm: Isolate::new(Handle::alloc(Registry::new())),
       editor: Editor::new().unwrap(),
       state: State::default(),
     }
@@ -81,11 +81,11 @@ impl Repl {
   fn eval(&mut self, input: &str) -> Result<Value, MuError> {
     let module = syntax::parse(input).unwrap();
     let module = emit::emit(&self.emit_ctx, "code", &module).unwrap();
-    let main = module.main().clone();
+    let main = module.main();
     if self.state.print_bytecode {
-      println!("{}", main.disassemble(op::disassemble, false));
+      println!("{}", main.disassemble(false));
     }
-    self.vm.call(main.into(), &[], Value::none())
+    self.vm.call(Value::object(main), &[], Value::none())
   }
 
   fn validate(&mut self, input: &str) -> Result<ParseResult, String> {

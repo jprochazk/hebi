@@ -1,10 +1,9 @@
-use crate::value::object::dict::{Key, StaticKey};
-use crate::value::object::Access;
+use crate::value::object::{Access, Key, StaticKey};
 use crate::value::Value;
 use crate::{Error, Result};
 
 pub fn set(obj: &mut Value, key: StaticKey, value: Value) -> Result<()> {
-  if let Some(obj) = obj.as_object_mut() {
+  if let Some(mut obj) = obj.clone().to_object_raw() {
     if obj.index_get(&key)?.is_some() || !obj.is_frozen() {
       obj.index_set(key.to_static(), value)?;
       return Ok(());
@@ -18,7 +17,7 @@ pub fn set(obj: &mut Value, key: StaticKey, value: Value) -> Result<()> {
 }
 
 pub fn get(obj: &Value, key: &Key) -> Result<Value> {
-  if let Some(o) = obj.as_object() {
+  if let Some(o) = obj.clone().to_object_raw() {
     if let Some(value) = o.index_get(key)? {
       return Ok(value);
     }
@@ -36,7 +35,7 @@ pub fn get_opt(obj: &Value, key: &Key) -> Result<Value> {
     return Ok(Value::none());
   }
 
-  if let Some(o) = obj.as_object() {
+  if let Some(o) = obj.clone().to_object_raw() {
     if let Some(value) = o.index_get(key)? {
       return Ok(value);
     }

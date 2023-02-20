@@ -6,22 +6,18 @@ macro_rules! object_repr {
     }
   ) => {
     paste::paste! {
-      #[derive(Clone, Debug)]
+      #[derive(Clone)]
       enum $Repr {
         $( $ty($ty), )*
       }
 
       impl Object {
         $(
-          pub fn [<$ty:snake>](v: impl Into<$ty>) -> Self {
-            Object { repr: $Repr::$ty(v.into()) }
-          }
-
-          pub fn [<is_ $ty:snake>](&self) -> bool {
+          pub(crate) fn [<is_ $ty:snake>](&self) -> bool {
             matches!(self.repr, $Repr::$ty(..))
           }
 
-          pub fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
+          pub(crate) fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
             if let $Repr::$ty(ref v) = self.repr {
               Some(v)
             } else {
@@ -29,7 +25,7 @@ macro_rules! object_repr {
             }
           }
 
-          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<&mut $ty> {
+          pub(crate) fn [<as_ $ty:snake _mut>](&mut self) -> Option<&mut $ty> {
             if let $Repr::$ty(ref mut v) = self.repr {
               Some(v)
             } else {
@@ -37,6 +33,14 @@ macro_rules! object_repr {
             }
           }
         )*
+      }
+
+      impl Display for Object {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+          match &self.repr {
+            $($Repr::$ty(inner) => Display::fmt(inner, f),)*
+          }
+        }
       }
 
       impl Access for Object {
@@ -80,24 +84,12 @@ macro_rules! object_repr {
       impl Value {
         $(
           pub fn [<is_ $ty:snake>](&self) -> bool {
-            let Some(this) = self.as_object() else { return false; };
+            let Some(this) = self.as_object_raw() else { return false; };
             this.[<is_ $ty:snake>]()
           }
 
-          pub fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
-            let Some(this) = self.as_object() else { return None; };
-            if !this.[<is_ $ty:snake>]() {
-              return None;
-            }
-            Some(this.[<as_ $ty:snake>]().unwrap())
-          }
-
-          pub fn [<as_ $ty:snake _mut>](&mut self) -> Option<&mut $ty> {
-            let Some(this) = self.as_object_mut() else { return None; };
-            if !this.[<is_ $ty:snake>]() {
-              return None;
-            }
-            Some(this.[<as_ $ty:snake _mut>]().unwrap())
+          pub fn [<to_ $ty:snake>](self) -> Option<Handle<$ty>> {
+            self.to_object()
           }
         )*
       }
@@ -105,27 +97,26 @@ macro_rules! object_repr {
       $(
         impl From<$ty> for Object {
           fn from(v: $ty) -> Self {
-            Object::[<$ty:snake>](v)
+            Object { repr: $Repr::$ty(v.into()) }
           }
         }
 
-
         impl private::Sealed for $ty {}
-        impl ObjectHandle for $ty {
-          fn as_self(o: &Ptr<Object>) -> Option<&Self> {
-            if !o.get().[<is_ $ty:snake>]() {
+        impl ObjectType for $ty {
+          fn as_ref(o: &Object) -> Option<&Self> {
+            if !o.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(o.get().[<as_ $ty:snake>]().unwrap())
+            Some(o.[<as_ $ty:snake>]().unwrap())
           }
-          fn as_self_mut(o: &mut Ptr<Object>) -> Option<&mut Self> {
-            if !o.get_mut().[<is_ $ty:snake>]() {
+          fn as_mut(o: &mut Object) -> Option<&mut Self> {
+            if !o.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(o.get_mut().[<as_ $ty:snake _mut>]().unwrap())
+            Some(o.[<as_ $ty:snake _mut>]().unwrap())
           }
-          fn is_self(o: &Ptr<Object>) -> bool {
-            o.get().[<is_ $ty:snake>]()
+          fn is(o: &Object) -> bool {
+            o.[<is_ $ty:snake>]()
           }
         }
       )*

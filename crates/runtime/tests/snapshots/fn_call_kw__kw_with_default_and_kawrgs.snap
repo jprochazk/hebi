@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/fn_call_kw.rs
+source: crates/runtime/tests/fn_call_kw.rs
 expression: snapshot
 ---
 # Input:

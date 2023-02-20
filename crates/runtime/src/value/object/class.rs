@@ -1,75 +1,48 @@
-use std::fmt::Debug;
+use std::fmt::Display;
 use std::hash::Hash;
 
 use indexmap::Equivalent;
 
-use super::dict::{Key, StaticKey};
-use super::func::Params;
+use super::func::{func_name, Params};
 use super::handle::Handle;
-use super::{Access, Dict, Str};
+use super::{Access, Dict, Key, StaticKey, Str};
 use crate::value::Value;
 
 #[derive(Clone)]
 pub struct Class {
-  pub(super) name: Str,
-  pub(super) fields: Dict,
-  pub(super) parent: Option<Handle<ClassDef>>,
+  name: Handle<Str>,
+  fields: Dict,
+  parent: Option<Handle<ClassDef>>,
   is_frozen: bool,
 }
 
-#[derive(Clone)]
-pub struct Proxy {
-  pub(super) class: Handle<Class>,
-  pub(super) parent: Handle<ClassDef>,
-}
-
-impl Proxy {
-  pub fn new(class: Handle<Class>, parent: Handle<ClassDef>) -> Handle<Self> {
-    Self { class, parent }.into()
-  }
-
-  pub fn class(&self) -> &Handle<Class> {
-    &self.class
-  }
-
-  pub fn parent(&self) -> &Handle<ClassDef> {
-    &self.parent
-  }
-}
-
+#[derive::delegate_to_handle]
 impl Class {
-  pub fn name(&self) -> &str {
-    self.name.as_str()
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
   }
 
-  pub fn parent(&self) -> Option<&Handle<ClassDef>> {
-    self.parent.as_ref()
+  pub fn parent(&self) -> Option<Handle<ClassDef>> {
+    self.parent.clone()
   }
 
-  pub fn has<Q>(&self, key: &Q) -> bool
+  pub(crate) fn has<Q>(&self, key: &Q) -> bool
   where
     Q: ?Sized + Hash + Equivalent<StaticKey>,
   {
     self.fields.contains_key(key)
   }
 
-  pub fn get(&self, key: impl Into<StaticKey>) -> Option<&Value> {
+  pub(crate) fn get(&self, key: impl Into<StaticKey>) -> Option<&Value> {
     let key = key.into();
     self.fields.get(&key)
   }
 
-  pub fn insert(&mut self, key: impl Into<StaticKey>, value: Value) -> Option<Value> {
+  pub(crate) fn insert(&mut self, key: impl Into<StaticKey>, value: Value) -> Option<Value> {
     self.fields.insert(key, value)
   }
 
-  pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
-  where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
-  {
-    self.fields.remove(key)
-  }
-
-  pub fn freeze(&mut self) {
+  pub(crate) fn freeze(&mut self) {
     self.is_frozen = true;
   }
 }
@@ -93,54 +66,122 @@ impl Access for Class {
   }
 }
 
-#[derive(Clone, Debug)]
-pub struct Method {
-  pub this: Value, // Class or Proxy
-  pub func: Value, // Func or Closure
+impl Display for Class {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<class {}>", self.name())
+  }
 }
 
-// TODO: Shape
+#[derive(Clone)]
+pub struct Proxy {
+  class: Handle<Class>,
+  parent: Handle<ClassDef>,
+}
+
+impl Proxy {
+  pub fn new(class: Handle<Class>, parent: Handle<ClassDef>) -> Self {
+    Self { class, parent }
+  }
+}
+
+#[derive::delegate_to_handle]
+impl Proxy {
+  pub fn class(&self) -> Handle<Class> {
+    self.class.clone()
+  }
+
+  pub fn parent(&self) -> Handle<ClassDef> {
+    self.parent.clone()
+  }
+}
+
+impl Display for Proxy {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.parent())
+  }
+}
+
+impl Access for Proxy {
+  fn is_frozen(&self) -> bool {
+    true
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    self.parent().field_get(key)
+  }
+}
+
+#[derive(Clone)]
+pub struct Method {
+  this: Value, // Class or Proxy
+  func: Value, // Func or Closure
+}
+
+impl Method {
+  pub fn new(this: Value, func: Value) -> Self {
+    Self { this, func }
+  }
+}
+
+#[derive::delegate_to_handle]
+impl Method {
+  pub fn this(&self) -> Value {
+    self.this.clone()
+  }
+
+  pub fn func(&self) -> Value {
+    self.func.clone()
+  }
+}
+
+impl Display for Method {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<method {}>", func_name(&self.func.clone()))
+  }
+}
+
+impl Access for Method {}
 
 #[derive(Clone)]
 pub struct ClassDef {
-  pub(super) name: Str,
-  pub(super) params: Params,
-  pub(super) methods: Dict,
-  pub(super) fields: Dict,
-  pub(super) parent: Option<Handle<ClassDef>>,
+  name: Handle<Str>,
+  params: Params,
+  methods: Dict,
+  fields: Dict,
+  parent: Option<Handle<ClassDef>>,
 }
 
 impl ClassDef {
   pub fn new(desc: Handle<ClassDesc>, args: &[Value]) -> Self {
-    assert!(args.len() >= desc.is_derived as usize + desc.methods.len() + desc.fields.len());
+    assert!(args.len() >= desc.is_derived() as usize + desc.methods().len() + desc.fields().len());
 
-    let name = desc.name.clone();
-    let params = desc.params.clone();
+    let name = desc.name();
+    let params = desc.params().clone();
 
     let parent_offset = 0;
-    let methods_offset = parent_offset + desc.is_derived as usize;
-    let fields_offset = methods_offset + desc.methods.len();
+    let methods_offset = parent_offset + desc.is_derived() as usize;
+    let fields_offset = methods_offset + desc.methods().len();
 
     let parent = desc
-      .is_derived
-      .then(|| Handle::<ClassDef>::from_value(args[parent_offset].clone()).unwrap());
+      .is_derived()
+      .then(|| args[parent_offset].clone().to_object::<ClassDef>().unwrap());
 
-    let mut methods = Dict::with_capacity(desc.methods.len());
-    for (k, v) in desc.methods.iter().zip(args[methods_offset..].iter()) {
+    let mut methods = Dict::with_capacity(desc.methods().len());
+    for (k, v) in desc.methods().iter().zip(args[methods_offset..].iter()) {
       methods.insert(k.clone(), v.clone());
     }
 
-    let mut fields = Dict::with_capacity(desc.fields.len());
-    for (k, v) in desc.fields.iter().zip(args[fields_offset..].iter()) {
+    let mut fields = Dict::with_capacity(desc.fields().len());
+    for (k, v) in desc.fields().iter().zip(args[fields_offset..].iter()) {
       fields.insert(k.clone(), v.clone());
     }
 
     // inherit methods and field defaults
     if let Some(parent) = &parent {
-      for (k, v) in parent.methods.iter() {
+      for (k, v) in parent.methods().iter() {
         methods.entry(k.clone()).or_insert_with(|| v.clone());
       }
-      for (k, v) in parent.fields.iter() {
+      for (k, v) in parent.fields().iter() {
         fields.entry(k.clone()).or_insert_with(|| v.clone());
       }
     }
@@ -153,8 +194,11 @@ impl ClassDef {
       parent,
     }
   }
+}
 
-  pub fn instance(&self) -> Handle<Class> {
+#[derive::delegate_to_handle]
+impl ClassDef {
+  pub fn instance(&self) -> Class {
     let name = self.name.clone();
     let parent = self.parent.clone();
 
@@ -169,23 +213,36 @@ impl ClassDef {
       parent,
       is_frozen: false,
     }
-    .into()
   }
 
-  pub fn name(&self) -> &str {
-    self.name.as_str()
-  }
-
-  pub fn params(&self) -> &Params {
-    &self.params
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
   }
 
   pub fn method(&self, key: &str) -> Option<Value> {
     self.methods.get(key).cloned()
   }
 
-  pub fn parent(&self) -> Option<&Handle<ClassDef>> {
-    self.parent.as_ref()
+  pub fn parent(&self) -> Option<Handle<ClassDef>> {
+    self.parent.clone()
+  }
+
+  pub(crate) fn methods(&self) -> &Dict {
+    &self.methods
+  }
+
+  pub(crate) fn fields(&self) -> &Dict {
+    &self.fields
+  }
+
+  pub(crate) fn params(&self) -> &Params {
+    &self.params
+  }
+}
+
+impl Display for ClassDef {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<class def {}>", self.name())
   }
 }
 
@@ -203,59 +260,60 @@ impl Access for ClassDef {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ClassDesc {
-  pub name: Str,
-  pub params: Params,
-  pub is_derived: bool,
-  pub methods: Vec<Str>,
-  pub fields: Vec<Str>,
+  name: Handle<Str>,
+  params: Params,
+  is_derived: bool,
+  methods: Vec<Str>,
+  fields: Vec<Str>,
 }
 
-impl std::fmt::Debug for Class {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let mut d = f.debug_struct("Class");
-
-    let mut key = String::new();
-    for (k, v) in self.fields.iter() {
-      key.clear();
-      k.write_to_string(&mut key);
-      if v.is_method() {
-        d.field(&key, &v.as_method().unwrap().func);
-      } else {
-        d.field(&key, v);
-      }
+impl ClassDesc {
+  pub fn new(
+    name: Handle<Str>,
+    params: Params,
+    is_derived: bool,
+    methods: Vec<Str>,
+    fields: Vec<Str>,
+  ) -> Self {
+    Self {
+      name,
+      params,
+      is_derived,
+      methods,
+      fields,
     }
-
-    d.finish()
   }
 }
 
-impl std::fmt::Debug for ClassDef {
+#[derive::delegate_to_handle]
+impl ClassDesc {
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
+  }
+
+  pub(crate) fn params(&self) -> &Params {
+    &self.params
+  }
+
+  pub(crate) fn is_derived(&self) -> bool {
+    self.is_derived
+  }
+
+  pub(crate) fn methods(&self) -> &[Str] {
+    &self.methods
+  }
+
+  pub(crate) fn fields(&self) -> &[Str] {
+    &self.fields
+  }
+}
+
+impl Display for ClassDesc {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ClassDef")
-      .field("defaults", &self.fields)
-      .field("methods", &self.methods)
-      .field("parent", &self.parent.as_ref().map(|p| p.name()))
-      .finish()
+    write!(f, "<class desc {}>", self.name())
   }
 }
 
-impl std::fmt::Debug for Proxy {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Debug::fmt(&self.parent, f)
-  }
-}
-
-impl Access for Proxy {
-  fn is_frozen(&self) -> bool {
-    true
-  }
-
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
-    self.parent().field_get(key)
-  }
-}
-
-impl Access for Method {}
 impl Access for ClassDesc {}

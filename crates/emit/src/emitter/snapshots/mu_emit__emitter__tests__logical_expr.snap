@@ -24,7 +24,7 @@ fn f3(a, b, c, d):
 
 
 # Func:
-function <f0>:
+function "f0":
   frame_size: 7
   length: 50
   const: <empty>
@@ -67,7 +67,7 @@ function <f0>:
     48 | ret 
     49 | suspend 
 
-function <f1_a>:
+function "f1_a":
   frame_size: 8
   length: 35
   const: <empty>
@@ -100,7 +100,7 @@ function <f1_a>:
     33 | ret 
     34 | suspend 
 
-function <f1_b>:
+function "f1_b":
   frame_size: 8
   length: 35
   const: <empty>
@@ -133,7 +133,7 @@ function <f1_b>:
     33 | ret 
     34 | suspend 
 
-function <f2_a>:
+function "f2_a":
   frame_size: 8
   length: 41
   const: <empty>
@@ -171,7 +171,7 @@ function <f2_a>:
     39 | ret 
     40 | suspend 
 
-function <f2_b>:
+function "f2_b":
   frame_size: 8
   length: 41
   const: <empty>
@@ -209,7 +209,7 @@ function <f2_b>:
     39 | ret 
     40 | suspend 
 
-function <f3>:
+function "f3":
   frame_size: 9
   length: 43
   const: <empty>
@@ -247,21 +247,21 @@ function <f3>:
     41 | ret 
     42 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 26
   const (length=12):
-    0: <func f0>
+    0: <func "f0">
     1: "f0"
-    2: <func f1_a>
+    2: <func "f1_a">
     3: "f1_a"
-    4: <func f1_b>
+    4: <func "f1_b">
     5: "f1_b"
-    6: <func f2_a>
+    6: <func "f2_a">
     7: "f2_a"
-    8: <func f2_b>
+    8: <func "f2_b">
     9: "f2_b"
-    10: <func f3>
+    10: <func "f3">
     11: "f3"
   code:
      0 | load_const [0]

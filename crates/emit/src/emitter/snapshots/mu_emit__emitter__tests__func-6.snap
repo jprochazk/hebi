@@ -11,7 +11,7 @@ test(1, 2, b=3, c=4)
 
 
 # Func:
-function <test>:
+function "test":
   frame_size: 7
   length: 48
   const (length=1):
@@ -46,11 +46,11 @@ function <test>:
     46 | ret 
     47 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 7
   length: 63
   const (length=4):
-    0: <func test>
+    0: <func "test">
     1: "test"
     2: "b"
     3: "c"

@@ -1,13 +1,5 @@
 [workspace]
-members = [
-  "crates/diag",
-  "crates/emit",
-  "crates/op",
-  "crates/runtime",
-  "crates/span",
-  "crates/syntax",
-  "crates/cli",
-]
+members = ["crates/*"]
 resolver = "2"
 
 # TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace

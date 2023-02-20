@@ -1,78 +1,82 @@
+use std::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
 
-use super::{Object, ObjectHandle, Ptr, Value};
+use super::{Object, ObjectType, Ptr};
 
 #[derive(Clone)]
 pub struct Handle<T> {
-  o: Ptr<Object>,
+  obj: Ptr<Object>,
   _p: PhantomData<T>,
 }
 
-impl<T: ObjectHandle> Handle<T> {
-  pub fn new(o: impl Into<Object>) -> Self {
-    unsafe { Self::from_ptr_unchecked(Ptr::new(o.into())) }
+impl<T: ObjectType> Handle<T> {
+  pub fn alloc(obj: T) -> Self {
+    unsafe { Self::from_ptr_unchecked(Ptr::alloc(obj.into())) }
   }
 
-  pub fn from_ptr(o: Ptr<Object>) -> Option<Self> {
-    if !<T as ObjectHandle>::is_self(&o) {
+  pub(crate) fn from_ptr(obj: Ptr<Object>) -> Option<Self> {
+    if !<T as ObjectType>::is(unsafe { obj._get() }) {
       return None;
     }
-    Some(Self { o, _p: PhantomData })
+    Some(Self {
+      obj,
+      _p: PhantomData,
+    })
   }
 
   /// ### Safety
   /// `o` must be an instance of `T`
-  pub unsafe fn from_ptr_unchecked(o: Ptr<Object>) -> Self {
-    debug_assert!(<T as ObjectHandle>::is_self(&o));
-    Self { o, _p: PhantomData }
-  }
-
-  pub fn from_value(v: Value) -> Option<Self> {
-    v.into_object().and_then(Handle::from_ptr)
+  pub(crate) unsafe fn from_ptr_unchecked(obj: Ptr<Object>) -> Self {
+    debug_assert!(<T as ObjectType>::is(unsafe { obj._get() }));
+    Self {
+      obj,
+      _p: PhantomData,
+    }
   }
 
   /// Widen the type back to `Object`
-  pub fn widen(self) -> Ptr<Object> {
-    self.o
+  pub(crate) fn widen(self) -> Ptr<Object> {
+    self.obj
   }
 
-  pub fn strong_count(&self) -> usize {
-    Ptr::strong_count(&self.o)
+  /* pub(crate) fn strong_count(&self) -> usize {
+    Ptr::strong_count(&self.obj)
+  } */
+
+  /// Do not use directly.
+  #[doc(hidden)]
+  pub(crate) unsafe fn _get(&self) -> &T {
+    let obj = unsafe { self.obj._get() };
+    debug_assert!(<T as ObjectType>::is(obj));
+    unsafe { T::as_ref(obj).unwrap_unchecked() }
   }
-}
 
-impl<T: ObjectHandle> Deref for Handle<T> {
-  type Target = T;
-
-  fn deref(&self) -> &Self::Target {
-    // SAFETY: Valid by construction in `new`
-    unsafe { <T as ObjectHandle>::as_self(&self.o).unwrap_unchecked() }
-  }
-}
-
-impl<T: ObjectHandle> DerefMut for Handle<T> {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    // SAFETY: Valid by construction in `new`
-    unsafe { <T as ObjectHandle>::as_self_mut(&mut self.o).unwrap_unchecked() }
-  }
-}
-
-impl<T: ObjectHandle + Into<Object>> From<T> for Handle<T> {
-  fn from(value: T) -> Self {
-    let obj = Ptr::new(value.into());
-    unsafe { Handle::from_ptr_unchecked(obj) }
+  /// Do not use directly.
+  #[doc(hidden)]
+  pub(crate) unsafe fn _get_mut(&mut self) -> &mut T {
+    let obj = unsafe { self.obj._get_mut() };
+    debug_assert!(<T as ObjectType>::is(obj));
+    unsafe { T::as_mut(obj).unwrap_unchecked() }
   }
 }
 
-impl<T: ObjectHandle> std::fmt::Debug for Handle<T> {
+impl<T: ObjectType + Display> Display for Handle<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Debug::fmt(&self.o, f)
+    Display::fmt(unsafe { self._get() }, f)
   }
 }
 
-impl<T: ObjectHandle> std::fmt::Display for Handle<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Display::fmt(&self.o, f)
+impl<T: ObjectType + Hash> Hash for Handle<T> {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    unsafe { self._get() }.hash(state)
   }
 }
+
+impl<T: ObjectType + PartialEq> PartialEq for Handle<T> {
+  fn eq(&self, other: &Self) -> bool {
+    unsafe { self._get() == other._get() }
+  }
+}
+
+impl<T: ObjectType + Eq> Eq for Handle<T> {}

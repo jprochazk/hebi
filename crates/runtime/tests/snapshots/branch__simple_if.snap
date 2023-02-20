@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/branch.rs
+source: crates/runtime/tests/branch.rs
 expression: snapshot
 ---
 # Input:
@@ -14,5 +14,5 @@ else:
 none
 
 # Stdout:
-"yes"
+yes
 

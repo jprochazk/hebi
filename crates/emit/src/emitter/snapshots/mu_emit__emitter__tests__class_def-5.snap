@@ -10,7 +10,7 @@ class T:
 
 
 # Func:
-function <test>:
+function "test":
   frame_size: 4
   length: 7
   const (length=1):
@@ -23,12 +23,12 @@ function <test>:
     5 | ret 
     6 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 6
   length: 18
   const (length=3):
-    0: <class desc T>
-    1: <func test>
+    0: <class desc "T">
+    1: <func "test">
     2: "T"
   code:
      0 | load_const [1]

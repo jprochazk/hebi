@@ -11,7 +11,7 @@ else:
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 5
   length: 26
   const (length=2):

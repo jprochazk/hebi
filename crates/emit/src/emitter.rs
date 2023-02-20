@@ -5,8 +5,7 @@ use indexmap::IndexMap;
 use op::*;
 use runtime::value::constant::Constant;
 use runtime::value::object::handle::Handle;
-use runtime::value::object::{func, Func, Module};
-use runtime::value::Value;
+use runtime::value::object::{func, Func, Module, Str};
 use syntax::ast;
 
 pub fn emit<'src>(
@@ -17,14 +16,17 @@ pub fn emit<'src>(
   let name = name.into();
   let result = Emitter::new(ctx, name.clone(), module).emit_main()?;
 
-  Ok(Module::new(name.to_string(), result.func.into()).into())
+  Ok(Handle::alloc(Module::new(
+    Handle::alloc(Str::from(name)),
+    Handle::alloc(result.func),
+  )))
 }
 
 // TODO: make infallible
 // TODO: do not emit argv/kwargs registers if they are unused
 
 use crate::regalloc::{RegAlloc, Register};
-use crate::{Context, Error, Result};
+use crate::{Context, Result};
 
 struct Emitter<'src> {
   state: Function<'src>,
@@ -81,7 +83,7 @@ impl<'src> Emitter<'src> {
 
     Ok(EmitResult {
       func: Func::new(
-        name,
+        Handle::alloc(Str::from(name)),
         frame_size,
         bytecode,
         const_pool,
@@ -161,7 +163,13 @@ impl<'src> Emitter<'src> {
     } = builder.build();
 
     Ok(EmitResult {
-      func: Func::new(name, frame_size, bytecode, const_pool, params),
+      func: Func::new(
+        Handle::alloc(Str::from(name)),
+        frame_size,
+        bytecode,
+        const_pool,
+        params,
+      ),
       captures,
       #[cfg(test)]
       regalloc: self.state.regalloc.clone(),
@@ -777,10 +785,10 @@ mod stmt {
         let func = self.const_value(result.func);
         self.emit_op(LoadConst { slot: func });
       } else {
-        let desc = self.const_value(func::ClosureDesc {
-          func: result.func,
-          num_captures: result.captures.len() as u32,
-        });
+        let desc = self.const_value(func::ClosureDesc::new(
+          Handle::alloc(result.func),
+          result.captures.len() as u32,
+        ));
         self.emit_op(CreateClosure { desc });
         for (_, info) in result.captures.iter() {
           match &info.kind {
@@ -817,21 +825,21 @@ mod stmt {
     }
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
-      let desc = self.const_value(class::ClassDesc {
-        name: stmt.name.to_string().into(),
-        params: ast_class_to_params(stmt),
-        is_derived: stmt.parent.is_some(),
-        methods: stmt
+      let desc = self.const_value(class::ClassDesc::new(
+        Handle::alloc(Str::from(stmt.name.deref().clone())),
+        ast_class_to_params(stmt),
+        stmt.parent.is_some(),
+        stmt
           .methods
           .iter()
           .map(|f| f.name.to_string().into())
           .collect(),
-        fields: stmt
+        stmt
           .fields
           .iter()
           .map(|f| f.name.to_string().into())
           .collect(),
-      });
+      ));
 
       // emit parent
       let parent = if let Some(name) = stmt.parent.as_deref() {

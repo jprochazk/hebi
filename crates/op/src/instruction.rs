@@ -770,7 +770,7 @@ impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
       let f = &mut f;
 
       // name
-      writeln!(f, "function <{}>:", self.name).unwrap();
+      writeln!(f, "function \"{}\":", self.name).unwrap();
       writeln!(f, "  length: {}", self.bytecode.len()).unwrap();
 
       // constants

@@ -12,7 +12,7 @@ fn test():
 
 
 # Func:
-function <test>:
+function "test":
   frame_size: 5
   length: 17
   const (length=1):
@@ -30,12 +30,12 @@ function <test>:
     15 | ret 
     16 | suspend 
 
-function <test>:
+function "test":
   frame_size: 7
   length: 29
   const (length=2):
-    0: <class desc T>
-    1: <closure desc test n=1>
+    0: <class desc "T">
+    1: <closure desc "test">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
@@ -50,11 +50,11 @@ function <test>:
     27 | ret 
     28 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func test>
+    0: <func "test">
     1: "test"
   code:
     0 | load_const [0]

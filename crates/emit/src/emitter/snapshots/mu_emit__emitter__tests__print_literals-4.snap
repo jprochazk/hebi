@@ -6,7 +6,7 @@ expression: snapshot
 print [0, 1, 2]
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 5
   length: 29
   const: <empty>

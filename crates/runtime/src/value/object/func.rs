@@ -1,112 +1,24 @@
-use beef::lean::Cow;
+use std::fmt::Display;
+
 use indexmap::IndexMap;
 
 use super::handle::Handle;
-use super::Access;
+use super::{Access, Str};
 use crate::value::constant::Constant;
 use crate::value::Value;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Func {
-  pub(super) name: Cow<'static, str>,
-  pub(super) frame_size: u32,
-  pub(super) code: Vec<u8>,
-  pub(super) const_pool: Vec<Constant>,
-  pub(super) params: Params,
-}
-
-impl Access for Func {}
-
-#[derive(Clone, Debug)]
-pub struct ClosureDesc {
-  pub func: Func,
-  pub num_captures: u32,
-}
-
-impl Access for ClosureDesc {}
-
-#[derive(Clone, Debug)]
-pub struct Closure {
-  pub(super) desc: Handle<ClosureDesc>,
-  pub captures: Vec<Value>,
-}
-
-impl Closure {
-  /// Create a new closure.
-  pub fn new(desc: Handle<ClosureDesc>) -> Self {
-    let captures = {
-      let mut v = Vec::with_capacity(desc.num_captures as usize);
-      for _ in 0..desc.num_captures {
-        v.push(Value::none());
-      }
-      v
-    };
-
-    Self { desc, captures }
-  }
-
-  fn func(&self) -> &Func {
-    &self.desc.func
-  }
-
-  fn func_mut(&mut self) -> &mut Func {
-    &mut self.desc.func
-  }
-
-  pub fn name(&self) -> &str {
-    self.func().name.as_ref()
-  }
-
-  pub fn frame_size(&self) -> u32 {
-    self.func().frame_size
-  }
-
-  pub fn code(&self) -> &[u8] {
-    &self.func().code[..]
-  }
-
-  pub fn code_mut(&mut self) -> &mut [u8] {
-    &mut self.func_mut().code[..]
-  }
-
-  pub fn const_pool(&self) -> &[Constant] {
-    &self.func().const_pool[..]
-  }
-
-  pub fn params(&self) -> &Params {
-    &self.func().params
-  }
-
-  pub fn disassemble<D>(
-    &self,
-    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
-    print_bytes: bool,
-  ) -> String
-  where
-    D: std::fmt::Display,
-  {
-    self
-      .func()
-      .disassemble(disassemble_instruction, print_bytes)
-  }
-}
-
-impl Access for Closure {}
-
-#[derive(Clone, Debug)]
-pub struct Params {
-  pub has_self: bool,
-  pub min: usize,
-  pub max: usize,
-  pub argv: bool,
-  pub kwargs: bool,
-  pub pos: Vec<String>,
-  pub kw: IndexMap<String, bool>,
+  name: Handle<Str>,
+  frame_size: u32,
+  code: Vec<u8>,
+  const_pool: Vec<Constant>,
+  params: Params,
 }
 
 impl Func {
   pub fn new(
-    name: Cow<'static, str>,
+    name: Handle<Str>,
     frame_size: u32,
     code: Vec<u8>,
     const_pool: Vec<Constant>,
@@ -120,61 +32,48 @@ impl Func {
       params,
     }
   }
+}
 
-  pub fn name(&self) -> &str {
-    self.name.as_ref()
+#[derive::delegate_to_handle]
+impl Func {
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
   }
 
-  pub fn frame_size(&self) -> u32 {
+  pub(crate) fn frame_size(&self) -> u32 {
     self.frame_size
   }
 
-  pub fn code(&self) -> &[u8] {
+  pub(crate) fn code(&self) -> &[u8] {
     &self.code
   }
 
-  pub fn code_mut(&mut self) -> &mut [u8] {
+  pub(crate) unsafe fn code_mut(&mut self) -> &mut [u8] {
     &mut self.code
   }
 
-  pub fn const_pool(&self) -> &[Constant] {
+  pub(crate) fn const_pool(&self) -> &[Constant] {
     &self.const_pool
   }
 
-  pub fn params(&self) -> &Params {
+  pub(crate) fn params(&self) -> &Params {
     &self.params
   }
 
-  pub fn disassemble<D>(
-    &self,
-    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
-    print_bytes: bool,
-  ) -> String
-  where
-    D: std::fmt::Display,
-  {
+  pub fn disassemble(&self, print_bytes: bool) -> String {
     let mut out = String::new();
 
-    self.disassemble_inner(disassemble_instruction, &mut out, print_bytes);
+    self.disassemble_inner(&mut out, print_bytes);
     out
   }
 
-  fn disassemble_inner<D>(
-    &self,
-    disassemble_instruction: fn(&[u8], usize) -> (usize, D),
-    f: &mut String,
-    print_bytes: bool,
-  ) where
-    D: std::fmt::Display,
-  {
+  fn disassemble_inner(&self, f: &mut String, print_bytes: bool) {
     for v in self.const_pool.iter() {
       if let Constant::Func(func) = v {
-        func.disassemble_inner(disassemble_instruction, f, print_bytes);
+        unsafe { func._get() }.disassemble_inner(f, print_bytes);
         f.push('\n');
       } else if let Constant::ClosureDesc(desc) = v {
-        desc
-          .func
-          .disassemble_inner(disassemble_instruction, f, print_bytes);
+        unsafe { desc.func()._get() }.disassemble_inner(f, print_bytes);
         f.push('\n');
       }
     }
@@ -182,7 +81,7 @@ impl Func {
     use std::fmt::Write;
 
     // name
-    writeln!(f, "function <{}>:", self.name).unwrap();
+    writeln!(f, "function {}:", self.name).unwrap();
     writeln!(f, "  frame_size: {}", self.frame_size).unwrap();
     writeln!(f, "  length: {}", self.code.len()).unwrap();
 
@@ -201,7 +100,7 @@ impl Func {
     let offset_align = self.code.len().to_string().len();
     let mut pc = 0;
     while pc < self.code.len() {
-      let (size, instr) = disassemble_instruction(&self.code[..], pc);
+      let (size, instr) = op::disassemble(&self.code[..], pc);
 
       let bytes = {
         let mut out = String::new();
@@ -222,5 +121,114 @@ impl Func {
 
       pc += size;
     }
+  }
+}
+
+impl Display for Func {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<func {}>", self.name())
+  }
+}
+
+impl Access for Func {}
+
+#[derive(Clone)]
+pub struct ClosureDesc {
+  func: Handle<Func>,
+  num_captures: u32,
+}
+
+impl ClosureDesc {
+  pub fn new(func: Handle<Func>, num_captures: u32) -> Self {
+    Self { func, num_captures }
+  }
+}
+
+#[derive::delegate_to_handle]
+impl ClosureDesc {
+  pub fn func(&self) -> Handle<Func> {
+    self.func.clone()
+  }
+
+  pub(crate) fn num_captures(&self) -> u32 {
+    self.num_captures
+  }
+}
+
+impl Display for ClosureDesc {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<closure desc {}>", self.func().name())
+  }
+}
+
+impl Access for ClosureDesc {}
+
+#[derive(Clone)]
+pub struct Closure {
+  descriptor: Handle<ClosureDesc>,
+  captures: Vec<Value>,
+}
+
+impl Closure {
+  /// Create a new closure.
+  pub fn new(descriptor: Handle<ClosureDesc>) -> Self {
+    let captures = {
+      let mut v = Vec::with_capacity(descriptor.num_captures() as usize);
+      for _ in 0..descriptor.num_captures() {
+        v.push(Value::none());
+      }
+      v
+    };
+
+    Self {
+      descriptor,
+      captures,
+    }
+  }
+}
+
+#[derive::delegate_to_handle]
+impl Closure {
+  pub fn descriptor(&self) -> Handle<ClosureDesc> {
+    self.descriptor.clone()
+  }
+
+  /* pub(crate) fn captures(&self) -> &[Value] {
+    &self.captures
+  } */
+
+  pub(crate) unsafe fn captures_mut(&mut self) -> &mut [Value] {
+    &mut self.captures
+  }
+}
+
+impl Display for Closure {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<closure {}>", self.descriptor().func().name())
+  }
+}
+
+impl Access for Closure {}
+
+#[derive(Clone)]
+pub struct Params {
+  pub has_self: bool,
+  pub min: usize,
+  pub max: usize,
+  pub argv: bool,
+  pub kwargs: bool,
+  pub pos: Vec<String>,
+  pub kw: IndexMap<String, bool>,
+}
+
+pub(crate) fn func_name(f: &Value) -> String {
+  if let Some(f) = f.clone().to_func() {
+    f.name().as_str().to_string()
+  } else if let Some(f) = f.clone().to_closure() {
+    f.descriptor().func().name().as_str().to_string()
+  } else if let Some(f) = f.clone().to_method() {
+    func_name(&f.func())
+  } else {
+    panic!("{f} is not callable")
   }
 }

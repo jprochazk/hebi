@@ -1,9 +1,12 @@
+use std::fmt::Display;
+
 use indexmap::IndexMap;
 
 use super::handle::Handle;
 use super::{Access, Dict, Func, Str};
+use crate::util::JoinIter;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Registry {
   pub modules: IndexMap<String, Module>,
 }
@@ -22,37 +25,52 @@ impl Default for Registry {
   }
 }
 
+impl Display for Registry {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<registry>")
+  }
+}
+
 impl Access for Registry {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Module {
-  name: Str,
+  name: Handle<Str>,
   main: Handle<Func>,
   pub globals: Handle<Dict>,
 }
 
 // TODO: get globals from module
 impl Module {
-  pub fn new(name: impl Into<Str>, main: Handle<Func>) -> Self {
+  pub fn new(name: Handle<Str>, main: Handle<Func>) -> Self {
     Self {
-      name: name.into(),
+      name,
       main,
-      globals: Dict::new().into(),
+      globals: Handle::alloc(Dict::new()),
     }
   }
+}
 
-  pub fn name(&self) -> &str {
-    self.name.as_str()
+#[derive::delegate_to_handle]
+impl Module {
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
   }
 
-  pub fn main(&self) -> &Handle<Func> {
-    &self.main
+  pub fn main(&self) -> Handle<Func> {
+    self.main.clone()
+  }
+}
+
+impl Display for Module {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<module {}>", self.name())
   }
 }
 
 impl Access for Module {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Path {
   segments: Vec<Str>,
 }
@@ -61,9 +79,22 @@ impl Path {
   pub fn new(segments: Vec<Str>) -> Self {
     Self { segments }
   }
+}
 
+#[derive::delegate_to_handle]
+impl Path {
   pub fn segments(&self) -> &[Str] {
     &self.segments
+  }
+}
+
+impl Display for Path {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "<path {}>",
+      self.segments().iter().map(|s| s.as_str()).join(".")
+    )
   }
 }
 

@@ -1,3 +1,5 @@
+use runtime::value::object::Handle;
+
 use super::*;
 
 macro_rules! check {
@@ -12,7 +14,7 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let result = match Emitter::new(&Context::new(), "[[main]]", &module).emit_main() {
+    let result = match Emitter::new(&Context::new(), "code", &module).emit_main() {
       Ok(result) => result,
       Err(e) => {
         panic!("failed to emit func:\n{}", e.report(input));
@@ -20,11 +22,10 @@ macro_rules! check {
     };
     let tracking = result.regalloc.get_tracking();
     let tracking = tracking.borrow();
-    let func = Value::from(result.func);
-    let func = func.as_func().unwrap();
+    let func = Handle::alloc(result.func);
     let snapshot = format!(
       "# Input:\n{input}\n\n# Func:\n{}\n\n# Regalloc:\n{}",
-      func.disassemble(op::disassemble, false),
+      func.disassemble(false),
       crate::regalloc::DisplayTracking(&tracking),
     );
     insta::assert_snapshot!(snapshot);
