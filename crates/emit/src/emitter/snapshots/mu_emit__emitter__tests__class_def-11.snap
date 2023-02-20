@@ -9,11 +9,11 @@ class T(U):
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 7
   length: 25
   const (length=3):
-    0: <class desc T>
+    0: <class desc "T">
     1: "U"
     2: "T"
   code:

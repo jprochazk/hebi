@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
 use super::object::handle::Handle;
@@ -29,12 +29,12 @@ impl From<f64> for NonNaNFloat {
 impl From<Constant> for Value {
   fn from(value: Constant) -> Self {
     match value {
-      Constant::Str(v) => Value::from(v),
-      Constant::Func(v) => Value::from(v),
-      Constant::ClosureDesc(v) => Value::from(v),
-      Constant::ClassDesc(v) => Value::from(v),
-      Constant::Path(v) => Value::from(v),
-      Constant::Float(v) => Value::from(v.0),
+      Constant::Str(v) => Value::object(v),
+      Constant::Func(v) => Value::object(v),
+      Constant::ClosureDesc(v) => Value::object(v),
+      Constant::ClassDesc(v) => Value::object(v),
+      Constant::Path(v) => Value::object(v),
+      Constant::Float(v) => Value::float(v.0),
     }
   }
 }
@@ -43,7 +43,7 @@ macro_rules! impl_from {
   ($T:ident) => {
     impl From<$T> for Constant {
       fn from(value: $T) -> Self {
-        Self::$T(Handle::new(value))
+        Self::$T(Handle::alloc(value))
       }
     }
 
@@ -102,28 +102,16 @@ fn ptr_hash<T, H: Hasher>(ptr: &T, state: &mut H) {
   (ptr as *const _ as usize).hash(state)
 }
 
-impl Debug for Constant {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Constant::Str(v) => Debug::fmt(v, f),
-      Constant::Func(v) => Debug::fmt(v, f),
-      Constant::ClosureDesc(v) => Debug::fmt(v, f),
-      Constant::ClassDesc(v) => Debug::fmt(v, f),
-      Constant::Path(v) => Debug::fmt(v, f),
-      Constant::Float(v) => Debug::fmt(&v.0, f),
-    }
-  }
-}
-
 impl Display for Constant {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Constant::Str(v) => Display::fmt(v, f),
-      Constant::Func(v) => Display::fmt(v, f),
-      Constant::ClosureDesc(v) => Display::fmt(v, f),
-      Constant::ClassDesc(v) => Display::fmt(v, f),
-      Constant::Path(v) => Display::fmt(v, f),
-      Constant::Float(v) => Display::fmt(&v.0, f),
-    }
+    let obj = match self {
+      Constant::Str(v) => v.clone().widen(),
+      Constant::Func(v) => v.clone().widen(),
+      Constant::ClosureDesc(v) => v.clone().widen(),
+      Constant::ClassDesc(v) => v.clone().widen(),
+      Constant::Path(v) => v.clone().widen(),
+      Constant::Float(v) => return Display::fmt(&v.0, f),
+    };
+    Display::fmt(unsafe { obj._get() }, f)
   }
 }

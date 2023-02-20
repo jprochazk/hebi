@@ -3,7 +3,6 @@
 mod common;
 check! {
   class_inheritance_nested,
-  :print_func
   r#"
     class A:
       v = 0

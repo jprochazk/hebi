@@ -9,7 +9,7 @@ print ?v["a"]["b"]["c"]
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 7
   length: 39
   const (length=4):

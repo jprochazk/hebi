@@ -1,19 +1,14 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 
-use super::dict::{Key, StaticKey};
-use super::Access;
+use super::{Access, Handle, Key, StaticKey};
 use crate::Value;
 
 #[derive(Clone, Default)]
 pub struct List(Vec<Value>);
 
 impl List {
-  pub fn iter(&self) -> std::slice::Iter<'_, Value> {
-    self.0.iter()
-  }
-
   pub fn new() -> Self {
     Self(Vec::new())
   }
@@ -21,9 +16,26 @@ impl List {
   pub fn with_capacity(capacity: usize) -> Self {
     Self(Vec::with_capacity(capacity))
   }
+}
+
+#[derive::delegate_to_handle]
+impl List {
+  pub fn iter(&self) -> std::slice::Iter<'_, Value> {
+    self.0.iter()
+  }
 
   pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Value> {
     self.0.iter_mut()
+  }
+
+  pub fn get(&self, index: usize) -> Option<Value> {
+    self.0.get(index).cloned()
+  }
+
+  pub fn set(&mut self, index: usize, value: Value) {
+    if let Some(slot) = self.0.get_mut(index) {
+      *slot = value;
+    }
   }
 
   pub fn push(&mut self, value: Value) {
@@ -72,18 +84,6 @@ impl<const N: usize> From<[Value; N]> for List {
   }
 }
 
-impl Display for List {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    Debug::fmt(&self.0, f)
-  }
-}
-
-impl Debug for List {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    Debug::fmt(&self.0, f)
-  }
-}
-
 impl<Idx> Index<Idx> for List
 where
   Idx: SliceIndex<[Value]>,
@@ -106,6 +106,28 @@ where
   }
 }
 
+impl<Idx> Index<Idx> for Handle<List>
+where
+  Idx: SliceIndex<[Value]>,
+{
+  type Output = Idx::Output;
+
+  #[inline(always)]
+  fn index(&self, index: Idx) -> &Self::Output {
+    unsafe { self._get() }.index(index)
+  }
+}
+
+impl<Idx> IndexMut<Idx> for Handle<List>
+where
+  Idx: SliceIndex<[Value]>,
+{
+  #[inline]
+  fn index_mut(&mut self, index: Idx) -> &mut Self::Output {
+    unsafe { self._get_mut() }.index_mut(index)
+  }
+}
+
 impl Access for List {
   fn is_frozen(&self) -> bool {
     false
@@ -114,7 +136,7 @@ impl Access for List {
   fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
     // TODO: methods (push, pop, etc.)
     Ok(match key.as_str() {
-      Some("len") => Some((self.0.len() as i32).into()),
+      Some("len") => Some(Value::int(self.0.len() as i32)),
       _ => None,
     })
   }
@@ -140,5 +162,19 @@ impl Access for List {
       *v = value
     }
     Ok(())
+  }
+}
+
+impl Display for List {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "[")?;
+    let mut iter = self.0.iter().peekable();
+    while let Some(item) = iter.next() {
+      write!(f, "{item}")?;
+      if iter.peek().is_some() {
+        write!(f, ", ")?;
+      }
+    }
+    write!(f, "]")
   }
 }

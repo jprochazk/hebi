@@ -12,7 +12,7 @@ fn a():
 
 
 # Func:
-function <d>:
+function "d":
   frame_size: 4
   length: 6
   const: <empty>
@@ -23,11 +23,11 @@ function <d>:
     4 | ret 
     5 | suspend 
 
-function <c>:
+function "c":
   frame_size: 5
   length: 10
   const (length=1):
-    0: <closure desc d n=1>
+    0: <closure desc "d">
   code:
      0 | create_closure [0]
      2 | capture_slot parent_slot=0, self_slot=0
@@ -36,11 +36,11 @@ function <c>:
      8 | ret 
      9 | suspend 
 
-function <b>:
+function "b":
   frame_size: 5
   length: 10
   const (length=1):
-    0: <closure desc c n=1>
+    0: <closure desc "c">
   code:
      0 | create_closure [0]
      2 | capture_slot parent_slot=0, self_slot=0
@@ -49,11 +49,11 @@ function <b>:
      8 | ret 
      9 | suspend 
 
-function <a>:
+function "a":
   frame_size: 5
   length: 17
   const (length=1):
-    0: <closure desc b n=1>
+    0: <closure desc "b">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
@@ -64,11 +64,11 @@ function <a>:
     15 | ret 
     16 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func a>
+    0: <func "a">
     1: "a"
   code:
     0 | load_const [0]

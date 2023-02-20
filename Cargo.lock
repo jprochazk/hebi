@@ -338,6 +338,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mu_derive"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "mu_diag"
 version = "0.0.1"
 dependencies = [
@@ -382,6 +391,7 @@ dependencies = [
  "indexmap",
  "indoc",
  "insta",
+ "mu_derive",
  "mu_diag",
  "mu_emit",
  "mu_op",

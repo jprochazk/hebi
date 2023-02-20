@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use beef::lean::Cow;
 use diag::Source;
 use span::Span;
@@ -26,7 +28,10 @@ impl Error {
       trace: vec![],
     }
   }
+}
 
+#[derive::delegate_to_handle]
+impl Error {
   pub fn push_trace(
     &mut self,
     ident: impl Into<String>,
@@ -70,6 +75,12 @@ fn write_source_lines<W: std::fmt::Write>(to: &mut W, source: &Option<Source>, s
   let slice = &source.str()[span.range()];
   for line in slice.trim().split('\n') {
     writeln!(to, "  {line}").unwrap();
+  }
+}
+
+impl Display for Error {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<error>")
   }
 }
 

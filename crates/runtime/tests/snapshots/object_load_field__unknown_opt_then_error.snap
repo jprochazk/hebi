@@ -11,7 +11,7 @@ print v.a
 
 # Result (error):
 In test_func at 0..0
-Error: cannot get field `a` on value `<class T>`
+Error: cannot get field `a` on value `<class "T">`
 
 
 # Stdout:

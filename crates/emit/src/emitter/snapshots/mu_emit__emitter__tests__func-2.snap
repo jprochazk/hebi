@@ -10,7 +10,7 @@ test(0)
 
 
 # Func:
-function <test>:
+function "test":
   frame_size: 5
   length: 6
   const: <empty>
@@ -21,11 +21,11 @@ function <test>:
     4 | ret 
     5 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 5
   length: 18
   const (length=2):
-    0: <func test>
+    0: <func "test">
     1: "test"
   code:
      0 | load_const [0]

@@ -6,43 +6,19 @@
 // mutable access to the keys of the map. It should not be possible.
 
 use std::cmp::Ordering;
-use std::collections::hash_map::RandomState;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::ops::{Index, IndexMut, RangeBounds};
 
-use beef::lean::Cow;
 use indexmap::{map, Equivalent, IndexMap};
 
-use super::handle::Handle;
-use super::{Access, Object, Ptr, Str, Value};
+use super::{Access, Key, StaticKey, Value};
 
 type Inner = IndexMap<StaticKey, Value>;
 
 #[derive(Clone, Default)]
 pub struct Dict {
   inner: Inner,
-}
-
-impl Access for Dict {
-  fn is_frozen(&self) -> bool {
-    false
-  }
-
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
-    Ok(match key.as_str() {
-      Some("len") => Some((self.inner.len() as i32).into()),
-      _ => None,
-    })
-  }
-
-  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
-    Ok(self.inner.get(key).cloned())
-  }
-
-  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
-    self.inner.insert(key, value);
-    Ok(())
-  }
 }
 
 impl Dict {
@@ -62,13 +38,12 @@ impl Dict {
       inner: Inner::with_capacity(n),
     }
   }
+}
 
+#[derive::delegate_to_handle]
+impl Dict {
   pub fn capacity(&self) -> usize {
     self.inner.capacity()
-  }
-
-  pub fn hasher(&self) -> &RandomState {
-    self.inner.hasher()
   }
 
   /// Return the number of key-value pairs in the map.
@@ -102,11 +77,6 @@ impl Dict {
     self.inner.keys()
   }
 
-  /// Return an owning iterator over the keys of the map, in their order
-  pub fn into_keys(self) -> map::IntoKeys<StaticKey, Value> {
-    self.inner.into_keys()
-  }
-
   /// Return an iterator over the values of the map, in their order
   pub fn values(&self) -> map::Values<'_, StaticKey, Value> {
     self.inner.values()
@@ -116,11 +86,6 @@ impl Dict {
   /// in their order
   pub fn values_mut(&mut self) -> map::ValuesMut<'_, StaticKey, Value> {
     self.inner.values_mut()
-  }
-
-  /// Return an owning iterator over the values of the map, in their order
-  pub fn into_values(self) -> map::IntoValues<StaticKey, Value> {
-    self.inner.into_values()
   }
 
   /// Remove all key-value pairs in the map, while preserving its capacity.
@@ -157,18 +122,6 @@ impl Dict {
     self.inner.drain(range)
   }
 
-  /// Splits the collection into two at the given index.
-  ///
-  /// Returns a newly allocated map containing the elements in the range
-  /// `[at, len)`. After the call, the original map will be left containing
-  /// the elements `[0, at)` with its previous capacity unchanged.
-  ///
-  /// ***Panics*** if `at > len`.
-  pub fn split_off(&mut self, at: usize) -> Self {
-    Dict {
-      inner: self.inner.split_off(at),
-    }
-  }
   /// Reserve capacity for `additional` more key-value pairs.
   ///
   /// Computes in **O(n)** time.
@@ -306,17 +259,6 @@ impl Dict {
     self.inner.sort_by(cmp)
   }
 
-  /// Sort the key-value pairs of the map and return a by-value iterator of
-  /// the key-value pairs with the result.
-  ///
-  /// The sort is stable.
-  pub fn sorted_by<F>(self, cmp: F) -> map::IntoIter<StaticKey, Value>
-  where
-    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
-  {
-    self.inner.sorted_by(cmp)
-  }
-
   /// Sort the map's key-value pairs by the default ordering of the keys, but
   /// may not preserve the order of equal elements.
   ///
@@ -340,18 +282,6 @@ impl Dict {
     self.inner.sort_unstable_by(cmp)
   }
 
-  /// Sort the key-value pairs of the map and return a by-value iterator of
-  /// the key-value pairs with the result.
-  ///
-  /// The sort is unstable.
-  #[inline]
-  pub fn sorted_unstable_by<F>(self, cmp: F) -> map::IntoIter<StaticKey, Value>
-  where
-    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
-  {
-    self.inner.sorted_unstable_by(cmp)
-  }
-
   /// Reverses the order of the map’s key-value pairs in place.
   ///
   /// Computes in **O(n)** time and **O(1)** space.
@@ -360,182 +290,25 @@ impl Dict {
   }
 }
 
-#[derive(Clone)]
-pub enum Key<'a> {
-  Int(i32),
-  Str(Handle<Str>),
-  Ref(&'a str),
-}
-
-pub type StaticKey = Key<'static>;
-
-impl<'a> Key<'a> {
-  pub fn as_str(&self) -> Option<&str> {
-    match &self {
-      Key::Str(v) => Some(v.as_str()),
-      Key::Ref(v) => Some(v),
-      Key::Int(_) => None,
-    }
+impl Access for Dict {
+  fn is_frozen(&self) -> bool {
+    false
   }
 
-  pub(crate) fn write_to_string(&self, s: &mut String) {
-    use std::fmt::Write;
-    match &self {
-      Key::Int(v) => write!(s, "{v}").unwrap(),
-      Key::Str(v) => write!(s, "{v}").unwrap(),
-      Key::Ref(v) => write!(s, "{v}").unwrap(),
-    }
+  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(match key.as_str() {
+      Some("len") => Some(Value::int(self.inner.len() as i32)),
+      _ => None,
+    })
   }
 
-  pub fn to_static(self) -> Key<'static> {
-    match self {
-      Key::Int(v) => Key::Int(v),
-      Key::Str(v) => Key::Str(v),
-      Key::Ref(v) => Key::Str(Handle::new(v)),
-    }
+  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::Error> {
+    Ok(self.inner.get(key).cloned())
   }
-}
 
-impl From<i32> for Key<'static> {
-  fn from(value: i32) -> Self {
-    Key::Int(value)
-  }
-}
-
-impl<'a> From<&'a str> for Key<'a> {
-  fn from(value: &'a str) -> Self {
-    // SAFETY: The object is guaranteed to be a String
-    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value))) })
-  }
-}
-
-impl<'a> From<Cow<'a, str>> for Key<'a> {
-  fn from(value: Cow<'a, str>) -> Self {
-    // SAFETY: The object is guaranteed to be a String
-    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value.to_string()))) })
-  }
-}
-
-impl From<Str> for Key<'static> {
-  fn from(value: Str) -> Self {
-    // SAFETY: The object is guaranteed to be a String
-    Key::Str(unsafe { Handle::from_ptr_unchecked(Ptr::new(Object::str(value))) })
-  }
-}
-
-impl TryFrom<Value> for Key<'static> {
-  type Error = InvalidKeyType;
-
-  fn try_from(value: Value) -> Result<Self, Self::Error> {
-    if let Some(v) = value.as_int() {
-      return Ok(Key::Int(v));
-    }
-    if let Some(v) = Handle::from_value(value) {
-      return Ok(Key::Str(v));
-    }
-    Err(InvalidKeyType)
-  }
-}
-
-impl<'a> Equivalent<Key<'a>> for str {
-  fn equivalent(&self, key: &Key) -> bool {
-    match key {
-      Key::Int(_) => false,
-      Key::Str(v) => v.as_str() == self,
-      Key::Ref(v) => *v == self,
-    }
-  }
-}
-
-impl<'a> Equivalent<Key<'a>> for i32 {
-  fn equivalent(&self, key: &Key<'a>) -> bool {
-    match key {
-      Key::Int(v) => self == v,
-      Key::Str(_) => false,
-      Key::Ref(_) => false,
-    }
-  }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct InvalidKeyType;
-
-impl std::fmt::Display for InvalidKeyType {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "invalid key type")
-  }
-}
-
-impl std::error::Error for InvalidKeyType {}
-
-impl<'a> PartialEq for Key<'a> {
-  fn eq(&self, other: &Self) -> bool {
-    match (&self, &other) {
-      (Key::Int(a), Key::Int(b)) => a == b,
-      (Key::Str(a), Key::Str(b)) => a.as_str() == b.as_str(),
-      (Key::Ref(a), Key::Ref(b)) => a == b,
-      _ => false,
-    }
-  }
-}
-
-impl<'a> Eq for Key<'a> {}
-
-impl<'a> PartialOrd for Key<'a> {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    match (&self, &other) {
-      (Key::Int(a), Key::Int(b)) => a.partial_cmp(b),
-      (Key::Int(_), Key::Str(_)) => Some(std::cmp::Ordering::Less),
-      (Key::Str(_), Key::Int(_)) => Some(std::cmp::Ordering::Greater),
-      (Key::Str(a), Key::Str(b)) => a.as_str().partial_cmp(b.as_str()),
-      (Key::Ref(a), Key::Str(b)) => a.partial_cmp(&b.as_str()),
-      (Key::Ref(a), Key::Ref(b)) => a.partial_cmp(b),
-      (Key::Str(a), Key::Ref(b)) => a.as_str().partial_cmp(*b),
-      (Key::Int(_), Key::Ref(_)) => Some(std::cmp::Ordering::Less),
-      (Key::Ref(_), Key::Int(_)) => Some(std::cmp::Ordering::Greater),
-    }
-  }
-}
-
-impl<'a> Ord for Key<'a> {
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    unsafe { self.partial_cmp(other).unwrap_unchecked() }
-  }
-}
-
-impl<'a> Hash for Key<'a> {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    match &self {
-      Key::Int(v) => v.hash(state),
-      Key::Str(v) => v.hash(state),
-      Key::Ref(v) => v.hash(state),
-    }
-  }
-}
-
-impl<'a> std::fmt::Debug for Key<'a> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self {
-      Key::Int(v) => std::fmt::Debug::fmt(v, f),
-      Key::Str(v) => std::fmt::Debug::fmt(v, f),
-      Key::Ref(v) => std::fmt::Debug::fmt(v, f),
-    }
-  }
-}
-
-impl<'a> std::fmt::Display for Key<'a> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self {
-      Key::Int(v) => std::fmt::Display::fmt(v, f),
-      Key::Str(v) => std::fmt::Display::fmt(v, f),
-      Key::Ref(v) => std::fmt::Display::fmt(v, f),
-    }
-  }
-}
-
-impl std::fmt::Debug for Dict {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Debug::fmt(&self.inner, f)
+  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::Error> {
+    self.inner.insert(key, value);
+    Ok(())
   }
 }
 
@@ -609,5 +382,19 @@ impl<const N: usize> From<[(StaticKey, Value); N]> for Dict {
 impl Extend<(StaticKey, Value)> for Dict {
   fn extend<T: IntoIterator<Item = (StaticKey, Value)>>(&mut self, iter: T) {
     self.inner.extend(iter)
+  }
+}
+
+impl Display for Dict {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{{")?;
+    let mut iter = self.iter().peekable();
+    while let Some((key, value)) = iter.next() {
+      write!(f, "{key}: {value}")?;
+      if iter.peek().is_some() {
+        write!(f, ", ")?;
+      }
+    }
+    write!(f, "}}")
   }
 }

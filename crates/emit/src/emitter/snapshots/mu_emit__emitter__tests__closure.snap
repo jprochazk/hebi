@@ -13,7 +13,7 @@ a()()
 
 
 # Func:
-function <b>:
+function "b":
   frame_size: 4
   length: 6
   const: <empty>
@@ -24,11 +24,11 @@ function <b>:
     4 | ret 
     5 | suspend 
 
-function <a>:
+function "a":
   frame_size: 5
   length: 18
   const (length=1):
-    0: <closure desc b n=1>
+    0: <closure desc "b">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
@@ -39,11 +39,11 @@ function <a>:
     16 | ret 
     17 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 10
   const (length=2):
-    0: <func a>
+    0: <func "a">
     1: "a"
   code:
      0 | load_const [0]

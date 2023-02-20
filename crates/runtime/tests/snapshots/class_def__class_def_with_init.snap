@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/class_def.rs
+source: crates/runtime/tests/class_def.rs
 expression: snapshot
 ---
 # Input:
@@ -21,7 +21,7 @@ print t0.v, t1.v
 none
 
 # Stdout:
-"small"
-"large"
-10 20
+small
+large
+10 20 
 

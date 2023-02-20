@@ -8,7 +8,7 @@ loop:
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 11
   const (length=1):

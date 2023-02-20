@@ -10,7 +10,7 @@ fn main():
 
 
 # Func:
-function <main>:
+function "main":
   frame_size: 7
   length: 22
   const (length=2):
@@ -30,11 +30,11 @@ function <main>:
     20 | ret 
     21 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func main>
+    0: <func "main">
     1: "main"
   code:
     0 | load_const [0]

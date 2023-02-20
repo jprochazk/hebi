@@ -1,5 +1,4 @@
 use std::cell::UnsafeCell;
-use std::hash::Hash;
 use std::rc::Rc;
 
 use super::object;
@@ -8,24 +7,19 @@ use super::object;
 pub struct Ptr<T>(pub(crate) Rc<UnsafeCell<T>>);
 
 impl<T> Ptr<T> {
-  pub fn new(v: T) -> Self {
+  pub(crate) fn alloc(v: T) -> Self {
     Ptr(Rc::new(UnsafeCell::new(v)))
   }
 
-  pub fn get(&self) -> &T {
+  /// Do not use directly.
+  #[doc(hidden)]
+  pub(crate) unsafe fn _get(&self) -> &T {
     unsafe { self.0.get().as_ref().unwrap_unchecked() }
   }
 
-  // TODO: this is totally unsound if you do:
-  // ```
-  // let mut v0 = Ptr::new(#[may_alias] 0u32);
-  // let mut v1 = v0.clone();
-  // let r0 = v0.deref_mut();
-  // let r1 = v1.deref_mut(); // immediate UB.
-  // r0.add_assign(*r1);
-  // ```
-  // but usage is awful without this.
-  pub fn get_mut(&mut self) -> &mut T {
+  /// Do not use directly.
+  #[doc(hidden)]
+  pub(crate) unsafe fn _get_mut(&mut self) -> &mut T {
     unsafe { self.0.get().as_mut().unwrap_unchecked() }
   }
 
@@ -42,11 +36,13 @@ impl<T> Ptr<T> {
     Rc::into_raw(this.0) as usize
   }
 
-  pub fn strong_count(this: &Ptr<T>) -> usize {
+  #[allow(dead_code)]
+  pub(crate) fn strong_count(this: &Ptr<T>) -> usize {
     Rc::strong_count(&this.0)
   }
 
-  pub fn weak_count(this: &Ptr<T>) -> usize {
+  #[allow(dead_code)]
+  pub(crate) fn weak_count(this: &Ptr<T>) -> usize {
     Rc::weak_count(&this.0)
   }
 
@@ -58,31 +54,6 @@ impl<T> Ptr<T> {
   pub(crate) unsafe fn decrement_strong_count(addr: usize) {
     let ptr = addr as *const _;
     unsafe { Rc::<UnsafeCell<T>>::decrement_strong_count(ptr) }
-  }
-}
-
-impl<T: PartialEq> PartialEq for Ptr<T> {
-  fn eq(&self, other: &Self) -> bool {
-    self.get() == other.get()
-  }
-}
-impl<T: Eq> Eq for Ptr<T> {}
-
-impl<T: Hash> Hash for Ptr<T> {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    self.get().hash(state);
-  }
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for Ptr<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    <T as std::fmt::Debug>::fmt(self.get(), f)
-  }
-}
-
-impl<T: std::fmt::Display> std::fmt::Display for Ptr<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    <T as std::fmt::Display>::fmt(self.get(), f)
   }
 }
 

@@ -8,7 +8,7 @@ for i in 0..10:
 
 
 # Func:
-function <[[main]]>:
+function "code":
   frame_size: 6
   length: 56
   const: <empty>

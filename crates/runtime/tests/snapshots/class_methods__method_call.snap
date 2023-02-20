@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/class_methods.rs
+source: crates/runtime/tests/class_methods.rs
 expression: snapshot
 ---
 # Input:
@@ -14,5 +14,5 @@ T.test()
 none
 
 # Stdout:
-"test"
+test
 

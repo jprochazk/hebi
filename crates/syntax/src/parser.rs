@@ -293,14 +293,15 @@ fn check_recursion_limit(_span: Span) -> Result<(), Error> {
 
 #[cfg(not(target_family = "wasm"))]
 fn check_recursion_limit(span: Span) -> Result<()> {
-  if stacker::remaining_stack()
+  Ok(())
+  /* if stacker::remaining_stack()
     .map(|available| available > MINIMUM_STACK_REQUIRED)
     .unwrap_or(true)
   {
     Ok(())
   } else {
     Err(Error::new("nesting limit reached", span))
-  }
+  } */
 }
 
 #[cfg(test)]

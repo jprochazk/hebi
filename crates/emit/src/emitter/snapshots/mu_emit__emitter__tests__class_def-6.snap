@@ -11,7 +11,7 @@ class T:
 
 
 # Func:
-function <test>:
+function "test":
   frame_size: 5
   length: 17
   const (length=2):
@@ -30,13 +30,13 @@ function <test>:
     15 | ret 
     16 | suspend 
 
-function <[[main]]>:
+function "code":
   frame_size: 6
   length: 25
   const (length=4):
     0: "u"
-    1: <class desc T>
-    2: <func test>
+    1: <class desc "T">
+    2: <func "test">
     3: "T"
   code:
      0 | push_small_int value=0

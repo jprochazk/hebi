@@ -1,28 +1,6 @@
 ---
 source: crates/runtime/src/value/object/tests.rs
-expression: "format!(\"display:\\n{v}\\n\\ndebug:\\n{v:#?}\")"
+expression: "format!(\"display:\\n{v}\")"
 ---
 display:
 [0, 1, 2, 3]
-
-debug:
-List(
-    [
-        Value {
-            type: "int",
-            value: 0,
-        },
-        Value {
-            type: "int",
-            value: 1,
-        },
-        Value {
-            type: "int",
-            value: 2,
-        },
-        Value {
-            type: "int",
-            value: 3,
-        },
-    ],
-)

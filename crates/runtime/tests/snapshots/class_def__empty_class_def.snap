@@ -1,5 +1,5 @@
 ---
-source: crates/vm/tests/class_def.rs
+source: crates/runtime/tests/class_def.rs
 expression: snapshot
 ---
 # Input:
@@ -11,5 +11,5 @@ print T
 none
 
 # Stdout:
-<class def T>
+<class def "T">
 

@@ -3,16 +3,16 @@ use std::ops::{Add, Div, Mul, Rem, Sub};
 use crate::{Error, Result, Value};
 
 pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::int(lhs.add(rhs)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).add(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::float(lhs.add(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.add(rhs)));
     }
   }
@@ -22,16 +22,16 @@ pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
 }
 
 pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::int(lhs.sub(rhs)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).sub(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::float(lhs.sub(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.sub(rhs)));
     }
   }
@@ -41,16 +41,16 @@ pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
 }
 
 pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::int(lhs.mul(rhs)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).mul(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::float(lhs.mul(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.mul(rhs)));
     }
   }
@@ -60,22 +60,22 @@ pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
 }
 
 pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       if rhs == 0 {
         return Ok(Value::float((lhs as f64).div(rhs as f64)));
       }
       return Ok(Value::int(lhs.div(rhs)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).div(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       if rhs == 0 {
         return Ok(Value::float(lhs.div(rhs as f64)));
       }
       return Ok(Value::float(lhs.div(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.div(rhs)));
     }
   }
@@ -85,22 +85,22 @@ pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
 }
 
 pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       if rhs == 0 {
         return Ok(Value::float((lhs as f64).rem(rhs as f64)));
       }
       return Ok(Value::int(lhs.rem(rhs)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).rem(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       if rhs == 0 {
         return Ok(Value::float(lhs.rem(rhs as f64)));
       }
       return Ok(Value::float(lhs.rem(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.rem(rhs)));
     }
   }
@@ -110,8 +110,8 @@ pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
 }
 
 pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
-  if let Some(lhs) = lhs.as_int() {
-    if let Some(rhs) = rhs.as_int() {
+  if let Some(lhs) = lhs.clone().to_int() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return if rhs < 0 {
         let rhs = (-rhs) as u32;
         let denom = lhs.pow(rhs) as f64;
@@ -120,13 +120,13 @@ pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
         let rhs = rhs as u32;
         Ok(Value::int(lhs.pow(rhs)))
       };
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float((lhs as f64).powf(rhs)));
     }
-  } else if let Some(lhs) = lhs.as_float() {
-    if let Some(rhs) = rhs.as_int() {
+  } else if let Some(lhs) = lhs.to_float() {
+    if let Some(rhs) = rhs.clone().to_int() {
       return Ok(Value::float(lhs.powf(rhs as f64)));
-    } else if let Some(rhs) = rhs.as_float() {
+    } else if let Some(rhs) = rhs.to_float() {
       return Ok(Value::float(lhs.powf(rhs)));
     }
   }
