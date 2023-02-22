@@ -1,5 +1,8 @@
 set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
+@cli *ARGS:
+  cargo run --example cli {{ARGS}}
+
 @snap *ARGS:
   cargo insta test --review {{ARGS}}
 

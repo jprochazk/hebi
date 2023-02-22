@@ -1,0 +1,41 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+o.f(1,2,c=3)
+
+# Func:
+function "code":
+  frame_size: 7
+  length: 34
+  const (length=3):
+    0: "c"
+    1: "f"
+    2: "o"
+  code:
+     0 | push_small_int value=1
+     5 | store_reg r5
+     7 | push_small_int value=2
+    12 | store_reg r6
+    14 | create_empty_dict 
+    15 | store_reg r4
+    17 | push_small_int value=3
+    22 | insert_to_dict_named [0], r4
+    25 | load_global [2]
+    27 | load_field [1]
+    29 | call_kw r4, args=2
+    32 | ret 
+    33 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r5 │                     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r6 │                         ●━━━━━━━━━━━━━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  

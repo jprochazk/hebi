@@ -1,0 +1,14 @@
+---
+source: src/tests/literals.rs
+expression: snapshot
+---
+# Input:
+"\tas\\df\u{2800}\x28\n"
+
+# Result (success):
+"	as\df⠀(
+"
+
+# Stdout:
+
+

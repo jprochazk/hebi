@@ -1,0 +1,13 @@
+---
+source: src/tests/precedence.rs
+expression: snapshot
+---
+# Input:
+1 + 2 * 3
+
+# Result (success):
+7
+
+# Stdout:
+
+

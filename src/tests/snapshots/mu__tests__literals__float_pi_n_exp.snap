@@ -1,0 +1,13 @@
+---
+source: src/tests/literals.rs
+expression: snapshot
+---
+# Input:
+3.14e-3
+
+# Result (success):
+0.00314
+
+# Stdout:
+
+

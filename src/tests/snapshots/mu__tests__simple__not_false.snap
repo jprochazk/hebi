@@ -1,0 +1,13 @@
+---
+source: src/tests/simple.rs
+expression: snapshot
+---
+# Input:
+!false
+
+# Result (success):
+true
+
+# Stdout:
+
+

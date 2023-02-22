@@ -1,0 +1,17 @@
+---
+source: src/tests/object_load_index.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print v["a"]
+
+
+# Result (error):
+In code at 0..0
+Error: cannot get field `"a"` on value `{}`
+
+
+# Stdout:
+
+

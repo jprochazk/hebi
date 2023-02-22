@@ -1,0 +1,16 @@
+---
+source: src/tests/class_def.rs
+expression: snapshot
+---
+# Input:
+class T: pass
+print T
+
+
+# Result (success):
+none
+
+# Stdout:
+<class def "T">
+
+

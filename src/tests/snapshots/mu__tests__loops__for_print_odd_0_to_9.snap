@@ -1,0 +1,21 @@
+---
+source: src/tests/loops.rs
+expression: snapshot
+---
+# Input:
+for i in 0..10:
+  if i % 2 == 0: continue
+  print i
+
+
+# Result (success):
+false
+
+# Stdout:
+1
+3
+5
+7
+9
+
+

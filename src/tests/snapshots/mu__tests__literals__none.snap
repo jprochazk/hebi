@@ -1,0 +1,13 @@
+---
+source: src/tests/literals.rs
+expression: snapshot
+---
+# Input:
+none
+
+# Result (success):
+none
+
+# Stdout:
+
+

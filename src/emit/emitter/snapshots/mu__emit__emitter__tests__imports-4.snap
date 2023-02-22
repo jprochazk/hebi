@@ -1,0 +1,67 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn main():
+  import test.{
+    a0.{a1, a2},
+    b0.{b1, b2}
+  }
+
+  print a1, a2
+  print b1, b2
+
+
+# Func:
+function "main":
+  frame_size: 9
+  length: 41
+  const (length=4):
+    0: <path test.a0.a1>
+    1: <path test.a0.a2>
+    2: <path test.b0.b1>
+    3: <path test.b0.b2>
+  code:
+     0 | load_module [0], r4
+     3 | load_module [1], r5
+     6 | load_module [2], r6
+     9 | load_module [3], r7
+    12 | create_empty_list 
+    13 | store_reg r8
+    15 | load_reg r4
+    17 | push_to_list r8
+    19 | load_reg r5
+    21 | push_to_list r8
+    23 | print_list r8
+    25 | create_empty_list 
+    26 | store_reg r4
+    28 | load_reg r6
+    30 | push_to_list r4
+    32 | load_reg r7
+    34 | push_to_list r4
+    36 | print_list r4
+    38 | push_none 
+    39 | ret 
+    40 | suspend 
+
+function "code":
+  frame_size: 4
+  length: 6
+  const (length=2):
+    0: <func "main">
+    1: "main"
+  code:
+    0 | load_const [0]
+    2 | store_global [1]
+    4 | ret 
+    5 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

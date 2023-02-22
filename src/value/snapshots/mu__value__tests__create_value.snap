@@ -1,0 +1,5 @@
+---
+source: src/value/mod.rs
+expression: snapshot
+---
+[3.141592653589793, -1000000, true, none, "test"]

@@ -1,0 +1,19 @@
+---
+source: src/tests/object_load_field.rs
+expression: snapshot
+---
+# Input:
+class T:
+  a = none
+v := T()
+print v.a.b
+
+
+# Result (error):
+In code at 0..0
+Error: cannot get field `b` on value `none`
+
+
+# Stdout:
+
+

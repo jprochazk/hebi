@@ -1,0 +1,33 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+class T(U): pass
+
+
+# Func:
+function "code":
+  frame_size: 5
+  length: 11
+  const (length=3):
+    0: <class desc "T">
+    1: "U"
+    2: "T"
+  code:
+     0 | load_global [1]
+     2 | store_reg r4
+     4 | create_class [0], r4
+     7 | store_global [2]
+     9 | ret 
+    10 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  

@@ -1,0 +1,19 @@
+---
+source: src/tests/fn_call.rs
+expression: snapshot
+---
+# Input:
+fn f(a, b, c):
+  print a, b, c
+
+f()
+
+
+# Result (error):
+In code at 0..0
+Error: missing required positional params: a, b, c
+
+
+# Stdout:
+
+

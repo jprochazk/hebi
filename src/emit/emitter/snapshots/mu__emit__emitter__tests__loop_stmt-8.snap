@@ -1,0 +1,60 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+while true:
+  while true:
+    break
+  break
+
+
+# Func:
+function "code":
+  frame_size: 4
+  length: 40
+  const: <empty>
+  code:
+     0 | push_true 
+     1 | jump_if_false offset=37
+     3 | nop 
+     4 | nop 
+     5 | nop 
+     6 | nop 
+     7 | push_true 
+     8 | jump_if_false offset=18
+    10 | nop 
+    11 | nop 
+    12 | nop 
+    13 | nop 
+    14 | jump offset=12
+    16 | nop 
+    17 | nop 
+    18 | nop 
+    19 | nop 
+    20 | jump_back offset=13
+    22 | nop 
+    23 | nop 
+    24 | nop 
+    25 | nop 
+    26 | jump offset=12
+    28 | nop 
+    29 | nop 
+    30 | nop 
+    31 | nop 
+    32 | jump_back offset=32
+    34 | nop 
+    35 | nop 
+    36 | nop 
+    37 | nop 
+    38 | ret 
+    39 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  
