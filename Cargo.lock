@@ -326,7 +326,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 name = "mu"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "beef",
+ "clap",
  "indexmap",
  "indoc",
  "insta",
@@ -335,16 +337,6 @@ dependencies = [
  "mu_span",
  "mu_syntax",
  "paste",
-]
-
-[[package]]
-name = "mu_cli"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "mu",
- "mu_diag",
  "rustyline",
  "rustyline-derive",
 ]
