@@ -1,0 +1,52 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+fn main():
+  import test.{a,b}
+
+  print a, b
+
+
+# Func:
+function "main":
+  frame_size: 7
+  length: 22
+  const (length=2):
+    0: <path test.a>
+    1: <path test.b>
+  code:
+     0 | load_module [0], r4
+     3 | load_module [1], r5
+     6 | create_empty_list 
+     7 | store_reg r6
+     9 | load_reg r4
+    11 | push_to_list r6
+    13 | load_reg r5
+    15 | push_to_list r6
+    17 | print_list r6
+    19 | push_none 
+    20 | ret 
+    21 | suspend 
+
+function "code":
+  frame_size: 4
+  length: 6
+  const (length=2):
+    0: <func "main">
+    1: "main"
+  code:
+    0 | load_const [0]
+    2 | store_global [1]
+    4 | ret 
+    5 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

@@ -1,0 +1,20 @@
+---
+source: src/tests/fn_call.rs
+expression: snapshot
+---
+# Input:
+fn f():
+  print "test"
+
+f()
+f()
+
+
+# Result (success):
+none
+
+# Stdout:
+test
+test
+
+

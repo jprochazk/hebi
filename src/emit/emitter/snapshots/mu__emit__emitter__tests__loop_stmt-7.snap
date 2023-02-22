@@ -1,0 +1,65 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+v := 0
+while v < 10:
+  print "less than 10:", v
+  v += 1
+print "now it's 10"
+
+
+# Func:
+function "code":
+  frame_size: 5
+  length: 61
+  const (length=3):
+    0: "v"
+    1: "less than 10:"
+    2: "now it's 10"
+  code:
+     0 | push_small_int value=0
+     5 | store_global [0]
+     7 | load_global [0]
+     9 | store_reg r4
+    11 | push_small_int value=10
+    16 | cmp_lt r4
+    18 | jump_if_false offset=38
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | nop 
+    24 | create_empty_list 
+    25 | store_reg r4
+    27 | load_const [1]
+    29 | push_to_list r4
+    31 | load_global [0]
+    33 | push_to_list r4
+    35 | print_list r4
+    37 | load_global [0]
+    39 | store_reg r4
+    41 | push_small_int value=1
+    46 | add r4
+    48 | store_global [0]
+    50 | jump_back offset=43
+    52 | nop 
+    53 | nop 
+    54 | nop 
+    55 | nop 
+    56 | load_const [2]
+    58 | print 
+    59 | ret 
+    60 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━●
+r5 │                             ●━━━━━━━━━━━━━━━●
+r6 │                                                 ●━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  

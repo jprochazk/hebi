@@ -1,0 +1,59 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+for i in 0..10:
+  print i
+
+
+# Func:
+function "code":
+  frame_size: 6
+  length: 56
+  const: <empty>
+  code:
+     0 | push_small_int value=0
+     5 | store_reg r4
+     7 | push_small_int value=10
+    12 | store_reg r5
+    14 | load_reg r5
+    16 | cmp_lt r4
+    18 | jump_if_false offset=36
+    20 | nop 
+    21 | nop 
+    22 | nop 
+    23 | nop 
+    24 | jump offset=21
+    26 | nop 
+    27 | nop 
+    28 | nop 
+    29 | nop 
+    30 | push_small_int value=1
+    35 | add r4
+    37 | store_reg r4
+    39 | jump_back offset=25
+    41 | nop 
+    42 | nop 
+    43 | nop 
+    44 | nop 
+    45 | load_reg r4
+    47 | print 
+    48 | jump_back offset=18
+    50 | nop 
+    51 | nop 
+    52 | nop 
+    53 | nop 
+    54 | ret 
+    55 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r3 │             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r4 │                 ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r5 │                             ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  

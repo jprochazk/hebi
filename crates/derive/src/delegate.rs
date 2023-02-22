@@ -60,7 +60,7 @@ pub fn macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
   quote! {
     #input
 
-    impl #generics crate::value::object::Handle<#self_ty> {
+    impl #generics crate::value::handle::Handle<#self_ty> {
       #(#methods)*
     }
   }

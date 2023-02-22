@@ -1,0 +1,16 @@
+[package]
+name = "mu_cli"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustyline = "10.1.0"
+rustyline-derive = "0.7.0"
+anyhow = "1.0.69"
+clap = { version = "4.1.4", features = ["derive"] }
+
+mu = { path = "../.." }
+diag = { path = "../../crates/diag", package = "mu_diag" }
+

@@ -1,0 +1,19 @@
+---
+source: src/tests/branch.rs
+expression: snapshot
+---
+# Input:
+v := 10
+if v > 5:
+  print "yes"
+else:
+  print "no"
+
+
+# Result (success):
+none
+
+# Stdout:
+yes
+
+

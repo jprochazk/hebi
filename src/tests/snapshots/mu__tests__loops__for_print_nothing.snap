@@ -1,0 +1,15 @@
+---
+source: src/tests/loops.rs
+expression: snapshot
+---
+# Input:
+for i in 10..0:
+  print i
+
+
+# Result (success):
+false
+
+# Stdout:
+
+

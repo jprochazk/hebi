@@ -1,0 +1,19 @@
+---
+source: src/tests/class_methods.rs
+expression: snapshot
+---
+# Input:
+class T:
+  fn test():
+    print "test"
+
+T.test()
+
+
+# Result (success):
+none
+
+# Stdout:
+test
+
+

@@ -1,0 +1,17 @@
+---
+source: src/tests/assignment.rs
+expression: snapshot
+---
+# Input:
+v := 10
+v += 2
+print v
+
+
+# Result (success):
+none
+
+# Stdout:
+12
+
+

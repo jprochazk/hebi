@@ -1,6 +1,0 @@
----
-source: crates/runtime/src/value/object/tests.rs
-expression: "format!(\"display:\\n{v}\")"
----
-display:
-[0, 1, 2, 3]

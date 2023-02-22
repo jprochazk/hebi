@@ -1,0 +1,21 @@
+---
+source: src/tests/fn_call_closure.rs
+expression: snapshot
+---
+# Input:
+fn a():
+  v := 10
+  fn b():
+    print v
+  return b
+
+a()()
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+
+

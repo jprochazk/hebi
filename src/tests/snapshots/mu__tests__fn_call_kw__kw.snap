@@ -1,0 +1,18 @@
+---
+source: src/tests/fn_call_kw.rs
+expression: snapshot
+---
+# Input:
+fn f(*, a):
+  print a
+
+f(a=10)
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+
+

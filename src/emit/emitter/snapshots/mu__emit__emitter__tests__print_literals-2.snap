@@ -1,0 +1,27 @@
+---
+source: src/emit/emitter/tests.rs
+expression: snapshot
+---
+# Input:
+print 2.5
+
+# Func:
+function "code":
+  frame_size: 4
+  length: 5
+  const (length=1):
+    0: 2.5
+  code:
+    0 | load_const [0]
+    2 | print 
+    3 | ret 
+    4 | suspend 
+
+
+# Regalloc:
+r0 │ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━●
+r1 │     ●━━━━━━━━━━━━━━━━━━━●
+r2 │         ●━━━━━━━━━━━●
+r3 │             ●━━━●
+   ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     00  01  02  03  04  05  06  07  08  

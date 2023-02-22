@@ -1,0 +1,19 @@
+---
+source: src/tests/fn_call_kw.rs
+expression: snapshot
+---
+# Input:
+fn f(*, a, b, **kw):
+  print a, b, kw
+
+f(c=10)
+
+
+# Result (error):
+In code at 0..0
+Error: mismatched keyword params: missing a, b
+
+
+# Stdout:
+
+

@@ -40,9 +40,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "4.1.4"
+version = "4.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f13b9c79b5d1dd500d20ef541215a6423c75829ef43117e1b4d17fd8af0b5d76"
+checksum = "ec0b0588d44d4d63a87dbd75c136c166bbfd9a86a31cb89e09906521c7d3f5e3"
 dependencies = [
  "bitflags",
  "clap_derive",
@@ -323,16 +323,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
+name = "mu"
+version = "0.0.0"
+dependencies = [
+ "beef",
+ "indexmap",
+ "indoc",
+ "insta",
+ "mu_derive",
+ "mu_diag",
+ "mu_span",
+ "mu_syntax",
+ "paste",
+]
+
+[[package]]
 name = "mu_cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap",
+ "mu",
  "mu_diag",
- "mu_emit",
- "mu_op",
- "mu_runtime",
- "mu_syntax",
  "rustyline",
  "rustyline-derive",
 ]
@@ -355,49 +367,6 @@ dependencies = [
  "mu_span",
  "owo-colors",
  "thiserror",
-]
-
-[[package]]
-name = "mu_emit"
-version = "0.0.0"
-dependencies = [
- "beef",
- "indexmap",
- "indoc",
- "insta",
- "mu_diag",
- "mu_op",
- "mu_runtime",
- "mu_span",
- "mu_syntax",
-]
-
-[[package]]
-name = "mu_op"
-version = "0.0.0"
-dependencies = [
- "beef",
- "indexmap",
- "indoc",
- "insta",
- "paste",
-]
-
-[[package]]
-name = "mu_runtime"
-version = "0.0.0"
-dependencies = [
- "beef",
- "indexmap",
- "indoc",
- "insta",
- "mu_derive",
- "mu_diag",
- "mu_emit",
- "mu_op",
- "mu_span",
- "mu_syntax",
- "paste",
 ]
 
 [[package]]
