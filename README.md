@@ -10,6 +10,8 @@
 
 This repository hosts a dynamically typed language, its compiler, and VM.
 
+### Usage
+
 Everything is still in flux, and many interesting features are not yet implemented (see [issues](https://github.com/jprochazk/mu/issues)), but it can already execute some basic code:
 
 ```rust
@@ -20,7 +22,8 @@ let mu = Mu::new();
 // prints `2`
 println!("{}", mu.eval::<i32>("1 + 1").unwrap());
 
-println!("{}", mu.eval::<()>(r#"
+mu.eval::<()>(
+  r#"
 class Test:
   v = 10
   fn test(self):
@@ -30,10 +33,12 @@ t := Test(v=100)
 t.test() # prints 100
 t.v = 20
 t.test() # prints 20
-"#))
+"#,
+)
+.unwrap();
 ```
 
-To see more examples, visit [src/tests](./src/tests).
+To see more examples, visit [src/tests](./src/tests). A general overview of the language's currently implemented syntax and semantics is available in the [design](./design.md) file.
 
 The language also has a REPL at [examples/cli](./examples/cli):
 
@@ -68,15 +73,21 @@ Other tooling that is highly recommended:
   - [`diag`](./crates/diag) - Diagnostic tools for reporting useful errors to users.
   - [`derive`](./crates/derive) - (WIP) Derive macros for easily exposing Rust functions and objects to the runtime.
 
-### Design and implementation details
+### Goals, Design and Implementation
 
-The language design is heavily inspired by Python. A general overview of the language's syntax and semantics is available in the [design](./design.md) file.
+The main goal is to have a reasonably feature-full language with simple (as in, can fit in a single person's head), unsurprising semantics that's easily embeddable within a Rust program. It isn't a priority for it to be a standalone, general-purpose language, but it isn't out of the question.
 
-The VM borrows a lot of ideas from [V8](https://v8.dev/). Ideas shamelessly stolen include:
-- Bytecode encoded with variable-width operands using a prefix opcode. This means there is no limit to the number of variables or constants in a function, the maximum distance of a jump, etc. It also results in very compact bytecode.
-- An implicit accumulator to store temporary values, greatly reducing the number of frame sizes and register moves. It also helps make the bytecode more compact, because every instruction operating on two or more registers now needs one less register operand.
-- Function calling convention which copies arguments into the new call frame, instead of referencing them directly. This opens up the implementation space for stackless coroutines.
-- Module variables on top of globals. This allows for a clear separation of concerns into different modules, as functions declared in different modules may not access the variables in each others' global scopes, unless they are explicitly imported.
+The language design is heavily inspired by Python. Mu blatantly copies most of Python's syntax, and a lot of the semantics, but some parts have been removed, or changed. Python is very difficult to optimize, and has many quirks which make it unsuitable for embedding within another program.
+
+The implementation borrows a lot of ideas from [V8](https://v8.dev/). Ideas shamelessly stolen include:
+- Bytecode encoded with variable-width operands using a prefix opcode.
+  This means there is no limit to the number of variables or constants in a function, the maximum distance of a jump, etc. It also results in very compact bytecode.
+- An implicit accumulator to store temporary values. 
+  This greatly reduces call frame sizes and the number of register moves. It also helps make the bytecode more compact, because every instruction operating on two or more registers now needs one less register operand.
+- Function calling convention which copies arguments into the new call frame, instead of referencing them directly.
+  This opens up the implementation space for stackless coroutines.
+- Module variables on top of globals.
+  This allows for a clear separation of concerns into different modules, as functions declared in different modules may not access the variables in each others' global scopes, unless they are explicitly imported.
 
 Currently, the VM uses reference counting as its garbage collection strategy, but the plan is to [implement a tracing garbage collector](https://github.com/jprochazk/mu/issues/6) at some point. Some possible approaches are described in [LuaJIT's wiki](http://web.archive.org/web/20220524034527/http://wiki.luajit.org/New-Garbage-Collector).
 
