@@ -324,7 +324,7 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "mu"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "beef",
@@ -343,7 +343,7 @@ dependencies = [
 
 [[package]]
 name = "mu_derive"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -352,7 +352,7 @@ dependencies = [
 
 [[package]]
 name = "mu_diag"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "beef",
  "insta",
@@ -363,11 +363,11 @@ dependencies = [
 
 [[package]]
 name = "mu_span"
-version = "0.0.1"
+version = "0.1.0"
 
 [[package]]
 name = "mu_syntax"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "beef",
  "indoc",

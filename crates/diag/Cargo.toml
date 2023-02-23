@@ -1,6 +1,6 @@
 [package]
 name = "mu_diag"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/jprochazk/mu"
 authors = ["jprochazk"]

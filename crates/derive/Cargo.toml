@@ -1,6 +1,6 @@
 [package]
 name = "mu_derive"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/jprochazk/mu"
 authors = ["jprochazk"]
