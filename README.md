@@ -70,9 +70,15 @@ Other tooling that is highly recommended:
 
 ### Design and implementation details
 
-The language design is heavily inspired by Python. A general overview of the language's syntax is available in the [design](./design.md) file.
+The language design is heavily inspired by Python. A general overview of the language's syntax and semantics is available in the [design](./design.md) file.
 
-The VM borrows a lot of ideas from [V8](https://v8.dev/), namely the bytecode design which utilises an implicit accumulator to store temporary values, greatly reducing the number of frame sizes and register moves.
+The VM borrows a lot of ideas from [V8](https://v8.dev/). Ideas shamelessly stolen include:
+- Bytecode encoded with variable-width operands using a prefix opcode. This means there is no limit to the number of variables or constants in a function, the maximum distance of a jump, etc. It also results in very compact bytecode.
+- An implicit accumulator to store temporary values, greatly reducing the number of frame sizes and register moves. It also helps make the bytecode more compact, because every instruction operating on two or more registers now needs one less register operand.
+- Function calling convention which copies arguments into the new call frame, instead of referencing them directly. This opens up the implementation space for stackless coroutines.
+- Module variables on top of globals. This allows for a clear separation of concerns into different modules, as functions declared in different modules may not access the variables in each others' global scopes, unless they are explicitly imported.
+
+Currently, the VM uses reference counting as its garbage collection strategy, but the plan is to [implement a tracing garbage collector](https://github.com/jprochazk/mu/issues/6) at some point. Some possible approaches are described in [LuaJIT's wiki](http://web.archive.org/web/20220524034527/http://wiki.luajit.org/New-Garbage-Collector).
 
 ### License
 

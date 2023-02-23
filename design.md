@@ -237,3 +237,5 @@ D().inherited() # prints:
 This document is not finished, as some features are not yet fully implemented:
 - [Generators and Yield](https://github.com/jprochazk/mu/issues/2)
 - [Modules and Imports](https://github.com/jprochazk/mu/issues/3)
+
+All of the features above are fully implemented, and you can try them out using the [`REPL`](./examples/cli).
