@@ -37,3 +37,16 @@ check! {
     f(0, 1, 2)
   "#
 }
+check! {
+  func_recursive,
+  r#"
+    fn fac(n):
+      if n < 2:
+        return n
+      else:
+        return n * fac(n-1)
+    
+    print fac(5)
+    print fac(5)
+  "#
+}

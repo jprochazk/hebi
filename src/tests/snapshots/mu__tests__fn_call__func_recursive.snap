@@ -1,0 +1,23 @@
+---
+source: src/tests/fn_call.rs
+expression: snapshot
+---
+# Input:
+fn fac(n):
+  if n < 2:
+    return n
+  else:
+    return n * fac(n-1)
+
+print fac(5)
+print fac(5)
+
+
+# Result (success):
+none
+
+# Stdout:
+120
+120
+
+
