@@ -24,6 +24,7 @@ TODO: carefully design the public API
 // together with a garbage collector to make it worth the effort
 
 use std::cell::{Ref, RefCell};
+use std::fmt::{Debug, Display};
 
 pub use conv::{FromMu, IntoMu, Value};
 use ctx::Context;
@@ -106,6 +107,28 @@ impl From<RuntimeError> for EvalError {
     EvalError::Runtime(value)
   }
 }
+
+impl Debug for EvalError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Parse(e) => f
+        .debug_tuple("Parse")
+        .field(&e.iter().map(|e| e.message.to_string()).collect::<Vec<_>>())
+        .finish(),
+      Self::Runtime(e) => f.debug_tuple("Runtime").field(&e.message).finish(),
+    }
+  }
+}
+impl Display for EvalError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    use util::JoinIter;
+    match self {
+      EvalError::Parse(v) => write!(f, "syntax errors: {}", v.iter().join("; ")),
+      EvalError::Runtime(v) => write!(f, "error: {}", v.message),
+    }
+  }
+}
+impl std::error::Error for EvalError {}
 
 #[cfg(test)]
 mod tests;
