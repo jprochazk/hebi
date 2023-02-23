@@ -65,7 +65,9 @@ v(a)   # function call
 ### Control Flow
 
 ```python
-# Mu supports a few different kinds of control flow:
+# Mu supports a few different kinds of control flow
+# Note that indentation is used to denote blocks, just like in Python
+
 # 1. If statements
 if v == 1:
   print "`v` is exactly one"
@@ -95,7 +97,6 @@ for i in 0..10: # this syntax denotes a range
 
 ```python
 # A basic function is declared using the `fn` keyword
-# Note that indentation is used to denote blocks, just like in Python
 fn add(a, b):
   return a + b
 
