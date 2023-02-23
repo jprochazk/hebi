@@ -56,6 +56,13 @@ false || true
 # if `a` is not `none`, yields it, otherwise yields `b`
 a ?? b
 
+# Optional chaining
+# if the target of any of the field or index accesses
+# after the `?` is `none`, yields `none`
+?a["b"].c
+# may be combined with `??` to provide a default value
+?a["b"].c ?? "d"
+
 # Postfix operators
 v.a    # field access
 v["a"] # index access
