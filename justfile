@@ -9,9 +9,9 @@ set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 @snap-fresh *ARGS:
   cargo insta test --review --delete-unreferenced-snapshots --no-ignore {{ARGS}}
 
-@miri *ARGS:
-  INSTA_FORCE_PASS="true" MIRIFLAGS="-Zmiri-disable-isolation" cargo miri {{ARGS}}
+#@miri *ARGS:
+#  MIRIFLAGS="-Zmiri-disable-isolation" cargo miri --no-default-features {{ARGS}}
 
 @time build:
   cargo clean
-  cargo +nightly build --workspace --timings --release
+  cargo +nightly build --all --timings --release

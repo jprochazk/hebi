@@ -10,13 +10,15 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["check-recursion-limit"]
 portable = []
+check-recursion-limit = ["syntax/check-recursion-limit"]
 
 [dependencies]
 diag = { path = "crates/diag", package = "mu_diag" }
 span = { path = "crates/span", package = "mu_span" }
 derive = { path = "crates/derive", package = "mu_derive" }
-syntax = { path = "crates/syntax", package = "mu_syntax" }
+syntax = { path = "crates/syntax", package = "mu_syntax", default-features = false }
 
 beef = "0.5.2"
 indexmap = "1.9.2"
