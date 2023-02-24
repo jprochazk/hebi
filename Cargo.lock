@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "hebi_derive"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -227,7 +227,7 @@ dependencies = [
 
 [[package]]
 name = "hebi_diag"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "beef",
  "hebi_span",
@@ -238,11 +238,11 @@ dependencies = [
 
 [[package]]
 name = "hebi_span"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "hebi_syntax"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "beef",
  "hebi_diag",

@@ -1,6 +1,6 @@
 [package]
 name = "hebi_syntax"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
@@ -14,13 +14,13 @@ default = ["check-recursion-limit"]
 check-recursion-limit = []
 
 [dependencies]
-beef = "0.5.2"
-logos = "0.12.1"
+beef = { version = "0.5.2" }
+logos = { version = "0.12.1" }
 
-span = { path = "../span", package = "hebi_span" }
-diag = { path = "../diag", package = "hebi_diag" }
-stacker = "0.1.15"
+span = { version = "^0.0.1", path = "../span", package = "hebi_span" }
+diag = { version = "^0.0.1", path = "../diag", package = "hebi_diag" }
+stacker = { version = "0.1.15" }
 
 [dev-dependencies]
-indoc = "1.0.8"
-insta = "1.23.0"
+indoc = { version = "1.0.8" }
+insta = { version = "1.23.0" }

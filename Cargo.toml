@@ -20,18 +20,18 @@ span = { path = "crates/span", package = "hebi_span" }
 derive = { path = "crates/derive", package = "hebi_derive" }
 syntax = { path = "crates/syntax", package = "hebi_syntax", default-features = false }
 
-beef = "0.5.2"
-indexmap = "1.9.2"
-paste = "1.0.11"
+beef = { version = "0.5.2" }
+indexmap = { version = "1.9.2" }
+paste = { version = "1.0.11" }
 
 
 [dev-dependencies]
-indoc = "1.0.8"
-insta = "1.23.0"
+indoc = { version = "1.0.8" }
+insta = { version = "1.23.0" }
 
-rustyline = "10.1.0"
-rustyline-derive = "0.7.0"
-anyhow = "1.0.69"
+rustyline = { version = "10.1.0" }
+rustyline-derive = { version = "0.7.0" }
+anyhow = { version = "1.0.69" }
 clap = { version = "4.1.4", features = ["derive"] }
 
 [workspace]

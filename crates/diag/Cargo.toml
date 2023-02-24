@@ -1,6 +1,6 @@
 [package]
 name = "hebi_diag"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
@@ -10,11 +10,11 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-owo-colors = "3.5.0"
-thiserror = "1.0.37"
-beef = "0.5.2"
+owo-colors = { version = "3.5.0" }
+thiserror = { version = "1.0.37" }
+beef = { version = "0.5.2" }
 
-span = { path = "../span", package = "hebi_span" }
+span = { version = "^0.0.1", path = "../span", package = "hebi_span" }
 
 [dev-dependencies]
 insta = "1.21.0"
