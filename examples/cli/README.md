@@ -1,4 +1,4 @@
-# Mu CLI
+# Hebi CLI
 
 Usage:
 ```

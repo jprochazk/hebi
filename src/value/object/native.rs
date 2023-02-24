@@ -1,10 +1,10 @@
-#[mu::func]
+#[hebi::func]
 fn split(str: String, sep: String) -> Vec<String> {
   str.split(&sep).map(|v| v.to_string()).collect()
 }
 // generates:
-struct split__mu_call_impl;
-impl mu::Call for split__mu_call_impl {
+struct split__hebi_call_impl;
+impl hebi::Call for split__hebi_call_impl {
   fn call(vm: &mut Isolate, func: &Value, args: &[Value], kw: &Value) -> Result<Value, Error> {
     if args.len() < 3 {
       return error!("invalid number of arguments");
@@ -20,7 +20,7 @@ impl mu::Call for split__mu_call_impl {
   }
 }
 
-mu::class! {
+hebi::class! {
   // by default, all `pub` fields are exposed, meaning they will receive a generated getter+setter pair.
   // non-`pub` fields are not exposed in any way unless explicitly declared as such.
   //
@@ -28,13 +28,13 @@ mu::class! {
   //
   // fields may be configured in the following ways:
   //
-  // - `#[mu(readonly)] pub field: T`
+  // - `#[hebi(readonly)] pub field: T`
   //   effect: only the getter will be generated, and writes to it will fail
   //
-  // - `#[mu(private)] pub field: T`
+  // - `#[hebi(private)] pub field: T`
   //   effect: this field will not be exposed
   //
-  // - `#[mu(public)] field: T`
+  // - `#[hebi(public)] field: T`
   //   effect: this field will be exposed via a generated getter+setter pair.
   //   may be mixed with `readonly`
   //
@@ -42,10 +42,10 @@ mu::class! {
     pub value: i32,
   }
 
-  // all `pub` methods are exposed, as if they had the `#[mu::func]` annotation
+  // all `pub` methods are exposed, as if they had the `#[hebi::func]` annotation
   // methods may be configured in the following ways:
   //
-  // - `#[mu(private)] pub fn f(...) -> T`
+  // - `#[hebi(private)] pub fn f(...) -> T`
   //   effect: this method will not be exposed
   impl Counter {
     pub fn new(value: i32) -> Counter {
@@ -61,7 +61,7 @@ mu::class! {
 }
 // generates:
 struct counter_new__method;
-impl mu::Call for counter_new__method {
+impl hebi::Call for counter_new__method {
   fn call(vm: &mut Isolate, func: &Value, args: &[Value], kw: &Value) -> Result<Value, Error> {
     if args.len() < 2 {
       return error!("invalid number of arguments");
@@ -78,7 +78,7 @@ impl mu::Call for counter_new__method {
   }
 }
 struct counter_value__field_get;
-impl mu::Call for counter_value__field_get {
+impl hebi::Call for counter_value__field_get {
   fn call(vm: &mut Isolate, func: &Value, args: &[Value], kw: &Value) -> Result<Value, Error> {
     let Some(instance) = args[0].as_native_class() else {
       return error!("...")
@@ -89,7 +89,7 @@ impl mu::Call for counter_value__field_get {
   }
 }
 struct counter_value__field_set;
-impl mu::Call for counter_value__field_set {
+impl hebi::Call for counter_value__field_set {
   fn call(vm: &mut Isolate, func: &Value, args: &[Value], kw: &Value) -> Result<Value, Error> {
     if args.len() < 2 {
       return error!("...");
@@ -108,10 +108,10 @@ impl mu::Call for counter_value__field_set {
   }
 }
 struct counter_next__method;
-impl mu::Call for counter_next__method {
+impl hebi::Call for counter_next__method {
   fn call(vm: &mut Isolate, func: &Value, args: &[Value], kw: &Value) -> Result<Value, Error> {}
 }
-impl mu::Class for Counter {
+impl hebi::Class for Counter {
   fn definition() -> ClassDef {
     ClassDef::new()
       .init(counter_new__method)
@@ -122,7 +122,7 @@ impl mu::Class for Counter {
 }
 
 fn test() -> anyhow::Result<()> {
-  let mut vm = mu::init();
+  let mut vm = hebi::init();
 
   let my_module = Module::new()
     .add("Counter", Counter)

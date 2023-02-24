@@ -1,4 +1,4 @@
-//! This module contains the implementation of spans for Mu,
+//! This module contains the implementation of spans for Hebi,
 //! and various utilities for working with them.
 
 use std::ops::{Deref, DerefMut, Range};

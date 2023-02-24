@@ -1,6 +1,6 @@
 # Diag
 
-This crate implements error reporting for Mu. In simple terms, it turns `code + span + message` into a nicely formatted error message:
+This crate implements error reporting for Hebi. In simple terms, it turns `code + span + message` into a nicely formatted error message:
 
 ```
 error: mismatched type

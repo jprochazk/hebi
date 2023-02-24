@@ -1,4 +1,4 @@
-//! Mu's dictionary type.
+//! Hebi's dictionary type.
 //!
 //! A dictionary is an ordered hashmap.
 

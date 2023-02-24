@@ -3,7 +3,7 @@ source: crates/diag/src/report/tests.rs
 expression: report.emit_to_string().unwrap()
 ---
 [31merror[0m: mismatched type
-[34m>[0m test.mu:1
+[34m>[0m test.hebi:1
 [34m|[0m 
 [34m|[0m let x: Foo = [31;4mBar {[0m
 [34m|[0m [31;4m  a: 0,[0m

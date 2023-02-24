@@ -152,14 +152,14 @@ impl<'a> Report<'a> {
 
     // single line span
     // error: expected semicolon
-    // > foo.mu:11
+    // > foo.hebi:11
     // |
     // | let y = 30_
     // |
 
     // multi-line span
     // error: mismatched type
-    // > bar.mu:31
+    // > bar.hebi:31
     // |
     // | let x: Foo = Bar {
     // |   a: 0,

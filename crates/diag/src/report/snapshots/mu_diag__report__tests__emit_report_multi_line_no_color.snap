@@ -3,7 +3,7 @@ source: crates/diag/src/report/tests.rs
 expression: report.emit_to_string().unwrap()
 ---
 error: mismatched type
-> test.mu:1
+> test.hebi:1
 | 
 | let x: Foo = Bar {
 |   a: 0,

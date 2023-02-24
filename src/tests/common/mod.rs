@@ -3,9 +3,9 @@ macro_rules! check {
   ($name:ident, $input:literal) => {
     #[test]
     fn $name() {
-      use $crate::{EvalError, Mu, Value};
+      use $crate::{EvalError, Hebi, Value};
       let input = indoc::indoc!($input);
-      let vm = Mu::with_io(Vec::new());
+      let vm = Hebi::with_io(Vec::new());
       match vm.eval::<Value>(input) {
         Ok(value) => {
           let stdout = vm.io::<Vec<u8>>().unwrap();
@@ -45,9 +45,9 @@ macro_rules! check_error {
   ($name:ident, $input:literal) => {
     #[test]
     fn $name() {
-      use $crate::{EvalError, Mu, Value};
+      use $crate::{EvalError, Hebi, Value};
       let input = indoc::indoc!($input);
-      let vm = Mu::with_io(Vec::new());
+      let vm = Hebi::with_io(Vec::new());
       match vm.eval::<Value>(input) {
         Ok(value) => {
           let stdout = String::from_utf8(vm.io::<Vec<u8>>().unwrap().clone()).unwrap();

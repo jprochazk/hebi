@@ -2,4 +2,4 @@
 
 👷‍♂️ Work in progress
 
-This crate contains derive macros for use with Mu.
+This crate contains derive macros for use with Hebi.

@@ -1,18 +1,18 @@
 ### Variables, Values, Basic Operators
 
 ```python
-# Unlike Python, Mu has explicit declarations
+# Unlike Python, Hebi has explicit declarations
 v := 0
 
 # Variables may be reassigned at will
 v = 10
 
-# Mu supports a whole host of different kinds of values
+# Hebi supports a whole host of different kinds of values
 v = none # none, equivalent to Python's None or JavaScript's null
 v = 0.1 # number, which may be represented as either an integer or a float, but that is an implementation detail.
 v = true # bool, used to represent true or false
 
-# Along with the primitive types above, Mu also supports various object types:
+# Along with the primitive types above, Hebi also supports various object types:
 # Strings - may be multiline, also supports common escapes
 v = "\tas\\df\x2800\n"
 
@@ -25,7 +25,7 @@ v = {a: none, b: 0.1, c: true, d: "\tas\\df\x2800\n"}
 v = {["a"]: none, ["b"]: 0.1, ["c"]: true, ["d"]: "\tas\\df\x2800\n"}
 v = {[0]: none, [1]: 0.1, [2]: true, [3]: "\tas\\df\x2800\n"}
 
-# Mu supports many different kinds of operators:
+# Hebi supports many different kinds of operators:
 # Common arithmetic
 2 + 2
 2 - 2
@@ -72,7 +72,7 @@ v(a)   # function call
 ### Control Flow
 
 ```python
-# Mu supports a few different kinds of control flow
+# Hebi supports a few different kinds of control flow
 # Note that indentation is used to denote blocks, just like in Python
 
 # 1. If statements
@@ -118,7 +118,7 @@ fn factorial(n):
     return n * factorial(n - 1)
 
 
-# Mu supports keyword arguments, but they are not enabled by default:
+# Hebi supports keyword arguments, but they are not enabled by default:
 fn a(v): ...
 a(v=20) # error: unknown keyword param `v`
 a(20) # ok!
@@ -155,7 +155,7 @@ c(10, 20, 40, third=30, fourth=0, other=-1) # prints `10 20 [40] 30 0 {other: -1
 ### Classes, Inheritance
 
 ```python
-# Mu supports declaring classes
+# Hebi supports declaring classes
 class Test:
   # The runtime will call the `init` method,
   # if present, after initializing the object
@@ -206,7 +206,7 @@ print(C(true).a) # 10
 print(C(false).a) # error: cannot get field `a` of `<class C>`
 
 # But after the initializer runs, no more fields may be added
-# to the class. In Mu, we refer to that as a frozen class:
+# to the class. In Hebi, we refer to that as a frozen class:
 C(true).b = 10 # error: cannot add field `b` to frozen class
 
 
@@ -242,7 +242,7 @@ D().inherited() # prints:
 ### Unfinished
 
 This document is not finished, as some features are not yet fully implemented:
-- [Generators and Yield](https://github.com/jprochazk/mu/issues/2)
-- [Modules and Imports](https://github.com/jprochazk/mu/issues/3)
+- [Generators and Yield](https://github.com/jprochazk/hebi/issues/2)
+- [Modules and Imports](https://github.com/jprochazk/hebi/issues/3)
 
 All of the features above are fully implemented, and you can try them out using the [`REPL`](./examples/cli).

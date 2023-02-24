@@ -26,7 +26,7 @@ TODO: carefully design the public API
 use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
-pub use conv::{FromMu, IntoMu, Value};
+pub use conv::{FromHebi, IntoHebi, Value};
 use ctx::Context;
 use isolate::{Io, Isolate};
 pub use value::object::Error as RuntimeError;
@@ -34,7 +34,7 @@ use value::Value as CoreValue;
 
 pub type Result<T, E = RuntimeError> = std::result::Result<T, E>;
 
-pub struct Mu {
+pub struct Hebi {
   isolate: RefCell<Isolate>,
 }
 
@@ -43,15 +43,15 @@ pub struct Mu {
 // Normally, it would be unsound to implement Send for something that
 // uses `Rc`, but in this case, the user can *never* obtain an internal
 // `Rc` (or equivalent). This means they can never clone that `Rc`, and
-// then move their `Mu` instance to another thread, causing a data race
-// between the user's clone of the `Rc` and Mu's clone.
+// then move their `Hebi` instance to another thread, causing a data race
+// between the user's clone of the `Rc` and Hebi's clone.
 //
 // This is enforced by via the `conv::Value<'a>` type, which borrows from
-// `Mu`, meaning that `Mu` may not be moved (potentially to another thread)
+// `Hebi`, meaning that `Hebi` may not be moved (potentially to another thread)
 // while that value is borrowed.
-unsafe impl Send for Mu {}
+unsafe impl Send for Hebi {}
 
-impl Mu {
+impl Hebi {
   #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
     Self {
@@ -70,7 +70,7 @@ impl Mu {
     Ok(())
   }
 
-  pub fn eval<'a, T: FromMu<'a>>(&'a self, src: &str) -> Result<T, EvalError> {
+  pub fn eval<'a, T: FromHebi<'a>>(&'a self, src: &str) -> Result<T, EvalError> {
     let module = syntax::parse(src)?;
     let module = emit::emit(self.isolate.borrow().ctx(), "code", &module).unwrap();
     let main = module.main();
@@ -79,7 +79,7 @@ impl Mu {
       .borrow_mut()
       .call(main.into(), &[], CoreValue::none())?;
     let result = Value::bind(result);
-    Ok(T::from_mu(self, result)?)
+    Ok(T::from_hebi(self, result)?)
   }
 
   pub fn io<T: 'static>(&self) -> Option<Ref<'_, T>> {

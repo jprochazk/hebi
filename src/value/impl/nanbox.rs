@@ -38,7 +38,7 @@ enum PhantomValue {
   Object(Ptr<Object>),
 }
 
-/// Mu's core `Value` type.
+/// Hebi's core `Value` type.
 ///
 /// See the [index][`crate`] for more about the different value types and
 /// their encodings.

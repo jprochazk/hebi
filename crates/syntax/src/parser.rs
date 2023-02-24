@@ -284,8 +284,8 @@ const MINIMUM_STACK_REQUIRED: usize = 64_000;
 
 // On WASM, remaining_stack() will always return None. Stack overflow panics
 // are converted to exceptions and handled by the host, which means a
-// `try { ... } catch { ... }` around a call to one of the Mu compiler functions
-// would be enough to properly handle this case.
+// `try { ... } catch { ... }` around a call to one of the Hebi compiler
+// functions would be enough to properly handle this case.
 #[cfg(any(target_family = "wasm", not(feature = "check-recursion-limit")))]
 fn check_recursion_limit(_span: Span) -> Result<(), Error> {
   Ok(())

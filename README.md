@@ -1,28 +1,28 @@
 <p align="center">
   <img
-    alt="The greek lowercase letter mu inside of a gear shape"
+    alt="A snake inside of a gear shape"
     src="./assets/logo.svg"
     height="192px"
   >
 </p>
 
-# Mu
+# Hebi
 
 This repository hosts a dynamically typed language, its compiler, and VM.
 
 ### Usage
 
-Everything is still in flux, and many interesting features are not yet implemented (see [issues](https://github.com/jprochazk/mu/issues)), but it can already execute some basic code:
+Everything is still in flux, and many interesting features are not yet implemented (see [issues](https://github.com/jprochazk/hebi/issues)), but it can already execute some basic code:
 
 ```rust
-use mu::Mu;
+use hebi::Hebi;
 
-let mu = Mu::new();
+let hebi = Hebi::new();
 
 // prints `2`
-println!("{}", mu.eval::<i32>("1 + 1").unwrap());
+println!("{}", hebi.eval::<i32>("1 + 1").unwrap());
 
-mu.eval::<()>(
+hebi.eval::<()>(
   r#"
 class Test:
   v = 10
@@ -44,7 +44,7 @@ The language also has a REPL at [examples/cli](./examples/cli):
 
 ```
 $ cargo run --example cli
-Mu REPL v0.0.0
+Hebi REPL v0.0.0
 Press CTRL-D to exit
 > 
 ```
@@ -64,7 +64,7 @@ Other tooling that is highly recommended:
 - [`src`](./src) - The core crate, containing the runtime (bytecode compiler, register allocator, value representation, virtual machine).
   - [`op`](./src/op) - Bytecode instruction definitions, which define the fine-grained operations that the virtual machine may perform.
   - [`isolate`](./src/isolate) - The virtual machine, which implements the operations defined by `op`.
-  - [`value`](./src/value) - Mu's Value implementation, which is how the virtual machine represents values at runtime.
+  - [`value`](./src/value) - Hebi's Value implementation, which is how the virtual machine represents values at runtime.
   - [`emit`](./src/emit) - The bytecode compiler, which transforms an AST to executable bytecode.
   - [`tests`](./src/tests) - End-to-end tests of the full evaluation pipeline (`Code -> AST -> Bytecode -> Output`).
 - [`crates`](./crates) - Parts of the compiler which may be useful for building other tools, such as formatters, linters, and language servers.
@@ -77,7 +77,7 @@ Other tooling that is highly recommended:
 
 The main goal is to have a reasonably feature-full language with simple (as in, can fit in a single person's head), unsurprising semantics that's easily embeddable within a Rust program. It isn't a priority for it to be a standalone, general-purpose language, but it isn't out of the question.
 
-The language design is heavily inspired by Python. Mu blatantly copies most of Python's syntax, and a lot of the semantics, but some parts have been removed, or changed. Python is very difficult to optimize, and has many quirks which make it unsuitable for embedding within another program.
+The language design is heavily inspired by Python. Hebi blatantly copies most of Python's syntax, and a lot of the semantics, but some parts have been removed, or changed. Python is very difficult to optimize, and has many quirks which make it unsuitable for embedding within another program.
 
 The implementation borrows a lot of ideas from [V8](https://v8.dev/). Ideas shamelessly stolen include:
 - Bytecode encoded with variable-width operands using a prefix opcode.
@@ -89,7 +89,7 @@ The implementation borrows a lot of ideas from [V8](https://v8.dev/). Ideas sham
 - Module variables on top of globals.
   This allows for a clear separation of concerns into different modules, as functions declared in different modules may not access the variables in each others' global scopes, unless they are explicitly imported.
 
-Currently, the VM uses reference counting as its garbage collection strategy, but the plan is to [implement a tracing garbage collector](https://github.com/jprochazk/mu/issues/6) at some point. Some possible approaches are described in [LuaJIT's wiki](http://web.archive.org/web/20220524034527/http://wiki.luajit.org/New-Garbage-Collector).
+Currently, the VM uses reference counting as its garbage collection strategy, but the plan is to [implement a tracing garbage collector](https://github.com/jprochazk/hebi/issues/6) at some point. Some possible approaches are described in [LuaJIT's wiki](http://web.archive.org/web/20220524034527/http://wiki.luajit.org/New-Garbage-Collector).
 
 ### License
 

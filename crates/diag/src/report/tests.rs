@@ -124,7 +124,7 @@ fn snippet_multi_line() {
 fn emit_report_single_line() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "let x = 10\nlet y = 20;"),
+    source: Source::file("test.hebi", "let x = 10\nlet y = 20;"),
     message: "expected semicolon".into(),
     span: Some((10..11).into()),
     label: None,
@@ -137,7 +137,7 @@ fn emit_report_single_line() {
 fn emit_report_multi_line() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
+    source: Source::file("test.hebi", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
     message: "mismatched type".into(),
     span: Some((13..36).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
@@ -166,7 +166,7 @@ fn emit_report_multi_line_large() {
 fn emit_report_single_line_no_color() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "let x = 10\nlet y = 20;"),
+    source: Source::file("test.hebi", "let x = 10\nlet y = 20;"),
     message: "expected semicolon".into(),
     span: Some((10..11).into()),
     label: None,
@@ -179,7 +179,7 @@ fn emit_report_single_line_no_color() {
 fn emit_report_multi_line_no_color() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
+    source: Source::file("test.hebi", "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n};"),
     message: "mismatched type".into(),
     span: Some((13..36).into()),
     label: Some("expected `Foo`, found `Bar`".into()),
@@ -193,7 +193,7 @@ fn emit_report_multi_line_large_no_color() {
   let report = Report {
     level: Level::Error,
     source: Source::file(
-      "test.mu",
+      "test.hebi",
       "let x: Foo = Bar {\n  a: 0,\n  b: 0,\n  c: 0,\n  d: 0,\n  e: 0,\n  f: 0,\n  g: 0,\n};",
     ),
     message: "mismatched type".into(),
@@ -208,7 +208,7 @@ fn emit_report_multi_line_large_no_color() {
 fn emit_report_multi_line_edge_case_sandwiched_newline() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "\"\n\\"),
+    source: Source::file("test.hebi", "\"\n\\"),
     message: "invalid character sequence".into(),
     span: Some((0..2).into()),
     label: None,
@@ -221,7 +221,7 @@ fn emit_report_multi_line_edge_case_sandwiched_newline() {
 fn emit_report_multi_line_edge_case_sandwiched_newline_2() {
   let report = Report {
     level: Level::Error,
-    source: Source::file("test.mu", "\0\"\nl\n\n\n\n\\"),
+    source: Source::file("test.hebi", "\0\"\nl\n\n\n\n\\"),
     message: "invalid character sequence".into(),
     span: Some((1..8).into()),
     label: None,

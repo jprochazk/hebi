@@ -198,6 +198,62 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
+name = "hebi"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "beef",
+ "clap",
+ "hebi_derive",
+ "hebi_diag",
+ "hebi_span",
+ "hebi_syntax",
+ "indexmap",
+ "indoc",
+ "insta",
+ "paste",
+ "rustyline",
+ "rustyline-derive",
+]
+
+[[package]]
+name = "hebi_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "hebi_diag"
+version = "0.1.0"
+dependencies = [
+ "beef",
+ "hebi_span",
+ "insta",
+ "owo-colors",
+ "thiserror",
+]
+
+[[package]]
+name = "hebi_span"
+version = "0.1.0"
+
+[[package]]
+name = "hebi_syntax"
+version = "0.1.0"
+dependencies = [
+ "beef",
+ "hebi_diag",
+ "hebi_span",
+ "indoc",
+ "insta",
+ "logos",
+ "stacker",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -321,62 +377,6 @@ name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
-
-[[package]]
-name = "mu"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "beef",
- "clap",
- "indexmap",
- "indoc",
- "insta",
- "mu_derive",
- "mu_diag",
- "mu_span",
- "mu_syntax",
- "paste",
- "rustyline",
- "rustyline-derive",
-]
-
-[[package]]
-name = "mu_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "mu_diag"
-version = "0.1.0"
-dependencies = [
- "beef",
- "insta",
- "mu_span",
- "owo-colors",
- "thiserror",
-]
-
-[[package]]
-name = "mu_span"
-version = "0.1.0"
-
-[[package]]
-name = "mu_syntax"
-version = "0.1.0"
-dependencies = [
- "beef",
- "indoc",
- "insta",
- "logos",
- "mu_diag",
- "mu_span",
- "stacker",
-]
 
 [[package]]
 name = "nibble_vec"

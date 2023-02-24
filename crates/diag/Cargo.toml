@@ -1,8 +1,8 @@
 [package]
-name = "mu_diag"
+name = "hebi_diag"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/jprochazk/mu"
+repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -14,7 +14,7 @@ owo-colors = "3.5.0"
 thiserror = "1.0.37"
 beef = "0.5.2"
 
-span = { path = "../span", package = "mu_span" }
+span = { path = "../span", package = "hebi_span" }
 
 [dev-dependencies]
 insta = "1.21.0"

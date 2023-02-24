@@ -1,8 +1,8 @@
 [package]
-name = "mu_syntax"
+name = "hebi_syntax"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/jprochazk/mu"
+repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -17,8 +17,8 @@ check-recursion-limit = []
 beef = "0.5.2"
 logos = "0.12.1"
 
-span = { path = "../span", package = "mu_span" }
-diag = { path = "../diag", package = "mu_diag" }
+span = { path = "../span", package = "hebi_span" }
+diag = { path = "../diag", package = "hebi_diag" }
 stacker = "0.1.15"
 
 [dev-dependencies]

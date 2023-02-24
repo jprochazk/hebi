@@ -1,8 +1,8 @@
-use mu::*;
+use hebi::*;
 use rustyline::Editor;
 
 struct Repl {
-  mu: Mu,
+  vm: Hebi,
   editor: Editor<()>,
   state: State,
 }
@@ -30,7 +30,7 @@ enum Control {
 impl Repl {
   fn new() -> Self {
     Self {
-      mu: Mu::new(),
+      vm: Hebi::new(),
       editor: Editor::new().unwrap(),
       state: State::default(),
     }
@@ -76,7 +76,7 @@ impl Repl {
   }
 
   fn eval(&mut self, input: &str) -> Result<Value, EvalError> {
-    self.mu.eval(input)
+    self.vm.eval(input)
   }
 
   fn validate(&mut self, input: &str) -> Result<ParseResult, String> {
@@ -106,7 +106,7 @@ impl Repl {
       return Ok(Incomplete);
     }
 
-    match self.mu.check(input) {
+    match self.vm.check(input) {
       Ok(_) => Ok(ParseResult::Complete),
       Err(errors) => {
         let mut out = String::new();
@@ -125,7 +125,7 @@ pub fn run() -> rustyline::Result<()> {
   let mut repl = Repl::new();
   let mut buffer = String::new();
 
-  println!("Mu REPL v{VERSION}\nPress CTRL-D to exit");
+  println!("Hebi REPL v{VERSION}\nPress CTRL-D to exit");
 
   loop {
     buffer.clear();

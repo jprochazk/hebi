@@ -1,11 +1,11 @@
 fn main() {
-  use mu::Mu;
+  use hebi::Hebi;
 
-  let mu = Mu::new();
+  let vm = Hebi::new();
 
-  println!("{}", mu.eval::<i32>("1 + 1").unwrap());
+  println!("{}", vm.eval::<i32>("1 + 1").unwrap());
 
-  mu.eval::<()>(
+  vm.eval::<()>(
     r#"
 class Test:
   v = 10

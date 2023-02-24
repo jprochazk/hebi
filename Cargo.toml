@@ -1,8 +1,8 @@
 [package]
-name = "mu"
-version = "0.1.0"
+name = "hebi"
+version = "0.0.1"
 edition = "2021"
-repository = "https://github.com/jprochazk/mu"
+repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -15,10 +15,10 @@ portable = []
 check-recursion-limit = ["syntax/check-recursion-limit"]
 
 [dependencies]
-diag = { path = "crates/diag", package = "mu_diag" }
-span = { path = "crates/span", package = "mu_span" }
-derive = { path = "crates/derive", package = "mu_derive" }
-syntax = { path = "crates/syntax", package = "mu_syntax", default-features = false }
+diag = { path = "crates/diag", package = "hebi_diag" }
+span = { path = "crates/span", package = "hebi_span" }
+derive = { path = "crates/derive", package = "hebi_derive" }
+syntax = { path = "crates/syntax", package = "hebi_syntax", default-features = false }
 
 beef = "0.5.2"
 indexmap = "1.9.2"
@@ -35,7 +35,7 @@ anyhow = "1.0.69"
 clap = { version = "4.1.4", features = ["derive"] }
 
 [workspace]
-members = ["crates/*"]
+members = ["crates/derive", "crates/diag", "crates/span", "crates/syntax"]
 resolver = "2"
 
 # TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
