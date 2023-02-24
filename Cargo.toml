@@ -2,6 +2,7 @@
 name = "hebi"
 version = "0.0.1"
 edition = "2021"
+description = "A dynamic scripting language"
 repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"

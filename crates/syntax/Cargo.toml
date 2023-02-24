@@ -2,6 +2,7 @@
 name = "hebi_syntax"
 version = "0.0.1"
 edition = "2021"
+description = "Syntax for Hebi"
 repository = "https://github.com/jprochazk/hebi"
 authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
