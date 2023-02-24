@@ -91,6 +91,10 @@ The implementation borrows a lot of ideas from [V8](https://v8.dev/). Ideas sham
 
 Currently, the VM uses reference counting as its garbage collection strategy, but the plan is to [implement a tracing garbage collector](https://github.com/jprochazk/hebi/issues/6) at some point. Some possible approaches are described in [LuaJIT's wiki](http://web.archive.org/web/20220524034527/http://wiki.luajit.org/New-Garbage-Collector).
 
+### Why Hebi?
+
+I thought it was appropritate, because the language is in the Python family, and Hebi (蛇) means snake in Japanese. 
+
 ### License
 
 Licensed under either of
