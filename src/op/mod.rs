@@ -45,6 +45,16 @@ instructions! {
   /// ### Operands
   /// - `slot` - capture list index.
   StoreCapture (slot: uv),
+  /// Load a module variable into the accumulator.
+  ///
+  /// ### Operands
+  /// - `slot` - module variable index.
+  LoadModuleVar (slot: uv),
+  /// Store the accumulator in a module variable.
+  ///
+  /// ### Operands
+  /// - `slot` - module variable index.
+  StoreModuleVar (slot: uv),
   /// Load a global into the accumulator.
   ///
   /// ### Operands
@@ -105,7 +115,7 @@ instructions! {
   /// ### Operands
   /// - `path` - constant pool index of the path.
   /// - `dest` - register index of the destination.
-  LoadModule (path: Const, dest: Reg),
+  Import (path: Const, dest: Reg),
 
   LoadSelf (),
   LoadSuper (),
@@ -143,11 +153,13 @@ instructions! {
   /// - `name` - constant pool index of name.
   /// - `dict` - register index of dict.
   InsertToDictNamed (name: Const, dict: Reg),
-  /// Create a closure from `desc`.
+  /// Create a function from `desc`.
+  ///
+  /// This initializes `captures` to all `none` values, and assigns the current module index.
   ///
   /// ### Operands
   /// - `desc` - constant pool index of descriptor.
-  CreateClosure (desc: Const),
+  CreateFunction (desc: Const),
   /// Capture `reg` and store it in the captures of the closure stored in the accumulator.
   ///
   /// ### Operands

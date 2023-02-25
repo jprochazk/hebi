@@ -35,16 +35,16 @@ function "code":
   length: 29
   const (length=5):
     0: "u"
-    1: <class desc "T">
+    1: <class descriptor "T">
     2: "U"
-    3: <func "test">
+    3: <func descriptor "test">
     4: "T"
   code:
      0 | push_small_int value=0
      5 | store_global [0]
      7 | load_global [2]
      9 | store_reg r4
-    11 | load_const [3]
+    11 | create_function [3]
     13 | store_reg r5
     15 | push_small_int value=0
     20 | store_reg r6

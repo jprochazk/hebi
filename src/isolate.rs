@@ -18,8 +18,9 @@ use super::op;
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
+use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry, ModuleSource};
 use crate::value::object::{
-  frame, ClassDef, Closure, Dict, Key, List, ObjectType, Proxy, Registry,
+  frame, ClassDef, Dict, Function, Key, List, Module, ObjectType, Path, Proxy,
 };
 use crate::value::Value;
 use crate::RuntimeError;
@@ -28,6 +29,8 @@ use crate::RuntimeError;
 pub struct Isolate {
   ctx: Context,
   globals: Handle<Dict>,
+  module_registry: ModuleRegistry,
+  module_loader: Box<dyn ModuleLoader>,
 
   width: op::Width,
   pc: usize,
@@ -35,38 +38,37 @@ pub struct Isolate {
   acc: Value,
   frames: Vec<Frame>,
   current_frame: Option<NonNull<Frame>>,
-  io: Box<dyn Io>,
+  stdout: Box<dyn Stdout>,
 }
 
-pub trait Io: std::io::Write + std::any::Any {
+pub trait Stdout: std::io::Write + std::any::Any {
   fn as_any(&self) -> &dyn std::any::Any;
 }
-impl<T: std::io::Write + std::any::Any> Io for T {
+impl<T: std::io::Write + std::any::Any> Stdout for T {
   fn as_any(&self) -> &dyn std::any::Any {
     self
   }
 }
 
 impl Isolate {
-  pub fn new(ctx: Context) -> Isolate {
-    Isolate::with_io(ctx, std::io::stdout())
-  }
-}
-
-impl Isolate {
-  pub fn with_io(ctx: Context, io: impl Io) -> Isolate {
+  pub fn new(
+    ctx: Context,
+    stdout: Box<dyn Stdout>,
+    module_loader: Box<dyn ModuleLoader>,
+  ) -> Isolate {
     let globals = ctx.alloc(Dict::new());
     Isolate {
       ctx,
       globals,
-
+      module_registry: ModuleRegistry::new(),
+      module_loader,
       width: op::Width::Single,
       pc: 0,
 
       acc: Value::none(),
       frames: vec![],
       current_frame: None,
-      io: Box::new(io),
+      stdout,
     }
   }
 
@@ -74,12 +76,12 @@ impl Isolate {
     self.ctx.alloc(v)
   }
 
-  pub fn io(&self) -> &dyn Io {
-    &*self.io
+  pub fn io(&self) -> &dyn Stdout {
+    &*self.stdout
   }
 
   pub fn print(&mut self, args: std::fmt::Arguments<'_>) -> std::io::Result<()> {
-    self.io.write_fmt(args)
+    self.stdout.write_fmt(args)
   }
 
   pub fn ctx(&self) -> Context {
@@ -125,13 +127,32 @@ impl Isolate {
 
   fn get_capture(&self, slot: u32) -> Value {
     let frame = self.current_frame();
-    let captures = unsafe { frame.captures.unwrap().as_ref() };
+    let captures = unsafe { frame.captures.as_ref() };
     captures[slot as usize].clone()
   }
 
   fn set_capture(&mut self, slot: u32, value: Value) {
     let frame = self.current_frame_mut();
-    unsafe { frame.captures.unwrap().as_mut()[slot as usize] = value }
+    let captures = unsafe { frame.captures.as_mut() };
+    captures[slot as usize] = value;
+  }
+
+  fn get_module_var(&self, slot: u32) -> Value {
+    let frame = self.current_frame();
+    let module_vars = unsafe { frame.module_vars.unwrap().as_ref() };
+    let var = module_vars.get_index(slot as usize).unwrap().1;
+    var.clone()
+  }
+
+  fn set_module_var(&mut self, slot: u32, value: Value) {
+    let frame = self.current_frame_mut();
+    let module_vars = unsafe { frame.module_vars.unwrap().as_mut() };
+    let var = module_vars.get_index_mut(slot as usize).unwrap().1;
+    *var = value;
+  }
+
+  fn current_module_id(&self) -> Option<ModuleId> {
+    self.current_frame().module_id
   }
 
   fn stack(&self) -> &Stack {
@@ -183,6 +204,18 @@ impl op::Handler for Isolate {
     Ok(())
   }
 
+  fn op_load_module_var(&mut self, slot: u32) -> Result<(), Self::Error> {
+    self.get_module_var(slot);
+
+    Ok(())
+  }
+
+  fn op_store_module_var(&mut self, slot: u32) -> Result<(), Self::Error> {
+    self.set_module_var(slot, self.acc.clone());
+
+    Ok(())
+  }
+
   fn op_load_global(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // global name is always a string
@@ -190,7 +223,7 @@ impl op::Handler for Isolate {
     match self.globals.get(&name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
-      None => return Err(RuntimeError::new(format!("undefined global {name}"), 0..0).into()),
+      None => return Err(RuntimeError::script(format!("undefined global {name}"), 0..0).into()),
     }
 
     Ok(())
@@ -244,7 +277,7 @@ impl op::Handler for Isolate {
     let name = self.get_reg(key);
     let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(RuntimeError::new(format!("{name} is not a valid key"), 0..0).into());
+      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
     };
 
     self.acc = index::get(&self.acc, &name)?;
@@ -256,7 +289,7 @@ impl op::Handler for Isolate {
     let name = self.get_reg(key);
     let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(RuntimeError::new(format!("{name} is not a valid key"), 0..0).into());
+      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
     };
 
     self.acc = index::get_opt(&self.acc, &name)?;
@@ -268,7 +301,7 @@ impl op::Handler for Isolate {
     let name = self.get_reg(key);
     let Ok(name) = Key::try_from(name.clone()) else {
       // TODO: span
-      return Err(RuntimeError::new(format!("{name} is not a valid key"), 0..0).into());
+      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
     };
 
     let mut obj = self.get_reg(obj);
@@ -278,7 +311,41 @@ impl op::Handler for Isolate {
     Ok(())
   }
 
-  fn op_load_module(&mut self, path: u32, dest: u32) -> Result<(), Self::Error> {
+  fn op_import(&mut self, path: u32, dest: u32) -> Result<(), Self::Error> {
+    // TODO: move this to its own file
+
+    let path = self.get_const(path);
+    // should always be a path
+    let path = path.to_path().unwrap();
+
+    let module = self
+      .module_loader
+      .load(unsafe { path._get() })
+      .map_err(|e| RuntimeError::native(e, 0..0))?;
+
+    // TODO: configurable emit for modules that makes them read from globals instead
+    // of module_vars, and use it for `eval`.
+    match module {
+      ModuleSource::Module(source) => {
+        let name = path.segments().last().unwrap().as_str();
+        let module = crate::emit::emit(self.ctx.clone(), name, source, false).unwrap();
+        let module_id = self.module_registry.next_module_id();
+        let module = module.instance(&self.ctx, Some(module_id));
+        self.module_registry.add(module_id, module.clone());
+
+        // If executing the module root scope results in an error,
+        // remove the module from the registry. We do this to ensure
+        // that calls to functions declared in this broken module
+        // (even in inner scopes) will fail
+        let result = self.call(module.root().into(), &[], Value::none());
+        if let Err(e) = result {
+          self.module_registry.remove(module_id);
+          Err(e)?;
+        }
+      }
+      ModuleSource::Native(_) => todo!("native modules are unimplemented"),
+    }
+
     todo!()
   }
 
@@ -322,7 +389,7 @@ impl op::Handler for Isolate {
     // proxy to the first super class in the chain
     let Some(this) = this.to_class() else {
       // TODO: span
-      return Err(RuntimeError::new("receiver is not a class", 0..0).into());
+      return Err(RuntimeError::script("receiver is not a class", 0..0).into());
     };
     let parent = this.parent().unwrap();
     self.acc = self.ctx.alloc(Proxy::new(this, parent)).into();
@@ -365,7 +432,7 @@ impl op::Handler for Isolate {
 
     let Some(mut list) = list.to_list() else {
       // TODO: span
-      return Err(RuntimeError::new("value is not a list", 0..0).into());
+      return Err(RuntimeError::script("value is not a list", 0..0).into());
     };
 
     list.push(take(&mut self.acc));
@@ -383,7 +450,7 @@ impl op::Handler for Isolate {
     let key = self.get_reg(key);
     let Ok(key) = Key::try_from(key.clone()) else {
       // TODO: span
-      return Err(RuntimeError::new(format!("{key} is not a valid key"), 0..0).into());
+      return Err(RuntimeError::script(format!("{key} is not a valid key"), 0..0).into());
     };
 
     let dict = self.get_reg(dict);
@@ -409,13 +476,14 @@ impl op::Handler for Isolate {
     Ok(())
   }
 
-  fn op_create_closure(&mut self, desc: u32) -> Result<(), Self::Error> {
+  fn op_create_function(&mut self, desc: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
 
-    // this should always be a closure descriptor
-    let desc = desc.to_closure_desc().unwrap();
+    // this should always be a function descriptor
+    let desc = desc.to_function_descriptor().unwrap();
 
-    self.acc = self.ctx.alloc(Closure::new(desc)).into();
+    // TODO: module_index
+    self.acc = Function::new(&self.ctx, desc, self.current_frame().module_id).into();
 
     Ok(())
   }
@@ -423,10 +491,10 @@ impl op::Handler for Isolate {
   fn op_capture_reg(&mut self, reg: u32, slot: u32) -> Result<(), Self::Error> {
     let value = self.get_reg(reg);
 
-    // this should always be a closure
-    let mut closure = self.acc.clone().to_closure().unwrap();
+    // this should always be a function
+    let mut func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { closure.captures_mut() };
+    let captures = unsafe { func.captures_mut() };
     captures[slot as usize] = value;
 
     Ok(())
@@ -435,10 +503,10 @@ impl op::Handler for Isolate {
   fn op_capture_slot(&mut self, parent_slot: u32, self_slot: u32) -> Result<(), Self::Error> {
     let value = self.get_capture(parent_slot);
 
-    // should not panic as long as bytecode is valid
-    let mut closure = self.acc.clone().to_closure().unwrap();
+    // this should always be a function
+    let mut func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { closure.captures_mut() };
+    let captures = unsafe { func.captures_mut() };
     captures[self_slot as usize] = value;
 
     Ok(())
@@ -447,7 +515,7 @@ impl op::Handler for Isolate {
   fn op_create_class_empty(&mut self, desc: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = desc.to_class_desc().unwrap();
+    let desc = desc.to_class_descriptor().unwrap();
 
     self.acc = self
       .ctx
@@ -460,7 +528,7 @@ impl op::Handler for Isolate {
   fn op_create_class(&mut self, desc: u32, start: u32) -> Result<(), Self::Error> {
     let desc = self.get_const(desc);
     // this should always be a class descriptor
-    let desc = desc.to_class_desc().unwrap();
+    let desc = desc.to_class_descriptor().unwrap();
 
     let value = self
       .ctx
@@ -486,7 +554,7 @@ impl op::Handler for Isolate {
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
     let Some(value) = self.acc.clone().to_bool() else {
       // TODO: span
-      return Err(RuntimeError::new("value is not a bool", 0..0).into());
+      return Err(RuntimeError::script("value is not a bool", 0..0).into());
     };
 
     match value {
@@ -670,7 +738,7 @@ impl op::Handler for Isolate {
     self
       .print(format_args!("{}\n", string::stringify(value)))
       // TODO: span
-      .map_err(|_| RuntimeError::new("failed to print value", 0..0))?;
+      .map_err(|_| RuntimeError::script("failed to print value", 0..0))?;
     Ok(())
   }
 
@@ -689,18 +757,18 @@ impl op::Handler for Isolate {
         self
           .print(format_args!("{} ", string::stringify(value.clone())))
           // TODO: span
-          .map_err(|_| RuntimeError::new("failed to print values", 0..0))?;
+          .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
       } else {
         self
           .print(format_args!("{}", string::stringify(value.clone())))
           // TODO: span
-          .map_err(|_| RuntimeError::new("failed to print values", 0..0))?;
+          .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
       }
     }
     self
       .print(format_args!("\n"))
       // TODO: span
-      .map_err(|_| RuntimeError::new("failed to print values", 0..0))?;
+      .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
 
     Ok(())
   }

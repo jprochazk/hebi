@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::marker::PhantomData;
 
-use object::Error as RuntimeError;
+use object::RuntimeError;
 use value::Value as CoreValue;
 
 use crate::value::object;
@@ -44,7 +44,7 @@ macro_rules! impl_int {
           let value = value
             .inner
             .to_int()
-            .ok_or_else(|| RuntimeError::new("value is not an int", 0..0))?;
+            .ok_or_else(|| RuntimeError::script("value is not an int", 0..0))?;
           Ok(value as $T)
         }
       }
@@ -69,7 +69,7 @@ macro_rules! impl_float {
           let value = value
             .inner
             .to_float()
-            .ok_or_else(|| RuntimeError::new("value is not a float", 0..0))?;
+            .ok_or_else(|| RuntimeError::script("value is not a float", 0..0))?;
           Ok(value as $T)
         }
       }
@@ -91,7 +91,7 @@ impl<'a> FromHebi<'a> for bool {
     let value = value
       .inner
       .to_bool()
-      .ok_or_else(|| RuntimeError::new("value is not a bool", 0..0))?;
+      .ok_or_else(|| RuntimeError::script("value is not a bool", 0..0))?;
     Ok(value)
   }
 }
@@ -108,7 +108,7 @@ impl<'a> FromHebi<'a> for String {
       .inner
       .to_str()
       .map(|str| str.as_str().to_string())
-      .ok_or_else(|| RuntimeError::new("value is not a string", 0..0))?;
+      .ok_or_else(|| RuntimeError::script("value is not a string", 0..0))?;
     Ok(value)
   }
 }

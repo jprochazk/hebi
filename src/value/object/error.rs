@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use beef::lean::Cow;
 use diag::Source;
@@ -6,11 +6,33 @@ use span::Span;
 
 use super::Access;
 
-#[derive(Clone, Debug)]
-pub struct Error {
-  pub message: Cow<'static, str>,
-  pub span: Span,
-  pub trace: Vec<Fragment>,
+pub(crate) enum Cause<'a> {
+  Script(Cow<'a, str>),
+  Native(Box<dyn std::error::Error + 'a>),
+}
+
+impl<'a> Debug for Cause<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Script(v) => Debug::fmt(v, f),
+      Self::Native(v) => Debug::fmt(v, f),
+    }
+  }
+}
+
+impl<'a> Display for Cause<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Cause::Script(v) => Display::fmt(v, f),
+      Cause::Native(v) => Display::fmt(v, f),
+    }
+  }
+}
+
+pub struct RuntimeError {
+  cause: Cause<'static>,
+  span: Span,
+  trace: Vec<Fragment>,
 }
 
 #[derive(Clone, Debug)]
@@ -20,10 +42,18 @@ pub struct Fragment {
   pub file: Option<String>,
 }
 
-impl Error {
-  pub fn new(message: impl Into<Cow<'static, str>>, span: impl Into<Span>) -> Self {
+impl RuntimeError {
+  pub(crate) fn script(message: impl Into<Cow<'static, str>>, span: impl Into<Span>) -> Self {
     Self {
-      message: message.into(),
+      cause: Cause::Script(message.into()),
+      span: span.into(),
+      trace: vec![],
+    }
+  }
+
+  pub(crate) fn native(error: Box<dyn std::error::Error + 'static>, span: impl Into<Span>) -> Self {
+    Self {
+      cause: Cause::Native(error),
       span: span.into(),
       trace: vec![],
     }
@@ -31,7 +61,7 @@ impl Error {
 }
 
 #[derive::delegate_to_handle]
-impl Error {
+impl RuntimeError {
   pub fn push_trace(
     &mut self,
     ident: impl Into<String>,
@@ -54,7 +84,7 @@ impl Error {
       // TODO: some kind of file database
       // write_source_lines(to, &source, span);
     }
-    writeln!(to, "Error: {}", self.message).unwrap();
+    writeln!(to, "Error: {}", self.cause).unwrap();
     write_source_lines(to, &source, &self.span);
   }
 
@@ -78,10 +108,19 @@ fn write_source_lines<W: std::fmt::Write>(to: &mut W, source: &Option<Source>, s
   }
 }
 
-impl Display for Error {
+impl Display for RuntimeError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<error>")
   }
 }
 
-impl Access for Error {}
+impl Debug for RuntimeError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match &self.cause {
+      Cause::Script(e) => f.debug_tuple("Script").field(&e).finish(),
+      Cause::Native(e) => f.debug_tuple("Native").field(&e).finish(),
+    }
+  }
+}
+
+impl Access for RuntimeError {}

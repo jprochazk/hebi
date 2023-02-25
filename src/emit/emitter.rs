@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use beef::lean::Cow;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use syntax::ast;
 
 use super::regalloc::{RegAlloc, Register};
@@ -10,20 +10,21 @@ use crate::ctx::Context;
 use crate::op::{self, *};
 use crate::value::constant::Constant;
 use crate::value::handle::Handle;
-use crate::value::object::{func, Func, Module, Str};
+use crate::value::object::{func, FunctionDescriptor, ModuleDescriptor, Str};
 
 pub fn emit<'src>(
   ctx: Context,
   name: impl Into<Cow<'src, str>>,
   module: &'src ast::Module<'src>,
-) -> Result<Handle<Module>> {
+  is_root: bool,
+) -> Result<Handle<ModuleDescriptor>> {
   let name = name.into();
-  let result = Emitter::new(ctx.clone(), name.clone(), module).emit_main()?;
+  let result = Emitter::new(ctx.clone(), name.clone(), module, is_root).emit_main()?;
 
-  Ok(ctx.alloc(Module::new(
-    ctx.clone(),
+  Ok(ctx.alloc(ModuleDescriptor::new(
     ctx.alloc(Str::from(name)),
     ctx.alloc(result.func),
+    result.module_vars,
   )))
 }
 
@@ -33,21 +34,33 @@ pub fn emit<'src>(
 struct Emitter<'src> {
   state: Function<'src>,
   module: &'src ast::Module<'src>,
+  module_kind: ModuleKind,
   ctx: Context,
 }
 
 struct EmitResult<'src> {
-  func: Func,
+  func: FunctionDescriptor,
+  module_vars: IndexSet<String>,
   captures: IndexMap<Cow<'src, str>, Upvalue>,
   #[cfg(test)]
   regalloc: RegAlloc,
 }
 
 impl<'src> Emitter<'src> {
-  fn new(ctx: Context, name: impl Into<Cow<'src, str>>, module: &'src ast::Module<'src>) -> Self {
+  fn new(
+    ctx: Context,
+    name: impl Into<Cow<'src, str>>,
+    module: &'src ast::Module<'src>,
+    is_root: bool,
+  ) -> Self {
     Self {
       state: Function::new(name, None),
       module,
+      module_kind: if is_root {
+        ModuleKind::Root
+      } else {
+        ModuleKind::Other
+      },
       ctx,
     }
   }
@@ -83,8 +96,10 @@ impl<'src> Emitter<'src> {
       const_pool,
     } = self.state.builder.build();
 
+    let module_vars = self.state.module_vars;
+
     Ok(EmitResult {
-      func: Func::new(
+      func: FunctionDescriptor::new(
         self.ctx.alloc_interned_string(name),
         frame_size,
         bytecode,
@@ -98,8 +113,10 @@ impl<'src> Emitter<'src> {
           pos: Default::default(),
           kw: Default::default(),
         },
+        0,
       ),
       captures: Default::default(),
+      module_vars,
       #[cfg(test)]
       regalloc: self.state.regalloc.clone(),
     })
@@ -147,6 +164,7 @@ impl<'src> Emitter<'src> {
       mut builder,
       regalloc,
       captures,
+      module_vars,
       ..
     } = next;
 
@@ -165,14 +183,16 @@ impl<'src> Emitter<'src> {
     } = builder.build();
 
     Ok(EmitResult {
-      func: Func::new(
+      func: FunctionDescriptor::new(
         self.ctx.alloc_interned_string(name),
         frame_size,
         bytecode,
         const_pool,
         params,
+        captures.len() as u32,
       ),
       captures,
+      module_vars,
       #[cfg(test)]
       regalloc: self.state.regalloc.clone(),
     })
@@ -323,8 +343,12 @@ impl<'src> Emitter<'src> {
       return Get::Local(reg);
     }
 
-    if let Some(reg) = self.state.capture(name) {
+    if let Some(reg) = self.state.capture(&name) {
       return Get::Capture(reg);
+    }
+
+    if let Some(reg) = self.state.module_var(&name) {
+      return Get::ModuleVar(reg);
     }
 
     Get::Global
@@ -373,6 +397,7 @@ fn ast_class_to_params(class: &ast::Class) -> func::Params {
 enum Get {
   Local(Register),
   Capture(u32),
+  ModuleVar(u32),
   Global,
 }
 
@@ -394,6 +419,14 @@ enum UpvalueKind {
 struct Loop {
   start: LabelId,
   end: LabelId,
+}
+
+enum ModuleKind {
+  /// The root module, e.g. the file which is executed using `hebi run`, or the
+  /// source code passed to `eval`.
+  Root,
+  /// Any modules which the root module imports
+  Other,
 }
 
 struct Function<'src> {
@@ -428,6 +461,8 @@ struct Function<'src> {
   captures: IndexMap<Cow<'src, str>, Upvalue>,
   capture_slot: u32,
 
+  module_vars: IndexSet<String>,
+
   /// Whether or not we're currently emitting `?<expr>`.
   ///
   /// This changes `LoadNamed`/`LoadKeyed` to `LoadNamedOpt`/`LoadKeyedOpt`,
@@ -449,6 +484,7 @@ impl<'src> Function<'src> {
       locals: vec![IndexMap::new()],
       captures: IndexMap::new(),
       capture_slot: 0,
+      module_vars: IndexSet::new(),
       is_in_opt_expr: false,
       loops: vec![],
     }
@@ -500,7 +536,13 @@ impl<'src> Function<'src> {
     }
   }
 
-  fn local(&self, name: &str) -> Option<Register> {
+  fn declare_module_var(&mut self, name: impl ToString) -> u32 {
+    let idx = self.module_vars.len() as u32;
+    self.module_vars.insert(name.to_string());
+    idx
+  }
+
+  fn local(&self, name: &Cow<'src, str>) -> Option<Register> {
     let stack = self.locals.iter().rev().find_map(|stack| stack.get(name))?;
     let reg = stack.last().unwrap_or_else(|| {
       panic!(
@@ -511,21 +553,20 @@ impl<'src> Function<'src> {
     Some(reg.clone())
   }
 
-  fn capture(&mut self, name: impl Into<Cow<'src, str>>) -> Option<u32> {
-    let name = name.into();
+  fn capture(&mut self, name: &Cow<'src, str>) -> Option<u32> {
     let Some(parent) = self.parent.as_deref_mut() else {
       return None;
     };
 
-    if let Some(info) = self.captures.get(&name) {
+    if let Some(info) = self.captures.get(name) {
       return Some(info.slot);
     }
 
     let local_slot = self.capture_slot;
     self.capture_slot += 1;
-    if let Some(reg) = parent.local(&name) {
+    if let Some(reg) = parent.local(name) {
       self.captures.insert(
-        name,
+        name.clone(),
         Upvalue {
           slot: local_slot,
           kind: UpvalueKind::Register(reg),
@@ -534,9 +575,9 @@ impl<'src> Function<'src> {
       return Some(local_slot);
     }
 
-    if let Some(parent_slot) = parent.capture(name.clone()) {
+    if let Some(parent_slot) = parent.capture(name) {
       self.captures.insert(
-        name,
+        name.clone(),
         Upvalue {
           slot: local_slot,
           kind: UpvalueKind::Capture(parent_slot),
@@ -546,6 +587,13 @@ impl<'src> Function<'src> {
     }
 
     None
+  }
+
+  fn module_var(&self, name: &Cow<'src, str>) -> Option<u32> {
+    self
+      .module_vars
+      .get_index_of(name.as_ref())
+      .map(|v| v as u32)
   }
 }
 
@@ -572,8 +620,13 @@ mod stmt {
     fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>) -> Result<()> {
       self.emit_expr(&stmt.value)?;
       if self.state.is_global_scope() {
-        let name = self.const_name(&stmt.name);
-        self.emit_op(StoreGlobal { name });
+        if matches!(self.module_kind, ModuleKind::Root) {
+          let name = self.const_name(&stmt.name);
+          self.emit_op(StoreGlobal { name });
+        } else {
+          let slot = self.state.declare_module_var(stmt.name.deref());
+          self.emit_op(StoreModuleVar { slot });
+        }
       } else {
         let reg = self.reg();
         self.emit_op(StoreReg { reg: reg.index() });
@@ -785,27 +838,19 @@ mod stmt {
     fn emit_func_const(&mut self, stmt: &'src ast::Func<'src>) -> Result<()> {
       let result = self.emit_func(stmt)?;
 
-      if result.captures.is_empty() {
-        let func = self.const_value(self.ctx.alloc(result.func));
-        self.emit_op(LoadConst { slot: func });
-      } else {
-        let desc = self.const_value(self.ctx.alloc(func::ClosureDesc::new(
-          self.ctx.alloc(result.func),
-          result.captures.len() as u32,
-        )));
-        self.emit_op(CreateClosure { desc });
-        for (_, info) in result.captures.iter() {
-          match &info.kind {
-            UpvalueKind::Register(reg) => self.emit_op(CaptureReg {
-              reg: reg.index(),
-              slot: info.slot,
-            }),
-            UpvalueKind::Capture(slot) => self.emit_op(CaptureSlot {
-              parent_slot: *slot,
-              self_slot: info.slot,
-            }),
-          };
-        }
+      let desc = self.const_value(self.ctx.alloc(result.func));
+      self.emit_op(CreateFunction { desc });
+      for (_, info) in result.captures.iter() {
+        match &info.kind {
+          UpvalueKind::Register(reg) => self.emit_op(CaptureReg {
+            reg: reg.index(),
+            slot: info.slot,
+          }),
+          UpvalueKind::Capture(slot) => self.emit_op(CaptureSlot {
+            parent_slot: *slot,
+            self_slot: info.slot,
+          }),
+        };
       }
 
       Ok(())
@@ -817,8 +862,13 @@ mod stmt {
       self.emit_func_const(stmt)?;
 
       if self.state.is_global_scope() {
-        let name = self.const_name(&stmt.name);
-        self.emit_op(StoreGlobal { name });
+        if matches!(self.module_kind, ModuleKind::Root) {
+          let name = self.const_name(&name);
+          self.emit_op(StoreGlobal { name });
+        } else {
+          let slot = self.state.declare_module_var(name);
+          self.emit_op(StoreModuleVar { slot });
+        }
       } else {
         let reg = self.reg();
         self.emit_op(StoreReg { reg: reg.index() });
@@ -830,7 +880,7 @@ mod stmt {
 
     fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) -> Result<()> {
       let desc = self.const_value(
-        self.ctx.alloc(class::ClassDesc::new(
+        self.ctx.alloc(class::ClassDescriptor::new(
           self.ctx.alloc_interned_string(stmt.name.deref()),
           ast_class_to_params(stmt),
           stmt.parent.is_some(),
@@ -853,6 +903,7 @@ mod stmt {
         match self.resolve_var(name.clone()) {
           Get::Local(reg) => self.emit_op(LoadReg { reg: reg.index() }),
           Get::Capture(slot) => self.emit_op(LoadCapture { slot }),
+          Get::ModuleVar(slot) => self.emit_op(LoadModuleVar { slot }),
           Get::Global => {
             let name = self.const_name(name);
             self.emit_op(LoadGlobal { name });
@@ -905,8 +956,13 @@ mod stmt {
 
       let name = stmt.name.deref().clone();
       if self.state.is_global_scope() {
-        let name = self.const_name(&name);
-        self.emit_op(StoreGlobal { name });
+        if matches!(self.module_kind, ModuleKind::Root) {
+          let name = self.const_name(&name);
+          self.emit_op(StoreGlobal { name });
+        } else {
+          let slot = self.state.declare_module_var(name);
+          self.emit_op(StoreModuleVar { slot });
+        }
       } else {
         let reg = self.reg();
         self.emit_op(StoreReg { reg: reg.index() });
@@ -969,7 +1025,7 @@ mod stmt {
 
     fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) -> Result<()> {
       for symbol in stmt.symbols.iter() {
-        let segments = symbol.path.iter().map(|s| s.to_string().into()).collect();
+        let segments = symbol.path.iter().map(|s| s.to_string()).collect();
         let path = self.const_value(self.ctx.alloc(module::Path::new(segments)));
 
         let name = match &symbol.alias {
@@ -979,7 +1035,7 @@ mod stmt {
         let dest = self.reg();
         self.state.declare_local(name.deref().clone(), dest.clone());
 
-        self.emit_op(LoadModule {
+        self.emit_op(Import {
           path,
           dest: dest.index(),
         });
@@ -1196,6 +1252,7 @@ mod expr {
       match self.resolve_var(expr.name.deref().clone()) {
         Get::Local(reg) => self.emit_op(LoadReg { reg: reg.index() }),
         Get::Capture(slot) => self.emit_op(LoadCapture { slot }),
+        Get::ModuleVar(slot) => self.emit_op(LoadModuleVar { slot }),
         Get::Global => {
           let name = self.const_name(&expr.name);
           self.emit_op(LoadGlobal { name })
@@ -1210,6 +1267,7 @@ mod expr {
       match self.resolve_var(expr.target.name.deref().clone()) {
         Get::Local(reg) => self.emit_op(StoreReg { reg: reg.index() }),
         Get::Capture(slot) => self.emit_op(StoreCapture { slot }),
+        Get::ModuleVar(slot) => self.emit_op(StoreModuleVar { slot }),
         Get::Global => {
           let name = self.const_name(&expr.target.name);
           self.emit_op(StoreGlobal { name });

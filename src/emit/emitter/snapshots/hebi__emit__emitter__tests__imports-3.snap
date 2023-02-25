@@ -17,8 +17,8 @@ function "main":
     0: <path test.a>
     1: <path test.b>
   code:
-     0 | load_module [0], r4
-     3 | load_module [1], r5
+     0 | import [0], r4
+     3 | import [1], r5
      6 | create_empty_list 
      7 | store_reg r6
      9 | load_reg r4
@@ -34,10 +34,10 @@ function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func "main">
+    0: <func descriptor "main">
     1: "main"
   code:
-    0 | load_const [0]
+    0 | create_function [0]
     2 | store_global [1]
     4 | ret 
     5 | suspend 

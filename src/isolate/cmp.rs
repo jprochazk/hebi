@@ -19,5 +19,5 @@ pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot compare values", 0..0))
+  Err(RuntimeError::script("cannot compare values", 0..0))
 }

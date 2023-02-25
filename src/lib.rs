@@ -26,13 +26,15 @@ TODO: carefully design the public API
 use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
-pub use conv::{FromHebi, IntoHebi, Value};
 use ctx::Context;
-use isolate::{Io, Isolate};
-pub use value::object::Error as RuntimeError;
+use isolate::{Isolate, Stdout};
 use value::Value as CoreValue;
 
 pub type Result<T, E = RuntimeError> = std::result::Result<T, E>;
+
+pub use conv::{FromHebi, IntoHebi, Value};
+pub use value::object::module::ModuleLoader;
+pub use value::object::RuntimeError;
 
 pub struct Hebi {
   isolate: RefCell<Isolate>,
@@ -52,17 +54,12 @@ pub struct Hebi {
 unsafe impl Send for Hebi {}
 
 impl Hebi {
-  #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
-    Self {
-      isolate: RefCell::new(Isolate::new(Context::new())),
-    }
+    Self::builder().build()
   }
 
-  pub fn with_io(io: impl Io) -> Self {
-    Self {
-      isolate: RefCell::new(Isolate::with_io(Context::new(), io)),
-    }
+  pub fn with_io(io: impl Stdout) -> Self {
+    Self::builder().with_io(io).build()
   }
 
   pub fn check(&self, src: &str) -> Result<(), Vec<syntax::Error>> {
@@ -72,12 +69,11 @@ impl Hebi {
 
   pub fn eval<'a, T: FromHebi<'a>>(&'a self, src: &str) -> Result<T, EvalError> {
     let module = syntax::parse(src)?;
-    let module = emit::emit(self.isolate.borrow().ctx(), "code", &module).unwrap();
-    let main = module.main();
+    let module = emit::emit(self.isolate.borrow().ctx(), "code", &module, true).unwrap();
     let result = self
       .isolate
       .borrow_mut()
-      .call(main.into(), &[], CoreValue::none())?;
+      .call(module.root().into(), &[], CoreValue::none())?;
     let result = Value::bind(result);
     Ok(T::from_hebi(self, result)?)
   }
@@ -89,6 +85,53 @@ impl Hebi {
       Ok(v) => Some(v),
       _ => None,
     }
+  }
+}
+
+pub struct HebiBuilder {
+  stdout: Option<Box<dyn Stdout>>,
+  module_loader: Option<Box<dyn ModuleLoader>>,
+}
+
+impl Hebi {
+  pub fn builder() -> HebiBuilder {
+    HebiBuilder {
+      stdout: None,
+      module_loader: None,
+    }
+  }
+}
+
+impl HebiBuilder {
+  pub fn with_io<T: Stdout + 'static>(mut self, stdout: T) -> Self {
+    let _ = self.stdout.replace(Box::new(stdout));
+    self
+  }
+
+  pub fn with_module_loader<T: ModuleLoader + 'static>(mut self, loader: T) -> Self {
+    let _ = self.module_loader.replace(Box::new(loader));
+    self
+  }
+
+  pub fn build(mut self) -> Hebi {
+    let ctx = Context::new();
+    let stdout = self
+      .stdout
+      .take()
+      .unwrap_or_else(|| Box::new(std::io::stdout()));
+    // TODO: default module loader
+    let module_loader = self.module_loader.take().unwrap_or_else(|| todo!());
+    let isolate = Isolate::new(ctx, stdout, module_loader);
+
+    Hebi {
+      isolate: RefCell::new(isolate),
+    }
+  }
+}
+
+impl Default for Hebi {
+  fn default() -> Self {
+    Self::new()
   }
 }
 
@@ -115,7 +158,7 @@ impl Debug for EvalError {
         .debug_tuple("Parse")
         .field(&e.iter().map(|e| e.message.to_string()).collect::<Vec<_>>())
         .finish(),
-      Self::Runtime(e) => f.debug_tuple("Runtime").field(&e.message).finish(),
+      Self::Runtime(e) => f.debug_tuple("Runtime").field(&e).finish(),
     }
   }
 }
@@ -124,7 +167,7 @@ impl Display for EvalError {
     use util::JoinIter;
     match self {
       EvalError::Parse(v) => write!(f, "syntax errors: {}", v.iter().join("; ")),
-      EvalError::Runtime(v) => write!(f, "error: {}", v.message),
+      EvalError::Runtime(v) => write!(f, "error: {}", v),
     }
   }
 }

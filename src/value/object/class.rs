@@ -140,14 +140,14 @@ impl Display for Method {
 impl Access for Method {}
 
 pub struct ClassDef {
-  desc: Handle<ClassDesc>,
+  desc: Handle<ClassDescriptor>,
   methods: Dict,
   fields: Dict,
   parent: Option<Handle<ClassDef>>,
 }
 
 impl ClassDef {
-  pub fn new(ctx: Context, desc: Handle<ClassDesc>, args: &[Value]) -> Self {
+  pub fn new(ctx: Context, desc: Handle<ClassDescriptor>, args: &[Value]) -> Self {
     assert!(args.len() >= desc.is_derived() as usize + desc.methods().len() + desc.fields().len());
 
     let parent_offset = 0;
@@ -251,7 +251,7 @@ impl Access for ClassDef {
   }
 }
 
-pub struct ClassDesc {
+pub struct ClassDescriptor {
   name: Handle<Str>,
   params: Params,
   is_derived: bool,
@@ -259,7 +259,7 @@ pub struct ClassDesc {
   fields: Vec<Str>,
 }
 
-impl ClassDesc {
+impl ClassDescriptor {
   pub fn new(
     name: Handle<Str>,
     params: Params,
@@ -278,7 +278,7 @@ impl ClassDesc {
 }
 
 #[derive::delegate_to_handle]
-impl ClassDesc {
+impl ClassDescriptor {
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
@@ -300,10 +300,10 @@ impl ClassDesc {
   }
 }
 
-impl Display for ClassDesc {
+impl Display for ClassDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<class desc {}>", self.name())
+    write!(f, "<class descriptor {}>", self.name())
   }
 }
 
-impl Access for ClassDesc {}
+impl Access for ClassDescriptor {}

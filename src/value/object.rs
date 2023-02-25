@@ -16,14 +16,14 @@ pub mod string;
 use std::fmt::Display;
 
 use beef::lean::Cow;
-pub use class::{Class, ClassDef, ClassDesc, Method, Proxy};
+pub use class::{Class, ClassDef, ClassDescriptor, Method, Proxy};
 pub use dict::Dict;
-pub use error::Error;
+pub use error::RuntimeError;
 use frame::Frame;
-pub use func::{Closure, ClosureDesc, Func};
+pub use func::{Function, FunctionDescriptor};
 pub use key::{Key, StaticKey};
 pub use list::List;
-pub use module::{Module, Path, Registry};
+pub use module::{Module, ModuleDescriptor, Path};
 pub use string::Str;
 
 use super::handle::Handle;
@@ -40,7 +40,7 @@ pub trait Access {
 
   /// Represents the `obj.key` operation.
   fn field_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
-    Err(crate::RuntimeError::new(
+    Err(crate::RuntimeError::script(
       format!("cannot get field `{key}`"),
       0..0,
     ))
@@ -49,7 +49,7 @@ pub trait Access {
   /// Represents the `obj.key = value` operation.
   fn field_set(&mut self, key: StaticKey, value: Value) -> crate::Result<()> {
     drop(value);
-    Err(crate::RuntimeError::new(
+    Err(crate::RuntimeError::script(
       format!("cannot set field `{key}`"),
       0..0,
     ))
@@ -67,7 +67,7 @@ pub trait Access {
   /// Represents the `obj[key] = value` operation.
   fn index_set(&mut self, key: StaticKey, value: Value) -> crate::Result<()> {
     match &key {
-      Key::Int(_) => Err(crate::RuntimeError::new(
+      Key::Int(_) => Err(crate::RuntimeError::script(
         format!("cannot set index `{key}`"),
         0..0,
       )),
@@ -86,19 +86,18 @@ object_repr! {
     Str,
     List,
     Dict,
-    Func,
-    Closure,
-    ClosureDesc,
+    Function,
+    FunctionDescriptor,
     Class,
     ClassDef,
-    ClassDesc,
+    ClassDescriptor,
     Method,
     Proxy,
     Module,
+    ModuleDescriptor,
     Path,
-    Registry,
     Frame,
-    Error,
+    RuntimeError,
   }
 }
 

@@ -28,11 +28,11 @@ function "a":
   frame_size: 5
   length: 18
   const (length=1):
-    0: <closure desc "b">
+    0: <func descriptor "b">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
-     7 | create_closure [0]
+     7 | create_function [0]
      9 | capture_reg r4, slot=0
     12 | store_reg r4
     14 | load_reg r4
@@ -43,10 +43,10 @@ function "code":
   frame_size: 4
   length: 10
   const (length=2):
-    0: <func "a">
+    0: <func descriptor "a">
     1: "a"
   code:
-     0 | load_const [0]
+     0 | create_function [0]
      2 | store_global [1]
      4 | load_global [1]
      6 | call0 

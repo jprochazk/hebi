@@ -34,12 +34,12 @@ function "test":
   frame_size: 7
   length: 29
   const (length=2):
-    0: <class desc "T">
-    1: <closure desc "test">
+    0: <class descriptor "T">
+    1: <func descriptor "test">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
-     7 | create_closure [1]
+     7 | create_function [1]
      9 | capture_reg r4, slot=0
     12 | store_reg r5
     14 | push_small_int value=0
@@ -54,10 +54,10 @@ function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func "test">
+    0: <func descriptor "test">
     1: "test"
   code:
-    0 | load_const [0]
+    0 | create_function [0]
     2 | store_global [1]
     4 | ret 
     5 | suspend 

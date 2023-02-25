@@ -12,7 +12,7 @@ pub fn set(ctx: Context, receiver: &mut Value, key: &str, value: Value) -> Resul
     }
   };
 
-  Err(RuntimeError::new(
+  Err(RuntimeError::script(
     format!("cannot set field `{key}` on value `{receiver}`"),
     0..0,
   ))
@@ -31,7 +31,7 @@ pub fn get(ctx: Context, receiver: &Value, key: &str) -> Result<Value> {
     }
   }
 
-  Err(RuntimeError::new(
+  Err(RuntimeError::script(
     format!("cannot get field `{key}` on value `{receiver}`"),
     0..0,
   ))
@@ -59,5 +59,5 @@ pub fn get_opt(ctx: Context, receiver: &Value, key: &str) -> Result<Value> {
 }
 
 fn is_fn_like(v: &Value) -> bool {
-  v.is_func() || v.is_closure() || v.is_method()
+  v.is_function() || v.is_method()
 }

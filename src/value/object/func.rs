@@ -2,27 +2,31 @@ use std::fmt::Display;
 
 use indexmap::IndexMap;
 
+use super::module::ModuleId;
 use super::{Access, Str};
+use crate::ctx::Context;
 use crate::op;
 use crate::value::constant::Constant;
 use crate::value::handle::Handle;
 use crate::value::Value;
 
-pub struct Func {
+pub struct FunctionDescriptor {
   name: Handle<Str>,
   frame_size: u32,
   code: Vec<u8>,
   const_pool: Vec<Constant>,
   params: Params,
+  num_captures: u32,
 }
 
-impl Func {
+impl FunctionDescriptor {
   pub fn new(
     name: Handle<Str>,
     frame_size: u32,
     code: Vec<u8>,
     const_pool: Vec<Constant>,
     params: Params,
+    num_captures: u32,
   ) -> Self {
     Self {
       name,
@@ -30,12 +34,13 @@ impl Func {
       code,
       const_pool,
       params,
+      num_captures,
     }
   }
 }
 
 #[derive::delegate_to_handle]
-impl Func {
+impl FunctionDescriptor {
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
@@ -60,20 +65,21 @@ impl Func {
     &self.params
   }
 
+  pub fn num_captures(&self) -> u32 {
+    self.num_captures
+  }
+
   pub fn disassemble(&self, print_bytes: bool) -> String {
     let mut out = String::new();
 
-    self.disassemble_inner(&mut out, print_bytes);
+    self._disassemble_inner(&mut out, print_bytes);
     out
   }
 
-  fn disassemble_inner(&self, f: &mut String, print_bytes: bool) {
+  pub(crate) fn _disassemble_inner(&self, f: &mut String, print_bytes: bool) {
     for v in self.const_pool.iter() {
-      if let Constant::Func(func) = v {
-        unsafe { func._get() }.disassemble_inner(f, print_bytes);
-        f.push('\n');
-      } else if let Constant::ClosureDesc(desc) = v {
-        unsafe { desc.func()._get() }.disassemble_inner(f, print_bytes);
+      if let Constant::FunctionDescriptor(func) = v {
+        func._disassemble_inner(f, print_bytes);
         f.push('\n');
       }
     }
@@ -124,89 +130,59 @@ impl Func {
   }
 }
 
-impl Display for Func {
+impl Display for FunctionDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<func {}>", self.name())
+    write!(f, "<func descriptor {}>", self.name())
   }
 }
 
-impl Access for Func {}
+impl Access for FunctionDescriptor {}
 
-pub struct ClosureDesc {
-  func: Handle<Func>,
-  num_captures: u32,
-}
-
-impl ClosureDesc {
-  pub fn new(func: Handle<Func>, num_captures: u32) -> Self {
-    Self { func, num_captures }
-  }
-}
-
-#[derive::delegate_to_handle]
-impl ClosureDesc {
-  pub fn func(&self) -> Handle<Func> {
-    self.func.clone()
-  }
-
-  pub fn num_captures(&self) -> u32 {
-    self.num_captures
-  }
-}
-
-impl Display for ClosureDesc {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<closure desc {}>", self.func().name())
-  }
-}
-
-impl Access for ClosureDesc {}
-
-pub struct Closure {
-  descriptor: Handle<ClosureDesc>,
+pub struct Function {
+  desc: Handle<FunctionDescriptor>,
   captures: Vec<Value>,
+  module_id: Option<ModuleId>,
 }
 
-impl Closure {
-  /// Create a new closure.
-  pub fn new(descriptor: Handle<ClosureDesc>) -> Self {
-    let captures = {
-      let mut v = Vec::with_capacity(descriptor.num_captures() as usize);
-      for _ in 0..descriptor.num_captures() {
-        v.push(Value::none());
-      }
-      v
-    };
+impl Function {
+  pub fn new(
+    ctx: &Context,
+    desc: Handle<FunctionDescriptor>,
+    module_id: Option<ModuleId>,
+  ) -> Handle<Function> {
+    let mut captures = vec![];
+    captures.resize_with(desc.num_captures() as usize, Value::none);
 
-    Self {
-      descriptor,
+    ctx.alloc(Function {
+      desc,
       captures,
-    }
+      module_id,
+    })
   }
 }
 
 #[derive::delegate_to_handle]
-impl Closure {
-  pub fn descriptor(&self) -> Handle<ClosureDesc> {
-    self.descriptor.clone()
+impl Function {
+  pub fn descriptor(&self) -> Handle<FunctionDescriptor> {
+    self.desc.clone()
   }
 
-  /* pub fn captures(&self) -> &[Value] {
-    &self.captures
-  } */
+  pub fn module_id(&self) -> Option<ModuleId> {
+    self.module_id
+  }
 
   pub unsafe fn captures_mut(&mut self) -> &mut [Value] {
     &mut self.captures
   }
 }
 
-impl Display for Closure {
+impl Display for Function {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<closure {}>", self.descriptor().func().name())
+    write!(f, "<function {}>", self.descriptor().name())
   }
 }
 
-impl Access for Closure {}
+impl Access for Function {}
 
 pub struct Params {
   pub has_self: bool,
@@ -219,10 +195,8 @@ pub struct Params {
 }
 
 pub fn func_name(f: &Value) -> String {
-  if let Some(f) = f.clone().to_func() {
-    f.name().as_str().to_string()
-  } else if let Some(f) = f.clone().to_closure() {
-    f.descriptor().func().name().as_str().to_string()
+  if let Some(f) = f.clone().to_function() {
+    f.descriptor().name().as_str().to_string()
   } else if let Some(f) = f.clone().to_method() {
     func_name(&f.func())
   } else {

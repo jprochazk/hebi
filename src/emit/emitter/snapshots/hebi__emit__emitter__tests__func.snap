@@ -23,10 +23,10 @@ function "code":
   frame_size: 4
   length: 9
   const (length=2):
-    0: <func "test">
+    0: <func descriptor "test">
     1: "test"
   code:
-    0 | load_const [0]
+    0 | create_function [0]
     2 | store_global [1]
     4 | load_global [1]
     6 | call0 

@@ -14,7 +14,7 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let result = match Emitter::new(ctx.clone(), "code", &module).emit_main() {
+    let result = match Emitter::new(ctx.clone(), "code", &module, true).emit_main() {
       Ok(result) => result,
       Err(e) => {
         panic!("failed to emit func:\n{}", e.report(input));
