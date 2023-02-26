@@ -205,7 +205,7 @@ impl op::Handler for Isolate {
   }
 
   fn op_load_module_var(&mut self, slot: u32) -> Result<(), Self::Error> {
-    self.get_module_var(slot);
+    self.acc = self.get_module_var(slot);
 
     Ok(())
   }
