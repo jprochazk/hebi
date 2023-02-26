@@ -59,11 +59,10 @@ impl ModuleRegistry {
     self.modules.get(&id).cloned()
   }
 
-  pub fn by_path(&self, path: &[String]) -> Option<Handle<Module>> {
-    self
-      .index
-      .get(path)
-      .and_then(|id| self.modules.get(id).cloned())
+  pub fn by_path(&self, path: &[String]) -> Option<(ModuleId, Handle<Module>)> {
+    let id = self.index.get(path).cloned()?;
+    let module = self.modules.get(&id).cloned()?;
+    Some((id, module))
   }
 }
 

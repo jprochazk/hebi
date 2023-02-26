@@ -9,12 +9,18 @@ use crate::RuntimeError;
 
 /// Load module (parse -> emit -> eval root)
 pub fn load(vm: &mut Isolate, path: Handle<Path>) -> Result<Handle<Module>, RuntimeError> {
-  if let Some(module) = vm.module_registry.by_path(path.segments()) {
-    return Ok(module);
-  }
-
   // path should never be empty
   let name = path.segments().last().unwrap().as_str();
+
+  if let Some((id, module)) = vm.module_registry.by_path(path.segments()) {
+    if vm.module_init_visited.contains(&id) {
+      return Err(RuntimeError::script(
+        format!("attempted to import partially initialized module {name}"),
+        0..0,
+      ));
+    }
+    return Ok(module);
+  }
 
   let module_id = vm.module_registry.next_module_id();
   let module = {
@@ -31,15 +37,20 @@ pub fn load(vm: &mut Isolate, path: Handle<Path>) -> Result<Handle<Module>, Runt
   };
   vm.module_registry
     .add(module_id, path.segments(), module.clone());
-  // If executing the module root scope results in an error,
-  // remove the module from the registry. We do this to ensure
-  // that calls to functions declared in this broken module
-  // (even in inner scopes) will fail
+
+  vm.module_init_visited.insert(module_id);
+
   let result = vm.call(module.root().into(), &[], Value::none());
   if let Err(e) = result {
+    // If executing the module root scope results in an error,
+    // remove the module from the registry. We do this to ensure
+    // that calls to functions declared in this broken module
+    // (even in inner scopes) will fail
     vm.module_registry.remove(module_id);
+    vm.module_init_visited.remove(&module_id);
     Err(e)?;
   }
+  vm.module_init_visited.remove(&module_id);
 
   Ok(module)
 }

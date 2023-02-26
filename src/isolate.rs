@@ -15,6 +15,8 @@ mod truth;
 use std::mem::take;
 use std::ptr::NonNull;
 
+use indexmap::IndexSet;
+
 use super::op;
 use crate::ctx::Context;
 use crate::util::JoinIter;
@@ -31,6 +33,7 @@ pub struct Isolate {
   globals: Handle<Dict>,
   module_registry: ModuleRegistry,
   module_loader: Box<dyn ModuleLoader>,
+  module_init_visited: IndexSet<ModuleId>,
 
   width: op::Width,
   pc: usize,
@@ -62,6 +65,7 @@ impl Isolate {
       globals,
       module_registry: ModuleRegistry::new(),
       module_loader,
+      module_init_visited: IndexSet::new(),
       width: op::Width::Single,
       pc: 0,
 

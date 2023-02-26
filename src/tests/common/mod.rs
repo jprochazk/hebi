@@ -91,11 +91,7 @@ macro_rules! check_error {
       use $crate::util::JoinIter;
       use $crate::{EvalError, Hebi, Value};
       let modules = [
-        $(
-          $(
-            ($module.to_string(), indoc::indoc!($code).to_string());
-          )*
-        )?
+        $($(($module.to_string(), indoc::indoc!($code).to_string()),)*)?
       ].into_iter().collect();
       let module_loader = $crate::tests::common::TestModuleLoader { modules };
       let vm = Hebi::builder()

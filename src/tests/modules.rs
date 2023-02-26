@@ -165,3 +165,25 @@ check! {
     print foo
   "#
 }
+check_error! {
+  import_cycle,
+  modules: {
+    "a": r#"import b"#,
+    "b": r#"import a"#
+  },
+  r#"
+    import a
+  "#
+}
+check! {
+  double_import,
+  modules: {
+    "test": r#"value := 100"#
+  },
+  r#"
+    from test import value
+    print value
+    from test import value
+    print value
+  "#
+}
