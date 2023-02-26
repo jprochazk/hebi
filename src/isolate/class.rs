@@ -1,13 +1,13 @@
 use super::{call, Isolate};
 use crate::value::handle::Handle;
-use crate::value::object::{ClassDef, Key, Method};
+use crate::value::object::{Class, Key, Method};
 use crate::value::Value;
 use crate::Result;
 
 impl Isolate {
   pub fn create_instance(
     &mut self,
-    def: Handle<ClassDef>,
+    def: Handle<Class>,
     args: &[Value],
     kwargs: Value,
   ) -> Result<Value> {

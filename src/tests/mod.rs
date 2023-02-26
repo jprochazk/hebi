@@ -3,7 +3,7 @@ mod common;
 
 mod assignment;
 mod branch;
-mod class_def;
+mod class;
 mod class_inheritance;
 mod class_methods;
 mod fn_call;

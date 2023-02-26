@@ -16,7 +16,7 @@ pub mod string;
 use std::fmt::Display;
 
 use beef::lean::Cow;
-pub use class::{Class, ClassDef, ClassDescriptor, Method, Proxy};
+pub use class::{Class, ClassDescriptor, ClassInstance, ClassSuperProxy, Method};
 pub use dict::Dict;
 pub use error::RuntimeError;
 use frame::Frame;
@@ -88,11 +88,11 @@ object_repr! {
     Dict,
     Function,
     FunctionDescriptor,
+    ClassInstance,
     Class,
-    ClassDef,
     ClassDescriptor,
     Method,
-    Proxy,
+    ClassSuperProxy,
     Module,
     ModuleDescriptor,
     Path,

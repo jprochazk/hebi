@@ -20,7 +20,7 @@ use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry, ModuleSource};
 use crate::value::object::{
-  frame, ClassDef, Dict, Function, Key, List, Module, ObjectType, Path, Proxy,
+  frame, Class, ClassSuperProxy, Dict, Function, Key, List, Module, ObjectType, Path,
 };
 use crate::value::Value;
 use crate::RuntimeError;
@@ -353,12 +353,12 @@ impl op::Handler for Isolate {
     // receiver is always placed at the base of the current call frame's stack
     let this = self.get_reg(3);
 
-    if let Some(proxy) = this.clone().to_proxy() {
+    if let Some(proxy) = this.clone().to_class_super_proxy() {
       self.acc = proxy.class().into();
       return Ok(());
     }
 
-    assert!(this.is_class());
+    assert!(this.is_class_instance());
     self.acc = this;
 
     Ok(())
@@ -371,11 +371,11 @@ impl op::Handler for Isolate {
     // all parent class `unwrap()`s here should never panic,
     // because parser checks for parent class
 
-    if let Some(proxy) = this.clone().to_proxy() {
+    if let Some(proxy) = this.clone().to_class_super_proxy() {
       // we're in a super class
       // proxy to the next super class in the chain
       self.acc = self
-        .alloc(Proxy::new(
+        .alloc(ClassSuperProxy::new(
           proxy.class(),
           //    current  next
           //    |        |
@@ -387,12 +387,12 @@ impl op::Handler for Isolate {
 
     // we're not in a super class yet,
     // proxy to the first super class in the chain
-    let Some(this) = this.to_class() else {
+    let Some(this) = this.to_class_instance() else {
       // TODO: span
       return Err(RuntimeError::script("receiver is not a class", 0..0).into());
     };
     let parent = this.parent().unwrap();
-    self.acc = self.ctx.alloc(Proxy::new(this, parent)).into();
+    self.acc = self.ctx.alloc(ClassSuperProxy::new(this, parent)).into();
 
     Ok(())
   }
@@ -519,7 +519,7 @@ impl op::Handler for Isolate {
 
     self.acc = self
       .ctx
-      .alloc(ClassDef::new(self.ctx.clone(), desc, &[]))
+      .alloc(Class::new(self.ctx.clone(), desc, &[]))
       .into();
 
     Ok(())
@@ -532,7 +532,7 @@ impl op::Handler for Isolate {
 
     let value = self
       .ctx
-      .alloc(ClassDef::new(
+      .alloc(Class::new(
         self.ctx.clone(),
         desc,
         &self.stack()[start as usize..],
@@ -776,9 +776,9 @@ impl op::Handler for Isolate {
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
 
-    if callable.is_class_def() {
+    if callable.is_class() {
       // class constructor
-      let class_def = callable.to_class_def().unwrap();
+      let class_def = callable.to_class().unwrap();
       self.acc = self.create_instance(class_def, &[], Value::none())?;
       self.pc = return_address;
       return Ok(());
@@ -801,9 +801,9 @@ impl op::Handler for Isolate {
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize..][..args as usize].to_vec();
 
-    if callable.is_class_def() {
+    if callable.is_class() {
       // class constructor
-      let class_def = callable.to_class_def().unwrap();
+      let class_def = callable.to_class().unwrap();
       self.acc = self.create_instance(class_def, &args, Value::none())?;
       self.pc = return_address;
       return Ok(());
@@ -833,9 +833,9 @@ impl op::Handler for Isolate {
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize + 1..][..args as usize].to_vec();
 
-    if callable.is_class_def() {
+    if callable.is_class() {
       // class constructor
-      let def = callable.to_class_def().unwrap();
+      let def = callable.to_class().unwrap();
       self.acc = self.create_instance(def, &args, kwargs)?;
       self.pc = return_address;
       return Ok(());
