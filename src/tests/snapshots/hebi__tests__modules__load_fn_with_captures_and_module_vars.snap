@@ -1,0 +1,38 @@
+---
+source: src/tests/modules.rs
+expression: snapshot
+---
+# Modules:
+# module:test
+step := 2
+fn make_counter(start):
+  class State:
+    value = start
+  state := State()
+  fn inner():
+    temp := state.value
+    state.value += step
+    return temp
+  return inner
+
+
+
+# Input:
+from test import make_counter
+
+c := make_counter(10)
+print c()
+print c()
+print c()
+
+
+
+# Result (success):
+none
+
+# Stdout:
+10
+12
+14
+
+

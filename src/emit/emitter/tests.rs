@@ -2,7 +2,10 @@ use super::*;
 use crate::ctx::Context;
 
 macro_rules! check {
-  ($input:literal) => {{
+  ($(as_module=$as_module:expr,)? $input:literal) => {{
+    #[allow(unused_mut, unused_assignments)]
+    let mut as_module = false;
+    $(as_module = $as_module;)?
     let ctx = Context::new();
     let input = indoc::indoc!($input);
     let module = match syntax::parse(input) {
@@ -14,8 +17,8 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let result = match Emitter::new(ctx.clone(), "code", &module, true).emit_main() {
-      Ok(result) => result,
+    let result = match Emitter::new(ctx.clone(), "code", &module, !as_module).emit_main() {
+      Ok((result, _)) => result,
       Err(e) => {
         panic!("failed to emit func:\n{}", e.report(input));
       }
@@ -547,6 +550,20 @@ fn imports() {
       import test
 
       print test.value
+    "#
+  }
+}
+
+#[test]
+fn fn_in_module() {
+  check! {
+    as_module=true,
+    r#"
+      value := 100
+      fn set(v):
+        value = v
+      fn get():
+        return value
     "#
   }
 }

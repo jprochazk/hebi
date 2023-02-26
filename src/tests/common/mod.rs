@@ -48,7 +48,7 @@ macro_rules! check {
         Ok(value) => {
           let stdout = vm.io::<Vec<u8>>().unwrap();
           let stdout = std::str::from_utf8(&stdout[..]).unwrap();
-          let modules: &[&str] = &[$($( concat!("# module:", $module, "\n", $code, "\n") ),*)?];
+          let modules: &[&str] = &[$($( concat!("# module:", $module, "\n", indoc::indoc!($code), "\n") ),*)?];
           let modules = modules.iter().join("\n");
           let snapshot = format!(
             "\
