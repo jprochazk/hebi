@@ -62,7 +62,7 @@ impl RuntimeError {
 
 #[derive::delegate_to_handle]
 impl RuntimeError {
-  pub fn push_trace(
+  pub(crate) fn push_trace(
     &mut self,
     ident: impl Into<String>,
     span: impl Into<Span>,

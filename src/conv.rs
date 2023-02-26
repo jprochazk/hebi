@@ -13,7 +13,7 @@ pub struct Value<'a> {
 }
 
 impl<'a> Value<'a> {
-  pub fn bind(value: impl Into<CoreValue>) -> Value<'a> {
+  pub(crate) fn bind(value: impl Into<CoreValue>) -> Value<'a> {
     Self {
       inner: value.into(),
       _lifetime: PhantomData,
