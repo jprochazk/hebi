@@ -40,8 +40,10 @@ impl ModuleRegistry {
     }
   }
 
-  pub fn next_module_id(&self) -> ModuleId {
-    ModuleId(self.next_module_id)
+  pub fn next_module_id(&mut self) -> ModuleId {
+    let temp = ModuleId(self.next_module_id);
+    self.next_module_id += 1;
+    temp
   }
 
   pub fn add(&mut self, id: ModuleId, path: &[String], module: Handle<Module>) {
