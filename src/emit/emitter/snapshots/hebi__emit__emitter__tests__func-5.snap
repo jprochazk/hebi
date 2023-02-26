@@ -46,11 +46,11 @@ function "code":
   frame_size: 6
   length: 41
   const (length=3):
-    0: <func "test">
+    0: <function descriptor "test">
     1: "test"
     2: "b"
   code:
-     0 | load_const [0]
+     0 | create_function [0]
      2 | store_global [1]
      4 | push_small_int value=1
      9 | store_reg r4

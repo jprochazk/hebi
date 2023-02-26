@@ -11,7 +11,7 @@ pub fn set(ctx: Context, obj: &mut Value, key: StaticKey, value: Value) -> Resul
     }
   };
 
-  Err(RuntimeError::new(
+  Err(RuntimeError::script(
     format!("cannot set field `{key}` on value `{obj}`"),
     0..0,
   ))
@@ -24,7 +24,7 @@ pub fn get(obj: &Value, key: &Key) -> Result<Value> {
     }
   }
 
-  Err(RuntimeError::new(
+  Err(RuntimeError::script(
     format!("cannot get field `{key}` on value `{obj}`"),
     0..0,
   ))

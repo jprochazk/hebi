@@ -2,6 +2,9 @@
 source: src/tests/class_methods.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 class T:
   fn test():

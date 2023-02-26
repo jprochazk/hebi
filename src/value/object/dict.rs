@@ -214,6 +214,14 @@ impl Dict {
     self.inner.get_mut(key)
   }
 
+  pub fn get_index(&self, index: usize) -> Option<(&Key, &Value)> {
+    self.inner.get_index(index)
+  }
+
+  pub fn get_index_mut(&mut self, index: usize) -> Option<(&Key, &mut Value)> {
+    self.inner.get_index_mut(index).map(|(k, v)| (&*k, v))
+  }
+
   /// Remove the last key-value pair
   ///
   /// This preserves the order of the remaining elements.

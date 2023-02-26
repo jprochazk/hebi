@@ -1,5 +1,5 @@
 check! {
-  empty_class_def,
+  empty_class,
   r#"
     class T: pass
     print T
@@ -7,7 +7,7 @@ check! {
 }
 
 check! {
-  empty_class_def_with_super,
+  empty_class_with_super,
   r#"
     class U: pass
     class T(U): pass
@@ -16,7 +16,7 @@ check! {
 }
 
 check! {
-  class_def_with_field,
+  class_with_field,
   r#"
     class T:
       v = 10
@@ -29,7 +29,7 @@ check! {
 }
 
 check! {
-  class_def_with_init,
+  class_with_init,
   r#"
     class T:
       fn init(self, *, v=10):

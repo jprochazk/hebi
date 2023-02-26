@@ -2,6 +2,9 @@
 source: src/tests/object_load_field.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 class T: pass
 v := T()

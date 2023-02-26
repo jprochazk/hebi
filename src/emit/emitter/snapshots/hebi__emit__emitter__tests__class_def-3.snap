@@ -12,7 +12,7 @@ function "code":
   frame_size: 5
   length: 14
   const (length=2):
-    0: <class desc "T">
+    0: <class descriptor "T">
     1: "T"
   code:
      0 | push_small_int value=0

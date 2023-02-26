@@ -1,0 +1,25 @@
+---
+source: src/tests/modules.rs
+expression: snapshot
+---
+# Modules:
+# module:test
+fn f(value):
+  print value
+
+
+
+# Input:
+import test
+
+print test.f(100)
+
+
+# Result (success):
+none
+
+# Stdout:
+100
+none
+
+

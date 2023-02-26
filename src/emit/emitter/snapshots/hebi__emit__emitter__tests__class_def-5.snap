@@ -27,11 +27,11 @@ function "code":
   frame_size: 6
   length: 18
   const (length=3):
-    0: <class desc "T">
-    1: <func "test">
+    0: <class descriptor "T">
+    1: <function descriptor "test">
     2: "T"
   code:
-     0 | load_const [1]
+     0 | create_function [1]
      2 | store_reg r4
      4 | push_small_int value=0
      9 | store_reg r5

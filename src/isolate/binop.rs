@@ -19,7 +19,7 @@ pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot add values", 0..0))
+  Err(RuntimeError::script("cannot add values", 0..0))
 }
 
 pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
@@ -38,7 +38,7 @@ pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot subtract values", 0..0))
+  Err(RuntimeError::script("cannot subtract values", 0..0))
 }
 
 pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
@@ -57,7 +57,7 @@ pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot multiply values", 0..0))
+  Err(RuntimeError::script("cannot multiply values", 0..0))
 }
 
 pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
@@ -82,7 +82,7 @@ pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot divide values", 0..0))
+  Err(RuntimeError::script("cannot divide values", 0..0))
 }
 
 pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
@@ -107,7 +107,7 @@ pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot divide values", 0..0))
+  Err(RuntimeError::script("cannot divide values", 0..0))
 }
 
 pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
@@ -133,5 +133,5 @@ pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::new("cannot exponentiate value", 0..0))
+  Err(RuntimeError::script("cannot exponentiate value", 0..0))
 }

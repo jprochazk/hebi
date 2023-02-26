@@ -1,0 +1,25 @@
+---
+source: src/tests/modules.rs
+expression: snapshot
+---
+# Modules:
+# module:test
+class Test:
+  v = 100
+
+
+
+# Input:
+from test import Test
+
+t := Test()
+print t.v
+
+
+# Result (success):
+none
+
+# Stdout:
+100
+
+

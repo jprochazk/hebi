@@ -1,9 +1,13 @@
 ---
-source: src/tests/class_def.rs
+source: src/tests/class.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
-class T: pass
+class U: pass
+class T(U): pass
 print T
 
 

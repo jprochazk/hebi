@@ -11,7 +11,7 @@ function "code":
   frame_size: 5
   length: 11
   const (length=3):
-    0: <class desc "T">
+    0: <class descriptor "T">
     1: "U"
     2: "T"
   code:

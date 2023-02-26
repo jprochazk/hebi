@@ -251,30 +251,30 @@ function "code":
   frame_size: 4
   length: 26
   const (length=12):
-    0: <func "f0">
+    0: <function descriptor "f0">
     1: "f0"
-    2: <func "f1_a">
+    2: <function descriptor "f1_a">
     3: "f1_a"
-    4: <func "f1_b">
+    4: <function descriptor "f1_b">
     5: "f1_b"
-    6: <func "f2_a">
+    6: <function descriptor "f2_a">
     7: "f2_a"
-    8: <func "f2_b">
+    8: <function descriptor "f2_b">
     9: "f2_b"
-    10: <func "f3">
+    10: <function descriptor "f3">
     11: "f3"
   code:
-     0 | load_const [0]
+     0 | create_function [0]
      2 | store_global [1]
-     4 | load_const [2]
+     4 | create_function [2]
      6 | store_global [3]
-     8 | load_const [4]
+     8 | create_function [4]
     10 | store_global [5]
-    12 | load_const [6]
+    12 | create_function [6]
     14 | store_global [7]
-    16 | load_const [8]
+    16 | create_function [8]
     18 | store_global [9]
-    20 | load_const [10]
+    20 | create_function [10]
     22 | store_global [11]
     24 | ret 
     25 | suspend 

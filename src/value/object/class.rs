@@ -9,20 +9,20 @@ use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::Value;
 
-pub struct Class {
+pub struct ClassInstance {
   name: Handle<Str>,
   fields: Dict,
-  parent: Option<Handle<ClassDef>>,
+  parent: Option<Handle<Class>>,
   is_frozen: bool,
 }
 
 #[derive::delegate_to_handle]
-impl Class {
+impl ClassInstance {
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
 
-  pub fn parent(&self) -> Option<Handle<ClassDef>> {
+  pub fn parent(&self) -> Option<Handle<Class>> {
     self.parent.clone()
   }
 
@@ -46,7 +46,7 @@ impl Class {
   }
 }
 
-impl Access for Class {
+impl Access for ClassInstance {
   fn is_frozen(&self) -> bool {
     self.is_frozen
   }
@@ -65,41 +65,61 @@ impl Access for Class {
   }
 }
 
-impl Display for Class {
+impl Display for ClassInstance {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<class {}>", self.name())
   }
 }
 
-pub struct Proxy {
-  class: Handle<Class>,
-  parent: Handle<ClassDef>,
+/// This type is used to ensure that the `super` keyword always refers to the
+/// "syntactical" parent class:
+///
+/// ```python,ignore
+/// class A:
+///   fn f(self):
+///     print "A"
+///
+/// class B(A):
+///   fn f(self):
+///     super.f() # `super` always refers to `A`, even though parent of `C` is `B`.
+///     print "B"
+///
+/// class C(B):
+///   fn f(self):
+///     super.f() # always refers to `B`
+///     print "C"
+///
+/// C().f() # prints `A B C`
+/// ```
+pub struct ClassSuperProxy {
+  class: Handle<ClassInstance>,
+  parent: Handle<Class>,
 }
 
-impl Proxy {
-  pub fn new(class: Handle<Class>, parent: Handle<ClassDef>) -> Self {
+impl ClassSuperProxy {
+  pub fn new(class: Handle<ClassInstance>, parent: Handle<Class>) -> Self {
     Self { class, parent }
   }
 }
 
 #[derive::delegate_to_handle]
-impl Proxy {
-  pub fn class(&self) -> Handle<Class> {
+impl ClassSuperProxy {
+  pub fn class(&self) -> Handle<ClassInstance> {
     self.class.clone()
   }
 
-  pub fn parent(&self) -> Handle<ClassDef> {
+  pub fn parent(&self) -> Handle<Class> {
     self.parent.clone()
   }
 }
 
-impl Display for Proxy {
+impl Display for ClassSuperProxy {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.parent())
   }
 }
 
-impl Access for Proxy {
+impl Access for ClassSuperProxy {
   fn is_frozen(&self) -> bool {
     true
   }
@@ -139,15 +159,15 @@ impl Display for Method {
 
 impl Access for Method {}
 
-pub struct ClassDef {
-  desc: Handle<ClassDesc>,
+pub struct Class {
+  desc: Handle<ClassDescriptor>,
   methods: Dict,
   fields: Dict,
-  parent: Option<Handle<ClassDef>>,
+  parent: Option<Handle<Class>>,
 }
 
-impl ClassDef {
-  pub fn new(ctx: Context, desc: Handle<ClassDesc>, args: &[Value]) -> Self {
+impl Class {
+  pub fn new(ctx: Context, desc: Handle<ClassDescriptor>, args: &[Value]) -> Self {
     assert!(args.len() >= desc.is_derived() as usize + desc.methods().len() + desc.fields().len());
 
     let parent_offset = 0;
@@ -156,7 +176,7 @@ impl ClassDef {
 
     let parent = desc
       .is_derived()
-      .then(|| args[parent_offset].clone().to_object::<ClassDef>().unwrap());
+      .then(|| args[parent_offset].clone().to_object::<Class>().unwrap());
 
     let mut methods = Dict::with_capacity(desc.methods().len());
     for (k, v) in desc.methods().iter().zip(args[methods_offset..].iter()) {
@@ -188,8 +208,8 @@ impl ClassDef {
 }
 
 #[derive::delegate_to_handle]
-impl ClassDef {
-  pub fn instance(&self) -> Class {
+impl Class {
+  pub fn instance(&self) -> ClassInstance {
     let name = self.name();
     let parent = self.parent.clone();
 
@@ -198,7 +218,7 @@ impl ClassDef {
       fields.insert(k.clone(), v.clone());
     }
 
-    Class {
+    ClassInstance {
       name,
       fields,
       parent,
@@ -214,7 +234,7 @@ impl ClassDef {
     self.methods.get(key).cloned()
   }
 
-  pub fn parent(&self) -> Option<Handle<ClassDef>> {
+  pub fn parent(&self) -> Option<Handle<Class>> {
     self.parent.clone()
   }
 
@@ -231,13 +251,13 @@ impl ClassDef {
   }
 }
 
-impl Display for ClassDef {
+impl Display for Class {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<class def {}>", self.name())
   }
 }
 
-impl Access for ClassDef {
+impl Access for Class {
   fn should_bind_methods(&self) -> bool {
     false
   }
@@ -251,7 +271,7 @@ impl Access for ClassDef {
   }
 }
 
-pub struct ClassDesc {
+pub struct ClassDescriptor {
   name: Handle<Str>,
   params: Params,
   is_derived: bool,
@@ -259,7 +279,7 @@ pub struct ClassDesc {
   fields: Vec<Str>,
 }
 
-impl ClassDesc {
+impl ClassDescriptor {
   pub fn new(
     name: Handle<Str>,
     params: Params,
@@ -278,7 +298,7 @@ impl ClassDesc {
 }
 
 #[derive::delegate_to_handle]
-impl ClassDesc {
+impl ClassDescriptor {
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
@@ -300,10 +320,10 @@ impl ClassDesc {
   }
 }
 
-impl Display for ClassDesc {
+impl Display for ClassDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<class desc {}>", self.name())
+    write!(f, "<class descriptor {}>", self.name())
   }
 }
 
-impl Access for ClassDesc {}
+impl Access for ClassDescriptor {}

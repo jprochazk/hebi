@@ -2,6 +2,9 @@
 source: src/tests/class_inheritance.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 class A:
   v = 0

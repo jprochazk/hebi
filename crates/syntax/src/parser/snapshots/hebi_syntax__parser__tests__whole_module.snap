@@ -1889,15 +1889,11 @@ Module {
             ),
         ),
         Import(
-            Import {
-                symbols: [
-                    ImportSymbol {
-                        path: [
-                            "json",
-                        ],
-                        alias: None,
-                    },
+            Module {
+                path: [
+                    "json",
                 ],
+                alias: None,
             },
         ),
         Expr(

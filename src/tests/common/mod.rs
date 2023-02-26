@@ -1,17 +1,60 @@
+use std::fmt::Display;
+
+use indexmap::IndexMap;
+
+use crate::ModuleLoader;
+
+pub struct TestModuleLoader {
+  pub modules: IndexMap<String, String>,
+}
+#[derive(Debug)]
+pub struct ModuleLoadError {
+  name: String,
+}
+impl Display for ModuleLoadError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "failed to load module `{}`", self.name)
+  }
+}
+impl std::error::Error for ModuleLoadError {}
+impl ModuleLoader for TestModuleLoader {
+  fn load(&mut self, path: &[String]) -> Result<&str, Box<dyn std::error::Error + 'static>> {
+    assert!(path.len() == 1, "cannot import nested path");
+    Ok(self.modules.get(path[0].as_str()).ok_or_else(|| {
+      Box::new(ModuleLoadError {
+        name: path[0].clone(),
+      })
+    })?)
+  }
+}
+
 #[macro_export]
 macro_rules! check {
-  ($name:ident, $input:literal) => {
+  ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
     #[test]
     fn $name() {
+      use $crate::util::JoinIter;
       use $crate::{EvalError, Hebi, Value};
+      let modules = [
+        $($(($module.to_string(), indoc::indoc!($code).to_string()),)*)?
+      ].into_iter().collect();
+      let module_loader = $crate::tests::common::TestModuleLoader { modules };
+      let vm = Hebi::builder()
+        .with_io(Vec::new())
+        .with_module_loader(module_loader)
+        .build();
       let input = indoc::indoc!($input);
-      let vm = Hebi::with_io(Vec::new());
       match vm.eval::<Value>(input) {
         Ok(value) => {
           let stdout = vm.io::<Vec<u8>>().unwrap();
           let stdout = std::str::from_utf8(&stdout[..]).unwrap();
+          let modules: &[&str] = &[$($( concat!("# module:", $module, "\n", indoc::indoc!($code), "\n") ),*)?];
+          let modules = modules.iter().join("\n");
           let snapshot = format!(
             "\
+# Modules:
+{modules}
+
 # Input:
 {input}
 
@@ -42,12 +85,20 @@ macro_rules! check {
 
 #[macro_export]
 macro_rules! check_error {
-  ($name:ident, $input:literal) => {
+  ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
     #[test]
     fn $name() {
+      use $crate::util::JoinIter;
       use $crate::{EvalError, Hebi, Value};
+      let modules = [
+        $($(($module.to_string(), indoc::indoc!($code).to_string()),)*)?
+      ].into_iter().collect();
+      let module_loader = $crate::tests::common::TestModuleLoader { modules };
+      let vm = Hebi::builder()
+        .with_io(Vec::new())
+        .with_module_loader(module_loader)
+        .build();
       let input = indoc::indoc!($input);
-      let vm = Hebi::with_io(Vec::new());
       match vm.eval::<Value>(input) {
         Ok(value) => {
           let stdout = String::from_utf8(vm.io::<Vec<u8>>().unwrap().clone()).unwrap();
@@ -65,8 +116,13 @@ macro_rules! check_error {
           let error = error.stack_trace(Some(input.into()));
           let stdout = vm.io::<Vec<u8>>().unwrap();
           let stdout = std::str::from_utf8(&stdout[..]).unwrap();
+          let modules: &[&str] = &[$($( concat!("# module:", $module, "\n", $code, "\n") ),*)?];
+          let modules = modules.iter().join("\n");
           let snapshot = format!(
             "\
+# Modules:
+{modules}
+            
 # Input:
 {input}
 

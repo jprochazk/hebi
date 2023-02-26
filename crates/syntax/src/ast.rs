@@ -42,27 +42,21 @@ pub enum StmtKind<'src> {
 }
 
 #[cfg_attr(test, derive(Debug))]
-pub struct Import<'src> {
-  pub symbols: Vec<ImportSymbol<'src>>,
+pub enum Import<'src> {
+  Module {
+    path: Vec<Ident<'src>>,
+    alias: Option<Ident<'src>>,
+  },
+  Symbols {
+    path: Vec<Ident<'src>>,
+    symbols: Vec<ImportSymbol<'src>>,
+  },
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub struct ImportSymbol<'src> {
-  pub path: Vec<Ident<'src>>,
+  pub name: Ident<'src>,
   pub alias: Option<Ident<'src>>,
-}
-
-impl<'src> ImportSymbol<'src> {
-  pub fn normal(path: Vec<Ident<'src>>) -> Self {
-    ImportSymbol { path, alias: None }
-  }
-
-  pub fn alias(path: Vec<Ident<'src>>, alias: Ident<'src>) -> Self {
-    ImportSymbol {
-      path,
-      alias: Some(alias),
-    }
-  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -372,8 +366,26 @@ pub enum Ctrl<'src> {
   Break,
 }
 
-pub fn import_stmt<'src>(s: impl Into<Span>, symbols: Vec<ImportSymbol<'src>>) -> Stmt<'src> {
-  Stmt::new(s, StmtKind::Import(Box::new(Import { symbols })))
+pub fn import_module_stmt<'src>(
+  s: impl Into<Span>,
+  path: Vec<Ident<'src>>,
+  alias: Option<Ident<'src>>,
+) -> Stmt<'src> {
+  Stmt::new(
+    s,
+    StmtKind::Import(Box::new(Import::Module { path, alias })),
+  )
+}
+
+pub fn import_symbols_stmt<'src>(
+  s: impl Into<Span>,
+  path: Vec<Ident<'src>>,
+  symbols: Vec<ImportSymbol<'src>>,
+) -> Stmt<'src> {
+  Stmt::new(
+    s,
+    StmtKind::Import(Box::new(Import::Symbols { path, symbols })),
+  )
 }
 
 pub fn if_stmt<'src>(

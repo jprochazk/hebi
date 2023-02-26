@@ -20,6 +20,7 @@ impl Isolate {
     self.push_frame(frame);
 
     self.width = op::Width::Single;
+    let saved_pc = self.pc;
     self.pc = 0;
     if let Err(mut e) = self.run_dispatch_loop() {
       for _ in frame_depth..self.frames.len() {
@@ -29,6 +30,7 @@ impl Isolate {
       }
       return Err(e);
     }
+    self.pc = saved_pc;
 
     // # Return
     Ok(std::mem::take(&mut self.acc))
@@ -43,9 +45,9 @@ impl Isolate {
   ) -> Result<Frame> {
     // # Check that callee is callable
     // TODO: trait
-    if !callable.is_func() && !callable.is_closure() && !callable.is_method() {
+    if !callable.is_function() && !callable.is_method() {
       // TODO: span
-      return Err(RuntimeError::new("value is not callable", 0..0));
+      return Err(RuntimeError::script("value is not callable", 0..0));
     }
 
     // # Check arguments
@@ -54,12 +56,19 @@ impl Isolate {
     // # Create a new call frame
     let mut frame = match self.frames.last_mut() {
       Some(frame) => Frame::with_stack(
+        &self.module_registry,
         callable.clone(),
         args.len(),
         on_return,
         Stack::view(&frame.stack, frame.stack_base() + frame.frame_size),
-      ),
-      None => Frame::new(self.ctx.clone(), callable.clone(), args.len(), on_return),
+      )?,
+      None => Frame::new(
+        self.ctx.clone(),
+        &self.module_registry,
+        callable.clone(),
+        args.len(),
+        on_return,
+      )?,
     };
 
     // # Initialize params
@@ -114,15 +123,8 @@ fn check_func_args(func: Value, args: &[Value], kwargs: Value) -> crate::Result<
     kwargs: Value,
   ) -> crate::Result<ParamInfo> {
     let kw = kwargs.to_dict();
-    if let Some(f) = func.clone().to_func() {
-      check_args(has_implicit_receiver, f.params(), args, kw)
-    } else if let Some(f) = func.clone().to_closure() {
-      check_args(
-        has_implicit_receiver,
-        f.descriptor().func().params(),
-        args,
-        kw,
-      )
+    if let Some(f) = func.clone().to_function() {
+      check_args(has_implicit_receiver, f.descriptor().params(), args, kw)
     } else {
       panic!("check_func_args not implemented for {func}");
     }
@@ -155,7 +157,7 @@ pub fn check_args(
 
   // check positional arguments
   if args.len() < min {
-    return Err(RuntimeError::new(
+    return Err(RuntimeError::script(
       format!(
         "missing required positional params: {}",
         if has_self_param { Some("self") } else { None }
@@ -167,7 +169,7 @@ pub fn check_args(
     ));
   }
   if !params.argv && args.len() > max {
-    return Err(RuntimeError::new(
+    return Err(RuntimeError::script(
       format!("expected at most {} args, got {}", max, args.len()),
       0..0,
     ));
@@ -209,7 +211,7 @@ pub fn check_args(
   }
   // if we have a mismatch, output a comprehensive error
   if !unknown.is_empty() || !missing.is_empty() {
-    return Err(RuntimeError::new(
+    return Err(RuntimeError::script(
       format!(
         "mismatched keyword params: {}{}{}",
         if !unknown.is_empty() {

@@ -2,6 +2,9 @@
 source: src/tests/loops.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 for i in 0..=10:
   print i

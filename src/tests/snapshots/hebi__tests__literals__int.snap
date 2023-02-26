@@ -2,6 +2,9 @@
 source: src/tests/literals.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 1
 

@@ -2,7 +2,10 @@ use super::*;
 use crate::ctx::Context;
 
 macro_rules! check {
-  ($input:literal) => {{
+  ($(as_module=$as_module:expr,)? $input:literal) => {{
+    #[allow(unused_mut, unused_assignments)]
+    let mut as_module = false;
+    $(as_module = $as_module;)?
     let ctx = Context::new();
     let input = indoc::indoc!($input);
     let module = match syntax::parse(input) {
@@ -14,8 +17,8 @@ macro_rules! check {
         panic!("Failed to parse source, see errors above.")
       }
     };
-    let result = match Emitter::new(ctx.clone(), "code", &module).emit_main() {
-      Ok(result) => result,
+    let result = match Emitter::new(ctx.clone(), "code", &module, !as_module).emit_main() {
+      Ok((result, _)) => result,
       Err(e) => {
         panic!("failed to emit func:\n{}", e.report(input));
       }
@@ -519,7 +522,7 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.symbol
+        from test import symbol
 
         print symbol
     "#
@@ -527,7 +530,7 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.{a,b}
+        from test import a, b
 
         print a, b
     "#
@@ -535,13 +538,32 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.{
-          a0.{a1, a2},
-          b0.{b1, b2}
-        }
+        from test.a0 import a1, a2
+        from test.b0 import b1, b2
 
         print a1, a2
         print b1, b2
+    "#
+  }
+  check! {
+    r#"
+      import test
+
+      print test.value
+    "#
+  }
+}
+
+#[test]
+fn fn_in_module() {
+  check! {
+    as_module=true,
+    r#"
+      value := 100
+      fn set(v):
+        value = v
+      fn get():
+        return value
     "#
   }
 }

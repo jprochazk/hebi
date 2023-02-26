@@ -1,0 +1,17 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: errors
+---
+[31merror[0m: invalid indentation
+[34m>[0m code:2
+[34m|[0m 
+[34m|[0m   [31;4mfrom[0m m import b
+[34m|[0m 
+
+[31merror[0m: invalid indentation
+[34m>[0m code:2
+[34m|[0m 
+[34m|[0m   from m [31;4mimport[0m b
+[34m|[0m 
+
+
