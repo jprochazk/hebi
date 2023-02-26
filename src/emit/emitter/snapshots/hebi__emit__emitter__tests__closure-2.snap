@@ -27,7 +27,7 @@ function "c":
   frame_size: 5
   length: 10
   const (length=1):
-    0: <func descriptor "d">
+    0: <function descriptor "d">
   code:
      0 | create_function [0]
      2 | capture_slot parent_slot=0, self_slot=0
@@ -40,7 +40,7 @@ function "b":
   frame_size: 5
   length: 10
   const (length=1):
-    0: <func descriptor "c">
+    0: <function descriptor "c">
   code:
      0 | create_function [0]
      2 | capture_slot parent_slot=0, self_slot=0
@@ -53,7 +53,7 @@ function "a":
   frame_size: 5
   length: 17
   const (length=1):
-    0: <func descriptor "b">
+    0: <function descriptor "b">
   code:
      0 | push_small_int value=0
      5 | store_reg r4
@@ -68,7 +68,7 @@ function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func descriptor "a">
+    0: <function descriptor "a">
     1: "a"
   code:
     0 | create_function [0]

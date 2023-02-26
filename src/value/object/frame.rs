@@ -125,7 +125,7 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts, Runtime
   let captures = NonNull::from(unsafe { func.captures_mut() });
   let (module_vars, module_id) = match func.module_id() {
     Some(id) => {
-      let mut module = modules.get(id).ok_or_else(|| {
+      let mut module = modules.by_id(id).ok_or_else(|| {
         RuntimeError::script(
           "attempted to call {callable} which was declared in a broken module",
           0..0,

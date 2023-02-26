@@ -46,7 +46,7 @@ function "code":
   frame_size: 6
   length: 41
   const (length=3):
-    0: <func descriptor "test">
+    0: <function descriptor "test">
     1: "test"
     2: "b"
   code:

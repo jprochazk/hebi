@@ -29,7 +29,7 @@ function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func descriptor "main">
+    0: <function descriptor "main">
     1: "main"
   code:
     0 | create_function [0]

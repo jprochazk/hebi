@@ -28,7 +28,7 @@ function "code":
   length: 18
   const (length=3):
     0: <class descriptor "T">
-    1: <func descriptor "test">
+    1: <function descriptor "test">
     2: "T"
   code:
      0 | create_function [1]

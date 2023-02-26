@@ -37,7 +37,7 @@ function "code":
     0: "u"
     1: <class descriptor "T">
     2: "U"
-    3: <func descriptor "test">
+    3: <function descriptor "test">
     4: "T"
   code:
      0 | push_small_int value=0

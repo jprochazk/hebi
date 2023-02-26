@@ -110,12 +110,20 @@ instructions! {
   /// - `obj` - register index of target object.
   StoreIndex (key: Reg, obj: Reg),
 
-  /// Load a symbol found at `path` into `dest`.
+  /// Load a module found at `path` into `dest`.
   ///
   /// ### Operands
   /// - `path` - constant pool index of the path.
   /// - `dest` - register index of the destination.
   Import (path: Const, dest: Reg),
+
+  /// Load a symbol from the module found at `path` into `dest`.
+  ///
+  /// ### Operands
+  /// - `path` - constant pool index of the path.
+  /// - `name` - constant pool index of the name.
+  /// - `dest` - register index of the destination.
+  ImportNamed (path: Const, name: Const, dest: Reg),
 
   LoadSelf (),
   LoadSuper (),

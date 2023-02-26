@@ -36,7 +36,7 @@ function "code":
   const (length=4):
     0: "u"
     1: <class descriptor "T">
-    2: <func descriptor "test">
+    2: <function descriptor "test">
     3: "T"
   code:
      0 | push_small_int value=0

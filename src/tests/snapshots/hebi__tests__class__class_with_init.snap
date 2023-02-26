@@ -1,7 +1,10 @@
 ---
-source: src/tests/class_def.rs
+source: src/tests/class.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 class T:
   fn init(self, *, v=10):

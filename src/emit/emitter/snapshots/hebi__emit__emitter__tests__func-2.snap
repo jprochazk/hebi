@@ -25,7 +25,7 @@ function "code":
   frame_size: 5
   length: 18
   const (length=2):
-    0: <func descriptor "test">
+    0: <function descriptor "test">
     1: "test"
   code:
      0 | create_function [0]

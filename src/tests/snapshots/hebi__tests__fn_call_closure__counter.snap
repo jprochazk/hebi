@@ -2,6 +2,9 @@
 source: src/tests/fn_call_closure.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 fn counter(start=0, *, step=1):
   class State:

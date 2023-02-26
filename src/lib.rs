@@ -68,8 +68,10 @@ impl Hebi {
   }
 
   pub fn eval<'a, T: FromHebi<'a>>(&'a self, src: &str) -> Result<T, EvalError> {
+    let ctx = self.isolate.borrow().ctx();
     let module = syntax::parse(src)?;
-    let module = emit::emit(self.isolate.borrow().ctx(), "code", &module, true).unwrap();
+    let module = emit::emit(ctx.clone(), "code", &module, true).unwrap();
+    let module = module.instance(&ctx, None);
     let result = self
       .isolate
       .borrow_mut()
@@ -120,7 +122,10 @@ impl HebiBuilder {
       .take()
       .unwrap_or_else(|| Box::new(std::io::stdout()));
     // TODO: default module loader
-    let module_loader = self.module_loader.take().unwrap_or_else(|| todo!());
+    let module_loader = self
+      .module_loader
+      .take()
+      .unwrap_or_else(|| Box::new(NoopModuleLoader));
     let isolate = Isolate::new(ctx, stdout, module_loader);
 
     Hebi {
@@ -132,6 +137,29 @@ impl HebiBuilder {
 impl Default for Hebi {
   fn default() -> Self {
     Self::new()
+  }
+}
+
+/// The noop module loader refuses to load any modules.
+pub struct NoopModuleLoader;
+#[derive(Debug)]
+pub struct ModuleLoadError {
+  pub path: String,
+}
+impl Display for ModuleLoadError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "could not load module `{}`", self.path)
+  }
+}
+impl std::error::Error for ModuleLoadError {}
+impl ModuleLoader for NoopModuleLoader {
+  fn load(
+    &mut self,
+    path: &[String],
+  ) -> std::result::Result<&str, Box<dyn std::error::Error + 'static>> {
+    Err(Box::new(ModuleLoadError {
+      path: format!("could not load module `{}`", path.join(".")),
+    }))
   }
 }
 
@@ -167,7 +195,7 @@ impl Display for EvalError {
     use util::JoinIter;
     match self {
       EvalError::Parse(v) => write!(f, "syntax errors: {}", v.iter().join("; ")),
-      EvalError::Runtime(v) => write!(f, "error: {}", v),
+      EvalError::Runtime(v) => write!(f, "error: {v}"),
     }
   }
 }

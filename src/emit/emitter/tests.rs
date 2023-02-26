@@ -519,7 +519,7 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.symbol
+        from test import symbol
 
         print symbol
     "#
@@ -527,7 +527,7 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.{a,b}
+        from test import a, b
 
         print a, b
     "#
@@ -535,13 +535,18 @@ fn imports() {
   check! {
     r#"
       fn main():
-        import test.{
-          a0.{a1, a2},
-          b0.{b1, b2}
-        }
+        from test.a0 import a1, a2
+        from test.b0 import b1, b2
 
         print a1, a2
         print b1, b2
+    "#
+  }
+  check! {
+    r#"
+      import test
+
+      print test.value
     "#
   }
 }

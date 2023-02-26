@@ -117,6 +117,8 @@ pub enum TokenKind {
   // Keywords
   #[token("import")]
   Kw_Import,
+  #[token("from")]
+  Kw_From,
   #[token("as")]
   Kw_As,
   #[token("pub")]
@@ -278,6 +280,7 @@ impl TokenKind {
   pub fn name(&self) -> &'static str {
     match self {
       TokenKind::Kw_Import => "import",
+      TokenKind::Kw_From => "from",
       TokenKind::Kw_As => "as",
       TokenKind::Kw_Pub => "pub",
       TokenKind::Kw_Fn => "fn",

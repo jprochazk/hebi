@@ -251,17 +251,17 @@ function "code":
   frame_size: 4
   length: 26
   const (length=12):
-    0: <func descriptor "f0">
+    0: <function descriptor "f0">
     1: "f0"
-    2: <func descriptor "f1_a">
+    2: <function descriptor "f1_a">
     3: "f1_a"
-    4: <func descriptor "f1_b">
+    4: <function descriptor "f1_b">
     5: "f1_b"
-    6: <func descriptor "f2_a">
+    6: <function descriptor "f2_a">
     7: "f2_a"
-    8: <func descriptor "f2_b">
+    8: <function descriptor "f2_b">
     9: "f2_b"
-    10: <func descriptor "f3">
+    10: <function descriptor "f3">
     11: "f3"
   code:
      0 | create_function [0]

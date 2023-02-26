@@ -20,6 +20,7 @@ impl Isolate {
     self.push_frame(frame);
 
     self.width = op::Width::Single;
+    let saved_pc = self.pc;
     self.pc = 0;
     if let Err(mut e) = self.run_dispatch_loop() {
       for _ in frame_depth..self.frames.len() {
@@ -29,6 +30,7 @@ impl Isolate {
       }
       return Err(e);
     }
+    self.pc = saved_pc;
 
     // # Return
     Ok(std::mem::take(&mut self.acc))

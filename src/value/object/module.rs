@@ -9,6 +9,7 @@ use crate::ctx::Context;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::Value;
+use crate::RuntimeError;
 
 // TODO: all descriptor should store `String` for names, because `Handle<Str>`
 // may be mutated maybe this can be solved another way, like making Str a
@@ -17,13 +18,8 @@ use crate::value::Value;
 pub trait ModuleLoader {
   // TODO: how will loading native modules work?
   // maybe directly `.register` with the `Hebi` instance?
-  /// Load a module at the `path`, returning its AST.
-  fn load(&mut self, path: &Path) -> Result<ModuleSource<'_>, Box<dyn StdError + 'static>>;
-}
-
-pub enum ModuleSource<'a> {
-  Module(&'a syntax::Module<'a>),
-  Native(NativeModuleDescriptor),
+  /// Load a module at the `path`, returning its source code.
+  fn load(&mut self, path: &[String]) -> Result<&str, Box<dyn StdError + 'static>>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -31,6 +27,7 @@ pub struct ModuleId(usize);
 
 pub struct ModuleRegistry {
   next_module_id: usize,
+  index: IndexMap<Vec<String>, ModuleId>,
   modules: IndexMap<ModuleId, Handle<Module>>,
 }
 
@@ -38,6 +35,7 @@ impl ModuleRegistry {
   pub fn new() -> Self {
     Self {
       next_module_id: 1,
+      index: IndexMap::new(),
       modules: IndexMap::new(),
     }
   }
@@ -46,7 +44,8 @@ impl ModuleRegistry {
     ModuleId(self.next_module_id)
   }
 
-  pub fn add(&mut self, id: ModuleId, module: Handle<Module>) {
+  pub fn add(&mut self, id: ModuleId, path: &[String], module: Handle<Module>) {
+    self.index.insert(path.to_vec(), id);
     self.modules.insert(id, module);
   }
 
@@ -54,8 +53,15 @@ impl ModuleRegistry {
     self.modules.remove(&id)
   }
 
-  pub fn get(&self, id: ModuleId) -> Option<Handle<Module>> {
+  pub fn by_id(&self, id: ModuleId) -> Option<Handle<Module>> {
     self.modules.get(&id).cloned()
+  }
+
+  pub fn by_path(&self, path: &[String]) -> Option<Handle<Module>> {
+    self
+      .index
+      .get(path)
+      .and_then(|id| self.modules.get(id).cloned())
   }
 }
 
@@ -64,9 +70,6 @@ impl Default for ModuleRegistry {
     Self::new()
   }
 }
-
-// TODO
-pub struct NativeModuleDescriptor {}
 
 pub struct ModuleDescriptor {
   name: Handle<Str>,
@@ -103,7 +106,6 @@ impl ModuleDescriptor {
           .iter()
           .map(|k| (Key::Str(ctx.alloc(Str::from(k.clone()))), Value::none())),
       ),
-      is_initialized: false,
     })
   }
 
@@ -132,22 +134,20 @@ pub struct Module {
   name: Handle<Str>,
   root: Handle<Function>,
   module_vars: Dict,
-  is_initialized: bool,
 }
 
 #[derive::delegate_to_handle]
 impl Module {
-  pub fn init(&mut self) {
-    assert!(!self.is_initialized);
-    self.is_initialized = true;
-  }
-
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
 
   pub fn root(&self) -> Handle<Function> {
     self.root.clone()
+  }
+
+  pub(crate) unsafe fn module_vars(&self) -> &Dict {
+    &self.module_vars
   }
 
   pub(crate) unsafe fn module_vars_mut(&mut self) -> &mut Dict {
@@ -161,7 +161,31 @@ impl Display for Module {
   }
 }
 
-impl Access for Module {}
+impl Access for Module {
+  fn is_frozen(&self) -> bool {
+    true
+  }
+
+  fn should_bind_methods(&self) -> bool {
+    false
+  }
+
+  fn field_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
+    match key {
+      Key::Int(_) => Ok(None),
+      Key::Str(key) => Ok(self.module_vars.get(key.as_str()).cloned()),
+      Key::Ref(key) => Ok(self.module_vars.get(*key).cloned()),
+    }
+  }
+
+  fn field_set(&mut self, key: super::StaticKey, value: Value) -> crate::Result<()> {
+    let Some(slot) = self.module_vars.get_mut(&key) else {
+      return Err(RuntimeError::script(format!("cannot set field `{key}`"), 0..0));
+    };
+    *slot = value;
+    Ok(())
+  }
+}
 
 /// A path composed of segments. Paths are made of alphanumeric ASCII,
 /// underscores, and periods.
@@ -190,11 +214,19 @@ impl FromStr for Path {
     if s.is_empty() {
       return Err(InvalidPathError::EmptySegment { pos: 0 });
     }
-    if let Some(pos) = s.find(|c: char| !c.is_ascii_alphanumeric() && c != '_') {
+    if let Some(pos) = s.find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '.') {
       return Err(InvalidPathError::InvalidCharacter { pos });
     }
 
-    let segments = s.split('.').map(String::from).collect();
+    let mut segments = vec![];
+    let mut pos = 0;
+    for segment in s.split('.') {
+      if segment.is_empty() {
+        return Err(InvalidPathError::EmptySegment { pos });
+      }
+      segments.push(String::from(segment));
+      pos += segment.len() + 1;
+    }
     Ok(Path { segments })
   }
 }
@@ -207,7 +239,10 @@ pub enum InvalidPathError {
 
 impl Display for InvalidPathError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    todo!()
+    match self {
+      InvalidPathError::EmptySegment { pos } => write!(f, "empty segment at {pos}"),
+      InvalidPathError::InvalidCharacter { pos } => write!(f, "invalid character at {pos}"),
+    }
   }
 }
 

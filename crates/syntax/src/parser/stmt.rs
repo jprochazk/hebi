@@ -25,62 +25,66 @@ impl<'src> Parser<'src> {
       Kw_Loop => Some(self.loop_stmt()?),
       Kw_Fn => Some(self.func_stmt()?),
       Kw_Class => Some(self.class_stmt()?),
-      Kw_Import => Some(self.import_stmt()?),
+      Kw_Import | Kw_From => Some(self.import_stmt()?),
       _ => None,
     })
   }
 
   fn import_stmt(&mut self) -> Result<ast::Stmt<'src>> {
-    self.expect(Kw_Import)?;
-    let start = self.previous().span.start;
-
-    let mut symbols = vec![];
-    let path = vec![];
-    if self.bump_if(Brk_CurlyL) {
-      self.import_stmt_inner(&path, &mut symbols)?;
-      while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
-        self.import_stmt_inner(&path, &mut symbols)?;
-      }
-      self.expect(Brk_CurlyR)?;
+    if self.bump_if(Kw_Import) {
+      // import <module>
+      let start = self.previous().span.start;
+      let module = self.import_module_path()?;
+      let alias = if self.no_indent().is_ok() && self.bump_if(Kw_As) {
+        Some(self.ident()?)
+      } else {
+        None
+      };
+      let end = self.previous().span.end;
+      Ok(ast::import_module_stmt(start..end, module, alias))
+    } else if self.bump_if(Kw_From) {
+      // from <module> import <stuff>
+      let start = self.previous().span.start;
+      let module = self.import_module_path()?;
+      self.no_indent()?;
+      self.expect(Kw_Import)?;
+      let symbols = self.import_symbol_list()?;
+      let end = self.previous().span.end;
+      Ok(ast::import_symbols_stmt(start..end, module, symbols))
     } else {
-      self.import_stmt_inner(&path, &mut symbols)?;
+      Err(Error::new(
+        "expected `from` or `import`",
+        self.previous().span,
+      ))
     }
-
-    let end = self.previous().span.end;
-
-    Ok(ast::import_stmt(start..end, symbols))
   }
 
-  fn import_stmt_inner(
-    &mut self,
-    path: &Vec<ast::Ident<'src>>,
-    symbols: &mut Vec<ast::ImportSymbol<'src>>,
-  ) -> Result<()> {
-    check_recursion_limit(self.current().span)?;
-
-    let path = extend_path(path, self.ident()?);
-    if self.bump_if(Kw_As) {
-      let alias = self.ident()?;
-      symbols.push(ast::ImportSymbol::alias(path, alias));
-      return Ok(());
+  fn import_module_path(&mut self) -> Result<Vec<ast::Ident<'src>>> {
+    self.no_indent()?;
+    let mut path = vec![self.ident()?];
+    while self.no_indent().is_ok() && self.bump_if(Op_Dot) {
+      path.push(self.ident()?);
     }
+    Ok(path)
+  }
 
-    if self.bump_if(Op_Dot) {
-      if self.bump_if(Brk_CurlyL) {
-        self.import_stmt_inner(&path, symbols)?;
-        while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
-          self.import_stmt_inner(&path, symbols)?;
-        }
-        self.expect(Brk_CurlyR)?;
-        return Ok(());
-      }
-
-      self.import_stmt_inner(&path, symbols)?;
-      return Ok(());
+  fn import_symbol_list(&mut self) -> Result<Vec<ast::ImportSymbol<'src>>> {
+    let mut symbols = vec![self.import_symbol()?];
+    while self.no_indent().is_ok() && self.bump_if(Tok_Comma) {
+      symbols.push(self.import_symbol()?);
     }
+    Ok(symbols)
+  }
 
-    symbols.push(ast::ImportSymbol::normal(path));
-    Ok(())
+  fn import_symbol(&mut self) -> Result<ast::ImportSymbol<'src>> {
+    self.no_indent()?;
+    let name = self.ident()?;
+    let alias = if self.no_indent().is_ok() && self.bump_if(Kw_As) {
+      Some(self.ident()?)
+    } else {
+      None
+    };
+    Ok(ast::ImportSymbol { name, alias })
   }
 
   fn if_stmt(&mut self) -> Result<ast::Stmt<'src>> {

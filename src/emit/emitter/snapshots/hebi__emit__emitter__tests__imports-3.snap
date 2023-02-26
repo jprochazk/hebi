@@ -4,7 +4,7 @@ expression: snapshot
 ---
 # Input:
 fn main():
-  import test.{a,b}
+  from test import a, b
 
   print a, b
 
@@ -12,29 +12,30 @@ fn main():
 # Func:
 function "main":
   frame_size: 7
-  length: 22
-  const (length=2):
-    0: <path test.a>
-    1: <path test.b>
+  length: 24
+  const (length=3):
+    0: <path test>
+    1: "a"
+    2: "b"
   code:
-     0 | import [0], r4
-     3 | import [1], r5
-     6 | create_empty_list 
-     7 | store_reg r6
-     9 | load_reg r4
-    11 | push_to_list r6
-    13 | load_reg r5
-    15 | push_to_list r6
-    17 | print_list r6
-    19 | push_none 
-    20 | ret 
-    21 | suspend 
+     0 | import_named [0], [1], r4
+     4 | import_named [0], [2], r5
+     8 | create_empty_list 
+     9 | store_reg r6
+    11 | load_reg r4
+    13 | push_to_list r6
+    15 | load_reg r5
+    17 | push_to_list r6
+    19 | print_list r6
+    21 | push_none 
+    22 | ret 
+    23 | suspend 
 
 function "code":
   frame_size: 4
   length: 6
   const (length=2):
-    0: <func descriptor "main">
+    0: <function descriptor "main">
     1: "main"
   code:
     0 | create_function [0]

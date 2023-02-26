@@ -55,25 +55,25 @@ macro_rules! check_error {
 fn import_stmt() {
   check_module! {
     r#"
-      import a
-      import a.b
-      import a.b.c
-      import a.{b, c}
-      import a.{b.{c}, d.{e}}
-      import {a.{b}, c.{d}}
-      import {a, b, c,}
+      import module
+      from module import z
+      from module import x, y, z
+
+      import module.nested
+      from module.nested import z
+      from module.nested import x, y, z
     "#
   };
 
   check_module! {
     r#"
-      import a as x
-      import a.b as x
-      import a.b.c as x
-      import a.{b as x, c as y}
-      import a.{b.{c as x}, d.{e as y}}
-      import {a.{b as x}, c.{d as y}}
-      import {a as x, b as y, c as z,}
+      import module as temp
+      from module import z as temp
+      from module import x as temp, y as temp, z as temp
+      
+      import module.nested as temp
+      from module.nested import z as temp
+      from module.nested import x as temp, y as temp, z as temp
     "#
   };
 
@@ -81,6 +81,41 @@ fn import_stmt() {
     r#"
       import a
         import b
+    "#
+  };
+
+  check_error! {
+    r#"
+      from m import a
+        from m import b
+    "#
+  };
+
+  check_error! {
+    r#"
+      from
+        m
+    "#
+  };
+
+  check_error! {
+    r#"
+      from m import
+        a
+    "#
+  };
+
+  check_error! {
+    r#"
+      from m import a,
+        b
+    "#
+  };
+
+  check_error! {
+    r#"
+      from m
+        .b
     "#
   };
 }
@@ -966,14 +1001,7 @@ fn whole_module() {
       panic("asdf")
 
       # modules
-      # json_test.t
       import json
-      # other ways to import:
-      # import json.parse
-      # import json.{parse}
-      # import {json}
-      # import {json.parse}
-      # import {json.{parse}}
 
       v = json.parse("{\"a\":0, \"b\":1}")
       print(v) # { a: 0, b: 1 }

@@ -1024,7 +1024,51 @@ mod stmt {
     }
 
     fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) -> Result<()> {
-      for symbol in stmt.symbols.iter() {
+      match stmt {
+        ast::Import::Module { path, alias } => {
+          // `import a.b.c as d` -> `d = import(a.b.c)`
+          // `import a.b.c` -> `c = import(a.b.c)`
+          let name = match &alias {
+            Some(alias) => alias,
+            None => path.last().unwrap(),
+          };
+
+          let segments = path.iter().map(|s| s.to_string()).collect();
+          let path = self.const_value(self.ctx.alloc(module::Path::new(segments)));
+
+          let dest = self.reg();
+          self.state.declare_local(name.deref().clone(), dest.clone());
+
+          self.emit_op(Import {
+            path,
+            dest: dest.index(),
+          });
+        }
+        ast::Import::Symbols { path, symbols } => {
+          let segments = path.iter().map(|s| s.to_string()).collect();
+          let path = self.const_value(self.ctx.alloc(module::Path::new(segments)));
+
+          for ast::ImportSymbol { name, alias } in symbols {
+            let name = match alias {
+              Some(alias) => alias,
+              None => name,
+            };
+
+            let dest = self.reg();
+            self.state.declare_local(name.deref().clone(), dest.clone());
+
+            let name = self.const_name(name);
+
+            self.emit_op(ImportNamed {
+              path,
+              name,
+              dest: dest.index(),
+            });
+          }
+        }
+      }
+      Ok(())
+      /* for symbol in stmt.symbols.iter() {
         let segments = symbol.path.iter().map(|s| s.to_string()).collect();
         let path = self.const_value(self.ctx.alloc(module::Path::new(segments)));
 
@@ -1041,7 +1085,7 @@ mod stmt {
         });
       }
 
-      Ok(())
+      Ok(()) */
     }
   }
 }

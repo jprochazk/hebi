@@ -7,6 +7,7 @@ mod call;
 mod class;
 mod cmp;
 mod field;
+mod import;
 mod index;
 mod string;
 mod truth;
@@ -16,12 +17,11 @@ use std::ptr::NonNull;
 
 use super::op;
 use crate::ctx::Context;
+use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
-use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry, ModuleSource};
-use crate::value::object::{
-  frame, Class, ClassSuperProxy, Dict, Function, Key, List, Module, ObjectType, Path,
-};
+use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
+use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, Key, List, ObjectType};
 use crate::value::Value;
 use crate::RuntimeError;
 
@@ -312,41 +312,47 @@ impl op::Handler for Isolate {
   }
 
   fn op_import(&mut self, path: u32, dest: u32) -> Result<(), Self::Error> {
-    // TODO: move this to its own file
-
     let path = self.get_const(path);
     // should always be a path
     let path = path.to_path().unwrap();
 
-    let module = self
-      .module_loader
-      .load(unsafe { path._get() })
-      .map_err(|e| RuntimeError::native(e, 0..0))?;
+    let module = import::load(self, path)?;
 
-    // TODO: configurable emit for modules that makes them read from globals instead
-    // of module_vars, and use it for `eval`.
-    match module {
-      ModuleSource::Module(source) => {
-        let name = path.segments().last().unwrap().as_str();
-        let module = crate::emit::emit(self.ctx.clone(), name, source, false).unwrap();
-        let module_id = self.module_registry.next_module_id();
-        let module = module.instance(&self.ctx, Some(module_id));
-        self.module_registry.add(module_id, module.clone());
+    self.set_reg(dest, module.into());
 
-        // If executing the module root scope results in an error,
-        // remove the module from the registry. We do this to ensure
-        // that calls to functions declared in this broken module
-        // (even in inner scopes) will fail
-        let result = self.call(module.root().into(), &[], Value::none());
-        if let Err(e) = result {
-          self.module_registry.remove(module_id);
-          Err(e)?;
-        }
+    Ok(())
+  }
+
+  fn op_import_named(&mut self, path: u32, name: u32, dest: u32) -> Result<(), Self::Error> {
+    let path = self.get_const(path);
+    let name = self.get_const(name);
+    // should always be a path
+    let path = path.to_path().unwrap();
+    // should always be a string
+    let name = name.to_str().unwrap();
+
+    let module = import::load(self, path.clone())?;
+
+    let symbol = match unsafe { module.module_vars() }.get(name.as_str()).cloned() {
+      Some(symbol) => symbol,
+      None => {
+        return Err(
+          RuntimeError::script(
+            format!(
+              "failed to import `{}` from module `{}`",
+              name.as_str(),
+              path.segments().iter().join('.')
+            ),
+            0..0,
+          )
+          .into(),
+        )
       }
-      ModuleSource::Native(_) => todo!("native modules are unimplemented"),
-    }
+    };
 
-    todo!()
+    self.set_reg(dest, symbol);
+
+    Ok(())
   }
 
   fn op_load_self(&mut self) -> Result<(), Self::Error> {
@@ -483,7 +489,7 @@ impl op::Handler for Isolate {
     let desc = desc.to_function_descriptor().unwrap();
 
     // TODO: module_index
-    self.acc = Function::new(&self.ctx, desc, self.current_frame().module_id).into();
+    self.acc = Function::new(&self.ctx, desc, self.current_module_id()).into();
 
     Ok(())
   }

@@ -2,6 +2,9 @@
 source: src/tests/object_load_index.rs
 expression: snapshot
 ---
+# Modules:
+
+
 # Input:
 v := { a: { b: 10 } }
 print ?v["a"]["b"]

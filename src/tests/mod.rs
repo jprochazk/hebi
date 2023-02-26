@@ -12,6 +12,7 @@ mod fn_call_default;
 mod fn_call_kw;
 mod literals;
 mod loops;
+mod modules;
 mod object_load_field;
 mod object_load_index;
 mod precedence;

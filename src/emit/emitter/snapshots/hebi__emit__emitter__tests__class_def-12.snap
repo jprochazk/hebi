@@ -29,7 +29,7 @@ function "code":
   const (length=4):
     0: <class descriptor "T">
     1: "U"
-    2: <func descriptor "test">
+    2: <function descriptor "test">
     3: "T"
   code:
      0 | load_global [1]
