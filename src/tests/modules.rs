@@ -125,3 +125,43 @@ check! {
 
   "#
 }
+check! {
+  multi_module_nesting,
+  modules: {
+    "nested": r#"
+      bar := 100
+    "#,
+    "test": r#"
+      from nested import bar
+
+      foo := bar
+    "#
+  },
+  r#"
+    from test import foo
+
+    print foo
+  "#
+}
+check! {
+  multi_module_nesting_mut,
+  modules: {
+    "nested": r#"
+      bar := 100
+    "#,
+    "test": r#"
+      from nested import bar
+
+      foo := bar
+    "#
+  },
+  r#"
+    import nested
+
+    nested.bar = 200
+
+    from test import foo
+
+    print foo
+  "#
+}
