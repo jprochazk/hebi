@@ -121,7 +121,6 @@ impl HebiBuilder {
       .stdout
       .take()
       .unwrap_or_else(|| Box::new(std::io::stdout()));
-    // TODO: default module loader
     let module_loader = self
       .module_loader
       .take()

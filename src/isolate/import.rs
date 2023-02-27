@@ -4,9 +4,6 @@ use crate::value::object::{Module, Path};
 use crate::value::Value;
 use crate::RuntimeError;
 
-// TODO: prevent import cycles by keeping track of which modules are being
-// initialized
-
 /// Load module (parse -> emit -> eval root)
 pub fn load(vm: &mut Isolate, path: Handle<Path>) -> Result<Handle<Module>, RuntimeError> {
   // path should never be empty

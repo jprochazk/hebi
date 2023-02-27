@@ -112,8 +112,6 @@ impl Isolate {
   }
 }
 
-// TODO: maybe refactor this to not be as unsightly
-
 // Returns `(has_argv, max_params)`
 fn check_func_args(func: Value, args: &[Value], kwargs: Value) -> crate::Result<ParamInfo> {
   fn check_func_args_inner(
