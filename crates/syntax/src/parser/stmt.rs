@@ -36,6 +36,7 @@ impl<'src> Parser<'src> {
       let start = self.previous().span.start;
       let module = self.import_module_path()?;
       let alias = if self.no_indent().is_ok() && self.bump_if(Kw_As) {
+        self.no_indent()?;
         Some(self.ident()?)
       } else {
         None
@@ -113,6 +114,7 @@ impl<'src> Parser<'src> {
   }
 
   fn if_branch(&mut self) -> Result<ast::Branch<'src>> {
+    self.no_indent()?;
     let cond = self.expr()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
