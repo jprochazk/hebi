@@ -12,6 +12,10 @@ pub struct Value<'a> {
   _lifetime: PhantomData<&'a ()>,
 }
 
+const _: () = {
+  let _ = std::mem::transmute::<Value<'static>, crate::value::Value>;
+};
+
 impl<'a> Value<'a> {
   pub(crate) fn bind(value: impl Into<CoreValue>) -> Value<'a> {
     Self {
