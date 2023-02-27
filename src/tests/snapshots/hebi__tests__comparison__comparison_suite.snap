@@ -1,0 +1,26 @@
+---
+source: src/tests/comparison.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print 0 == 0
+print 3.14 == 3.14
+print none == none
+print true == true
+print false == false
+
+
+# Result (success):
+none
+
+# Stdout:
+true
+true
+true
+true
+true
+
+
