@@ -28,7 +28,6 @@ impl ModuleLoader for TestModuleLoader {
   }
 }
 
-#[macro_export]
 macro_rules! check {
   ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
     #[test]
@@ -83,7 +82,6 @@ macro_rules! check {
   };
 }
 
-#[macro_export]
 macro_rules! check_error {
   ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
     #[test]
