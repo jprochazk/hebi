@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use indexmap::{IndexMap, IndexSet};
 
-use super::{Access, Dict, Function, FunctionDescriptor, Key, Str};
+use super::{Access, Dict, Function, FunctionDescriptor, Str};
 use crate::ctx::Context;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
@@ -105,7 +105,7 @@ impl ModuleDescriptor {
         self
           .module_vars()
           .iter()
-          .map(|k| (Key::Str(ctx.alloc(Str::from(k.clone()))), Value::none())),
+          .map(|k| (ctx.alloc(Str::from(k.clone())), Value::none())),
       ),
     })
   }
@@ -171,21 +171,21 @@ impl Access for Module {
     false
   }
 
-  fn field_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
-    match key {
-      Key::Int(_) => Ok(None),
-      Key::Str(key) => Ok(self.module_vars.get(key.as_str()).cloned()),
-      Key::Ref(key) => Ok(self.module_vars.get(*key).cloned()),
-    }
+  // TODO: tests
+
+  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
+    Ok(self.module_vars.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: super::StaticKey, value: Value) -> crate::Result<()> {
+  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
     let Some(slot) = self.module_vars.get_mut(&key) else {
       return Err(RuntimeError::script(format!("cannot set field `{key}`"), 0..0));
     };
     *slot = value;
     Ok(())
   }
+
+  impl_index_via_field!(mut);
 }
 
 /// A path composed of segments. Paths are made of alphanumeric ASCII,

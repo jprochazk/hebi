@@ -2,8 +2,9 @@ use std::fmt::Display;
 use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 
-use super::{Access, Handle, Key, StaticKey};
+use super::{Access, Handle};
 use crate::value::Value;
+use crate::RuntimeError;
 
 #[derive(Clone, Default)]
 pub struct List(Vec<Value>);
@@ -133,35 +134,51 @@ impl Access for List {
     false
   }
 
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
+  // TODO: tests
+  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
     // TODO: methods (push, pop, etc.)
-    Ok(match key.as_str() {
-      Some("len") => Some(Value::int(self.0.len() as i32)),
+    Ok(match key {
+      "len" => Some(Value::int(self.0.len() as i32)),
       _ => None,
     })
   }
 
-  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
-    // TODO: sparse array
-    let index = match key {
-      Key::Int(ref v) => *v as usize,
-      Key::Str(_) => return self.field_get(key),
-      Key::Ref(_) => return self.field_get(key),
+  fn index_get(&self, key: Value) -> Result<Option<Value>, crate::RuntimeError> {
+    let Some(index) = key.clone().to_int() else {
+      return Err(crate::RuntimeError::script(format!("cannot index list using {key}"), 0..0));
     };
-    Ok(self.0.get(index).cloned())
+    Ok(calculate_index(index, self.len()).and_then(|index| self.0.get(index).cloned()))
   }
 
-  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::RuntimeError> {
-    // TODO: sparse array
-    let index = match key {
-      Key::Int(ref v) => *v as usize,
-      Key::Str(_) => return self.field_set(key, value),
-      Key::Ref(_) => return self.field_set(key, value),
+  fn index_set(&mut self, key: Value, value: Value) -> Result<(), crate::RuntimeError> {
+    let Some(index) = key.clone().to_int() else {
+      return Err(crate::RuntimeError::script(format!("cannot index list using {key}"), 0..0));
     };
-    if let Some(v) = self.0.get_mut(index) {
-      *v = value
-    }
+    let index = calculate_index(index, self.len())
+      .ok_or_else(|| RuntimeError::script(format!("index {index} is out of bounds"), 0..0))?;
+    let Some(slot) = self.0.get_mut(index) else {
+      return Err(RuntimeError::script(format!("index {index} is out of bounds"), 0..0));
+    };
+    *slot = value;
     Ok(())
+  }
+}
+
+fn calculate_index(index: i32, len: usize) -> Option<usize> {
+  let (index, len) = (index as isize, len as isize);
+  if index >= 0 {
+    return Some(index as usize);
+  }
+  if index < 0 && (-index) > len {
+    return Some((len - index) as usize);
+  }
+  None
+}
+fn handle_negative_index(index: isize, len: isize) -> Option<usize> {
+  if (-index) > len {
+    None
+  } else {
+    Some((len - index) as usize)
   }
 }
 

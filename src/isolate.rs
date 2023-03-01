@@ -23,7 +23,7 @@ use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
-use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, Key, List, ObjectType};
+use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType};
 use crate::value::Value;
 use crate::RuntimeError;
 
@@ -223,8 +223,9 @@ impl op::Handler for Isolate {
   fn op_load_global(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // global name is always a string
-    let name = Key::try_from(name).unwrap();
-    match self.globals.get(&name) {
+    let name = name.to_str().unwrap();
+    let name = name.as_str();
+    match self.globals.get(name) {
       Some(v) => self.acc = v.clone(),
       // TODO: span
       None => return Err(RuntimeError::script(format!("undefined global {name}"), 0..0).into()),
@@ -236,7 +237,7 @@ impl op::Handler for Isolate {
   fn op_store_global(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // global name is always a string
-    let name = Key::try_from(name).unwrap();
+    let name = name.to_str().unwrap();
     self.globals.insert(name, self.acc.clone());
 
     Ok(())
@@ -245,8 +246,7 @@ impl op::Handler for Isolate {
   fn op_load_field(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = Key::try_from(name).unwrap();
-    let name = name.as_str().unwrap();
+    let name = name.to_str().unwrap();
 
     self.acc = field::get(self.ctx.clone(), &self.acc, name)?;
 
@@ -256,8 +256,7 @@ impl op::Handler for Isolate {
   fn op_load_field_opt(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = Key::try_from(name).unwrap();
-    let name = name.as_str().unwrap();
+    let name = name.to_str().unwrap();
 
     self.acc = field::get_opt(self.ctx.clone(), &self.acc, name)?;
 
@@ -267,8 +266,7 @@ impl op::Handler for Isolate {
   fn op_store_field(&mut self, name: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
     // name used in named load is always a string
-    let name = Key::try_from(name).unwrap();
-    let name = name.as_str().unwrap();
+    let name = name.to_str().unwrap();
 
     let mut obj = self.get_reg(obj);
 
@@ -279,38 +277,22 @@ impl op::Handler for Isolate {
 
   fn op_load_index(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = Key::try_from(name.clone()) else {
-      // TODO: span
-      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
-    };
-
-    self.acc = index::get(&self.acc, &name)?;
+    self.acc = index::get(self.acc.clone(), name)?;
 
     Ok(())
   }
 
   fn op_load_index_opt(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = Key::try_from(name.clone()) else {
-      // TODO: span
-      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
-    };
-
-    self.acc = index::get_opt(&self.acc, &name)?;
+    self.acc = index::get_opt(self.acc.clone(), name)?;
 
     Ok(())
   }
 
   fn op_store_index(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    let Ok(name) = Key::try_from(name.clone()) else {
-      // TODO: span
-      return Err(RuntimeError::script(format!("{name} is not a valid key"), 0..0).into());
-    };
-
-    let mut obj = self.get_reg(obj);
-
-    index::set(self.ctx.clone(), &mut obj, name, self.acc.clone())?;
+    let obj = self.get_reg(obj);
+    index::set(self.ctx.clone(), obj, name, self.acc.clone())?;
 
     Ok(())
   }
@@ -458,12 +440,8 @@ impl op::Handler for Isolate {
 
   fn op_insert_to_dict(&mut self, key: u32, dict: u32) -> Result<(), Self::Error> {
     let key = self.get_reg(key);
-    let Ok(key) = Key::try_from(key.clone()) else {
-      // TODO: span
-      return Err(RuntimeError::script(format!("{key} is not a valid key"), 0..0).into());
-    };
-
     let dict = self.get_reg(dict);
+    let key = key.to_str().unwrap();
     let mut dict = dict.to_dict().unwrap();
 
     // `name` is a `Key` so this `unwrap` won't panic
@@ -474,10 +452,8 @@ impl op::Handler for Isolate {
 
   fn op_insert_to_dict_named(&mut self, name: u32, dict: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
-    // name used in named load is always a string
-    let name = Key::try_from(name).unwrap();
-
     let dict = self.get_reg(dict);
+    let name = name.to_str().unwrap();
     let mut dict = dict.to_dict().unwrap();
 
     // name used in named load is always a string
@@ -875,26 +851,26 @@ impl op::Handler for Isolate {
 
   fn op_is_kw_param_not_set(&mut self, name: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
-    // name is always a string here
-    let name = Key::try_from(name).unwrap();
-    // base + 3 is always the kw dictionary
+    // base + 2 is always the kw dictionary
     let kwargs = self.get_reg(2);
+    let name = name.to_str().unwrap();
+    let name = name.as_str();
     let kwargs = kwargs.to_dict().unwrap();
 
-    self.acc = (!kwargs.contains_key(&name)).into();
+    self.acc = (!kwargs.contains_key(name)).into();
 
     Ok(())
   }
 
   fn op_load_kw_param(&mut self, name: u32, param: u32) -> Result<(), Self::Error> {
     let name = self.get_const(name);
-    // name is always a string here
-    let name = Key::try_from(name).unwrap();
-    // base + 3 is always the kw dictionary
+    // base + 2 is always the kw dictionary
     let kwargs = self.get_reg(2);
+    let name = name.to_str().unwrap();
+    let name = name.as_str();
     let mut kwargs = kwargs.to_dict().unwrap();
 
-    self.set_reg(param, kwargs.remove(&name).unwrap());
+    self.set_reg(param, kwargs.remove(name).unwrap());
 
     Ok(())
   }

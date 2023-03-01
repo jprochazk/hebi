@@ -1,6 +1,6 @@
 use super::{call, Isolate};
 use crate::value::handle::Handle;
-use crate::value::object::{Class, Key, Method};
+use crate::value::object::{Class, Method};
 use crate::value::Value;
 use crate::Result;
 
@@ -15,7 +15,7 @@ impl Isolate {
     let mut class = self.ctx.alloc(def.instance());
 
     if class.has("init") {
-      let init = class.get(Key::Ref("init")).unwrap().clone();
+      let init = class.get("init").unwrap().clone();
       // call initializer
       // TODO: don't allocate temp object here
       self.call(

@@ -5,7 +5,7 @@ use beef::lean::Cow;
 use derive::delegate_to_handle;
 use indexmap::Equivalent;
 
-use super::{Access, Key};
+use super::Access;
 use crate::value::handle::Handle;
 use crate::value::Value;
 
@@ -38,9 +38,9 @@ impl<'a> From<&'a str> for Str {
 }
 
 impl Access for Str {
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
-    Ok(match key.as_str() {
-      Some("len") => Some(Value::int(self.0.len() as i32)),
+  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+    Ok(match key {
+      "len" => Some(Value::int(self.0.len() as i32)),
       _ => None,
     })
   }

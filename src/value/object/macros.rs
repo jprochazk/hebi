@@ -34,10 +34,10 @@ macro_rules! object_repr {
         )*
       }
 
-      impl Display for Object {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      impl ::std::fmt::Display for Object {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
           match &self.repr {
-            $($Repr::$ty(inner) => Display::fmt(inner, f),)*
+            $($Repr::$ty(inner) => ::std::fmt::Display::fmt(inner, f),)*
           }
         }
       }
@@ -55,39 +55,39 @@ macro_rules! object_repr {
           }
         }
 
-        fn field_get<'a>(&self, key: &Key<'a>) -> Result<Option<Value>, crate::RuntimeError> {
+        fn field_get<'a>(&self, key: &str) -> Result<Option<$crate::value::Value>, $crate::RuntimeError> {
           match &self.repr {
             $($Repr::$ty(inner) => inner.field_get(key),)*
           }
         }
 
-        fn field_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::RuntimeError> {
+        fn field_set(&mut self, key: $crate::value::handle::Handle<$crate::value::object::string::Str>, value: $crate::value::Value) -> Result<(), $crate::RuntimeError> {
           match &mut self.repr {
             $($Repr::$ty(inner) => inner.field_set(key, value),)*
           }
         }
 
-        fn index_get<'a>(&self, key: &Key<'a>) -> Result<Option<Value>, crate::RuntimeError> {
+        fn index_get<'a>(&self, key: $crate::value::Value) -> Result<Option<$crate::value::Value>, $crate::RuntimeError> {
           match &self.repr {
             $($Repr::$ty(inner) => inner.index_get(key),)*
           }
         }
 
-        fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::RuntimeError> {
+        fn index_set(&mut self, key: $crate::value::Value, value: $crate::value::Value) -> Result<(), $crate::RuntimeError> {
           match &mut self.repr {
             $($Repr::$ty(inner) => inner.index_set(key, value),)*
           }
         }
       }
 
-      impl Value {
+      impl $crate::value::Value {
         $(
           pub fn [<is_ $ty:snake>](&self) -> bool {
             let Some(this) = self.as_object_raw() else { return false; };
             this.[<is_ $ty:snake>]()
           }
 
-          pub fn [<to_ $ty:snake>](self) -> Option<Handle<$ty>> {
+          pub fn [<to_ $ty:snake>](self) -> Option<$crate::value::handle::Handle<$ty>> {
             self.to_object()
           }
         )*

@@ -179,7 +179,7 @@ pub fn check_args(
   if let Some(kw) = kw {
     // we have kwargs,
     // - check for unknown keywords
-    for key in kw.iter().flat_map(|(k, _)| k.as_str()) {
+    for key in kw.iter().map(|(k, _)| k.as_str()) {
       if !params.kwargs && !params.kw.contains_key(key) {
         unknown.insert(key.to_string());
       }

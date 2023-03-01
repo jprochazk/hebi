@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-use super::object::{Access, Key, Object, ObjectType, StaticKey};
+use super::object::{Access, Object, ObjectType, Str};
 use super::ptr::Ptr;
 use super::Value;
 
@@ -102,6 +102,18 @@ impl<T: ObjectType + PartialEq> PartialEq for Handle<T> {
 
 impl<T: ObjectType + Eq> Eq for Handle<T> {}
 
+impl<T: ObjectType + PartialOrd> PartialOrd for Handle<T> {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    unsafe { self._get() }.partial_cmp(unsafe { other._get() })
+  }
+}
+
+impl<T: ObjectType + Ord> Ord for Handle<T> {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    unsafe { self._get() }.cmp(unsafe { other._get() })
+  }
+}
+
 impl<T: ObjectType> Access for Handle<T> {
   fn is_frozen(&self) -> bool {
     unsafe { self._get() }.is_frozen()
@@ -111,19 +123,19 @@ impl<T: ObjectType> Access for Handle<T> {
     unsafe { self._get() }.should_bind_methods()
   }
 
-  fn field_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
+  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
     unsafe { self._get() }.field_get(key)
   }
 
-  fn field_set(&mut self, key: StaticKey, value: Value) -> crate::Result<()> {
+  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
     unsafe { self._get_mut() }.field_set(key, value)
   }
 
-  fn index_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
+  fn index_get(&self, key: Value) -> crate::Result<Option<Value>> {
     unsafe { self._get() }.index_get(key)
   }
 
-  fn index_set(&mut self, key: StaticKey, value: Value) -> crate::Result<()> {
+  fn index_set(&mut self, key: Value, value: Value) -> crate::Result<()> {
     unsafe { self._get_mut() }.index_set(key, value)
   }
 }

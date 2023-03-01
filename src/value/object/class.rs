@@ -4,7 +4,7 @@ use std::hash::Hash;
 use indexmap::Equivalent;
 
 use super::func::{func_name, Params};
-use super::{Access, Dict, Key, StaticKey, Str};
+use super::{Access, Dict, Str};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::Value;
@@ -28,16 +28,16 @@ impl ClassInstance {
 
   pub fn has<Q>(&self, key: &Q) -> bool
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
     self.fields.contains_key(key)
   }
 
-  pub fn get(&self, key: StaticKey) -> Option<&Value> {
-    self.fields.get(&key)
+  pub fn get(&self, key: &str) -> Option<&Value> {
+    self.fields.get(key)
   }
 
-  pub fn insert(&mut self, key: StaticKey, value: Value) -> Option<Value> {
+  pub fn insert(&mut self, key: Handle<Str>, value: Value) -> Option<Value> {
     self.fields.insert(key, value)
   }
 
@@ -51,15 +51,11 @@ impl Access for ClassInstance {
     self.is_frozen
   }
 
-  fn field_get(&self, key: &Key<'_>) -> crate::Result<Option<Value>> {
-    Ok(match key {
-      Key::Int(v) => self.fields.get(v).cloned(),
-      Key::Str(v) => self.fields.get(v.as_str()).cloned(),
-      Key::Ref(v) => self.fields.get(*v).cloned(),
-    })
+  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
+    Ok(self.fields.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::RuntimeError> {
+  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<(), crate::RuntimeError> {
     self.fields.insert(key, value);
     Ok(())
   }
@@ -124,7 +120,7 @@ impl Access for ClassSuperProxy {
     true
   }
 
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
+  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
     self.parent().field_get(key)
   }
 }
@@ -180,12 +176,12 @@ impl Class {
 
     let mut methods = Dict::with_capacity(desc.methods().len());
     for (k, v) in desc.methods().iter().zip(args[methods_offset..].iter()) {
-      methods.insert(Key::Str(ctx.alloc(k.clone())), v.clone());
+      methods.insert(ctx.alloc(k.clone()), v.clone());
     }
 
     let mut fields = Dict::with_capacity(desc.fields().len());
     for (k, v) in desc.fields().iter().zip(args[fields_offset..].iter()) {
-      fields.insert(Key::Str(ctx.alloc(k.clone())), v.clone());
+      fields.insert(ctx.alloc(k.clone()), v.clone());
     }
 
     // inherit methods and field defaults
@@ -262,12 +258,8 @@ impl Access for Class {
     false
   }
 
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
-    Ok(match key {
-      Key::Int(_) => None,
-      Key::Str(v) => self.method(v.as_str()),
-      Key::Ref(v) => self.method(v),
-    })
+  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+    Ok(self.method(key))
   }
 }
 

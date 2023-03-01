@@ -13,8 +13,13 @@ pub enum Value {
   Object(Ptr<object::Object>),
 }
 
+const QNAN: u64 = 0b01111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000;
+
 impl Value {
   pub fn float(v: f64) -> Self {
+    if v.to_bits() & QNAN == QNAN {
+      panic!("cannot construct a Value from an f64 which is already a quiet NaN");
+    }
     Self::Float(v)
   }
 

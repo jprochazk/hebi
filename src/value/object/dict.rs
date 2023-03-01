@@ -12,9 +12,11 @@ use std::ops::{Index, IndexMut, RangeBounds};
 
 use indexmap::{map, Equivalent, IndexMap};
 
-use super::{Access, Key, StaticKey, Value};
+use super::access::{IndexRef, OwnedIndex};
+use super::{Access, Str, Value};
+use crate::value::handle::Handle;
 
-type Inner = IndexMap<StaticKey, Value>;
+type Inner = IndexMap<Handle<Str>, Value>;
 
 #[derive(Default)]
 pub struct Dict {
@@ -63,28 +65,28 @@ impl Dict {
   }
 
   /// Return an iterator over the key-value pairs of the map, in their order
-  pub fn iter(&self) -> map::Iter<'_, StaticKey, Value> {
+  pub fn iter(&self) -> map::Iter<'_, Handle<Str>, Value> {
     self.inner.iter()
   }
 
   /// Return an iterator over the key-value pairs of the map, in their order
-  pub fn iter_mut(&mut self) -> map::IterMut<'_, StaticKey, Value> {
+  pub fn iter_mut(&mut self) -> map::IterMut<'_, Handle<Str>, Value> {
     self.inner.iter_mut()
   }
 
   /// Return an iterator over the keys of the map, in their order
-  pub fn keys(&self) -> map::Keys<'_, StaticKey, Value> {
+  pub fn keys(&self) -> map::Keys<'_, Handle<Str>, Value> {
     self.inner.keys()
   }
 
   /// Return an iterator over the values of the map, in their order
-  pub fn values(&self) -> map::Values<'_, StaticKey, Value> {
+  pub fn values(&self) -> map::Values<'_, Handle<Str>, Value> {
     self.inner.values()
   }
 
   /// Return an iterator over mutable references to the values of the map,
   /// in their order
-  pub fn values_mut(&mut self) -> map::ValuesMut<'_, StaticKey, Value> {
+  pub fn values_mut(&mut self) -> map::ValuesMut<'_, Handle<Str>, Value> {
     self.inner.values_mut()
   }
 
@@ -115,7 +117,7 @@ impl Dict {
   ///
   /// ***Panics*** if the starting point is greater than the end point or if
   /// the end point is greater than the length of the map.
-  pub fn drain<R>(&mut self, range: R) -> map::Drain<'_, StaticKey, Value>
+  pub fn drain<R>(&mut self, range: R) -> map::Drain<'_, Handle<Str>, Value>
   where
     R: RangeBounds<usize>,
   {
@@ -156,7 +158,7 @@ impl Dict {
   ///
   /// See also [`entry`](#method.entry) if you you want to insert *or* modify
   /// or if you need to get the index of the corresponding key-value pair.
-  pub fn insert(&mut self, key: StaticKey, value: impl Into<Value>) -> Option<Value> {
+  pub fn insert(&mut self, key: Handle<Str>, value: impl Into<Value>) -> Option<Value> {
     self.inner.insert(key, value.into())
   }
 
@@ -164,7 +166,7 @@ impl Dict {
   /// in-place manipulation.
   ///
   /// Computes in **O(1)** time (amortized average).
-  pub fn entry(&mut self, key: StaticKey) -> map::Entry<'_, StaticKey, Value> {
+  pub fn entry(&mut self, key: Handle<Str>) -> map::Entry<'_, Handle<Str>, Value> {
     self.inner.entry(key)
   }
 
@@ -173,7 +175,7 @@ impl Dict {
   /// Computes in **O(1)** time (average).
   pub fn contains_key<Q>(&self, key: &Q) -> bool
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
     self.inner.contains_key(key)
   }
@@ -184,14 +186,14 @@ impl Dict {
   /// Computes in **O(1)** time (average).
   pub fn get<Q>(&self, key: &Q) -> Option<&Value>
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
     self.inner.get(key)
   }
 
   pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
     self.inner.remove(key)
   }
@@ -200,26 +202,29 @@ impl Dict {
   /// if it is present, else `None`.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&Key, &Value)>
+  pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&str, &Value)>
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
-    self.inner.get_key_value(key)
+    self.inner.get_key_value(key).map(|(k, v)| (k.as_str(), v))
   }
 
   pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
   where
-    Q: ?Sized + Hash + Equivalent<StaticKey>,
+    Q: ?Sized + Hash + Equivalent<Handle<Str>>,
   {
     self.inner.get_mut(key)
   }
 
-  pub fn get_index(&self, index: usize) -> Option<(&Key, &Value)> {
-    self.inner.get_index(index)
+  pub fn get_index(&self, index: usize) -> Option<(&str, &Value)> {
+    self.inner.get_index(index).map(|(k, v)| (k.as_str(), v))
   }
 
-  pub fn get_index_mut(&mut self, index: usize) -> Option<(&Key, &mut Value)> {
-    self.inner.get_index_mut(index).map(|(k, v)| (&*k, v))
+  pub fn get_index_mut(&mut self, index: usize) -> Option<(&str, &mut Value)> {
+    self
+      .inner
+      .get_index_mut(index)
+      .map(|(k, v)| (k.as_str(), v))
   }
 
   /// Remove the last key-value pair
@@ -227,7 +232,7 @@ impl Dict {
   /// This preserves the order of the remaining elements.
   ///
   /// Computes in **O(1)** time (average).
-  pub fn pop(&mut self) -> Option<(StaticKey, Value)> {
+  pub fn pop(&mut self) -> Option<(Handle<Str>, Value)> {
     self.inner.pop()
   }
 
@@ -240,7 +245,7 @@ impl Dict {
   /// Computes in **O(n)** time (average).
   pub fn retain<F>(&mut self, keep: F)
   where
-    F: FnMut(&StaticKey, &mut Value) -> bool,
+    F: FnMut(&Handle<Str>, &mut Value) -> bool,
   {
     self.inner.retain(keep);
   }
@@ -262,7 +267,7 @@ impl Dict {
   /// the length of the map and *c* the capacity. The sort is stable.
   pub fn sort_by<F>(&mut self, cmp: F)
   where
-    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
+    F: FnMut(&Handle<Str>, &Value, &Handle<Str>, &Value) -> Ordering,
   {
     self.inner.sort_by(cmp)
   }
@@ -285,7 +290,7 @@ impl Dict {
   /// the length of the map and *c* is the capacity. The sort is unstable.
   pub fn sort_unstable_by<F>(&mut self, cmp: F)
   where
-    F: FnMut(&StaticKey, &Value, &StaticKey, &Value) -> Ordering,
+    F: FnMut(&Handle<Str>, &Value, &Handle<Str>, &Value) -> Ordering,
   {
     self.inner.sort_unstable_by(cmp)
   }
@@ -303,43 +308,49 @@ impl Access for Dict {
     false
   }
 
-  fn field_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
-    Ok(match key.as_str() {
-      Some("len") => Some(Value::int(self.inner.len() as i32)),
+  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+    Ok(match key {
+      "len" => Some(Value::int(self.inner.len() as i32)),
       _ => None,
     })
   }
 
-  fn index_get(&self, key: &Key<'_>) -> Result<Option<Value>, crate::RuntimeError> {
-    Ok(self.inner.get(key).cloned())
+  fn index_get(&self, key: Value) -> Result<Option<Value>, crate::RuntimeError> {
+    Ok(match key.to_str() {
+      Some(key) => self.inner.get(key.as_str()).cloned(),
+      None => None,
+    })
   }
 
-  fn index_set(&mut self, key: StaticKey, value: Value) -> Result<(), crate::RuntimeError> {
+  fn index_set(&mut self, key: Value, value: Value) -> Result<(), crate::RuntimeError> {
+    let Some(key) = key.clone().to_str() else {
+      return Err(crate::RuntimeError::script(format!("cannot index dictionary using {key}"), 0..0))
+    };
     self.inner.insert(key, value);
     Ok(())
   }
 }
 
 impl<'a> IntoIterator for &'a Dict {
-  type Item = (&'a StaticKey, &'a Value);
-  type IntoIter = map::Iter<'a, StaticKey, Value>;
+  type Item = (&'a Handle<Str>, &'a Value);
+  type IntoIter = map::Iter<'a, Handle<Str>, Value>;
   fn into_iter(self) -> Self::IntoIter {
     self.inner.iter()
   }
 }
 
 impl<'a> IntoIterator for &'a mut Dict {
-  type Item = (&'a StaticKey, &'a mut Value);
-  type IntoIter = map::IterMut<'a, StaticKey, Value>;
+  type Item = (&'a Handle<Str>, &'a mut Value);
+  type IntoIter = map::IterMut<'a, Handle<Str>, Value>;
   fn into_iter(self) -> Self::IntoIter {
     self.inner.iter_mut()
   }
 }
 
 impl IntoIterator for Dict {
-  type Item = (StaticKey, Value);
+  type Item = (Handle<Str>, Value);
 
-  type IntoIter = map::IntoIter<StaticKey, Value>;
+  type IntoIter = map::IntoIter<Handle<Str>, Value>;
 
   fn into_iter(self) -> Self::IntoIter {
     self.inner.into_iter()
@@ -348,7 +359,7 @@ impl IntoIterator for Dict {
 
 impl<Q> Index<&Q> for Dict
 where
-  Q: ?Sized + Hash + Equivalent<StaticKey>,
+  Q: ?Sized + Hash + Equivalent<Handle<Str>>,
 {
   type Output = Value;
 
@@ -362,7 +373,7 @@ where
 
 impl<Q> IndexMut<&Q> for Dict
 where
-  Q: ?Sized + Hash + Equivalent<StaticKey>,
+  Q: ?Sized + Hash + Equivalent<Handle<Str>>,
 {
   /// Returns a mutable reference to the value corresponding to the supplied
   /// `key`.
@@ -373,22 +384,22 @@ where
   }
 }
 
-impl FromIterator<(StaticKey, Value)> for Dict {
-  fn from_iter<T: IntoIterator<Item = (StaticKey, Value)>>(iter: T) -> Self {
+impl FromIterator<(Handle<Str>, Value)> for Dict {
+  fn from_iter<T: IntoIterator<Item = (Handle<Str>, Value)>>(iter: T) -> Self {
     Self {
       inner: Inner::from_iter(iter),
     }
   }
 }
 
-impl<const N: usize> From<[(StaticKey, Value); N]> for Dict {
-  fn from(arr: [(StaticKey, Value); N]) -> Self {
+impl<const N: usize> From<[(Handle<Str>, Value); N]> for Dict {
+  fn from(arr: [(Handle<Str>, Value); N]) -> Self {
     Self::from_iter(arr)
   }
 }
 
-impl Extend<(StaticKey, Value)> for Dict {
-  fn extend<T: IntoIterator<Item = (StaticKey, Value)>>(&mut self, iter: T) {
+impl Extend<(Handle<Str>, Value)> for Dict {
+  fn extend<T: IntoIterator<Item = (Handle<Str>, Value)>>(&mut self, iter: T) {
     self.inner.extend(iter)
   }
 }
