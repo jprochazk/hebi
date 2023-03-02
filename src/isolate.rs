@@ -23,7 +23,7 @@ use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
-use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType};
+use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType, Str};
 use crate::value::Value;
 use crate::RuntimeError;
 
@@ -153,6 +153,14 @@ impl Isolate {
     let module_vars = unsafe { frame.module_vars.unwrap().as_mut() };
     let var = module_vars.get_index_mut(slot as usize).unwrap().1;
     *var = value;
+  }
+
+  pub fn get_global(&self, name: &str) -> Option<Value> {
+    self.globals.get(name).cloned()
+  }
+
+  pub fn set_global(&mut self, name: Handle<Str>, value: Value) {
+    self.globals.insert(name, value);
   }
 
   fn current_module_id(&self) -> Option<ModuleId> {
@@ -770,6 +778,12 @@ impl op::Handler for Isolate {
       return Ok(());
     }
 
+    if let Some(f) = callable.clone().to_native_function() {
+      self.acc = f.call(self.ctx(), &[], &Dict::new())?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
     // regular function call
     let frame = self.prepare_call_frame(
       callable,
@@ -791,6 +805,12 @@ impl op::Handler for Isolate {
       // class constructor
       let class_def = callable.to_class().unwrap();
       self.acc = self.create_instance(class_def, &args, Value::none())?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(f) = callable.clone().to_native_function() {
+      self.acc = f.call(self.ctx(), &args, &Dict::new())?;
       self.pc = return_address;
       return Ok(());
     }
@@ -823,6 +843,18 @@ impl op::Handler for Isolate {
       // class constructor
       let def = callable.to_class().unwrap();
       self.acc = self.create_instance(def, &args, kwargs)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(f) = callable.clone().to_native_function() {
+      let kwargs = kwargs.to_dict();
+      let temp = Dict::new();
+      let kwargs = match &kwargs {
+        Some(kwargs) => unsafe { kwargs._get() },
+        None => &temp,
+      };
+      self.acc = f.call(self.ctx(), &args, kwargs)?;
       self.pc = return_address;
       return Ok(());
     }

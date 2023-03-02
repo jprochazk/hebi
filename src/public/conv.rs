@@ -1,42 +1,13 @@
-use std::fmt::Display;
-use std::marker::PhantomData;
-
-use object::RuntimeError;
-use value::Value as CoreValue;
-
-use crate::value::object;
-use crate::{value, Hebi, Result};
-
-pub struct Value<'a> {
-  inner: crate::value::Value,
-  _lifetime: PhantomData<&'a ()>,
-}
-
-const _: () = {
-  let _ = std::mem::transmute::<Value<'static>, crate::value::Value>;
-};
-
-impl<'a> Value<'a> {
-  pub(crate) fn bind(value: impl Into<CoreValue>) -> Value<'a> {
-    Self {
-      inner: value.into(),
-      _lifetime: PhantomData,
-    }
-  }
-}
-
-impl<'a> Display for Value<'a> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    Display::fmt(&self.inner, f)
-  }
-}
+use super::Context;
+use crate::value::{object, Value as CoreValue};
+use crate::{Hebi, Result, RuntimeError, Value};
 
 pub trait FromHebi<'a>: Sized + private::Sealed {
-  fn from_hebi(vm: &'a Hebi, value: Value<'a>) -> Result<Self>;
+  fn from_hebi(ctx: &Context<'a>, value: Value<'a>) -> Result<Self>;
 }
 
 pub trait IntoHebi<'a>: Sized + private::Sealed {
-  fn into_hebi(vm: &'a Hebi, value: Self) -> Result<Value<'a>>;
+  fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>>;
 }
 
 macro_rules! impl_int {
@@ -44,7 +15,7 @@ macro_rules! impl_int {
     $(
       impl private::Sealed for $T {}
       impl<'a> FromHebi<'a> for $T {
-        fn from_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Self> {
+        fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
           let value = value
             .inner
             .to_int()
@@ -53,8 +24,8 @@ macro_rules! impl_int {
         }
       }
       impl<'a> IntoHebi<'a> for $T {
-        fn into_hebi(_: &'a Hebi, value: Self) -> Result<Value<'a>> {
-          let value = value as i32;
+        fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
+          let value = self as i32;
           Ok(Value::bind(value))
         }
       }
@@ -69,7 +40,7 @@ macro_rules! impl_float {
     $(
       impl private::Sealed for $T {}
       impl<'a> FromHebi<'a> for $T {
-        fn from_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Self> {
+        fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
           let value = value
             .inner
             .to_float()
@@ -78,8 +49,8 @@ macro_rules! impl_float {
         }
       }
       impl<'a> IntoHebi<'a> for $T {
-        fn into_hebi(_: &'a Hebi, value: Self) -> Result<Value<'a>> {
-          let value = value as f64;
+        fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
+          let value = self as f64;
           Ok(Value::bind(value))
         }
       }
@@ -91,7 +62,7 @@ impl_float!(f32, f64);
 
 impl private::Sealed for bool {}
 impl<'a> FromHebi<'a> for bool {
-  fn from_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Self> {
+  fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
     let value = value
       .inner
       .to_bool()
@@ -100,14 +71,14 @@ impl<'a> FromHebi<'a> for bool {
   }
 }
 impl<'a> IntoHebi<'a> for bool {
-  fn into_hebi(_: &'a Hebi, value: Self) -> Result<Value<'a>> {
-    Ok(Value::bind(value))
+  fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
+    Ok(Value::bind(self))
   }
 }
 
 impl private::Sealed for String {}
 impl<'a> FromHebi<'a> for String {
-  fn from_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Self> {
+  fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
     let value = value
       .inner
       .to_str()
@@ -117,34 +88,41 @@ impl<'a> FromHebi<'a> for String {
   }
 }
 impl<'a> IntoHebi<'a> for String {
-  fn into_hebi(vm: &'a Hebi, value: Self) -> Result<Value<'a>> {
+  fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>> {
     Ok(Value::bind(
-      vm.isolate.borrow_mut().alloc(object::Str::from(value)),
+      ctx.inner().alloc(crate::value::object::Str::from(self)),
     ))
+  }
+}
+
+impl<'a> private::Sealed for &'a str {}
+impl<'a, 'b> IntoHebi<'a> for &'b str {
+  fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>> {
+    Ok(Value::bind(ctx.inner().alloc(object::Str::from(self))))
   }
 }
 
 impl private::Sealed for () {}
 impl<'a> FromHebi<'a> for () {
-  fn from_hebi(_: &'a Hebi, _: Value<'a>) -> Result<Self> {
+  fn from_hebi(_: &Context<'a>, _: Value<'a>) -> Result<Self> {
     Ok(())
   }
 }
 impl<'a> IntoHebi<'a> for () {
-  fn into_hebi(_: &'a Hebi, _: Self) -> Result<Value<'a>> {
+  fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
     Ok(Value::bind(CoreValue::none()))
   }
 }
 
 impl<'a> private::Sealed for Value<'a> {}
 impl<'a> FromHebi<'a> for Value<'a> {
-  fn from_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Self> {
-    Ok(value)
+  fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
+    Ok(value.clone())
   }
 }
 impl<'a> IntoHebi<'a> for Value<'a> {
-  fn into_hebi(_: &'a Hebi, value: Value<'a>) -> Result<Value<'a>> {
-    Ok(value)
+  fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
+    Ok(self)
   }
 }
 

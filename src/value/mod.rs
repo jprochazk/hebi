@@ -5,6 +5,8 @@ pub mod handle;
 pub mod object;
 pub mod ptr;
 
+use std::fmt::{Debug, Display};
+
 use object::ObjectType;
 use ptr::*;
 
@@ -50,7 +52,7 @@ impl Default for Value {
   }
 }
 
-impl std::fmt::Display for Value {
+impl Display for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let v = self.clone();
     if let Some(v) = v.clone().to_float() {
@@ -68,6 +70,26 @@ impl std::fmt::Display for Value {
     }
 
     Ok(())
+  }
+}
+
+impl Debug for Value {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let v = self.clone();
+    if let Some(v) = v.clone().to_float() {
+      f.debug_tuple("Float").field(&v).finish()
+    } else if let Some(v) = v.clone().to_int() {
+      f.debug_tuple("Int").field(&v).finish()
+    } else if let Some(v) = v.clone().to_bool() {
+      f.debug_tuple("Bool").field(&v).finish()
+    } else if v.is_none() {
+      f.debug_tuple("None").finish()
+    } else if let Some(_) = v.to_object_raw() {
+      // TODO: maybe also include inner object repr in the debug output
+      f.debug_tuple("Object").finish()
+    } else {
+      unreachable!("invalid type");
+    }
   }
 }
 

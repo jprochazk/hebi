@@ -123,4 +123,6 @@ impl Debug for RuntimeError {
   }
 }
 
+impl std::error::Error for RuntimeError {}
+
 impl Access for RuntimeError {}

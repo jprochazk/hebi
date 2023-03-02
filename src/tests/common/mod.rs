@@ -41,6 +41,7 @@ macro_rules! check {
       let vm = Hebi::builder()
         .with_io(Vec::new())
         .with_module_loader(module_loader)
+        .with_builtins()
         .build();
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {
@@ -95,6 +96,7 @@ macro_rules! check_error {
       let vm = Hebi::builder()
         .with_io(Vec::new())
         .with_module_loader(module_loader)
+        .with_builtins()
         .build();
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {

@@ -1,10 +1,11 @@
 #![allow(clippy::wrong_self_convention)]
 
-mod conv;
+mod builtins;
 mod ctx;
 mod emit;
 mod isolate;
 mod op;
+mod public;
 mod util;
 mod value;
 
@@ -28,12 +29,16 @@ use std::fmt::{Debug, Display};
 
 use ctx::Context;
 use isolate::{Isolate, Stdout};
+use public::IntoStr;
 use value::Value as CoreValue;
 
 pub type Result<T, E = RuntimeError> = std::result::Result<T, E>;
 
-pub use conv::{FromHebi, IntoHebi, Value};
+pub use public::conv::{FromHebi, IntoHebi};
+pub use public::Value;
 pub use value::object::module::ModuleLoader;
+use value::object::native::Callable;
+use value::object::NativeFunction;
 pub use value::object::RuntimeError;
 
 pub struct Hebi {
@@ -54,10 +59,12 @@ pub struct Hebi {
 unsafe impl Send for Hebi {}
 
 impl Hebi {
+  #[deprecated = "use `Hebi::builder` or `Hebi::default` instead"]
   pub fn new() -> Self {
-    Self::builder().build()
+    Self::default()
   }
 
+  #[deprecated = "use `Hebi::builder` instead"]
   pub fn with_io(io: impl Stdout) -> Self {
     Self::builder().with_io(io).build()
   }
@@ -77,7 +84,8 @@ impl Hebi {
       .borrow_mut()
       .call(module.root().into(), &[], CoreValue::none())?;
     let result = Value::bind(result);
-    Ok(T::from_hebi(self, result)?)
+    let ctx = self.ctx();
+    Ok(T::from_hebi(&ctx, result)?)
   }
 
   pub fn io<T: 'static>(&self) -> Option<Ref<'_, T>> {
@@ -88,11 +96,50 @@ impl Hebi {
       _ => None,
     }
   }
+
+  pub fn globals(&self) -> Globals {
+    Globals { hebi: self }
+  }
+
+  pub(crate) fn ctx(&self) -> public::Context {
+    public::Context::bind(self.isolate.borrow().ctx())
+  }
+}
+
+impl Hebi {
+  pub fn create_function(&self, f: impl Callable + 'static) -> Value {
+    Value::bind(
+      self
+        .isolate
+        .borrow_mut()
+        .alloc(NativeFunction::new(Box::new(f))),
+    )
+  }
+}
+
+pub struct Globals<'a> {
+  hebi: &'a Hebi,
+}
+
+impl<'a> Globals<'a> {
+  pub fn get(&self, name: &str) -> Option<Value<'a>> {
+    self.hebi.isolate.borrow().get_global(name).map(Value::bind)
+  }
+
+  pub fn set(&mut self, name: impl IntoStr, value: Value<'a>) {
+    let name = name.into_str(&self.hebi.ctx());
+    self
+      .hebi
+      .isolate
+      .borrow_mut()
+      .set_global(name.unbind(), value.unbind());
+  }
 }
 
 pub struct HebiBuilder {
   stdout: Option<Box<dyn Stdout>>,
   module_loader: Option<Box<dyn ModuleLoader>>,
+  use_builtins: bool,
 }
 
 impl Hebi {
@@ -100,6 +147,7 @@ impl Hebi {
     HebiBuilder {
       stdout: None,
       module_loader: None,
+      use_builtins: false,
     }
   }
 }
@@ -115,6 +163,11 @@ impl HebiBuilder {
     self
   }
 
+  pub fn with_builtins(mut self) -> Self {
+    self.use_builtins = true;
+    self
+  }
+
   pub fn build(mut self) -> Hebi {
     let ctx = Context::new();
     let stdout = self
@@ -127,15 +180,21 @@ impl HebiBuilder {
       .unwrap_or_else(|| Box::new(NoopModuleLoader));
     let isolate = Isolate::new(ctx, stdout, module_loader);
 
-    Hebi {
+    let vm = Hebi {
       isolate: RefCell::new(isolate),
+    };
+
+    if self.use_builtins {
+      builtins::register(&vm);
     }
+
+    vm
   }
 }
 
 impl Default for Hebi {
   fn default() -> Self {
-    Self::new()
+    Self::builder().with_builtins().build()
   }
 }
 

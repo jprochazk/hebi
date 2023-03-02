@@ -12,9 +12,8 @@ pub mod frame;
 pub mod func;
 pub mod list;
 pub mod module;
+pub mod native;
 pub mod string;
-
-use std::fmt::Display;
 
 pub use access::Access;
 use beef::lean::Cow;
@@ -25,6 +24,7 @@ use frame::Frame;
 pub use func::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor, Path};
+pub use native::NativeFunction;
 pub use string::Str;
 
 use super::handle::Handle;
@@ -51,6 +51,7 @@ object_repr! {
     Path,
     Frame,
     RuntimeError,
+    NativeFunction,
   }
 }
 
