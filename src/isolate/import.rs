@@ -24,11 +24,7 @@ pub fn load(vm: &mut Isolate, path: Handle<Path>) -> Result<Handle<Module>> {
       .module_loader
       .load(path.segments())
       .map_err(|e| Error::other(e))?;
-    let module = syntax::parse(module)
-      // TODO: propagate parse errors properly - unify `ParseError` and `RuntimeError` into a single
-      // enum and use it instead of using those two individually. that will enable returning
-      // parse errors here.
-      .map_err(|e| Error::syntax(e))?;
+    let module = syntax::parse(module).map_err(Error::syntax)?;
     let module = crate::emit::emit(vm.ctx.clone(), name, &module, false).unwrap();
     println!("{}", module.root().disassemble(true));
     module.instance(&vm.ctx, Some(module_id))

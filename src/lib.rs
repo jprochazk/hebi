@@ -10,21 +10,6 @@ pub mod public;
 pub mod util;
 mod value;
 
-/*
-
-TODO: carefully design the public API
-- Value
-  - constructors
-  - as_*
-- Isolate
-  - call
-  - ?
-*/
-
-// TODO: everything that allocates should go through the context,
-// eventually the context `alloc` method will use a faster allocator
-// together with a garbage collector to make it worth the effort
-
 use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 

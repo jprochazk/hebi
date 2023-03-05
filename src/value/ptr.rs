@@ -62,8 +62,6 @@ impl<T> Clone for Ptr<T> {
   }
 }
 
-// TODO: improve portability by adding a fallback to a `Value` enum
-
 // this asserts that `Ptr` is 64 bits,
 // which it should be on systems where `usize == u64`
 // `Value` doesn't work on 32-bit systems, so this doubles

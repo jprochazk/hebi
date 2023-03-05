@@ -6,7 +6,6 @@ pub mod access;
 
 pub mod class;
 pub mod dict;
-pub mod error;
 #[doc(hidden)]
 pub mod frame;
 pub mod func;
@@ -19,7 +18,6 @@ pub use access::Access;
 use beef::lean::Cow;
 pub use class::{Class, ClassDescriptor, ClassInstance, ClassSuperProxy, Method};
 pub use dict::Dict;
-pub use error::RuntimeError;
 use frame::Frame;
 pub use func::{Function, FunctionDescriptor};
 pub use list::List;
@@ -29,6 +27,7 @@ pub use string::Str;
 
 use super::handle::Handle;
 use super::{Ptr, Value};
+use crate::Error;
 
 pub struct Object {
   repr: Repr,
@@ -50,7 +49,7 @@ object_repr! {
     ModuleDescriptor,
     Path,
     Frame,
-    RuntimeError,
+    Error,
     NativeFunction,
   }
 }

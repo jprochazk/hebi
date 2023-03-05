@@ -14,9 +14,8 @@ use crate::value::object;
 // - T<'a>::bind(T) -> T<'a>
 // - Value::as_T(self) -> Option<T<'a>>
 // - From<T<'a>> for Value<'a>
-//
-// TODO: `Context` type for allocating objects
 
+// TODO: `Context` type for allocating objects
 // TODO: convert all the `unsafe { transmute(v) }` into a safe interface with a
 // SAFETY comment
 
