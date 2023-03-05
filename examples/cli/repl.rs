@@ -30,7 +30,7 @@ enum Control {
 impl Repl {
   fn new() -> Self {
     Self {
-      vm: Hebi::new(),
+      vm: Hebi::default(),
       editor: Editor::new().unwrap(),
       state: State::default(),
     }
@@ -75,7 +75,7 @@ impl Repl {
     }
   }
 
-  fn eval(&mut self, input: &str) -> Result<Value, EvalError> {
+  fn eval(&mut self, input: &str) -> Result<Value> {
     self.vm.eval(input)
   }
 
@@ -147,10 +147,7 @@ pub fn run() -> rustyline::Result<()> {
 
     match repl.eval(&buffer) {
       Ok(v) => println!("{v}"),
-      Err(EvalError::Runtime(e)) => {
-        println!("{}", e.stack_trace(Some(buffer.as_str().into())))
-      }
-      Err(EvalError::Parse(..)) => unreachable!(),
+      Err(e) => println!("error: {e}"),
     }
   }
 }

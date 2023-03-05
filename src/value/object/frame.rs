@@ -10,7 +10,7 @@ use crate::ctx::Context;
 use crate::value::constant::Constant;
 use crate::value::handle::Handle;
 use crate::value::Value;
-use crate::RuntimeError;
+use crate::{Error, Result};
 
 pub struct Frame {
   // ensures that the pointers below remain valid for the lifetime of the `CallFrame`
@@ -46,7 +46,7 @@ impl Frame {
     func: Value,
     num_args: usize,
     on_return: OnReturn,
-  ) -> Result<Frame, RuntimeError> {
+  ) -> Result<Frame> {
     Self::with_stack(
       modules,
       func,
@@ -62,7 +62,7 @@ impl Frame {
     num_args: usize,
     on_return: OnReturn,
     stack: Stack,
-  ) -> Result<Self, RuntimeError> {
+  ) -> Result<Self> {
     if let Some(f) = func.clone().to_method() {
       return Frame::with_stack(modules, f.func(), num_args, on_return, stack);
     }
@@ -113,7 +113,7 @@ struct Parts {
   module_id: Option<ModuleId>,
 }
 
-fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts, RuntimeError> {
+fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
   let Some(mut func) = callable.clone().to_function() else {
     panic!("cannot create frame from {callable}");
   };
@@ -126,10 +126,7 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts, Runtime
   let (module_vars, module_id) = match func.module_id() {
     Some(id) => {
       let mut module = modules.by_id(id).ok_or_else(|| {
-        RuntimeError::script(
-          "attempted to call {callable} which was declared in a broken module",
-          0..0,
-        )
+        Error::runtime("attempted to call {callable} which was declared in a broken module")
       })?;
       let module_vars = NonNull::from(unsafe { module.module_vars_mut() });
       (Some(module_vars), Some(id))

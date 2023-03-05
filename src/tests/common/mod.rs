@@ -33,7 +33,7 @@ macro_rules! check {
     #[test]
     fn $name() {
       use $crate::util::JoinIter;
-      use $crate::{EvalError, Hebi, Value};
+      use $crate::{Error, Hebi, Value};
       let modules = [
         $($(($module.to_string(), indoc::indoc!($code).to_string()),)*)?
       ].into_iter().collect();
@@ -67,16 +67,19 @@ macro_rules! check {
           );
           insta::assert_snapshot!(snapshot);
         }
-        Err(EvalError::Parse(errors)) => {
+        Err(Error::Syntax(e)) => {
           let mut out = String::new();
-          for error in errors {
+          for error in e {
             error.report_to(input, &mut out);
             out.push('\n');
           }
           panic!("parse error:\n{out}")
         }
-        Err(EvalError::Runtime(e)) => {
-          panic!("eval error:\n{}", e.stack_trace(Some(input.into())))
+        Err(Error::Runtime(e)) => {
+          panic!("eval error: {}", e)
+        }
+        Err(Error::Other(e)) => {
+          panic!("error: {e}")
         }
       }
     }
@@ -88,7 +91,7 @@ macro_rules! check_error {
     #[test]
     fn $name() {
       use $crate::util::JoinIter;
-      use $crate::{EvalError, Hebi, Value};
+      use $crate::{Error, Hebi, Value};
       let modules = [
         $($(($module.to_string(), indoc::indoc!($code).to_string()),)*)?
       ].into_iter().collect();
@@ -104,16 +107,18 @@ macro_rules! check_error {
           let stdout = String::from_utf8(vm.io::<Vec<u8>>().unwrap().clone()).unwrap();
           panic!("unexpected eval success, value={value}, stdout=`{stdout:?}`")
         }
-        Err(EvalError::Parse(errors)) => {
+        Err(Error::Syntax(e)) => {
           let mut out = String::new();
-          for error in errors {
+          for error in e {
             error.report_to(input, &mut out);
             out.push('\n');
           }
           panic!("failed to parse module:\n{out}")
         }
-        Err(EvalError::Runtime(error)) => {
-          let error = error.stack_trace(Some(input.into()));
+        Err(Error::Other(e)) => {
+          panic!("unexpected error: {e}")
+        }
+        Err(Error::Runtime(error)) => {
           let stdout = vm.io::<Vec<u8>>().unwrap();
           let stdout = std::str::from_utf8(&stdout[..]).unwrap();
           let modules: &[&str] = &[$($( concat!("# module:", $module, "\n", $code, "\n") ),*)?];

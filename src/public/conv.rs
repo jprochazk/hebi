@@ -1,6 +1,6 @@
 use super::Context;
 use crate::value::{object, Value as CoreValue};
-use crate::{Hebi, Result, RuntimeError, Value};
+use crate::{Error, Result, Value};
 
 pub trait FromHebi<'a>: Sized + private::Sealed {
   fn from_hebi(ctx: &Context<'a>, value: Value<'a>) -> Result<Self>;
@@ -19,7 +19,7 @@ macro_rules! impl_int {
           let value = value
             .inner
             .to_int()
-            .ok_or_else(|| RuntimeError::script("value is not an int", 0..0))?;
+            .ok_or_else(|| Error::runtime("value is not an int"))?;
           Ok(value as $T)
         }
       }
@@ -44,7 +44,7 @@ macro_rules! impl_float {
           let value = value
             .inner
             .to_float()
-            .ok_or_else(|| RuntimeError::script("value is not a float", 0..0))?;
+            .ok_or_else(|| Error::runtime("value is not a float"))?;
           Ok(value as $T)
         }
       }
@@ -66,7 +66,7 @@ impl<'a> FromHebi<'a> for bool {
     let value = value
       .inner
       .to_bool()
-      .ok_or_else(|| RuntimeError::script("value is not a bool", 0..0))?;
+      .ok_or_else(|| Error::runtime("value is not a bool"))?;
     Ok(value)
   }
 }
@@ -83,7 +83,7 @@ impl<'a> FromHebi<'a> for String {
       .inner
       .to_str()
       .map(|str| str.as_str().to_string())
-      .ok_or_else(|| RuntimeError::script("value is not a string", 0..0))?;
+      .ok_or_else(|| Error::runtime("value is not a string"))?;
     Ok(value)
   }
 }
@@ -132,7 +132,7 @@ impl<'a> IntoHebi<'a> for Value<'a> {
     value
       .to_str()
       .map(|str| str.as_str().to_string())
-      .ok_or_else(|| Error::new("value is not a string", 0..0))
+      .ok_or_else(|| Error::new("value is not a string"))
   }
   into(self, ctx) {
     Ok(ctx.alloc(Str::from(self)).into())
@@ -141,7 +141,7 @@ impl<'a> IntoHebi<'a> for Value<'a> {
 conversion! {
   Vec<T>
   from(value, ctx) {
-    let list = value.to_list().ok_or_else(|| Error::new("value is not a list", 0..0))?;
+    let list = value.to_list().ok_or_else(|| Error::new("value is not a list"))?;
     let mut out = Vec::with_capacity(list.len());
     for item in list.iter() {
       out.push(T::from_hebi(item.clone(), ctx)?);
@@ -160,7 +160,7 @@ conversion! {
   HashMap<K, V>
   where K: {Eq + Hash};
   from(value, ctx) {
-    let dict = value.to_dict().ok_or_else(|| Error::new("value is not a dictionary", 0..0))?;
+    let dict = value.to_dict().ok_or_else(|| Error::new("value is not a dictionary"))?;
     let mut out = HashMap::with_capacity(dict.len());
     for (k, v) in dict.iter() {
       out.insert(
@@ -174,7 +174,7 @@ conversion! {
     let mut dict = Dict::with_capacity(self.len());
     for (k, v) in self.into_iter() {
       dict.insert(
-        Key::try_from(k.to_hebi(ctx)?).map_err(|e| Error::new(format!("{e}"), 0..0))?,
+        Key::try_from(k.to_hebi(ctx)?).map_err(|e| Error::new(format!("{e}")))?,
         v.to_hebi(ctx)?
       );
     }

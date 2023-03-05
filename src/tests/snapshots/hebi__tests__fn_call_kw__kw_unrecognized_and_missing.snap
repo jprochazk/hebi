@@ -13,9 +13,7 @@ f(c=10)
 
 
 # Result (error):
-In code at 0..0
-Error: mismatched keyword params: missing a, b
-
+mismatched keyword params: missing a, b
 
 # Stdout:
 

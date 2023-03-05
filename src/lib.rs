@@ -3,6 +3,7 @@
 mod builtins;
 mod ctx;
 mod emit;
+mod error;
 mod isolate;
 mod op;
 mod public;
@@ -28,18 +29,18 @@ use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
 use ctx::Context;
+pub use error::Error;
 use isolate::{Isolate, Stdout};
 use public::IntoStr;
 use value::Value as CoreValue;
 
-pub type Result<T, E = RuntimeError> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub use public::conv::{FromHebi, IntoHebi};
 pub use public::Value;
 pub use value::object::module::ModuleLoader;
 use value::object::native::Callable;
 use value::object::NativeFunction;
-pub use value::object::RuntimeError;
 
 pub struct Hebi {
   isolate: RefCell<Isolate>,
@@ -74,7 +75,7 @@ impl Hebi {
     Ok(())
   }
 
-  pub fn eval<'a, T: FromHebi<'a>>(&'a self, src: &str) -> Result<T, EvalError> {
+  pub fn eval<'a, T: FromHebi<'a>>(&'a self, src: &str) -> Result<T> {
     let ctx = self.isolate.borrow().ctx();
     let module = syntax::parse(src)?;
     let module = emit::emit(ctx.clone(), "code", &module, true).unwrap();
@@ -220,44 +221,6 @@ impl ModuleLoader for NoopModuleLoader {
     }))
   }
 }
-
-pub enum EvalError {
-  Parse(Vec<syntax::Error>),
-  Runtime(RuntimeError),
-}
-
-impl From<Vec<syntax::Error>> for EvalError {
-  fn from(value: Vec<syntax::Error>) -> Self {
-    EvalError::Parse(value)
-  }
-}
-impl From<RuntimeError> for EvalError {
-  fn from(value: RuntimeError) -> Self {
-    EvalError::Runtime(value)
-  }
-}
-
-impl Debug for EvalError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Self::Parse(e) => f
-        .debug_tuple("Parse")
-        .field(&e.iter().map(|e| e.message.to_string()).collect::<Vec<_>>())
-        .finish(),
-      Self::Runtime(e) => f.debug_tuple("Runtime").field(&e).finish(),
-    }
-  }
-}
-impl Display for EvalError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    use util::JoinIter;
-    match self {
-      EvalError::Parse(v) => write!(f, "syntax errors: {}", v.iter().join("; ")),
-      EvalError::Runtime(v) => write!(f, "error: {v}"),
-    }
-  }
-}
-impl std::error::Error for EvalError {}
 
 #[cfg(test)]
 mod tests;

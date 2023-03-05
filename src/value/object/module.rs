@@ -9,7 +9,7 @@ use crate::ctx::Context;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::Value;
-use crate::RuntimeError;
+use crate::{Error, Result};
 
 // TODO: all descriptor should store `String` for names, because `Handle<Str>`
 // may be mutated maybe this can be solved another way, like making Str a
@@ -179,7 +179,7 @@ impl Access for Module {
 
   fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
     let Some(slot) = self.module_vars.get_mut(&key) else {
-      return Err(RuntimeError::script(format!("cannot set field `{key}`"), 0..0));
+      return Err(Error::runtime(format!("cannot set field `{key}`")));
     };
     *slot = value;
     Ok(())

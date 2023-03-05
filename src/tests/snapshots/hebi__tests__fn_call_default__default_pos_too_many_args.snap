@@ -13,9 +13,7 @@ f(1,2)
 
 
 # Result (error):
-In code at 0..0
-Error: expected at most 1 args, got 2
-
+expected at most 1 args, got 2
 
 # Stdout:
 

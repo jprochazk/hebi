@@ -13,9 +13,7 @@ f()
 
 
 # Result (error):
-In code at 0..0
-Error: missing required positional params: a
-
+missing required positional params: a
 
 # Stdout:
 

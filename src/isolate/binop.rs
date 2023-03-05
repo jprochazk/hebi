@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use crate::value::Value;
-use crate::{Result, RuntimeError};
+use crate::{Error, Result};
 
 pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
   if let Some(lhs) = lhs.clone().to_int() {
@@ -19,7 +19,7 @@ pub fn add(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot add values", 0..0))
+  Err(Error::runtime("cannot add values"))
 }
 
 pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
@@ -38,7 +38,7 @@ pub fn sub(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot subtract values", 0..0))
+  Err(Error::runtime("cannot subtract values"))
 }
 
 pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
@@ -57,7 +57,7 @@ pub fn mul(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot multiply values", 0..0))
+  Err(Error::runtime("cannot multiply values"))
 }
 
 pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
@@ -82,7 +82,7 @@ pub fn div(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot divide values", 0..0))
+  Err(Error::runtime("cannot divide values"))
 }
 
 pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
@@ -107,7 +107,7 @@ pub fn rem(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot divide values", 0..0))
+  Err(Error::runtime("cannot divide values"))
 }
 
 pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
@@ -133,5 +133,5 @@ pub fn pow(lhs: Value, rhs: Value) -> Result<Value> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot exponentiate value", 0..0))
+  Err(Error::runtime("cannot exponentiate value"))
 }

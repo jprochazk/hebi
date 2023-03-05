@@ -11,9 +11,7 @@ print v["a"]["b"]
 
 
 # Result (error):
-In code at 0..0
-Error: cannot get field `"b"` on value `{}`
-
+cannot get field `"b"` on value `{}`
 
 # Stdout:
 

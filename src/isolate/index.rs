@@ -1,7 +1,7 @@
 use crate::ctx::Context;
 use crate::value::object::Access;
 use crate::value::Value;
-use crate::{Result, RuntimeError};
+use crate::{Error, Result};
 
 pub fn set(ctx: Context, obj: Value, key: Value, value: Value) -> Result<()> {
   if let Some(mut obj) = obj.clone().to_object_raw() {
@@ -11,10 +11,9 @@ pub fn set(ctx: Context, obj: Value, key: Value, value: Value) -> Result<()> {
     }
   };
 
-  Err(RuntimeError::script(
-    format!("cannot set field `{key}` on value `{obj}`"),
-    0..0,
-  ))
+  Err(Error::runtime(format!(
+    "cannot set field `{key}` on value `{obj}`"
+  )))
 }
 
 pub fn get(obj: Value, key: Value) -> Result<Value> {
@@ -24,10 +23,9 @@ pub fn get(obj: Value, key: Value) -> Result<Value> {
     }
   }
 
-  Err(RuntimeError::script(
-    format!("cannot get field `{key}` on value `{obj}`"),
-    0..0,
-  ))
+  Err(Error::runtime(format!(
+    "cannot get field `{key}` on value `{obj}`"
+  )))
 }
 
 pub fn get_opt(obj: Value, key: Value) -> Result<Value> {

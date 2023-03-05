@@ -13,9 +13,7 @@ print v.a.b
 
 
 # Result (error):
-In code at 0..0
-Error: cannot get field `"b"` on value `none`
-
+cannot get field `"b"` on value `none`
 
 # Stdout:
 

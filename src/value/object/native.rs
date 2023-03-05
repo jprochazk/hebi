@@ -1,12 +1,11 @@
 use std::fmt::Display;
 use std::mem::transmute;
 
-use super::{Access, Str};
+use super::Access;
 use crate::ctx::Context as CoreContext;
-use crate::value::handle::Handle;
 use crate::value::object::Dict as CoreDict;
 use crate::value::Value as CoreValue;
-use crate::{public, RuntimeError};
+use crate::{public, Result};
 
 pub trait Callable {
   fn call<'a>(
@@ -14,7 +13,7 @@ pub trait Callable {
     ctx: &'a public::Context<'a>,
     argv: &'a [public::Value<'a>],
     kwargs: &'a public::Dict<'a>,
-  ) -> Result<public::Value<'a>, RuntimeError>;
+  ) -> Result<public::Value<'a>>;
 }
 
 impl<F> Callable for F
@@ -23,7 +22,7 @@ where
     &'a public::Context<'a>,
     &'a [public::Value<'a>],
     &'a public::Dict<'a>,
-  ) -> Result<public::Value<'a>, RuntimeError>,
+  ) -> Result<public::Value<'a>>,
   F: Send + 'static,
 {
   fn call<'a>(
@@ -31,7 +30,7 @@ where
     ctx: &'a public::Context<'a>,
     argv: &'a [public::Value<'a>],
     kwargs: &'a public::Dict<'a>,
-  ) -> Result<public::Value<'a>, RuntimeError> {
+  ) -> Result<public::Value<'a>> {
     self(ctx, argv, kwargs)
   }
 }
@@ -48,12 +47,7 @@ impl NativeFunction {
 
 #[derive::delegate_to_handle]
 impl NativeFunction {
-  pub fn call(
-    &self,
-    ctx: CoreContext,
-    argv: &[CoreValue],
-    kwargs: &CoreDict,
-  ) -> Result<CoreValue, RuntimeError> {
+  pub fn call(&self, ctx: CoreContext, argv: &[CoreValue], kwargs: &CoreDict) -> Result<CoreValue> {
     let ctx = public::Context::bind(ctx);
     // Safety: `public::Value` is `repr(C)`, and holds a `CoreValue` + one
     // `PhantomData` field, so its layout is equivalent to `CoreValue`.

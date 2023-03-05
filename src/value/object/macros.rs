@@ -55,25 +55,25 @@ macro_rules! object_repr {
           }
         }
 
-        fn field_get<'a>(&self, key: &str) -> Result<Option<$crate::value::Value>, $crate::RuntimeError> {
+        fn field_get<'a>(&self, key: &str) -> $crate::Result<Option<$crate::value::Value>> {
           match &self.repr {
             $($Repr::$ty(inner) => inner.field_get(key),)*
           }
         }
 
-        fn field_set(&mut self, key: $crate::value::handle::Handle<$crate::value::object::string::Str>, value: $crate::value::Value) -> Result<(), $crate::RuntimeError> {
+        fn field_set(&mut self, key: $crate::value::handle::Handle<$crate::value::object::string::Str>, value: $crate::value::Value) -> $crate::Result<()> {
           match &mut self.repr {
             $($Repr::$ty(inner) => inner.field_set(key, value),)*
           }
         }
 
-        fn index_get<'a>(&self, key: $crate::value::Value) -> Result<Option<$crate::value::Value>, $crate::RuntimeError> {
+        fn index_get<'a>(&self, key: $crate::value::Value) -> $crate::Result<Option<$crate::value::Value>> {
           match &self.repr {
             $($Repr::$ty(inner) => inner.index_get(key),)*
           }
         }
 
-        fn index_set(&mut self, key: $crate::value::Value, value: $crate::value::Value) -> Result<(), $crate::RuntimeError> {
+        fn index_set(&mut self, key: $crate::value::Value, value: $crate::value::Value) -> $crate::Result<()> {
           match &mut self.repr {
             $($Repr::$ty(inner) => inner.index_set(key, value),)*
           }
@@ -100,7 +100,6 @@ macro_rules! object_repr {
           }
         }
 
-        impl private::Sealed for $ty {}
         impl ObjectType for $ty {
           fn as_ref(o: &Object) -> Option<&Self> {
             if !o.[<is_ $ty:snake>]() {

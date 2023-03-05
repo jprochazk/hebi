@@ -1,7 +1,7 @@
 pub use std::cmp::Ordering;
 
 use super::*;
-use crate::{Result, RuntimeError};
+use crate::{Error, Result};
 
 // TODO: metamethods - they should be checked for BEFORE getting here
 // but the whole process would ideally be encapsulated here
@@ -42,5 +42,5 @@ pub fn partial_cmp(lhs: Value, rhs: Value) -> Result<Option<Ordering>> {
   }
 
   // TODO: span + print types
-  Err(RuntimeError::script("cannot compare {lhs} and {rhs}", 0..0))
+  Err(Error::runtime("cannot compare {lhs} and {rhs}"))
 }

@@ -71,7 +71,7 @@ impl<'a> From<Cow<'a, str>> for Object {
   }
 }
 
-pub trait ObjectType: Access + private::Sealed + Sized + Into<Object> {
+pub trait ObjectType: Access + Sized + Into<Object> {
   fn as_ref(o: &Object) -> Option<&Self>;
   fn as_mut(o: &mut Object) -> Option<&mut Self>;
   fn is(o: &Object) -> bool;
@@ -101,8 +101,4 @@ impl Access for Ptr<Object> {
   fn index_set(&mut self, key: Value, value: Value) -> crate::Result<()> {
     unsafe { self._get_mut() }.index_set(key, value)
   }
-}
-
-mod private {
-  pub trait Sealed {}
 }

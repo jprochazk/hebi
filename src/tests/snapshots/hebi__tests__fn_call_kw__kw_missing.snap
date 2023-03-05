@@ -13,9 +13,7 @@ f()
 
 
 # Result (error):
-In code at 0..0
-Error: mismatched keyword params: missing a
-
+mismatched keyword params: missing a
 
 # Stdout:
 

@@ -1,33 +1,25 @@
 use crate::public::conv::IntoHebi;
 use crate::public::{Context, Dict, Value};
-use crate::{Hebi, RuntimeError};
+use crate::{Error, Hebi, Result};
 
-fn str<'a>(
-  ctx: &'a Context<'a>,
-  args: &'a [Value<'a>],
-  _: &'a Dict<'a>,
-) -> Result<Value<'a>, RuntimeError> {
+fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> Result<Value<'a>> {
   if args.len() != 1 {
-    return Err(RuntimeError::script(
-      format!("expected exactly 1 argument, got {}", args.len()),
-      0..0,
-    ));
+    return Err(Error::runtime(format!(
+      "expected exactly 1 argument, got {}",
+      args.len()
+    )));
   }
 
   let value = args[0].clone();
   format!("{value}").into_hebi(ctx)
 }
 
-fn r#type<'a>(
-  ctx: &'a Context<'a>,
-  args: &'a [Value<'a>],
-  _: &'a Dict<'a>,
-) -> Result<Value<'a>, RuntimeError> {
+fn r#type<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> Result<Value<'a>> {
   if args.len() != 1 {
-    return Err(RuntimeError::script(
-      format!("expected exactly 1 argument, got {}", args.len()),
-      0..0,
-    ));
+    return Err(Error::runtime(format!(
+      "expected exactly 1 argument, got {}",
+      args.len()
+    )));
   }
 
   let value = args[0].clone();

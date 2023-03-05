@@ -8,6 +8,7 @@ use super::{Access, Dict, Str};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::Value;
+use crate::Result;
 
 pub struct ClassInstance {
   name: Handle<Str>,
@@ -55,7 +56,7 @@ impl Access for ClassInstance {
     Ok(self.fields.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<(), crate::RuntimeError> {
+  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<()> {
     self.fields.insert(key, value);
     Ok(())
   }
@@ -120,7 +121,7 @@ impl Access for ClassSuperProxy {
     true
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+  fn field_get(&self, key: &str) -> Result<Option<Value>> {
     self.parent().field_get(key)
   }
 }
@@ -258,7 +259,7 @@ impl Access for Class {
     false
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+  fn field_get(&self, key: &str) -> Result<Option<Value>> {
     Ok(self.method(key))
   }
 }

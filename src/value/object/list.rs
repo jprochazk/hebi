@@ -4,7 +4,7 @@ use std::slice::SliceIndex;
 
 use super::{Access, Handle};
 use crate::value::Value;
-use crate::RuntimeError;
+use crate::{Error, Result};
 
 #[derive(Clone, Default)]
 pub struct List(Vec<Value>);
@@ -135,7 +135,7 @@ impl Access for List {
   }
 
   // TODO: tests
-  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+  fn field_get(&self, key: &str) -> Result<Option<Value>> {
     // TODO: methods (push, pop, etc.)
     Ok(match key {
       "len" => Some(Value::int(self.0.len() as i32)),
@@ -143,21 +143,21 @@ impl Access for List {
     })
   }
 
-  fn index_get(&self, key: Value) -> Result<Option<Value>, crate::RuntimeError> {
+  fn index_get(&self, key: Value) -> Result<Option<Value>> {
     let Some(index) = key.clone().to_int() else {
-      return Err(crate::RuntimeError::script(format!("cannot index list using {key}"), 0..0));
+      return Err(Error::runtime(format!("cannot index list using {key}")));
     };
     Ok(calculate_index(index, self.len()).and_then(|index| self.0.get(index).cloned()))
   }
 
-  fn index_set(&mut self, key: Value, value: Value) -> Result<(), crate::RuntimeError> {
+  fn index_set(&mut self, key: Value, value: Value) -> Result<()> {
     let Some(index) = key.clone().to_int() else {
-      return Err(crate::RuntimeError::script(format!("cannot index list using {key}"), 0..0));
+      return Err(Error::runtime(format!("cannot index list using {key}")));
     };
     let index = calculate_index(index, self.len())
-      .ok_or_else(|| RuntimeError::script(format!("index {index} is out of bounds"), 0..0))?;
+      .ok_or_else(|| Error::runtime(format!("index {index} is out of bounds")))?;
     let Some(slot) = self.0.get_mut(index) else {
-      return Err(RuntimeError::script(format!("index {index} is out of bounds"), 0..0));
+      return Err(Error::runtime(format!("index {index} is out of bounds")));
     };
     *slot = value;
     Ok(())

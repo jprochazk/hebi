@@ -1,36 +1,7 @@
-use std::fmt::Display;
-
 use super::Str;
 use crate::value::handle::Handle;
 use crate::value::Value;
-
-pub enum OwnedIndex {
-  Str(Handle<Str>),
-  Int(i32),
-}
-
-impl Display for OwnedIndex {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      OwnedIndex::Str(key) => write!(f, "{key}"),
-      OwnedIndex::Int(key) => write!(f, "{key}"),
-    }
-  }
-}
-
-pub enum IndexRef<'a> {
-  Str(&'a str),
-  Int(i32),
-}
-
-impl<'a> Display for IndexRef<'a> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      IndexRef::Str(key) => write!(f, "{key}"),
-      IndexRef::Int(key) => write!(f, "{key}"),
-    }
-  }
-}
+use crate::{Error, Result};
 
 pub trait Access {
   fn is_frozen(&self) -> bool {
@@ -42,37 +13,25 @@ pub trait Access {
   }
 
   /// Represents the `obj.key` operation.
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
-    Err(crate::RuntimeError::script(
-      format!("cannot get field `{key}`"),
-      0..0,
-    ))
+  fn field_get(&self, key: &str) -> Result<Option<Value>> {
+    Err(Error::runtime(format!("cannot get field `{key}`")))
   }
 
   /// Represents the `obj.key = value` operation.
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
+  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<()> {
     drop(value);
-    Err(crate::RuntimeError::script(
-      format!("cannot set field `{key}`"),
-      0..0,
-    ))
+    Err(Error::runtime(format!("cannot set field `{key}`")))
   }
 
   /// Represents the `obj[key]` operation.
-  fn index_get(&self, key: Value) -> crate::Result<Option<Value>> {
-    Err(crate::RuntimeError::script(
-      format!("cannot get index `{key}`"),
-      0..0,
-    ))
+  fn index_get(&self, key: Value) -> Result<Option<Value>> {
+    Err(Error::runtime(format!("cannot get index `{key}`")))
   }
 
   /// Represents the `obj[key] = value` operation.
-  fn index_set(&mut self, key: Value, value: Value) -> crate::Result<()> {
+  fn index_set(&mut self, key: Value, value: Value) -> Result<()> {
     drop(value);
-    Err(crate::RuntimeError::script(
-      format!("cannot set index `{key}`"),
-      0..0,
-    ))
+    Err(Error::runtime(format!("cannot set index `{key}`")))
   }
 }
 
@@ -87,10 +46,7 @@ macro_rules! impl_index_via_field {
     ) -> $crate::Result<()> {
       match key.clone().to_str() {
         Some(key) => self.field_set(key, value),
-        None => Err(crate::RuntimeError::script(
-          format!("cannot set index `{key}`"),
-          0..0,
-        )),
+        None => Err($crate::Error::runtime(format!("cannot set index `{key}`"))),
       }
     }
   };

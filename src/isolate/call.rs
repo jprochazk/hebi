@@ -7,7 +7,7 @@ use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::{frame, func, Dict, List};
 use crate::value::Value;
-use crate::{op, Result, RuntimeError};
+use crate::{op, Error, Result};
 
 // TODO: factor `method` out of this process, so `invoke` can be implemented as
 // a fast-track, all it needs to do is place the receiver. currently it's
@@ -35,8 +35,6 @@ impl Isolate {
     if let Err(mut e) = self.run_dispatch_loop() {
       for _ in frame_depth..self.frames.len() {
         let frame = self.pop_frame();
-        // TODO: Span and file name
-        e.push_trace(frame.name(), 0..0, None);
       }
       return Err(e);
     }
@@ -57,7 +55,7 @@ impl Isolate {
     // TODO: trait
     if !callable.is_function() && !callable.is_method() {
       // TODO: span
-      return Err(RuntimeError::script("value is not callable", 0..0));
+      return Err(Error::runtime("value is not callable"));
     }
 
     // # Check arguments
@@ -165,22 +163,20 @@ pub fn check_args(
 
   // check positional arguments
   if args.len() < min {
-    return Err(RuntimeError::script(
-      format!(
-        "missing required positional params: {}",
-        if has_self_param { Some("self") } else { None }
-          .into_iter()
-          .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
-          .join(", "),
-      ),
-      0..0,
-    ));
+    return Err(Error::runtime(format!(
+      "missing required positional params: {}",
+      if has_self_param { Some("self") } else { None }
+        .into_iter()
+        .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
+        .join(", "),
+    )));
   }
   if !params.argv && args.len() > max {
-    return Err(RuntimeError::script(
-      format!("expected at most {} args, got {}", max, args.len()),
-      0..0,
-    ));
+    return Err(Error::runtime(format!(
+      "expected at most {} args, got {}",
+      max,
+      args.len()
+    )));
   }
 
   // check kw arguments
@@ -219,27 +215,24 @@ pub fn check_args(
   }
   // if we have a mismatch, output a comprehensive error
   if !unknown.is_empty() || !missing.is_empty() {
-    return Err(RuntimeError::script(
-      format!(
-        "mismatched keyword params: {}{}{}",
-        if !unknown.is_empty() {
-          format!("could not recognize {}", unknown.iter().join(", "))
-        } else {
-          String::new()
-        },
-        if !unknown.is_empty() && !missing.is_empty() {
-          " and "
-        } else {
-          ""
-        },
-        if !missing.is_empty() {
-          format!("missing {}", missing.iter().join(", "))
-        } else {
-          String::new()
-        },
-      ),
-      0..0,
-    ));
+    return Err(Error::runtime(format!(
+      "mismatched keyword params: {}{}{}",
+      if !unknown.is_empty() {
+        format!("could not recognize {}", unknown.iter().join(", "))
+      } else {
+        String::new()
+      },
+      if !unknown.is_empty() && !missing.is_empty() {
+        " and "
+      } else {
+        ""
+      },
+      if !missing.is_empty() {
+        format!("missing {}", missing.iter().join(", "))
+      } else {
+        String::new()
+      },
+    )));
   }
 
   Ok(out_info)

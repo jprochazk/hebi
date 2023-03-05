@@ -8,6 +8,7 @@ use indexmap::Equivalent;
 use super::Access;
 use crate::value::handle::Handle;
 use crate::value::Value;
+use crate::Result;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Str(String);
@@ -38,7 +39,7 @@ impl<'a> From<&'a str> for Str {
 }
 
 impl Access for Str {
-  fn field_get(&self, key: &str) -> Result<Option<Value>, crate::RuntimeError> {
+  fn field_get(&self, key: &str) -> Result<Option<Value>> {
     Ok(match key {
       "len" => Some(Value::int(self.0.len() as i32)),
       _ => None,

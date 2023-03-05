@@ -19,13 +19,13 @@ use indexmap::IndexSet;
 
 use super::op;
 use crate::ctx::Context;
+use crate::error::Error;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
 use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType, Str};
 use crate::value::Value;
-use crate::RuntimeError;
 
 // TODO: fields should be private, even to ops
 pub struct Isolate {
@@ -173,12 +173,12 @@ impl Isolate {
 }
 
 pub enum Control {
-  Error(RuntimeError),
+  Error(Error),
   Yield,
 }
 
-impl From<RuntimeError> for Control {
-  fn from(value: RuntimeError) -> Self {
+impl From<Error> for Control {
+  fn from(value: Error) -> Self {
     Self::Error(value)
   }
 }
@@ -235,8 +235,7 @@ impl op::Handler for Isolate {
     let name = name.as_str();
     match self.globals.get(name) {
       Some(v) => self.acc = v.clone(),
-      // TODO: span
-      None => return Err(RuntimeError::script(format!("undefined global {name}"), 0..0).into()),
+      None => return Err(Error::runtime(format!("undefined global {name}")).into()),
     }
 
     Ok(())
@@ -331,14 +330,11 @@ impl op::Handler for Isolate {
       Some(symbol) => symbol,
       None => {
         return Err(
-          RuntimeError::script(
-            format!(
-              "failed to import `{}` from module `{}`",
-              name.as_str(),
-              path.segments().iter().join('.')
-            ),
-            0..0,
-          )
+          Error::runtime(format!(
+            "failed to import `{}` from module `{}`",
+            name.as_str(),
+            path.segments().iter().join('.')
+          ))
           .into(),
         )
       }
@@ -389,7 +385,7 @@ impl op::Handler for Isolate {
     // proxy to the first super class in the chain
     let Some(this) = this.to_class_instance() else {
       // TODO: span
-      return Err(RuntimeError::script("receiver is not a class", 0..0).into());
+      return Err(Error::runtime("receiver is not a class").into());
     };
     let parent = this.parent().unwrap();
     self.acc = self.ctx.alloc(ClassSuperProxy::new(this, parent)).into();
@@ -432,7 +428,7 @@ impl op::Handler for Isolate {
 
     let Some(mut list) = list.to_list() else {
       // TODO: span
-      return Err(RuntimeError::script("value is not a list", 0..0).into());
+      return Err(Error::runtime("value is not a list").into());
     };
 
     list.push(take(&mut self.acc));
@@ -548,7 +544,7 @@ impl op::Handler for Isolate {
   fn op_jump_if_false(&mut self, offset: u32) -> Result<op::ControlFlow, Self::Error> {
     let Some(value) = self.acc.clone().to_bool() else {
       // TODO: span
-      return Err(RuntimeError::script("value is not a bool", 0..0).into());
+      return Err(Error::runtime("value is not a bool").into());
     };
 
     match value {
@@ -732,7 +728,7 @@ impl op::Handler for Isolate {
     self
       .print(format_args!("{}\n", string::stringify(value)))
       // TODO: span
-      .map_err(|_| RuntimeError::script("failed to print value", 0..0))?;
+      .map_err(|_| Error::runtime("failed to print value"))?;
     Ok(())
   }
 
@@ -751,18 +747,18 @@ impl op::Handler for Isolate {
         self
           .print(format_args!("{} ", string::stringify(value.clone())))
           // TODO: span
-          .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
+          .map_err(|_| Error::runtime("failed to print values"))?;
       } else {
         self
           .print(format_args!("{}", string::stringify(value.clone())))
           // TODO: span
-          .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
+          .map_err(|_| Error::runtime("failed to print values"))?;
       }
     }
     self
       .print(format_args!("\n"))
       // TODO: span
-      .map_err(|_| RuntimeError::script("failed to print values", 0..0))?;
+      .map_err(|_| Error::runtime("failed to print values"))?;
 
     Ok(())
   }

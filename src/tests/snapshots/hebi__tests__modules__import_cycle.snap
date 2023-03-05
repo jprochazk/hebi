@@ -15,11 +15,7 @@ import a
 
 
 # Result (error):
-In code at 0..0
-In a at 0..0
-In b at 0..0
-Error: attempted to import partially initialized module a
-
+attempted to import partially initialized module a
 
 # Stdout:
 
