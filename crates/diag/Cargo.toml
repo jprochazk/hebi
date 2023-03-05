@@ -1,6 +1,6 @@
 [package]
 name = "hebi_diag"
-version = "0.0.1"
+version = "0.2.0"
 edition = "2021"
 description = "Diagnostics for Hebi"
 repository = "https://github.com/jprochazk/hebi"

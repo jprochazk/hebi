@@ -1,6 +1,6 @@
 [package]
 name = "hebi_syntax"
-version = "0.0.1"
+version = "0.2.0"
 edition = "2021"
 description = "Syntax for Hebi"
 repository = "https://github.com/jprochazk/hebi"
@@ -19,7 +19,7 @@ beef = { version = "0.5.2" }
 logos = { version = "0.12.1" }
 
 span = { version = "^0.0.1", path = "../span", package = "hebi_span" }
-diag = { version = "^0.0.1", path = "../diag", package = "hebi_diag" }
+diag = { version = "0.2.0", path = "../diag", package = "hebi_diag" }
 stacker = { version = "0.1.15" }
 
 [dev-dependencies]
