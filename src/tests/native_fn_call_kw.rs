@@ -65,3 +65,43 @@ check_error! {
     print with_default(a=1,b=2,c=3,d=4)
   "#
 }
+
+#[function]
+fn with_default_2(
+  #[kw]
+  #[default(100)]
+  b: i32,
+  #[kw] a: i32,
+) -> String {
+  format!("{a}+{b}={}", a + b)
+}
+check! {
+  call_kw_with_default_2,
+  register: [with_default_2],
+  r#"
+    print with_default_2(a=1)
+    print with_default_2(a=1, b=2)
+    print with_default_2(b=2, a=1)
+  "#
+}
+check_error! {
+  call_kw_with_default_2_missing_args,
+  register: [with_default_2],
+  r#"
+    print with_default_2()
+  "#
+}
+check_error! {
+  call_kw_with_default_2_too_many_args,
+  register: [with_default_2],
+  r#"
+    print with_default_2(a=1,b=2,c=3)
+  "#
+}
+check_error! {
+  call_kw_with_default_2_too_many_args2,
+  register: [with_default_2],
+  r#"
+    print with_default_2(a=1,b=2,c=3,d=4)
+  "#
+}

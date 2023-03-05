@@ -1,0 +1,17 @@
+---
+source: src/tests/native_fn_call_kw.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print with_default_2(a=1,b=2,c=3,d=4)
+
+
+# Result (error):
+mismatched keyword params: could not recognize c, d
+
+# Stdout:
+
+
