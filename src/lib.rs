@@ -6,8 +6,8 @@ mod emit;
 mod error;
 mod isolate;
 mod op;
-mod public;
-mod util;
+pub mod public;
+pub mod util;
 mod value;
 
 /*
@@ -28,7 +28,6 @@ TODO: carefully design the public API
 use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
-use ctx::Context;
 pub use error::Error;
 use isolate::{Isolate, Stdout};
 use public::IntoStr;
@@ -36,6 +35,8 @@ use value::Value as CoreValue;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+use ctx::Context;
+pub use derive::function;
 pub use public::conv::{FromHebi, IntoHebi};
 pub use public::Value;
 pub use value::object::module::ModuleLoader;

@@ -133,14 +133,14 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
     }
     None => (None, None),
   };
-  return Ok(Parts {
+  Ok(Parts {
     code,
     const_pool,
     frame_size,
     captures,
     module_vars,
     module_id,
-  });
+  })
 }
 
 impl Drop for Frame {

@@ -78,7 +78,7 @@ impl Value {
 
   pub fn int(v: i32) -> Self {
     // We want the bits of `v`, not for it to be reinterpreted as an unsigned int.
-    let bits = unsafe { std::mem::transmute::<_, u32>(v) } as u64;
+    let bits = unsafe { std::mem::transmute::<i32, u32>(v) } as u64;
     let bits = bits | ty::INT;
     Self::new(bits)
   }

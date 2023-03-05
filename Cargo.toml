@@ -10,10 +10,15 @@ readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# [[bin]]
+# name = "cli"
+# path = "bin/cli"
+
 [features]
-default = ["check-recursion-limit"]
+default = ["check_recursion_limit", "emit_snapshots"]
 portable = []
-check-recursion-limit = ["syntax/check-recursion-limit"]
+check_recursion_limit = ["syntax/check_recursion_limit"]
+emit_snapshots = []
 
 [dependencies]
 diag = { version = "^0.0.1", path = "crates/diag", package = "hebi_diag" }
@@ -30,13 +35,12 @@ paste = { version = "1.0.11" }
 indoc = { version = "1.0.8" }
 insta = { version = "1.23.0" }
 
-rustyline = { version = "10.1.0" }
-rustyline-derive = { version = "0.7.0" }
-anyhow = { version = "1.0.69" }
-clap = { version = "4.1.4", features = ["derive"] }
-
 [workspace]
-members = ["crates/derive", "crates/diag", "crates/span", "crates/syntax"]
+members = [
+  "crates/derive", "crates/diag", "crates/span", "crates/syntax",
+  "cli",
+  "samples/*"
+]
 resolver = "2"
 
 # TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
@@ -44,6 +48,3 @@ resolver = "2"
 
 [profile.dev.package.insta]
 opt-level = 3
-
-[[example]]
-name = "cli"

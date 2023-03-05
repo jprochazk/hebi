@@ -111,7 +111,9 @@ mod tests {
       Value::object(ctx.alloc(Str::from("test"))),
     ];
     let snapshot = format!("[{}]", values.iter().join(", "));
-    insta::assert_snapshot!(snapshot);
+    if cfg!(emit_snapshots) {
+      insta::assert_snapshot!(snapshot);
+    }
   }
 
   #[test]

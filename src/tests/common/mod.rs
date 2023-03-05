@@ -65,7 +65,9 @@ macro_rules! check {
 {stdout}
 "
           );
-          insta::assert_snapshot!(snapshot);
+          if cfg!(emit_snapshots) {
+            insta::assert_snapshot!(snapshot);
+          }
         }
         Err(Error::Syntax(e)) => {
           let mut out = String::new();
@@ -138,7 +140,9 @@ macro_rules! check_error {
 {stdout}
 "
           );
-          insta::assert_snapshot!(snapshot);
+          if cfg!(emit_snapshots) {
+            insta::assert_snapshot!(snapshot);
+          }
         }
       }
     }

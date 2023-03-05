@@ -32,9 +32,9 @@ impl Isolate {
     self.width = op::Width::Single;
     let saved_pc = self.pc;
     self.pc = 0;
-    if let Err(mut e) = self.run_dispatch_loop() {
+    if let Err(e) = self.run_dispatch_loop() {
       for _ in frame_depth..self.frames.len() {
-        let frame = self.pop_frame();
+        self.pop_frame();
       }
       return Err(e);
     }

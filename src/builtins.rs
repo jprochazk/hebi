@@ -43,3 +43,17 @@ pub fn register(hebi: &Hebi) {
   hebi.globals().set("str", hebi.create_function(str));
   hebi.globals().set("type", hebi.create_function(r#type));
 }
+
+#[derive::function]
+fn format(
+  value: Value<'_>,
+  #[kw]
+  #[default(false)]
+  pretty: bool,
+) -> Option<String> {
+  if pretty {
+    None
+  } else {
+    Some(format!("{value}"))
+  }
+}

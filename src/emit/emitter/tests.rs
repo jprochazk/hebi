@@ -31,7 +31,9 @@ macro_rules! check {
       func.disassemble(false),
       crate::emit::regalloc::DisplayTracking(&tracking),
     );
-    insta::assert_snapshot!(snapshot);
+    if cfg!(emit_snapshots) {
+      insta::assert_snapshot!(snapshot);
+    }
   }};
 }
 

@@ -1,4 +1,4 @@
-pub mod conv;
+pub(crate) mod conv;
 
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
@@ -184,21 +184,34 @@ impl<'a> Dict<'a> {
   }
 
   pub fn iter(&'a self) -> impl Iterator<Item = (&'a str, &'a Value<'a>)> + 'a {
-    self
-      .inner
-      .iter()
-      .map(|(k, v)| (k.as_str(), unsafe { std::mem::transmute(v) }))
+    self.inner.iter().map(|(k, v)| {
+      (k.as_str(), unsafe {
+        std::mem::transmute::<&CoreValue, &Value>(v)
+      })
+    })
+  }
+
+  pub fn has(&self, key: &str) -> bool {
+    self.inner.contains_key(key)
   }
 
   pub fn get(&self, key: &str) -> Option<Value<'a>> {
     self
       .inner
       .get(key)
-      .map(|v| unsafe { std::mem::transmute(v) })
+      .map(|v| unsafe { std::mem::transmute::<CoreValue, Value>(v.clone()) })
   }
 
   pub fn set(&mut self, key: Str<'a>, value: Value<'a>) {
     self.inner.insert(key.inner, value.inner);
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.inner.is_empty()
+  }
+
+  pub fn len(&self) -> usize {
+    self.inner.len()
   }
 }
 

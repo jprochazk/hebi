@@ -8,9 +8,7 @@ struct Repl {
 }
 
 #[derive(Default)]
-struct State {
-  print_bytecode: bool,
-}
+struct State {}
 
 enum ParseResult {
   Incomplete,
@@ -67,10 +65,6 @@ impl Repl {
 
   fn try_cmd(&mut self, input: &str) -> bool {
     match input.trim() {
-      ".print_bytecode" => {
-        self.state.print_bytecode = true;
-        true
-      }
       _ => false,
     }
   }
@@ -147,7 +141,7 @@ pub fn run() -> rustyline::Result<()> {
 
     match repl.eval(&buffer) {
       Ok(v) => println!("{v}"),
-      Err(e) => println!("error: {e}"),
+      Err(e) => println!("{e}"),
     }
   }
 }

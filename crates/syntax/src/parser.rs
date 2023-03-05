@@ -286,12 +286,12 @@ const MINIMUM_STACK_REQUIRED: usize = 64_000;
 // are converted to exceptions and handled by the host, which means a
 // `try { ... } catch { ... }` around a call to one of the Hebi compiler
 // functions would be enough to properly handle this case.
-#[cfg(any(target_family = "wasm", not(feature = "check-recursion-limit")))]
+#[cfg(any(target_family = "wasm", not(feature = "check_recursion_limit")))]
 fn check_recursion_limit(_span: Span) -> Result<(), Error> {
   Ok(())
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "check-recursion-limit"))]
+#[cfg(all(not(target_family = "wasm"), feature = "check_recursion_limit"))]
 fn check_recursion_limit(span: Span) -> Result<()> {
   if stacker::remaining_stack()
     .map(|available| available > MINIMUM_STACK_REQUIRED)

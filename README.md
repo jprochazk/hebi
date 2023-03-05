@@ -38,12 +38,12 @@ t.test() # prints 20
 .unwrap();
 ```
 
-To see more examples, visit [src/tests](./src/tests). A general overview of the language's currently implemented syntax and semantics is available in the [design](./design.md) file.
+A general overview of the language's currently implemented syntax and semantics is available in the [design](./design.md) file. To see more examples, visit [src/tests](./src/tests) or [samples](./samples/)[^1].
 
-The language also has a REPL at [examples/cli](./examples/cli):
+The language also has a REPL at [cli](./cli):
 
 ```
-$ cargo run --example cli
+$ cargo run -p cli
 Hebi REPL v0.0.0
 Press CTRL-D to exit
 > 
@@ -111,3 +111,5 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+
+[^1]: Using `samples` instead of `examples` is intentional, and is done because of [this issue](https://github.com/bkchr/proc-macro-crate/issues/14) in the `proc-macro-crate` crate, which is used to resolve the crate name in Hebi's proc macros. It also helps with compile times, as dependencies such as `clap` and `rustyline` don't have to exist in the top-level `Cargo.toml` under `dev-dependencies`.
