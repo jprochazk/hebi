@@ -29,7 +29,12 @@ impl ModuleLoader for TestModuleLoader {
 }
 
 macro_rules! check {
-  ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
+  (
+    $name:ident,
+    $(modules: {$($module:literal : $code:literal),*},)?
+    $(register: [$($fn_name:ident),*],)?
+    $input:literal
+  ) => {
     #[test]
     fn $name() {
       use $crate::util::JoinIter;
@@ -43,6 +48,9 @@ macro_rules! check {
         .with_module_loader(module_loader)
         .with_builtins()
         .build();
+      $($(
+        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+      )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {
         Ok(value) => {
@@ -65,7 +73,7 @@ macro_rules! check {
 {stdout}
 "
           );
-          if cfg!(emit_snapshots) {
+          if cfg!(feature = "emit_snapshots") {
             insta::assert_snapshot!(snapshot);
           }
         }
@@ -89,7 +97,12 @@ macro_rules! check {
 }
 
 macro_rules! check_error {
-  ($name:ident, $(modules: {$($module:literal : $code:literal),*},)? $input:literal) => {
+  (
+    $name:ident,
+    $(modules: {$($module:literal : $code:literal),*},)?
+    $(register: [$($fn_name:ident),*],)?
+    $input:literal
+  ) => {
     #[test]
     fn $name() {
       use $crate::util::JoinIter;
@@ -103,6 +116,9 @@ macro_rules! check_error {
         .with_module_loader(module_loader)
         .with_builtins()
         .build();
+      $($(
+        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+      )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {
         Ok(value) => {
@@ -129,7 +145,7 @@ macro_rules! check_error {
             "\
 # Modules:
 {modules}
-            
+
 # Input:
 {input}
 
@@ -140,7 +156,7 @@ macro_rules! check_error {
 {stdout}
 "
           );
-          if cfg!(emit_snapshots) {
+          if cfg!(feature = "emit_snapshots") {
             insta::assert_snapshot!(snapshot);
           }
         }

@@ -1,0 +1,17 @@
+---
+source: src/tests/native_fn.rs
+expression: snapshot
+---
+# Modules:
+
+            
+# Input:
+print with_pos()
+
+
+# Result (error):
+missing required positional params: v
+
+# Stdout:
+
+

@@ -1,0 +1,18 @@
+---
+source: src/tests/native_fn_call.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print with_pos(1)
+
+
+# Result (success):
+none
+
+# Stdout:
+value: 1
+
+

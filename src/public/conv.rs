@@ -5,6 +5,9 @@ use crate::{Error, Result, Value};
 pub trait FromHebi<'a>: Sized + private::Sealed {
   fn from_hebi(ctx: &Context<'a>, value: Value<'a>) -> Result<Self>;
 }
+pub trait FromHebiRef<'a>: Sized + private::Sealed {
+  fn from_hebi_ref(ctx: &Context<'a>, value: &'a Value<'a>) -> Result<Self>;
+}
 
 pub trait IntoHebi<'a>: Sized + private::Sealed {
   fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>>;
@@ -17,6 +20,7 @@ macro_rules! impl_int {
       impl<'a> FromHebi<'a> for $T {
         fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
           let value = value
+            .clone()
             .inner
             .to_int()
             .ok_or_else(|| Error::runtime("value is not an int"))?;
@@ -42,6 +46,7 @@ macro_rules! impl_float {
       impl<'a> FromHebi<'a> for $T {
         fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
           let value = value
+            .clone()
             .inner
             .to_float()
             .ok_or_else(|| Error::runtime("value is not a float"))?;
@@ -64,6 +69,7 @@ impl private::Sealed for bool {}
 impl<'a> FromHebi<'a> for bool {
   fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
     let value = value
+      .clone()
       .inner
       .to_bool()
       .ok_or_else(|| Error::runtime("value is not a bool"))?;
@@ -80,6 +86,7 @@ impl private::Sealed for String {}
 impl<'a> FromHebi<'a> for String {
   fn from_hebi(_: &Context<'a>, value: Value<'a>) -> Result<Self> {
     let value = value
+      .clone()
       .inner
       .to_str()
       .map(|str| str.as_str().to_string())
@@ -96,6 +103,14 @@ impl<'a> IntoHebi<'a> for String {
 }
 
 impl<'a> private::Sealed for &'a str {}
+impl<'a> FromHebiRef<'a> for &'a str {
+  fn from_hebi_ref(_: &Context<'a>, value: &'a Value<'a>) -> Result<Self> {
+    let value = value
+      .as_str_ref()
+      .ok_or_else(|| Error::runtime("value is not a string"))?;
+    Ok(value)
+  }
+}
 impl<'a, 'b> IntoHebi<'a> for &'b str {
   fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>> {
     Ok(Value::bind(ctx.inner().alloc(object::Str::from(self))))
@@ -123,6 +138,57 @@ impl<'a> FromHebi<'a> for Value<'a> {
 impl<'a> IntoHebi<'a> for Value<'a> {
   fn into_hebi(self, _: &Context<'a>) -> Result<Value<'a>> {
     Ok(self)
+  }
+}
+
+impl<T> private::Sealed for Option<T> where T: private::Sealed {}
+impl<'a, T> FromHebi<'a> for Option<T>
+where
+  T: FromHebi<'a>,
+{
+  fn from_hebi(ctx: &Context<'a>, value: Value<'a>) -> Result<Self> {
+    if value.is_none() {
+      Ok(None)
+    } else {
+      Ok(Some(T::from_hebi(ctx, value)?))
+    }
+  }
+}
+impl<'a, T> FromHebiRef<'a> for Option<T>
+where
+  T: FromHebiRef<'a>,
+{
+  fn from_hebi_ref(ctx: &Context<'a>, value: &'a Value<'a>) -> Result<Self> {
+    if value.is_none() {
+      Ok(None)
+    } else {
+      Ok(Some(T::from_hebi_ref(ctx, value)?))
+    }
+  }
+}
+impl<'a, T> IntoHebi<'a> for Option<T>
+where
+  T: IntoHebi<'a>,
+{
+  fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>> {
+    match self {
+      Some(v) => v.into_hebi(ctx),
+      None => Ok(Value::bind(CoreValue::none())),
+    }
+  }
+}
+
+impl<T, E> private::Sealed for Result<T, E> where T: private::Sealed {}
+impl<'a, T, E> IntoHebi<'a> for Result<T, E>
+where
+  T: IntoHebi<'a>,
+  E: Into<Error>,
+{
+  fn into_hebi(self, ctx: &Context<'a>) -> Result<Value<'a>> {
+    match self {
+      Ok(v) => v.into_hebi(ctx),
+      Err(e) => Err(e.into()),
+    }
   }
 }
 

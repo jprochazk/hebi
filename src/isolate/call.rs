@@ -16,13 +16,7 @@ use crate::{op, Error, Result};
 impl Isolate {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value> {
     if let Some(f) = f.clone().to_native_function() {
-      let kwargs = kwargs.to_dict();
-      let temp = Dict::new();
-      let kwargs = match &kwargs {
-        Some(kwargs) => unsafe { kwargs._get() },
-        None => &temp,
-      };
-      return f.call(self.ctx(), args, kwargs);
+      return f.call(self.ctx(), args, kwargs.to_dict());
     }
 
     let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
@@ -94,7 +88,7 @@ impl Isolate {
 
   fn run_dispatch_loop(&mut self) -> crate::Result<()> {
     let result = loop {
-      let code = unsafe { self.current_frame_mut().code.as_mut() };
+      let code = self.current_frame_mut().code;
       match op::dispatch(self, code, self.pc, self.width) {
         Ok(flow) => match flow {
           (op::ControlFlow::Jump(offset), w) => {

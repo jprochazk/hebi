@@ -3,8 +3,7 @@ fn main() {
 
   let vm = Hebi::default();
 
-  vm.globals()
-    .set("my_bound_fn", vm.create_function(my_bound_fn));
+  vm.globals().set("greet", vm.create_function(greet));
 
   println!("{}", vm.eval::<i32>("1 + 1").unwrap());
 
@@ -19,15 +18,19 @@ t := Test(v=100)
 t.test() # prints 100
 t.v = 20
 t.test() # prints 20
-
-my_bound_fn(t)
 "#,
   )
   .unwrap();
+
+  vm.eval::<()>(r#"greet(first_name="Salman", last_name=none)"#)
+    .unwrap();
 }
 
 #[hebi::function]
-fn my_bound_fn(v: hebi::Value) -> hebi::Value {
-  println!("got: {v}");
-  v
+fn greet(#[kw] first_name: &str, #[kw] last_name: Option<&str>) {
+  if let Some(last_name) = last_name {
+    println!("Hello, {first_name} {last_name}!");
+  } else {
+    println!("Hello, {first_name}!");
+  }
 }

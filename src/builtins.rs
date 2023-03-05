@@ -2,7 +2,7 @@ use crate::public::conv::IntoHebi;
 use crate::public::{Context, Dict, Value};
 use crate::{Error, Hebi, Result};
 
-fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> Result<Value<'a>> {
+fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: Option<Dict<'a>>) -> Result<Value<'a>> {
   if args.len() != 1 {
     return Err(Error::runtime(format!(
       "expected exactly 1 argument, got {}",
@@ -14,7 +14,11 @@ fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> Resu
   format!("{value}").into_hebi(ctx)
 }
 
-fn r#type<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> Result<Value<'a>> {
+fn r#type<'a>(
+  ctx: &'a Context<'a>,
+  args: &'a [Value<'a>],
+  _: Option<Dict<'a>>,
+) -> Result<Value<'a>> {
   if args.len() != 1 {
     return Err(Error::runtime(format!(
       "expected exactly 1 argument, got {}",
@@ -42,18 +46,4 @@ fn r#type<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: &'a Dict<'a>) -> R
 pub fn register(hebi: &Hebi) {
   hebi.globals().set("str", hebi.create_function(str));
   hebi.globals().set("type", hebi.create_function(r#type));
-}
-
-#[derive::function]
-fn format(
-  value: Value<'_>,
-  #[kw]
-  #[default(false)]
-  pretty: bool,
-) -> Option<String> {
-  if pretty {
-    None
-  } else {
-    Some(format!("{value}"))
-  }
 }

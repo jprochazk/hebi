@@ -141,7 +141,7 @@ macro_rules! instruction_dispatch {
       #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        _: &[u8],
+        _: NonNull<[u8]>,
         _: usize,
         _: Width,
       ) -> Result<(ControlFlow, Width), H::Error> {
@@ -154,11 +154,11 @@ macro_rules! instruction_dispatch {
       #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        code: &[u8],
+        code: NonNull<[u8]>,
         pc: usize,
         width: Width,
       ) -> Result<(ControlFlow, Width), H::Error> {
-        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
+        let ($($operand),*) = <$name>::decode(unsafe { code.as_ref() }, pc + 1, width);
         vm.[<op_ $name:snake>]($($operand),*).map(|_| (
           ControlFlow::Jump(1 + <$name as Decode>::Operands::size(width)),
           Width::Single
@@ -171,11 +171,11 @@ macro_rules! instruction_dispatch {
       #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        code: &[u8],
+        code: NonNull<[u8]>,
         pc: usize,
         width: Width,
       ) -> Result<(ControlFlow, Width), H::Error> {
-        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
+        let ($($operand),*) = <$name>::decode(unsafe { code.as_ref() }, pc + 1, width);
         vm.[<op_ $name:snake>](
           $($operand),*
         )
@@ -195,7 +195,7 @@ macro_rules! instruction_dispatch {
       #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        _: &[u8],
+        _: NonNull<[u8]>,
         pc: usize,
         width: Width,
       ) -> Result<(ControlFlow, Width), H::Error> {
@@ -212,11 +212,11 @@ macro_rules! instruction_dispatch {
       #[allow(clippy::ptr_arg)]
       fn [<op_ $name:snake>]<H: $Handler>(
         vm: &mut H,
-        code: &[u8],
+        code: NonNull<[u8]>,
         pc: usize,
         width: Width,
       ) -> Result<(ControlFlow, Width), H::Error> {
-        let ($($operand),*) = <$name>::decode(code, pc + 1, width);
+        let ($($operand),*) = <$name>::decode(unsafe { code.as_ref() }, pc + 1, width);
         // VM sets `PC`
         vm.[<op_ $name:snake>](
           $($operand,)*
@@ -352,7 +352,7 @@ macro_rules! instructions {
     #[allow(clippy::ptr_arg)]
     fn op_nop<H: $Handler>(
       _: &mut H,
-      _: &[u8],
+      _: NonNull<[u8]>,
       _: usize,
       _: Width,
     ) -> Result<(ControlFlow, Width), H::Error> {
@@ -362,7 +362,7 @@ macro_rules! instructions {
     #[allow(clippy::ptr_arg)]
     fn op_wide<H: $Handler>(
       _: &mut H,
-      _: &[u8],
+      _: NonNull<[u8]>,
       _: usize,
       _: Width,
     ) -> Result<(ControlFlow, Width), H::Error> {
@@ -372,7 +372,7 @@ macro_rules! instructions {
     #[allow(clippy::ptr_arg)]
     fn op_extra_wide<H: $Handler>(
       _: &mut H,
-      _: &[u8],
+      _: NonNull<[u8]>,
       _: usize,
       _: Width,
     ) -> Result<(ControlFlow, Width), H::Error> {
@@ -382,7 +382,7 @@ macro_rules! instructions {
     #[allow(clippy::ptr_arg)]
     fn op_ret<H: Handler>(
       vm: &mut H,
-      _: &[u8],
+      _: NonNull<[u8]>,
       _: usize,
       _: Width,
     ) -> Result<(ControlFlow, Width), H::Error> {
@@ -420,8 +420,8 @@ macro_rules! instructions {
       }
     }
 
-    pub fn $dispatch<H: $Handler>(vm: &mut H, code: &[u8], pc: usize, width: Width) -> Result<(ControlFlow, Width), H::Error> {
-      match code[pc] {
+    pub fn $dispatch<H: $Handler>(vm: &mut H, code: NonNull<[u8]>, pc: usize, width: Width) -> Result<(ControlFlow, Width), H::Error> {
+      match unsafe { code.as_ref()[pc] } {
         ops::$Nop => op_nop(vm, code, pc, width),
         ops::$Wide => op_wide(vm, code, pc, width),
         ops::$ExtraWide => op_extra_wide(vm, code, pc, width),
@@ -430,7 +430,7 @@ macro_rules! instructions {
         )*
         ops::$Ret => op_ret(vm, code, pc, width),
         ops::$Suspend => return Ok((ControlFlow::Yield, Width::Single)),
-        _ => panic!("malformed bytecode: invalid opcode {}", code[pc]),
+        _ => panic!("malformed bytecode: invalid opcode {}", unsafe { code.as_ref()[pc] }),
       }
     }
 

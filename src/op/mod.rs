@@ -6,6 +6,7 @@ pub mod ty;
 
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::ptr::NonNull;
 
 use beef::lean::Cow;
 use paste::paste;

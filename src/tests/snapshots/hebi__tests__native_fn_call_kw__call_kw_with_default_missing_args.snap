@@ -1,15 +1,12 @@
 ---
-source: src/tests/fn_call_kw.rs
+source: src/tests/native_fn_call_kw.rs
 expression: snapshot
 ---
 # Modules:
 
 
 # Input:
-fn f(*, a):
-  print a
-
-f()
+print with_default()
 
 
 # Result (error):

@@ -326,7 +326,10 @@ impl op::Handler for Isolate {
 
     let module = import::load(self, path.clone())?;
 
-    let symbol = match unsafe { module.module_vars() }.get(name.as_str()).cloned() {
+    let symbol = match unsafe { module.module_vars().as_ref() }
+      .get(name.as_str())
+      .cloned()
+    {
       Some(symbol) => symbol,
       None => {
         return Err(
@@ -484,7 +487,7 @@ impl op::Handler for Isolate {
     // this should always be a function
     let mut func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { func.captures_mut() };
+    let captures = unsafe { func.captures_mut().as_mut() };
     captures[slot as usize] = value;
 
     Ok(())
@@ -496,7 +499,7 @@ impl op::Handler for Isolate {
     // this should always be a function
     let mut func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { func.captures_mut() };
+    let captures = unsafe { func.captures_mut().as_mut() };
     captures[self_slot as usize] = value;
 
     Ok(())
@@ -775,7 +778,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &[], &Dict::new())?;
+      self.acc = f.call(self.ctx(), &[], None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -806,7 +809,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &args, &Dict::new())?;
+      self.acc = f.call(self.ctx(), &args, None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -844,13 +847,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      let kwargs = kwargs.to_dict();
-      let temp = Dict::new();
-      let kwargs = match &kwargs {
-        Some(kwargs) => unsafe { kwargs._get() },
-        None => &temp,
-      };
-      self.acc = f.call(self.ctx(), &args, kwargs)?;
+      self.acc = f.call(self.ctx(), &args, kwargs.to_dict())?;
       self.pc = return_address;
       return Ok(());
     }

@@ -119,17 +119,16 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
   };
 
   let mut desc = func.descriptor();
-  let code = NonNull::from(unsafe { desc.code_mut() });
-  let const_pool = NonNull::from(desc.const_pool());
+  let code = unsafe { desc.code_mut() };
+  let const_pool = unsafe { desc.const_pool() };
   let frame_size = desc.frame_size() as usize;
-  let captures = NonNull::from(unsafe { func.captures_mut() });
+  let captures = unsafe { func.captures_mut() };
   let (module_vars, module_id) = match func.module_id() {
     Some(id) => {
       let mut module = modules.by_id(id).ok_or_else(|| {
         Error::runtime("attempted to call {callable} which was declared in a broken module")
       })?;
-      let module_vars = NonNull::from(unsafe { module.module_vars_mut() });
-      (Some(module_vars), Some(id))
+      (Some(unsafe { module.module_vars_mut() }), Some(id))
     }
     None => (None, None),
   };

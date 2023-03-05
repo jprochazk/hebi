@@ -17,6 +17,8 @@ mod list;
 mod literals;
 mod loops;
 mod modules;
+mod native_fn_call;
+mod native_fn_call_kw;
 mod object_load_field;
 mod object_load_index;
 mod precedence;

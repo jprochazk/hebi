@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ptr::NonNull;
 
 use indexmap::IndexMap;
 
@@ -13,10 +14,46 @@ use crate::value::Value;
 pub struct FunctionDescriptor {
   name: Handle<Str>,
   frame_size: u32,
-  code: Vec<u8>,
-  const_pool: Vec<Constant>,
+  code: NonNull<[u8]>,
+  const_pool: NonNull<[Constant]>,
   params: Params,
   num_captures: u32,
+}
+
+// Why are we manually managing the `code` and `const_pool` memory here?
+// Dynamic languages are slow because every access to every value needs
+// to be type checked.
+// To mitigate this problem, modern VMs employ techniques such as inline
+// caching. The basic idea is to store fields of objects tightly packed in an
+// array or tuple-like structure, and then after an initial lookup by name,
+// cache the index of the field in the bytecode. As long as the shape of
+// the object doesn't changes, every access to that field will be significantly
+// faster.
+// Note the `cache the index` part. This requires mutating the bytecode as it's
+// running, meaning we need read *and* write access to it at the same time. This
+// is already not very in line with Rust's borrow checking rules, but we can
+// just use RefCell, right? Consider the case of recursive functions. Each new
+// frame on the call stack needs to store a reference to the bytecode, so that
+// the VM can access it with minimal indirection when dispatching instructions.
+// The moment we try to read an instruction (immutable borrow), followed by an
+// attempt to IC a field or quicken the instruction (mutable borrow), we get
+// a panic.
+// There is no way to express this pattern in safe Rust today, so we fall back
+// to using raw pointers. This way we side-step Rust's aliasing rules, and can
+// store as many mutable pointers to the same memory as we'd like, without
+// invoking UB.
+// Can't we at least use a `Box` or a `Vec`?
+// No, `Box` is not viable here, because there is no easy way to
+// obtain a `NonNull` pointer from a `Box` without consuming the `Box`.
+// Same problem for `Vec`. They want to own the memory, and giving
+// you a raw pointer means opening you up to dangling pointers and
+// use-after-free. Armed with miri and valgrind, the risk is worth it here.
+
+impl Drop for FunctionDescriptor {
+  fn drop(&mut self) {
+    drop(unsafe { Box::from_raw(self.code.as_ptr()) });
+    drop(unsafe { Box::from_raw(self.const_pool.as_ptr()) });
+  }
 }
 
 impl FunctionDescriptor {
@@ -28,6 +65,9 @@ impl FunctionDescriptor {
     params: Params,
     num_captures: u32,
   ) -> Self {
+    let code = unsafe { NonNull::new_unchecked(Box::into_raw(code.into_boxed_slice())) };
+    let const_pool =
+      unsafe { NonNull::new_unchecked(Box::into_raw(const_pool.into_boxed_slice())) };
     Self {
       name,
       frame_size,
@@ -49,16 +89,12 @@ impl FunctionDescriptor {
     self.frame_size
   }
 
-  pub fn code(&self) -> &[u8] {
-    &self.code
+  pub unsafe fn code_mut(&mut self) -> NonNull<[u8]> {
+    self.code
   }
 
-  pub unsafe fn code_mut(&mut self) -> &mut [u8] {
-    &mut self.code
-  }
-
-  pub fn const_pool(&self) -> &[Constant] {
-    &self.const_pool
+  pub unsafe fn const_pool(&self) -> NonNull<[Constant]> {
+    self.const_pool
   }
 
   pub fn params(&self) -> &Params {
@@ -77,7 +113,8 @@ impl FunctionDescriptor {
   }
 
   pub(crate) fn _disassemble_inner(&self, f: &mut String, print_bytes: bool) {
-    for v in self.const_pool.iter() {
+    let const_pool = unsafe { self.const_pool.as_ref() };
+    for v in const_pool.iter() {
       if let Constant::FunctionDescriptor(func) = v {
         func._disassemble_inner(f, print_bytes);
         f.push('\n');
@@ -92,11 +129,11 @@ impl FunctionDescriptor {
     writeln!(f, "  length: {}", self.code.len()).unwrap();
 
     // constants
-    if self.const_pool.is_empty() {
+    if const_pool.is_empty() {
       writeln!(f, "  const: <empty>").unwrap();
     } else {
-      writeln!(f, "  const (length={}):", self.const_pool.len()).unwrap();
-      for (i, value) in self.const_pool.iter().enumerate() {
+      writeln!(f, "  const (length={}):", const_pool.len()).unwrap();
+      for (i, value) in const_pool.iter().enumerate() {
         writeln!(f, "    {i}: {value}").unwrap();
       }
     }
@@ -106,12 +143,13 @@ impl FunctionDescriptor {
     let offset_align = self.code.len().to_string().len();
     let mut pc = 0;
     while pc < self.code.len() {
-      let (size, instr) = op::disassemble(&self.code[..], pc);
+      let code = unsafe { self.code.as_ref() };
+      let (size, instr) = op::disassemble(code, pc);
 
       let bytes = {
         let mut out = String::new();
         if print_bytes {
-          for byte in self.code[pc..pc + size].iter() {
+          for byte in code[pc..pc + size].iter() {
             write!(&mut out, "{byte:02x} ").unwrap();
           }
           if size < 6 {
@@ -171,8 +209,8 @@ impl Function {
     self.module_id
   }
 
-  pub unsafe fn captures_mut(&mut self) -> &mut [Value] {
-    &mut self.captures
+  pub unsafe fn captures_mut(&mut self) -> NonNull<[Value]> {
+    NonNull::from(&mut self.captures[..])
   }
 }
 

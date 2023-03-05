@@ -33,6 +33,12 @@ impl From<Vec<syntax::Error>> for Error {
   }
 }
 
+impl From<String> for Error {
+  fn from(value: String) -> Self {
+    Self::runtime(value)
+  }
+}
+
 impl crate::value::object::Access for Error {}
 impl StdError for Error {}
 impl Display for Error {

@@ -1,0 +1,17 @@
+---
+source: src/tests/native_fn_call_kw.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print simple()
+
+
+# Result (error):
+mismatched keyword params: missing v
+
+# Stdout:
+
+

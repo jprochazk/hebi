@@ -37,7 +37,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 use ctx::Context;
 pub use derive::function;
-pub use public::conv::{FromHebi, IntoHebi};
+pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
 pub use public::Value;
 pub use value::object::module::ModuleLoader;
 use value::object::native::Callable;
@@ -87,7 +87,7 @@ impl Hebi {
       .call(module.root().into(), &[], CoreValue::none())?;
     let result = Value::bind(result);
     let ctx = self.ctx();
-    Ok(T::from_hebi(&ctx, result)?)
+    T::from_hebi(&ctx, result)
   }
 
   pub fn io<T: 'static>(&self) -> Option<Ref<'_, T>> {

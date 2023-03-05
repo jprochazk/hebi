@@ -1,15 +1,12 @@
 ---
-source: src/tests/fn_call_default.rs
+source: src/tests/native_fn_call.rs
 expression: snapshot
 ---
 # Modules:
 
 
 # Input:
-fn f(a=10):
-  print a
-
-f(1,2)
+print with_pos(1, 2)
 
 
 # Result (error):

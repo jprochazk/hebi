@@ -4,7 +4,7 @@ expression: snapshot
 ---
 # Modules:
 
-            
+
 # Input:
 fn f(*, a, b, **kw):
   print a, b, kw

@@ -195,11 +195,11 @@ impl<'a> Dict<'a> {
     self.inner.contains_key(key)
   }
 
-  pub fn get(&self, key: &str) -> Option<Value<'a>> {
+  pub fn get(&self, key: &str) -> Option<&Value<'a>> {
     self
       .inner
       .get(key)
-      .map(|v| unsafe { std::mem::transmute::<CoreValue, Value>(v.clone()) })
+      .map(|v| unsafe { std::mem::transmute::<&CoreValue, &Value>(v) })
   }
 
   pub fn set(&mut self, key: Str<'a>, value: Value<'a>) {

@@ -4,7 +4,7 @@ expression: snapshot
 ---
 # Modules:
 
-            
+
 # Input:
 class T:
   a = none

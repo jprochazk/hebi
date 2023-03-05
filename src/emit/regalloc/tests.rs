@@ -5,7 +5,7 @@ macro_rules! check {
     let (registers, mapping) = $v;
     let mut mapping = mapping.into_iter().collect::<Vec<_>>();
     mapping.sort_unstable_by_key(|&v| v.0);
-    if cfg!(emit_snapshots) {
+    if cfg!(feature = "emit_snapshots") {
       insta::assert_snapshot!(format!("registers={registers}\n{mapping:#?}"));
     }
   };
@@ -30,7 +30,7 @@ fn reg_alloc_1() {
 
   let mut regalloc = RegAlloc::new();
 
-  if cfg!(emit_snapshots) {
+  if cfg!(feature = "emit_snapshots") {
     insta::assert_snapshot!(format!("{}", DisplayTracking(&regalloc.0.borrow())));
   }
 
@@ -46,7 +46,7 @@ fn reg_alloc_1() {
 
   r1.index();
 
-  if cfg!(emit_snapshots) {
+  if cfg!(feature = "emit_snapshots") {
     insta::assert_snapshot!(format!("{}", DisplayTracking(&regalloc.0.borrow())));
   }
 
@@ -86,7 +86,7 @@ fn reg_alloc_2() {
   c.index();
   b.index();
 
-  if cfg!(emit_snapshots) {
+  if cfg!(feature = "emit_snapshots") {
     insta::assert_snapshot!(format!("{}", DisplayTracking(&regalloc.0.borrow())));
   }
   check!(regalloc.scan());

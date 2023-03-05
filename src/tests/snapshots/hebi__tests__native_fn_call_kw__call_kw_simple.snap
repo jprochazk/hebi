@@ -1,0 +1,18 @@
+---
+source: src/tests/native_fn_call_kw.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print simple(v=1)
+
+
+# Result (success):
+none
+
+# Stdout:
+value: 1
+
+

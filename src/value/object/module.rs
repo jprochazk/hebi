@@ -1,5 +1,6 @@
 use std::error::Error as StdError;
 use std::fmt::Display;
+use std::ptr::NonNull;
 use std::str::FromStr;
 
 use indexmap::{IndexMap, IndexSet};
@@ -147,12 +148,12 @@ impl Module {
     self.root.clone()
   }
 
-  pub(crate) unsafe fn module_vars(&self) -> &Dict {
-    &self.module_vars
+  pub(crate) unsafe fn module_vars(&self) -> NonNull<Dict> {
+    NonNull::from(&self.module_vars)
   }
 
-  pub(crate) unsafe fn module_vars_mut(&mut self) -> &mut Dict {
-    &mut self.module_vars
+  pub(crate) unsafe fn module_vars_mut(&mut self) -> NonNull<Dict> {
+    NonNull::from(&mut self.module_vars)
   }
 }
 

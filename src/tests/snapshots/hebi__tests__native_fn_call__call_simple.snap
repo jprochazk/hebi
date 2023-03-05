@@ -1,0 +1,18 @@
+---
+source: src/tests/native_fn_call.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+print simple()
+
+
+# Result (success):
+none
+
+# Stdout:
+test
+
+
