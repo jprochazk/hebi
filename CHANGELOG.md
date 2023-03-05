@@ -1,4 +1,6 @@
-# UNRELEASED
+# 0.2.0
+
+Note: Accidentally skipped `0.1.0` by using `cargo workspaces publish` incorrectly.
 
 - Implemented module loading, configurable via the `ModuleLoader` trait
 - Changed import syntax to match Python:
