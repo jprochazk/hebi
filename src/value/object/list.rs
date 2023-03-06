@@ -85,6 +85,12 @@ impl<const N: usize> From<[Value; N]> for List {
   }
 }
 
+impl FromIterator<Value> for List {
+  fn from_iter<T: IntoIterator<Item = Value>>(iter: T) -> Self {
+    Self(Vec::from_iter(iter))
+  }
+}
+
 impl<Idx> Index<Idx> for List
 where
   Idx: SliceIndex<[Value]>,
@@ -173,13 +179,6 @@ fn calculate_index(index: i32, len: usize) -> Option<usize> {
     return Some((len - index) as usize);
   }
   None
-}
-fn handle_negative_index(index: isize, len: isize) -> Option<usize> {
-  if (-index) > len {
-    None
-  } else {
-    Some((len - index) as usize)
-  }
 }
 
 impl Display for List {

@@ -19,7 +19,7 @@ pub struct Frame {
   pub code: NonNull<[u8]>,
   pub const_pool: NonNull<[Constant]>,
   pub frame_size: usize,
-  pub captures: NonNull<[Value]>,
+  pub captures: Handle<List>,
   pub module_vars: Option<Handle<Dict>>,
   pub module_id: Option<ModuleId>,
 
@@ -109,7 +109,7 @@ struct Parts {
   const_pool: NonNull<[Constant]>,
   frame_size: usize,
   // TODO: update captures same as module_vars
-  captures: NonNull<[Value]>,
+  captures: Handle<List>,
   module_vars: Option<Handle<Dict>>,
   module_id: Option<ModuleId>,
 }
@@ -124,7 +124,7 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
   let code = unsafe { desc.code_mut() };
   let const_pool = unsafe { desc.const_pool() };
   let frame_size = desc.frame_size() as usize;
-  let captures = unsafe { func.captures_mut() };
+  let captures = func.captures();
   let (module_vars, module_id) = match func.module_id() {
     Some(id) => {
       let mut module = modules.by_id(id).ok_or_else(|| {

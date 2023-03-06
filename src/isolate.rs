@@ -123,14 +123,12 @@ impl Isolate {
 
   fn get_capture(&self, slot: u32) -> Value {
     let frame = self.current_frame();
-    let captures = unsafe { frame.captures.as_ref() };
-    captures[slot as usize].clone()
+    frame.captures[slot as usize].clone()
   }
 
   fn set_capture(&mut self, slot: u32, value: Value) {
     let frame = self.current_frame_mut();
-    let captures = unsafe { frame.captures.as_mut() };
-    captures[slot as usize] = value;
+    frame.captures[slot as usize] = value;
   }
 
   fn get_module_var(&self, slot: u32) -> Value {
@@ -474,10 +472,9 @@ impl op::Handler for Isolate {
     let value = self.get_reg(reg);
 
     // this should always be a function
-    let mut func = self.acc.clone().to_function().unwrap();
+    let func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { func.captures_mut().as_mut() };
-    captures[slot as usize] = value;
+    func.captures()[slot as usize] = value;
 
     Ok(())
   }
@@ -486,10 +483,9 @@ impl op::Handler for Isolate {
     let value = self.get_capture(parent_slot);
 
     // this should always be a function
-    let mut func = self.acc.clone().to_function().unwrap();
+    let func = self.acc.clone().to_function().unwrap();
 
-    let captures = unsafe { func.captures_mut().as_mut() };
-    captures[self_slot as usize] = value;
+    func.captures()[self_slot as usize] = value;
 
     Ok(())
   }

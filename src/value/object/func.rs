@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use indexmap::IndexMap;
 
 use super::module::ModuleId;
-use super::{Access, Str};
+use super::{Access, List, Str};
 use crate::ctx::Context;
 use crate::op;
 use crate::value::constant::Constant;
@@ -190,14 +190,8 @@ impl Access for FunctionDescriptor {}
 
 pub struct Function {
   desc: Handle<FunctionDescriptor>,
-  captures: NonNull<[Value]>,
+  captures: Handle<List>,
   module_id: Option<ModuleId>,
-}
-
-impl Drop for Function {
-  fn drop(&mut self) {
-    drop(unsafe { Box::from_raw(self.captures.as_ptr()) })
-  }
 }
 
 impl Function {
@@ -206,12 +200,9 @@ impl Function {
     desc: Handle<FunctionDescriptor>,
     module_id: Option<ModuleId>,
   ) -> Handle<Function> {
-    let mut captures = Vec::with_capacity(desc.num_captures() as usize);
-    for _ in 0..desc.num_captures() as usize {
-      captures.push(Value::none());
-    }
-    let captures = unsafe { NonNull::new_unchecked(Box::into_raw(captures.into_boxed_slice())) };
-
+    let captures = ctx.alloc(List::from_iter(
+      (0..desc.num_captures() as usize).map(|_| Value::none()),
+    ));
     ctx.alloc(Function {
       desc,
       captures,
@@ -230,14 +221,8 @@ impl Function {
     self.module_id
   }
 
-  /// # Safety
-  /// Caller must ensure that:
-  /// - `self` is not dropped before the pointer returned by this function.
-  /// - the pointer is never freed.
-  /// - any references constructed from the pointer are short-lived and adhere
-  ///   to Rust's aliasing guarantees.
-  pub unsafe fn captures_mut(&mut self) -> NonNull<[Value]> {
-    self.captures
+  pub fn captures(&self) -> Handle<List> {
+    self.captures.clone()
   }
 }
 
