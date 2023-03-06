@@ -13,7 +13,6 @@ mod string;
 mod truth;
 
 use std::mem::take;
-use std::ptr::NonNull;
 
 use indexmap::IndexSet;
 
@@ -40,7 +39,6 @@ pub struct Isolate {
 
   acc: Value,
   frames: Vec<Frame>,
-  current_frame: Option<NonNull<Frame>>,
   stdout: Box<dyn Stdout>,
 }
 
@@ -71,7 +69,6 @@ impl Isolate {
 
       acc: Value::none(),
       frames: vec![],
-      current_frame: None,
       stdout,
     }
   }
@@ -94,23 +91,18 @@ impl Isolate {
 
   fn push_frame(&mut self, frame: Frame) {
     self.frames.push(frame);
-    self.current_frame = Some(NonNull::from(unsafe {
-      self.frames.last_mut().unwrap_unchecked()
-    }));
   }
 
   fn pop_frame(&mut self) -> Frame {
-    let frame = self.frames.pop().expect("call stack underflow");
-    self.current_frame = self.frames.last_mut().map(NonNull::from);
-    frame
+    self.frames.pop().expect("call stack underflow")
   }
 
   fn current_frame(&self) -> &Frame {
-    unsafe { &*self.current_frame.unwrap().as_ptr() }
+    self.frames.last().unwrap()
   }
 
   fn current_frame_mut(&mut self) -> &mut Frame {
-    unsafe { &mut *self.current_frame.unwrap().as_ptr() }
+    self.frames.last_mut().unwrap()
   }
 
   fn get_const(&self, slot: u32) -> Value {
@@ -143,14 +135,14 @@ impl Isolate {
 
   fn get_module_var(&self, slot: u32) -> Value {
     let frame = self.current_frame();
-    let module_vars = unsafe { frame.module_vars.unwrap().as_ref() };
+    let module_vars = frame.module_vars.as_ref().unwrap();
     let var = module_vars.get_index(slot as usize).unwrap().1;
     var.clone()
   }
 
   fn set_module_var(&mut self, slot: u32, value: Value) {
     let frame = self.current_frame_mut();
-    let module_vars = unsafe { frame.module_vars.unwrap().as_mut() };
+    let module_vars = frame.module_vars.as_mut().unwrap();
     let var = module_vars.get_index_mut(slot as usize).unwrap().1;
     *var = value;
   }
@@ -326,10 +318,7 @@ impl op::Handler for Isolate {
 
     let module = import::load(self, path.clone())?;
 
-    let symbol = match unsafe { module.module_vars().as_ref() }
-      .get(name.as_str())
-      .cloned()
-    {
+    let symbol = match module.module_vars().get(name.as_str()).cloned() {
       Some(symbol) => symbol,
       None => {
         return Err(

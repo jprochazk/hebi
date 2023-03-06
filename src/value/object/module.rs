@@ -102,12 +102,12 @@ impl ModuleDescriptor {
     ctx.alloc(Module {
       name,
       root,
-      module_vars: Dict::from_iter(
+      module_vars: ctx.alloc(Dict::from_iter(
         self
           .module_vars()
           .iter()
           .map(|k| (ctx.alloc(Str::from(k.clone())), Value::none())),
-      ),
+      )),
     })
   }
 
@@ -135,7 +135,7 @@ impl Access for ModuleDescriptor {}
 pub struct Module {
   name: Handle<Str>,
   root: Handle<Function>,
-  module_vars: Dict,
+  module_vars: Handle<Dict>,
 }
 
 #[derive::delegate_to_handle]
@@ -148,12 +148,8 @@ impl Module {
     self.root.clone()
   }
 
-  pub(crate) unsafe fn module_vars(&self) -> NonNull<Dict> {
-    NonNull::from(&self.module_vars)
-  }
-
-  pub(crate) unsafe fn module_vars_mut(&mut self) -> NonNull<Dict> {
-    NonNull::from(&mut self.module_vars)
+  pub fn module_vars(&self) -> Handle<Dict> {
+    self.module_vars.clone()
   }
 }
 

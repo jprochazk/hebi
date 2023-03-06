@@ -20,7 +20,7 @@ pub struct Frame {
   pub const_pool: NonNull<[Constant]>,
   pub frame_size: usize,
   pub captures: NonNull<[Value]>,
-  pub module_vars: Option<NonNull<Dict>>,
+  pub module_vars: Option<Handle<Dict>>,
   pub module_id: Option<ModuleId>,
 
   pub on_return: OnReturn,
@@ -108,8 +108,9 @@ struct Parts {
   code: NonNull<[u8]>,
   const_pool: NonNull<[Constant]>,
   frame_size: usize,
+  // TODO: update captures same as module_vars
   captures: NonNull<[Value]>,
-  module_vars: Option<NonNull<Dict>>,
+  module_vars: Option<Handle<Dict>>,
   module_id: Option<ModuleId>,
 }
 
@@ -119,6 +120,7 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
   };
 
   let mut desc = func.descriptor();
+  // Safety:
   let code = unsafe { desc.code_mut() };
   let const_pool = unsafe { desc.const_pool() };
   let frame_size = desc.frame_size() as usize;
@@ -128,7 +130,7 @@ fn get_parts(modules: &ModuleRegistry, callable: Value) -> Result<Parts> {
       let mut module = modules.by_id(id).ok_or_else(|| {
         Error::runtime("attempted to call {callable} which was declared in a broken module")
       })?;
-      (Some(unsafe { module.module_vars_mut() }), Some(id))
+      (Some(module.module_vars()), Some(id))
     }
     None => (None, None),
   };

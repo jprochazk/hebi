@@ -89,10 +89,22 @@ impl FunctionDescriptor {
     self.frame_size
   }
 
+  /// # Safety
+  /// Caller must ensure that:
+  /// - `self` is not dropped before the pointer returned by this function.
+  /// - the pointer is never freed.
+  /// - any references constructed from the pointer are short-lived and adhere
+  ///   to Rust's aliasing guarantees.
   pub unsafe fn code_mut(&mut self) -> NonNull<[u8]> {
     self.code
   }
 
+  /// # Safety
+  /// Caller must ensure that:
+  /// - `self` is not dropped before the pointer returned by this function.
+  /// - the pointer is never freed.
+  /// - any references constructed from the pointer are short-lived and adhere
+  ///   to Rust's aliasing guarantees.
   pub unsafe fn const_pool(&self) -> NonNull<[Constant]> {
     self.const_pool
   }
@@ -178,8 +190,14 @@ impl Access for FunctionDescriptor {}
 
 pub struct Function {
   desc: Handle<FunctionDescriptor>,
-  captures: Vec<Value>,
+  captures: NonNull<[Value]>,
   module_id: Option<ModuleId>,
+}
+
+impl Drop for Function {
+  fn drop(&mut self) {
+    drop(unsafe { Box::from_raw(self.captures.as_ptr()) })
+  }
 }
 
 impl Function {
@@ -188,8 +206,11 @@ impl Function {
     desc: Handle<FunctionDescriptor>,
     module_id: Option<ModuleId>,
   ) -> Handle<Function> {
-    let mut captures = vec![];
-    captures.resize_with(desc.num_captures() as usize, Value::none);
+    let mut captures = Vec::with_capacity(desc.num_captures() as usize);
+    for _ in 0..desc.num_captures() as usize {
+      captures.push(Value::none());
+    }
+    let captures = unsafe { NonNull::new_unchecked(Box::into_raw(captures.into_boxed_slice())) };
 
     ctx.alloc(Function {
       desc,
@@ -209,8 +230,14 @@ impl Function {
     self.module_id
   }
 
+  /// # Safety
+  /// Caller must ensure that:
+  /// - `self` is not dropped before the pointer returned by this function.
+  /// - the pointer is never freed.
+  /// - any references constructed from the pointer are short-lived and adhere
+  ///   to Rust's aliasing guarantees.
   pub unsafe fn captures_mut(&mut self) -> NonNull<[Value]> {
-    NonNull::from(&mut self.captures[..])
+    self.captures
   }
 }
 
