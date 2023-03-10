@@ -245,7 +245,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get(self.ctx.clone(), &self.acc, name)?;
+    self.acc = field::get(&self.ctx, &self.acc, name)?;
 
     Ok(())
   }
@@ -255,7 +255,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get_opt(self.ctx.clone(), &self.acc, name)?;
+    self.acc = field::get_opt(&self.ctx, &self.acc, name)?;
 
     Ok(())
   }
@@ -267,21 +267,21 @@ impl op::Handler for Isolate {
 
     let mut obj = self.get_reg(obj);
 
-    field::set(self.ctx.clone(), &mut obj, name, self.acc.clone())?;
+    field::set(&self.ctx, &mut obj, name, self.acc.clone())?;
 
     Ok(())
   }
 
   fn op_load_index(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    self.acc = index::get(self.acc.clone(), name)?;
+    self.acc = index::get(&self.ctx, self.acc.clone(), name)?;
 
     Ok(())
   }
 
   fn op_load_index_opt(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    self.acc = index::get_opt(self.acc.clone(), name)?;
+    self.acc = index::get_opt(&self.ctx, self.acc.clone(), name)?;
 
     Ok(())
   }
@@ -289,7 +289,7 @@ impl op::Handler for Isolate {
   fn op_store_index(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
     let obj = self.get_reg(obj);
-    index::set(self.ctx.clone(), obj, name, self.acc.clone())?;
+    index::set(&self.ctx, obj, name, self.acc.clone())?;
 
     Ok(())
   }
@@ -763,7 +763,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &[], None)?;
+      self.acc = f.call(&self.ctx, &[], None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -794,7 +794,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &args, None)?;
+      self.acc = f.call(&self.ctx, &args, None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -832,7 +832,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &args, kwargs.to_dict())?;
+      self.acc = f.call(&self.ctx, &args, kwargs.to_dict())?;
       self.pc = return_address;
       return Ok(());
     }

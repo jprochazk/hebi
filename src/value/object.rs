@@ -22,11 +22,12 @@ use frame::Frame;
 pub use func::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor, Path};
-pub use native::NativeFunction;
+pub use native::{NativeClass, NativeClassInstance, NativeFunction, UserData};
 pub use string::Str;
 
 use super::handle::Handle;
 use super::{Ptr, Value};
+use crate::ctx::Context;
 use crate::Error;
 
 pub struct Object {
@@ -51,6 +52,9 @@ object_repr! {
     Frame,
     Error,
     NativeFunction,
+    NativeClass,
+    NativeClassInstance,
+    UserData,
   }
 }
 
@@ -85,19 +89,19 @@ impl Access for Ptr<Object> {
     unsafe { self._get() }.should_bind_methods()
   }
 
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
-    unsafe { self._get() }.field_get(key)
+  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
+    unsafe { self._get() }.field_get(ctx, key)
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
-    unsafe { self._get_mut() }.field_set(key, value)
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> crate::Result<()> {
+    unsafe { self._get_mut() }.field_set(ctx, key, value)
   }
 
-  fn index_get(&self, key: Value) -> crate::Result<Option<Value>> {
-    unsafe { self._get() }.index_get(key)
+  fn index_get(&self, ctx: &Context, key: Value) -> crate::Result<Option<Value>> {
+    unsafe { self._get() }.index_get(ctx, key)
   }
 
-  fn index_set(&mut self, key: Value, value: Value) -> crate::Result<()> {
-    unsafe { self._get_mut() }.index_set(key, value)
+  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> crate::Result<()> {
+    unsafe { self._get_mut() }.index_set(ctx, key, value)
   }
 }

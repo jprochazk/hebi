@@ -55,27 +55,27 @@ macro_rules! object_repr {
           }
         }
 
-        fn field_get<'a>(&self, key: &str) -> $crate::Result<Option<$crate::value::Value>> {
+        fn field_get<'a>(&self, ctx: &$crate::ctx::Context, key: &str) -> $crate::Result<Option<$crate::value::Value>> {
           match &self.repr {
-            $($Repr::$ty(inner) => inner.field_get(key),)*
+            $($Repr::$ty(inner) => inner.field_get(ctx, key),)*
           }
         }
 
-        fn field_set(&mut self, key: $crate::value::handle::Handle<$crate::value::object::string::Str>, value: $crate::value::Value) -> $crate::Result<()> {
+        fn field_set(&mut self, ctx: &$crate::ctx::Context, key: $crate::value::handle::Handle<$crate::value::object::string::Str>, value: $crate::value::Value) -> $crate::Result<()> {
           match &mut self.repr {
-            $($Repr::$ty(inner) => inner.field_set(key, value),)*
+            $($Repr::$ty(inner) => inner.field_set(ctx, key, value),)*
           }
         }
 
-        fn index_get<'a>(&self, key: $crate::value::Value) -> $crate::Result<Option<$crate::value::Value>> {
+        fn index_get<'a>(&self, ctx: &$crate::ctx::Context, key: $crate::value::Value) -> $crate::Result<Option<$crate::value::Value>> {
           match &self.repr {
-            $($Repr::$ty(inner) => inner.index_get(key),)*
+            $($Repr::$ty(inner) => inner.index_get(ctx, key),)*
           }
         }
 
-        fn index_set(&mut self, key: $crate::value::Value, value: $crate::value::Value) -> $crate::Result<()> {
+        fn index_set(&mut self, ctx: &$crate::ctx::Context, key: $crate::value::Value, value: $crate::value::Value) -> $crate::Result<()> {
           match &mut self.repr {
-            $($Repr::$ty(inner) => inner.index_set(key, value),)*
+            $($Repr::$ty(inner) => inner.index_set(ctx, key, value),)*
           }
         }
       }

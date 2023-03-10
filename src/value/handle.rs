@@ -6,6 +6,7 @@ use std::ops::{Deref, DerefMut};
 use super::object::{Access, Object, ObjectType, Str};
 use super::ptr::Ptr;
 use super::Value;
+use crate::ctx::Context;
 
 pub struct Ref<'vm, T> {
   handle: Handle<T>,
@@ -123,20 +124,20 @@ impl<T: ObjectType> Access for Handle<T> {
     unsafe { self._get() }.should_bind_methods()
   }
 
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
-    unsafe { self._get() }.field_get(key)
+  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
+    unsafe { self._get() }.field_get(ctx, key)
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
-    unsafe { self._get_mut() }.field_set(key, value)
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> crate::Result<()> {
+    unsafe { self._get_mut() }.field_set(ctx, key, value)
   }
 
-  fn index_get(&self, key: Value) -> crate::Result<Option<Value>> {
-    unsafe { self._get() }.index_get(key)
+  fn index_get(&self, ctx: &Context, key: Value) -> crate::Result<Option<Value>> {
+    unsafe { self._get() }.index_get(ctx, key)
   }
 
-  fn index_set(&mut self, key: Value, value: Value) -> crate::Result<()> {
-    unsafe { self._get_mut() }.index_set(key, value)
+  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> crate::Result<()> {
+    unsafe { self._get_mut() }.index_set(ctx, key, value)
   }
 }
 

@@ -10,6 +10,8 @@ use crate::value::handle::Handle;
 use crate::value::Value;
 use crate::Result;
 
+// TODO: Display `class def` -> `class` ++ `class` -> `class instance`
+
 pub struct ClassInstance {
   name: Handle<Str>,
   fields: Dict,
@@ -52,11 +54,11 @@ impl Access for ClassInstance {
     self.is_frozen
   }
 
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
     Ok(self.fields.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<()> {
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> Result<()> {
     self.fields.insert(key, value);
     Ok(())
   }
@@ -121,14 +123,14 @@ impl Access for ClassSuperProxy {
     true
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>> {
-    self.parent().field_get(key)
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
+    self.parent().field_get(ctx, key)
   }
 }
 
 pub struct Method {
-  this: Value, // Class or Proxy
-  func: Value, // Func or Closure
+  this: Value, // ClassInstance or Proxy or NativeClassInstance
+  func: Value, // Function or NativeFunction
 }
 
 impl Method {
@@ -259,7 +261,7 @@ impl Access for Class {
     false
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
     Ok(self.method(key))
   }
 }

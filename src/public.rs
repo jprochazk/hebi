@@ -3,6 +3,7 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
+pub use value::object::native::{NativeAccessorDescriptors, NativeMethodDescriptors};
 use value::Value as CoreValue;
 
 use crate::ctx::Context as CoreContext;

@@ -25,7 +25,7 @@ pub use derive::function;
 pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
 pub use public::Value;
 pub use value::object::module::ModuleLoader;
-use value::object::native::Callable;
+use value::object::native::Function;
 use value::object::NativeFunction;
 
 pub struct Hebi {
@@ -94,7 +94,7 @@ impl Hebi {
 }
 
 impl Hebi {
-  pub fn create_function(&self, f: impl Callable + 'static) -> Value {
+  pub fn create_function(&self, f: impl Function + 'static) -> Value {
     Value::bind(
       self
         .isolate

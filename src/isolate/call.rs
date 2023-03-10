@@ -16,7 +16,7 @@ use crate::{op, Error, Result};
 impl Isolate {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value> {
     if let Some(f) = f.clone().to_native_function() {
-      return f.call(self.ctx(), args, kwargs.to_dict());
+      return f.call(&self.ctx, args, kwargs.to_dict());
     }
 
     let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
