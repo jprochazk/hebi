@@ -784,10 +784,10 @@ impl op::Handler for Isolate {
           .to_native_class_instance()
           .ok_or_else(|| {
             Error::runtime(format!(
-            "attempted to call native class method `{}` bound to value `{}` which is not user data",
-            f.name(),
-            m.this()
-          ))
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
           })?
           .user_data();
         self.acc = f.call(&self.ctx, this, &[], None)?;
@@ -851,10 +851,10 @@ impl op::Handler for Isolate {
           .to_native_class_instance()
           .ok_or_else(|| {
             Error::runtime(format!(
-            "attempted to call native class method `{}` bound to value `{}` which is not user data",
-            f.name(),
-            m.this()
-          ))
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
           })?
           .user_data();
         self.acc = f.call(&self.ctx, this, &args, None)?;
@@ -928,10 +928,10 @@ impl op::Handler for Isolate {
           .to_native_class_instance()
           .ok_or_else(|| {
             Error::runtime(format!(
-            "attempted to call native class method `{}` bound to value `{}` which is not user data",
-            f.name(),
-            m.this()
-          ))
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
           })?
           .user_data();
         self.acc = f.call(&self.ctx, this, &args, kwargs.to_dict())?;
