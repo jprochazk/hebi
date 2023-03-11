@@ -244,12 +244,21 @@ pub struct Params {
   pub kw: IndexMap<String, bool>,
 }
 
-pub fn func_name(f: &Value) -> String {
+pub fn name(f: &Value) -> Handle<Str> {
   if let Some(f) = f.clone().to_function() {
-    f.descriptor().name().as_str().to_string()
+    f.descriptor().name()
+  } else if let Some(f) = f.clone().to_native_function() {
+    f.name()
+  } else if let Some(f) = f.clone().to_native_class_method() {
+    f.name()
   } else if let Some(f) = f.clone().to_method() {
-    func_name(&f.func())
+    name(&f.func())
   } else {
-    panic!("{f} is not callable")
+    panic!("not a function: {f}")
   }
+}
+
+/// Object types which may be called directly
+pub fn is_callable(f: &Value) -> bool {
+  f.is_function() || f.is_native_function() || f.is_method() || f.is_native_class_method()
 }

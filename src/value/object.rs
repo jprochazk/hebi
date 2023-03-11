@@ -22,7 +22,7 @@ use frame::Frame;
 pub use func::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor, Path};
-pub use native::{NativeClass, NativeClassInstance, NativeFunction, UserData};
+pub use native::{NativeClass, NativeClassInstance, NativeClassMethod, NativeFunction, UserData};
 pub use string::Str;
 
 use super::handle::Handle;
@@ -53,8 +53,9 @@ object_repr! {
     Error,
     NativeFunction,
     NativeClass,
-    NativeClassInstance,
+    NativeClassMethod,
     UserData,
+    NativeClassInstance,
   }
 }
 

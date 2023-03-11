@@ -10,7 +10,7 @@ use crate::value::object::Dict as CoreDict;
 use crate::value::Value as CoreValue;
 use crate::{public, Error, Result};
 
-pub trait Function: dyn_clone::DynClone {
+pub trait Function {
   fn call<'a>(
     &self,
     ctx: &'a public::Context<'a>,
@@ -18,8 +18,6 @@ pub trait Function: dyn_clone::DynClone {
     kwargs: Option<public::Dict<'a>>,
   ) -> Result<public::Value<'a>>;
 }
-
-dyn_clone::clone_trait_object!(Function);
 
 impl<F> Function for F
 where
@@ -29,7 +27,6 @@ where
     Option<public::Dict<'a>>,
   ) -> Result<public::Value<'a>>,
   F: Send + 'static,
-  F: Clone,
 {
   fn call<'a>(
     &self,
@@ -41,13 +38,20 @@ where
   }
 }
 
+type FunctionPtr = for<'a> fn(
+  &'a public::Context<'a>,
+  &'a [public::Value<'a>],
+  Option<public::Dict<'a>>,
+) -> Result<public::Value<'a>>;
+
 pub struct NativeFunction {
+  name: Handle<Str>,
   f: Box<dyn Function>,
 }
 
 impl NativeFunction {
-  pub fn new(f: Box<dyn Function>) -> Self {
-    Self { f }
+  pub fn new(ctx: &CoreContext, name: Handle<Str>, f: Box<dyn Function>) -> Handle<NativeFunction> {
+    ctx.alloc(Self { name, f })
   }
 }
 
@@ -59,15 +63,15 @@ impl NativeFunction {
     argv: &[CoreValue],
     kwargs: Option<Handle<CoreDict>>,
   ) -> Result<CoreValue> {
-    // Safety: `public::Context` is `repr(C)`, and holds a `CoreContext` + one
-    // `PhantomData` field, so its layout is equivalent to `CoreContext`.
-    let ctx = unsafe { transmute::<&CoreContext, &public::Context>(ctx) };
-    // Safety: `public::Value` is `repr(C)`, and holds a `CoreValue` + one
-    // `PhantomData` field, so its layout is equivalent to `CoreValue`.
-    let argv = unsafe { transmute::<&[CoreValue], &[public::Value]>(argv) };
+    let ctx = public::Context::bind_ref(ctx);
+    let argv = public::Value::bind_slice(argv);
     let kwargs = kwargs.map(public::Dict::bind);
-    let result = self.f.call(ctx, argv, kwargs)?;
+    let result = Function::call(&*self.f, ctx, argv, kwargs)?;
     Ok(result.unbind())
+  }
+
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
   }
 }
 
@@ -79,43 +83,160 @@ impl Display for NativeFunction {
   }
 }
 
-pub struct NativeAccessorDescriptor {
-  pub name: &'static str,
-  pub get: &'static dyn Function,
-  pub set: Option<&'static dyn Function>,
+pub trait InitFn {
+  fn call<'a>(
+    &self,
+    ctx: &'a public::Context<'a>,
+    argv: &'a [public::Value<'a>],
+    kwargs: Option<public::Dict<'a>>,
+  ) -> Result<public::UserData<'a>>;
 }
 
-pub trait NativeAccessorDescriptors {
-  fn accessor_descriptors() -> &'static [NativeAccessorDescriptor];
+impl<F> InitFn for F
+where
+  F: for<'a> Fn(
+    &'a public::Context<'a>,
+    &'a [public::Value<'a>],
+    Option<public::Dict<'a>>,
+  ) -> Result<public::UserData<'a>>,
+  F: Send + 'static,
+{
+  fn call<'a>(
+    &self,
+    ctx: &'a public::Context<'a>,
+    argv: &'a [public::Value<'a>],
+    kwargs: Option<public::Dict<'a>>,
+  ) -> Result<public::UserData<'a>> {
+    self(ctx, argv, kwargs)
+  }
 }
 
-pub struct NativeMethodDescriptor {
-  pub name: &'static str,
-  pub f: &'static dyn Function,
+type InitFnPtr = for<'a> fn(
+  &'a public::Context<'a>,
+  &'a [public::Value<'a>],
+  Option<public::Dict<'a>>,
+) -> Result<public::UserData<'a>>;
+
+pub trait Method {
+  fn call<'a>(
+    &self,
+    ctx: &'a public::Context<'a>,
+    this: public::UserData<'a>,
+    argv: &'a [public::Value<'a>],
+    kwargs: Option<public::Dict<'a>>,
+  ) -> Result<public::Value<'a>>;
 }
 
-pub trait NativeMethodDescriptors {
-  fn init() -> Option<&'static dyn Function>;
-  fn method_descriptors() -> &'static [NativeMethodDescriptor];
+impl<F> Method for F
+where
+  F: for<'a> Fn(
+    &'a public::Context<'a>,
+    public::UserData<'a>,
+    &'a [public::Value<'a>],
+    Option<public::Dict<'a>>,
+  ) -> Result<public::Value<'a>>,
+  F: Send + 'static,
+{
+  fn call<'a>(
+    &self,
+    ctx: &'a public::Context<'a>,
+    this: public::UserData<'a>,
+    argv: &'a [public::Value<'a>],
+    kwargs: Option<public::Dict<'a>>,
+  ) -> Result<public::Value<'a>> {
+    self(ctx, this, argv, kwargs)
+  }
 }
 
-pub struct Accessor {
-  get: Handle<NativeFunction>,
-  set: Option<Handle<NativeFunction>>,
+type MethodFnPtr = for<'a> fn(
+  &'a public::Context<'a>,
+  public::UserData<'a>,
+  &'a [public::Value<'a>],
+  Option<public::Dict<'a>>,
+) -> Result<public::Value<'a>>;
+
+pub struct NativeClassMethod {
+  name: Handle<Str>,
+  f: MethodFnPtr,
 }
+
+impl NativeClassMethod {
+  pub fn new(ctx: &CoreContext, name: Handle<Str>, f: MethodFnPtr) -> Handle<NativeClassMethod> {
+    ctx.alloc(Self { name, f })
+  }
+}
+
+#[derive::delegate_to_handle]
+impl NativeClassMethod {
+  pub fn call(
+    &self,
+    ctx: &CoreContext,
+    this: Handle<UserData>,
+    argv: &[CoreValue],
+    kwargs: Option<Handle<CoreDict>>,
+  ) -> Result<CoreValue> {
+    let ctx = public::Context::bind_ref(ctx);
+    let argv = public::Value::bind_slice(argv);
+    let kwargs = kwargs.map(public::Dict::bind);
+    let result = Method::call(&self.f, ctx, public::UserData::bind(this), argv, kwargs)?;
+    Ok(result.unbind())
+  }
+
+  pub fn name(&self) -> Handle<Str> {
+    self.name.clone()
+  }
+}
+
+impl Access for NativeClassMethod {}
+
+impl Display for NativeClassMethod {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<native method {}>", self.name)
+  }
+}
+
+pub trait AsUserData: std::any::Any {
+  fn as_any(&self) -> &dyn std::any::Any;
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
+}
+
+pub trait TypeInfo {
+  fn name() -> &'static str;
+  fn init() -> Option<InitFnPtr>;
+  fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)];
+  fn methods() -> &'static [(&'static str, MethodFnPtr)];
+}
+
+impl<T: TypeInfo + 'static> AsUserData for T {
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
+  }
+
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+    self
+  }
+}
+
+// TODO typeid
 
 pub struct UserData {
-  data: Box<dyn std::any::Any>,
+  inner: Box<dyn AsUserData>,
+}
+
+impl UserData {
+  pub fn new<T: AsUserData>(v: T) -> Self {
+    Self { inner: Box::new(v) }
+  }
 }
 
 #[derive::delegate_to_handle]
 impl UserData {
-  pub(crate) fn data(&self) -> &dyn std::any::Any {
-    &self.data
+  pub(crate) fn inner(&self) -> &dyn AsUserData {
+    &*self.inner
   }
 
-  pub(crate) fn data_mut(&mut self) -> &mut dyn std::any::Any {
-    &mut self.data
+  pub(crate) fn inner_mut(&mut self) -> &mut dyn AsUserData {
+    &mut *self.inner
   }
 }
 
@@ -133,11 +254,52 @@ impl Display for UserData {
   }
 }
 
+struct Accessor {
+  get: Handle<NativeClassMethod>,
+  set: Option<Handle<NativeClassMethod>>,
+}
+
 pub struct NativeClass {
   name: Handle<Str>,
-  init: Option<Handle<NativeFunction>>,
+  init: Option<InitFnPtr>,
   accessors: IndexMap<&'static str, Accessor>,
-  methods: IndexMap<&'static str, Handle<NativeFunction>>,
+  methods: IndexMap<&'static str, Handle<NativeClassMethod>>,
+}
+
+impl NativeClass {
+  pub fn new<T: TypeInfo>(ctx: &CoreContext) -> Handle<NativeClass> {
+    ctx.alloc(NativeClass {
+      name: ctx.alloc(Str::from(T::name())),
+      init: T::init(),
+      accessors: T::fields()
+        .iter()
+        .map(|field| {
+          (
+            field.0,
+            Accessor {
+              get: NativeClassMethod::new(
+                ctx,
+                ctx.alloc(Str::from(format!("get {}", field.0))),
+                field.1,
+              ),
+              set: field.2.map(|f| {
+                NativeClassMethod::new(ctx, ctx.alloc(Str::from(format!("set {}", field.0))), f)
+              }),
+            },
+          )
+        })
+        .collect(),
+      methods: T::methods()
+        .iter()
+        .map(|m| {
+          (
+            m.0,
+            NativeClassMethod::new(ctx, ctx.alloc(Str::from(m.0)), m.1),
+          )
+        })
+        .collect(),
+    })
+  }
 }
 
 #[derive::delegate_to_handle]
@@ -146,20 +308,36 @@ impl NativeClass {
     self.name.clone()
   }
 
-  pub fn init(&self) -> Option<Handle<NativeFunction>> {
-    self.init.clone()
+  pub(crate) fn init(&self) -> Option<InitFnPtr> {
+    self.init
   }
 
-  pub(crate) fn accessors(&self) -> &IndexMap<&'static str, Accessor> {
-    &self.accessors
+  pub fn field_getter(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
+    self.accessors.get(key).map(|a| a.get.clone())
   }
 
-  pub(crate) fn methods(&self) -> &IndexMap<&'static str, Handle<NativeFunction>> {
-    &self.methods
+  pub fn field_setter(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
+    self.accessors.get(key).and_then(|a| a.set.clone())
+  }
+
+  pub fn method(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
+    self.methods.get(key).cloned()
   }
 }
 
-impl Access for NativeClass {}
+impl Access for NativeClass {
+  fn should_bind_methods(&self) -> bool {
+    false
+  }
+
+  fn field_get(&self, ctx: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
+    if let Some(method) = self.methods.get(key).cloned() {
+      Ok(Some(method.into()))
+    } else {
+      Ok(None)
+    }
+  }
+}
 
 impl Debug for NativeClass {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -175,16 +353,27 @@ impl Display for NativeClass {
 
 pub struct NativeClassInstance {
   class: Handle<NativeClass>,
-  data: Handle<UserData>,
+  user_data: Handle<UserData>,
 }
 
 impl NativeClassInstance {
   pub fn new(
     ctx: &CoreContext,
     class: Handle<NativeClass>,
-    data: Handle<UserData>,
+    user_data: Handle<UserData>,
   ) -> Handle<Self> {
-    ctx.alloc(Self { class, data })
+    ctx.alloc(Self { class, user_data })
+  }
+}
+
+#[derive::delegate_to_handle]
+impl NativeClassInstance {
+  pub(crate) fn class(&self) -> Handle<NativeClass> {
+    self.class.clone()
+  }
+
+  pub(crate) fn user_data(&self) -> Handle<UserData> {
+    self.user_data.clone()
   }
 }
 
@@ -198,31 +387,21 @@ impl Access for NativeClassInstance {
   }
 
   fn field_get(&self, ctx: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
-    if let Some(get) = self.class.accessors().get(key).map(|a| &a.get) {
-      let result = get.call(ctx, &[self.data.clone().into()], None)?;
+    if let Some(get) = self.class.field_getter(key) {
+      let result = get.call(ctx, self.user_data.clone(), &[], None)?;
       return Ok(Some(result));
     }
 
-    if let Some(method) = self.class.methods().get(key).cloned() {
+    if let Some(method) = self.class.method(key) {
       return Ok(Some(method.into()));
     }
 
     Ok(None)
   }
 
-  fn field_set(
-    &mut self,
-    ctx: &CoreContext,
-    key: Handle<super::Str>,
-    value: CoreValue,
-  ) -> Result<()> {
-    if let Some(set) = self
-      .class
-      .accessors()
-      .get(key.as_str())
-      .and_then(|a| a.set.as_ref())
-    {
-      set.call(ctx, &[self.data.clone().into(), value], None)?;
+  fn field_set(&mut self, ctx: &CoreContext, key: Handle<Str>, value: CoreValue) -> Result<()> {
+    if let Some(set) = self.class.field_setter(key.as_str()) {
+      set.call(ctx, self.user_data.clone(), &[value], None)?;
     }
 
     Err(Error::runtime(format!("cannot set field `{key}`")))
@@ -237,88 +416,111 @@ impl Debug for NativeClassInstance {
 
 impl Display for NativeClassInstance {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<native class instance>")
+    write!(f, "<native class {} instance>", self.class.name())
   }
 }
 
 // #[class]
-struct Test {
+pub struct Test {
   // #[access(get)]
-  value: i32,
+  pub value: i32,
 }
 
 // #[methods]
 impl Test {
-  // #[new]
-  fn new(value: i32) -> Self {
+  // #[init]
+  pub fn new(value: i32) -> Self {
     Test { value }
   }
 
-  fn square(&self) -> i32 {
+  pub fn square(&self) -> i32 {
     self.value * self.value
   }
 }
 
-impl NativeAccessorDescriptors for Test {
-  fn accessor_descriptors() -> &'static [NativeAccessorDescriptor] {
-    use crate::{FromHebi, IntoHebi};
+// Generates:
 
-    fn _Test__get__value<'a>(
-      ctx: &'a public::Context<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::Value<'a>> {
-      // gracefully handle this
-      let this = argv[0].clone().unbind().to_user_data().unwrap();
-      let this = this.data().downcast_ref::<Test>().unwrap();
-      let value = this.value;
-      value.into_hebi(ctx)
-    }
-
-    &[NativeAccessorDescriptor {
-      name: "value",
-      get: &_Test__get__value,
-      set: None,
-    }]
+struct _Test__InitTag {}
+trait _Test__Init {
+  fn init(self) -> Option<InitFnPtr>;
+}
+impl _Test__Init for &_Test__InitTag {
+  fn init(self) -> Option<InitFnPtr> {
+    None
   }
 }
-
-impl NativeMethodDescriptors for Test {
-  fn init() -> Option<&'static dyn Function> {
+impl _Test__Init for _Test__InitTag {
+  fn init(self) -> Option<InitFnPtr> {
     use crate::{FromHebi, IntoHebi};
-
     fn _Test__call__new<'a>(
       ctx: &'a public::Context<'a>,
       argv: &'a [public::Value<'a>],
       kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::Value<'a>> {
+    ) -> Result<public::UserData<'a>> {
       let _0 = i32::from_hebi(ctx, argv[0].clone())?;
       // should also support fallible `new`
-      let data = Box::new(Test::new(_0));
-      Ok(public::Value::bind(ctx.inner().alloc(UserData { data })))
+      let data = Test::new(_0);
+      Ok(public::UserData::new(ctx, data))
     }
-
-    Some(&_Test__call__new)
+    Some(_Test__call__new)
   }
+}
 
-  fn method_descriptors() -> &'static [NativeMethodDescriptor] {
+struct _Test__MethodsTag {}
+trait _Test__Methods {
+  fn methods(self) -> &'static [(&'static str, MethodFnPtr)];
+}
+impl _Test__Methods for &_Test__MethodsTag {
+  fn methods(self) -> &'static [(&'static str, MethodFnPtr)] {
+    &[]
+  }
+}
+impl _Test__Methods for _Test__MethodsTag {
+  fn methods(self) -> &'static [(&'static str, MethodFnPtr)] {
     use crate::{FromHebi, IntoHebi};
 
     fn _Test__call__square<'a>(
       ctx: &'a public::Context<'a>,
+      this: public::UserData<'a>,
       argv: &'a [public::Value<'a>],
       kwargs: Option<public::Dict<'a>>,
     ) -> Result<public::Value<'a>> {
       // gracefully handle this
-      let this = argv[0].clone().unbind().to_user_data().unwrap();
-      let this = this.data().downcast_ref::<Test>().unwrap();
+      let this = this.cast::<Test>().unwrap();
       let value = this.square();
       value.into_hebi(ctx)
     }
 
-    &[NativeMethodDescriptor {
-      name: "square",
-      f: &_Test__call__square,
-    }]
+    &[("square", _Test__call__square)]
+  }
+}
+
+impl TypeInfo for Test {
+  fn name() -> &'static str {
+    "Test"
+  }
+
+  fn init() -> Option<InitFnPtr> {
+    _Test__InitTag {}.init()
+  }
+
+  fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)] {
+    use crate::{FromHebi, IntoHebi};
+    fn _Test__get__value<'a>(
+      ctx: &'a public::Context<'a>,
+      this: public::UserData<'a>,
+      argv: &'a [public::Value<'a>],
+      kwargs: Option<public::Dict<'a>>,
+    ) -> Result<public::Value<'a>> {
+      // gracefully handle this
+      let this = this.cast::<Test>().unwrap();
+      let value = this.value;
+      value.into_hebi(ctx)
+    }
+    &[("value", _Test__get__value, None)]
+  }
+
+  fn methods() -> &'static [(&'static str, MethodFnPtr)] {
+    _Test__MethodsTag {}.methods()
   }
 }

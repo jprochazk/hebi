@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use indexmap::Equivalent;
 
-use super::func::{func_name, Params};
+use super::func::{self, Params};
 use super::{Access, Dict, Str};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
@@ -129,12 +129,16 @@ impl Access for ClassSuperProxy {
 }
 
 pub struct Method {
-  this: Value, // ClassInstance or Proxy or NativeClassInstance
-  func: Value, // Function or NativeFunction
+  this: Value, // ClassInstance, ClassSuperProxy, NativeClassInstance
+  func: Value, // Function, NativeFunction, NativeClassMethod, NativeClassMethodMut
 }
 
 impl Method {
   pub fn new(this: Value, func: Value) -> Self {
+    assert!(
+      this.is_class_instance() || this.is_class_super_proxy() || this.is_native_class_instance()
+    );
+    assert!(func.is_function() || func.is_native_function() || func.is_native_class_method());
     Self { this, func }
   }
 }
@@ -152,7 +156,7 @@ impl Method {
 
 impl Display for Method {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<method {}>", func_name(&self.func.clone()))
+    write!(f, "<method {}>", func::name(&self.func.clone()))
   }
 }
 

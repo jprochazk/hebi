@@ -49,7 +49,7 @@ macro_rules! check {
         .with_builtins()
         .build();
       $($(
-        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+        vm.globals().register_fn(stringify!($fn_name), $fn_name);
       )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {
@@ -117,7 +117,7 @@ macro_rules! check_error {
         .with_builtins()
         .build();
       $($(
-        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+        vm.globals().register_fn(stringify!($fn_name), $fn_name);
       )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {

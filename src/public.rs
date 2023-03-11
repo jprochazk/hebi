@@ -3,12 +3,10 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-pub use value::object::native::{NativeAccessorDescriptors, NativeMethodDescriptors};
-use value::Value as CoreValue;
-
+pub use self::core::object::native::TypeInfo;
+use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
-use crate::value;
-use crate::value::object;
+use crate::value as core;
 
 // TODO: make macro for wrapping types
 // - `T` -> `T<'a> { inner: T, _lifetime: PhantomData<&'a ()> }`
@@ -38,13 +36,29 @@ impl<'a> Context<'a> {
     }
   }
 
+  pub(crate) fn bind_ref(v: &CoreContext) -> &Context<'a> {
+    // SAFETY: `CoreContext` and `Context` are layout-compatible
+    // due to `Value` being `repr(C)`, and holding `CoreContext`
+    // as its only non-ZST field
+    unsafe { std::mem::transmute::<&CoreContext, &Context<'a>>(v) }
+  }
+
   pub(crate) fn unbind(self) -> CoreContext {
     self.inner
   }
 }
 
+// FIXME: rust-analyzer doesn't understand `derive(Clone)`
+impl<'a> Clone for Context<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
+      _lifetime: self._lifetime,
+    }
+  }
+}
+
 #[repr(C)]
-#[derive(Clone)]
 pub struct Value<'a> {
   inner: CoreValue,
   _lifetime: PhantomData<&'a ()>,
@@ -95,7 +109,7 @@ impl<'a> Value<'a> {
     self
       .inner
       .as_object_raw()
-      .and_then(|o| o.as_str())
+      .and_then(|o| o.as_str_ref())
       .map(|o| o.as_str())
   }
 
@@ -113,6 +127,20 @@ impl<'a> Value<'a> {
 }
 
 impl<'a> Value<'a> {
+  pub(crate) fn bind_slice(values: &[CoreValue]) -> &[Value<'a>] {
+    // SAFETY: `CoreValue` and `Value` are layout-compatible
+    // due to `Value` being `repr(C)`, and holding `CoreValue`
+    // as its only non-ZST field
+    unsafe { std::mem::transmute::<&[CoreValue], &[Value<'a>]>(values) }
+  }
+
+  pub(crate) fn bind_ref(v: &CoreValue) -> &Value<'a> {
+    // SAFETY: `CoreValue` and `Value` are layout-compatible
+    // due to `Value` being `repr(C)`, and holding `CoreValue`
+    // as its only non-ZST field
+    unsafe { std::mem::transmute::<&CoreValue, &Value<'a>>(v) }
+  }
+
   pub(crate) fn bind(value: impl Into<CoreValue>) -> Value<'a> {
     Self {
       inner: value.into(),
@@ -131,10 +159,30 @@ impl<'a> Display for Value<'a> {
   }
 }
 
+// FIXME: rust-analyzer doesn't understand `derive(Clone)`
+impl<'a> Clone for Value<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
+      _lifetime: self._lifetime,
+    }
+  }
+}
+
 #[repr(C)]
 pub struct Str<'a> {
-  inner: crate::value::handle::Handle<crate::value::object::Str>,
+  inner: core::handle::Handle<core::object::Str>,
   _lifetime: PhantomData<&'a ()>,
+}
+
+// FIXME: rust-analyzer doesn't understand `derive(Clone)`
+impl<'a> Clone for Str<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
+      _lifetime: self._lifetime,
+    }
+  }
 }
 
 impl<'a> Str<'a> {
@@ -144,39 +192,51 @@ impl<'a> Str<'a> {
 }
 
 impl<'a> Str<'a> {
-  pub(crate) fn bind(value: crate::value::handle::Handle<crate::value::object::Str>) -> Self {
+  pub(crate) fn bind(value: core::handle::Handle<core::object::Str>) -> Self {
     Self {
       inner: value,
       _lifetime: PhantomData,
     }
   }
 
-  pub(crate) fn unbind(self) -> crate::value::handle::Handle<crate::value::object::Str> {
+  pub(crate) fn unbind(self) -> core::handle::Handle<core::object::Str> {
     self.inner
   }
 }
 
-pub trait IntoStr {
-  fn into_str<'a>(self, ctx: &Context<'a>) -> Str<'a>;
+pub trait IntoStr<'a> {
+  fn into_str(self, ctx: &Context<'a>) -> Str<'a>;
 }
 
-impl<T> IntoStr for T
+impl<'a, T> IntoStr<'a> for T
 where
   object::Str: From<T>,
 {
-  fn into_str<'a>(self, ctx: &Context<'a>) -> Str<'a> {
+  fn into_str(self, ctx: &Context<'a>) -> Str<'a> {
     Str::bind(ctx.inner().alloc(object::Str::from(self)))
+  }
+}
+
+impl<'a> IntoStr<'a> for core::handle::Handle<core::object::Str> {
+  fn into_str(self, _: &Context<'a>) -> Str<'a> {
+    Str::bind(self)
+  }
+}
+
+impl<'a> IntoStr<'a> for Str<'a> {
+  fn into_str(self, _: &Context<'a>) -> Str<'a> {
+    self
   }
 }
 
 #[repr(C)]
 pub struct Dict<'a> {
-  inner: crate::value::handle::Handle<crate::value::object::Dict>,
+  inner: core::handle::Handle<core::object::Dict>,
   _lifetime: PhantomData<&'a ()>,
 }
 
 impl<'a> Dict<'a> {
-  pub(crate) fn bind(value: crate::value::handle::Handle<crate::value::object::Dict>) -> Self {
+  pub(crate) fn bind(value: core::handle::Handle<core::object::Dict>) -> Self {
     Self {
       inner: value,
       _lifetime: PhantomData,
@@ -184,11 +244,10 @@ impl<'a> Dict<'a> {
   }
 
   pub fn iter(&'a self) -> impl Iterator<Item = (&'a str, &'a Value<'a>)> + 'a {
-    self.inner.iter().map(|(k, v)| {
-      (k.as_str(), unsafe {
-        std::mem::transmute::<&CoreValue, &Value>(v)
-      })
-    })
+    self
+      .inner
+      .iter()
+      .map(|(k, v)| (k.as_str(), Value::bind_ref(v)))
   }
 
   pub fn has(&self, key: &str) -> bool {
@@ -196,10 +255,7 @@ impl<'a> Dict<'a> {
   }
 
   pub fn get(&self, key: &str) -> Option<&Value<'a>> {
-    self
-      .inner
-      .get(key)
-      .map(|v| unsafe { std::mem::transmute::<&CoreValue, &Value>(v) })
+    self.inner.get(key).map(Value::bind_ref)
   }
 
   pub fn set(&mut self, key: Str<'a>, value: Value<'a>) {
@@ -225,5 +281,74 @@ impl<'a> Debug for Dict<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let mut s = f.debug_struct("Dict");
     s.finish()
+  }
+}
+
+// FIXME: rust-analyzer doesn't understand `derive(Clone)`
+impl<'a> Clone for Dict<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
+      _lifetime: self._lifetime,
+    }
+  }
+}
+
+#[repr(C)]
+pub struct UserData<'a> {
+  inner: core::handle::Handle<core::object::UserData>,
+  _lifetime: PhantomData<&'a ()>,
+}
+
+impl<'a> UserData<'a> {
+  pub fn new<T: TypeInfo + 'static>(ctx: &Context, v: T) -> Self {
+    let inner = ctx.inner().alloc(core::object::UserData::new(v));
+    UserData {
+      inner,
+      _lifetime: PhantomData,
+    }
+  }
+
+  pub fn cast<T: TypeInfo + 'static>(&self) -> Option<&T> {
+    unsafe { self.inner._get() }.inner().as_any().downcast_ref()
+  }
+
+  pub fn cast_mut<T: TypeInfo + 'static>(&mut self) -> Option<&mut T> {
+    unsafe { self.inner._get_mut() }
+      .inner_mut()
+      .as_any_mut()
+      .downcast_mut()
+  }
+
+  pub(crate) fn bind(inner: core::handle::Handle<core::object::UserData>) -> Self {
+    Self {
+      inner,
+      _lifetime: PhantomData,
+    }
+  }
+
+  pub(crate) fn unbind(self) -> core::handle::Handle<core::object::UserData> {
+    self.inner
+  }
+}
+
+impl<'a> Display for UserData<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    Display::fmt(&self.inner, f)
+  }
+}
+
+impl<'a> Debug for UserData<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("UserData").finish()
+  }
+}
+
+impl<'a> Clone for UserData<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
+      _lifetime: self._lifetime,
+    }
   }
 }

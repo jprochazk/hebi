@@ -1,5 +1,6 @@
 use crate::public::conv::IntoHebi;
 use crate::public::{Context, Dict, Value};
+use crate::value::object::native;
 use crate::{Error, Hebi, Result};
 
 fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: Option<Dict<'a>>) -> Result<Value<'a>> {
@@ -44,6 +45,7 @@ fn r#type<'a>(
 }
 
 pub fn register(hebi: &Hebi) {
-  hebi.globals().set("str", hebi.create_function(str));
-  hebi.globals().set("type", hebi.create_function(r#type));
+  hebi.globals().register_fn("str", str);
+  hebi.globals().register_fn("type", r#type);
+  hebi.globals().register_class::<native::Test>();
 }

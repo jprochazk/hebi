@@ -19,6 +19,23 @@ impl Isolate {
       return f.call(&self.ctx, args, kwargs.to_dict());
     }
 
+    if let Some(m) = f.clone().to_method() {
+      if let Some(f) = m.func().to_native_class_method() {
+        let this = m
+          .this()
+          .to_native_class_instance()
+          .ok_or_else(|| {
+            Error::runtime(format!(
+            "attempted to call native class method `{}` bound to value `{}` which is not user data",
+            f.name(),
+            m.this()
+          ))
+          })?
+          .user_data();
+        return f.call(&self.ctx, this, args, kwargs.to_dict());
+      }
+    }
+
     let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
     self.push_frame(frame);
@@ -47,7 +64,7 @@ impl Isolate {
   ) -> Result<Frame> {
     // # Check that callee is callable
     // TODO: trait
-    if !callable.is_function() && !callable.is_method() {
+    if !func::is_callable(&callable) {
       // TODO: span
       return Err(Error::runtime("value is not callable"));
     }

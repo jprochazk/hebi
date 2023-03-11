@@ -16,4 +16,4 @@ hebi = { version = "0.2.0", path = ".." }
 rustyline = { version = "10.1.0" }
 rustyline-derive = { version = "0.7.0" }
 anyhow = { version = "1.0.69" }
-clap = { version = "4.1.4", features = ["derive"] }
+clap = { version = "4.1.7", features = ["derive"] }

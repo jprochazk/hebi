@@ -3,9 +3,9 @@ use std::ops::{Index, IndexMut};
 use std::ptr::NonNull;
 use std::slice::SliceIndex;
 
-use super::func::func_name;
+use super::func::name;
 use super::module::{ModuleId, ModuleRegistry};
-use super::{Access, Dict, List};
+use super::{func, Access, Dict, List, Str};
 use crate::ctx::Context;
 use crate::value::constant::Constant;
 use crate::value::handle::Handle;
@@ -97,8 +97,8 @@ impl Frame {
     self.stack.base
   }
 
-  pub fn name(&self) -> String {
-    func_name(&self.func)
+  pub fn name(&self) -> Handle<Str> {
+    func::name(&self.func)
   }
 }
 

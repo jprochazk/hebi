@@ -16,7 +16,7 @@ macro_rules! object_repr {
             matches!(self.repr, $Repr::$ty(..))
           }
 
-          pub fn [<as_ $ty:snake>](&self) -> Option<&$ty> {
+          pub fn [<as_ $ty:snake _ref>](&self) -> Option<&$ty> {
             if let $Repr::$ty(ref v) = self.repr {
               Some(v)
             } else {
@@ -105,7 +105,7 @@ macro_rules! object_repr {
             if !o.[<is_ $ty:snake>]() {
               return None;
             }
-            Some(o.[<as_ $ty:snake>]().unwrap())
+            Some(o.[<as_ $ty:snake _ref>]().unwrap())
           }
           fn as_mut(o: &mut Object) -> Option<&mut Self> {
             if !o.[<is_ $ty:snake>]() {

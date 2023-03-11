@@ -1,8 +1,11 @@
 use super::{call, Isolate};
 use crate::value::handle::Handle;
-use crate::value::object::{Class, Method};
+use crate::value::object::native::InitFn;
+use crate::value::object::{Class, Dict, Method, NativeClass, NativeClassInstance};
 use crate::value::Value;
-use crate::Result;
+use crate::{public, Error, Result};
+
+// TODO: `kwargs: Value` -> `kwargs: Option<Handle<Dict>>`
 
 impl Isolate {
   pub fn create_instance(
@@ -37,5 +40,30 @@ impl Isolate {
     class.freeze();
 
     Ok(Value::object(class))
+  }
+
+  // TODO: add a way to create native instances from native functions
+
+  pub fn create_native_instance(
+    &mut self,
+    class: Handle<NativeClass>,
+    args: &[Value],
+    kwargs: Value,
+  ) -> Result<Value> {
+    let Some(init) = class.init() else {
+      return Err(Error::runtime(format!("cannot initialize class {}", class.name())))
+    };
+
+    let user_data = InitFn::call(
+      &init,
+      &public::Context::bind(self.ctx()),
+      public::Value::bind_slice(args),
+      kwargs.to_dict().map(public::Dict::bind),
+    )?
+    .unbind();
+
+    let instance = NativeClassInstance::new(&self.ctx, class, user_data);
+
+    Ok(instance.into())
   }
 }

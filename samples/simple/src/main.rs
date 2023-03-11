@@ -3,7 +3,7 @@ fn main() {
 
   let vm = Hebi::default();
 
-  vm.globals().set("greet", vm.create_function(greet));
+  vm.globals().register_fn("greet", greet);
 
   println!("{}", vm.eval::<i32>("1 + 1").unwrap());
 
