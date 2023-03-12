@@ -51,6 +51,7 @@ pub fn macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
     fn_info,
     Some(input),
     None,
+    false,
   )
   .into()
 }
@@ -61,6 +62,7 @@ pub fn emit_fn(
   fn_info: FnInfo,
   input_fn: Option<ItemFn>,
   type_name: Option<Ident>,
+  is_assoc_fn: bool,
 ) -> TokenStream2 {
   let input_fn_name = fn_info.name.clone();
   let vis = fn_info.vis.clone();
@@ -68,11 +70,16 @@ pub fn emit_fn(
   let args = arg_info.call_args;
   let this_arg = arg_info.this_input_arg;
 
-  let call = if fn_info.receiver.is_some() {
-    let type_name = type_name.as_ref();
-    quote! {#type_name::#input_fn_name(this, #(#args),*)}
+  let assoc_ty_path = if is_assoc_fn {
+    let type_name = type_name.as_ref().unwrap();
+    Some(quote!(#type_name::))
   } else {
-    quote! {#input_fn_name(#(#args),*)}
+    None
+  };
+  let call = if fn_info.receiver.is_some() {
+    quote! {#assoc_ty_path #input_fn_name(this, #(#args),*)}
+  } else {
+    quote! {#assoc_ty_path #input_fn_name(#(#args),*)}
   };
 
   quote! {
@@ -188,15 +195,15 @@ pub fn emit_input_mapping(
       let is_mut = m.is_some();
       let this_arg = match is_mut {
         true => quote!(mut this: #crate_name::public::UserData<'hebi>,),
-        false => quote!(mut this: #crate_name::public::UserData<'hebi>,),
+        false => quote!(this: #crate_name::public::UserData<'hebi>,),
       };
       let cast_error_msg = format!(
         "class is not an instance of {}",
         type_name.as_ref().unwrap()
       );
       let cast = match is_mut {
-        true => format_ident!("cast"),
-        false => format_ident!("cast_mut"),
+        true => format_ident!("cast_mut"),
+        false => format_ident!("cast"),
       };
       let this_mapping = quote! {
         let this = match this.#cast::<#type_name>() {

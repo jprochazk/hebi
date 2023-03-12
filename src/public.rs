@@ -3,7 +3,7 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-pub use self::core::object::native::{InitFnPtr, MethodFnPtr, TypeInfo};
+pub use self::core::object::native::{FunctionPtr, InitFnPtr, MethodFnPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
 use crate::{value as core, Error, Result};

@@ -125,6 +125,31 @@ impl Calls {
   ) -> i32 {
     a + b
   }
+
+  pub fn static_simple() -> i32 {
+    0
+  }
+
+  pub fn static_with_pos(v: i32) -> i32 {
+    v
+  }
+
+  pub fn static_with_kw(#[kw] v: i32) -> i32 {
+    v
+  }
+
+  pub fn static_with_pos_default(a: i32, #[default(100)] b: i32) -> i32 {
+    a + b
+  }
+
+  pub fn static_with_kw_default(
+    #[kw] a: i32,
+    #[default(100)]
+    #[kw]
+    b: i32,
+  ) -> i32 {
+    a + b
+  }
 }
 
 check! {
@@ -140,5 +165,48 @@ check! {
     print "pos default with 2nd arg:", v.with_pos_default(10, -10)
     print "kw default:", v.with_kw_default(a=10)
     print "kw default with 2nd arg:", v.with_kw_default(a=10, b=-10)
+  "#
+}
+
+check! {
+  static_method_calls,
+  classes: [Calls],
+  r#"
+    print "static + simple:", Calls.static_simple()
+    print "static + pos:", Calls.static_with_pos(10)
+    print "static + kw:", Calls.static_with_kw(v=10)
+    print "static + pos default:", Calls.static_with_pos_default(10)
+    print "static + pos default with 2nd arg:", Calls.static_with_pos_default(10, -10)
+    print "static + kw default:", Calls.static_with_kw_default(a=10)
+    print "static + kw default with 2nd arg:", Calls.static_with_kw_default(a=10, b=-10)
+  "#
+}
+
+#[class]
+struct Mutable {
+  #[getset]
+  value: i32,
+}
+
+#[methods]
+impl Mutable {
+  #[init]
+  pub fn new() -> Self {
+    Self { value: 0 }
+  }
+
+  pub fn add(&mut self, v: i32) {
+    self.value += v;
+  }
+}
+
+check! {
+  mutate_through_method,
+  classes: [Mutable],
+  r#"
+    m := Mutable()
+    print m.value
+    m.add(10)
+    print m.value
   "#
 }

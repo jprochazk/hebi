@@ -66,9 +66,13 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         #[allow(non_camel_case_types)]
         trait #trait_ident {
           fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)];
+          fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)];
         }
         impl #trait_ident for &#tag_ident {
           fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
+            &[]
+          }
+          fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
             &[]
           }
         }
@@ -118,6 +122,9 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         }
         fn methods() -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
           #methods_tag {}.methods()
+        }
+        fn static_methods() -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
+          #methods_tag {}.static_methods()
         }
       }
     }
@@ -365,12 +372,8 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
     let trait_ident = format_ident!("_{}__Methods", methods.type_name);
     let mut bindings = vec![];
     let mut method_list = vec![];
+    let mut static_method_list = vec![];
     for method in methods.other.iter() {
-      if method.sig.receiver().is_none() {
-        return syn::Error::new(method.sig.span(), "static methods are not yet supported")
-          .into_compile_error()
-          .into();
-      }
       let out_fn_name = format_ident!("_{}__call__{}", methods.type_name, method.sig.ident);
       let fn_info = match FnInfo::parse(Visibility::Inherited, &method.sig) {
         Ok(fn_info) => fn_info,
@@ -382,9 +385,14 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
         fn_info,
         None,
         Some(methods.type_name.clone()),
+        true,
       ));
       let sig_name = method.sig.ident.to_string();
-      method_list.push(quote!((#sig_name, #out_fn_name)));
+      if method.sig.receiver().is_some() {
+        method_list.push(quote!((#sig_name, #out_fn_name)));
+      } else {
+        static_method_list.push(quote!((#sig_name, #out_fn_name)));
+      }
     }
     quote! {
       #(#bindings)*
@@ -392,6 +400,9 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
       impl #trait_ident for #tag_ident {
         fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
           &[#(#method_list),*]
+        }
+        fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
+          &[#(#static_method_list),*]
         }
       }
     }
@@ -472,55 +483,3 @@ impl Methods {
     })
   }
 }
-
-/*
-// #[methods]
-impl Test {
-  // #[init]
-  pub fn new(value: i32) -> Self {
-    Test { value }
-  }
-
-  pub fn square(&self) -> i32 {
-    self.value * self.value
-  }
-}
-
-// Generates:
-
-impl _Test__Init for _Test__InitTag {
-  fn init(self) -> Option<InitFnPtr> {
-    use crate::{FromHebi, IntoHebi};
-    fn _Test__call__new<'a>(
-      ctx: &'a public::Context<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::UserData<'a>> {
-      let _0 = i32::from_hebi(ctx, argv[0].clone())?;
-      // should also support fallible `new`
-      let data = Test::new(_0);
-      Ok(public::UserData::new(ctx, data))
-    }
-    Some(_Test__call__new)
-  }
-}
-impl _Test__Methods for _Test__MethodsTag {
-  fn methods(self) -> &'static [(&'static str, MethodFnPtr)] {
-    use crate::{FromHebi, IntoHebi};
-
-    fn _Test__call__square<'a>(
-      ctx: &'a public::Context<'a>,
-      this: public::UserData<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::Value<'a>> {
-      // gracefully handle this
-      let this = this.cast::<Test>().unwrap();
-      let value = this.square();
-      value.into_hebi(ctx)
-    }
-
-    &[("square", _Test__call__square)]
-  }
-}
-*/

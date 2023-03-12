@@ -205,6 +205,7 @@ pub trait TypeInfo {
   fn init() -> Option<InitFnPtr>;
   fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)];
   fn methods() -> &'static [(&'static str, MethodFnPtr)];
+  fn static_methods() -> &'static [(&'static str, FunctionPtr)];
 }
 
 impl<T: TypeInfo + 'static> AsUserData for T {
@@ -264,6 +265,7 @@ pub struct NativeClass {
   init: Option<InitFnPtr>,
   accessors: IndexMap<&'static str, Accessor>,
   methods: IndexMap<&'static str, Handle<NativeClassMethod>>,
+  static_methods: IndexMap<&'static str, Handle<NativeFunction>>,
 }
 
 impl NativeClass {
@@ -298,6 +300,15 @@ impl NativeClass {
           )
         })
         .collect(),
+      static_methods: T::static_methods()
+        .iter()
+        .map(|m| {
+          (
+            m.0,
+            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), Box::new(m.1)),
+          )
+        })
+        .collect(),
     })
   }
 }
@@ -323,6 +334,10 @@ impl NativeClass {
   pub fn method(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
     self.methods.get(key).cloned()
   }
+
+  pub fn static_method(&self, key: &str) -> Option<Handle<NativeFunction>> {
+    self.static_methods.get(key).cloned()
+  }
 }
 
 impl Access for NativeClass {
@@ -330,9 +345,11 @@ impl Access for NativeClass {
     false
   }
 
-  fn field_get(&self, ctx: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
-    if let Some(method) = self.methods.get(key).cloned() {
+  fn field_get(&self, _: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
+    if let Some(method) = self.method(key) {
       Ok(Some(method.into()))
+    } else if let Some(static_method) = self.static_method(key) {
+      Ok(Some(static_method.into()))
     } else {
       Ok(None)
     }

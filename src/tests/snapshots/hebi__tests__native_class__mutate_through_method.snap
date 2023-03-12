@@ -1,0 +1,22 @@
+---
+source: src/tests/native_class.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+m := Mutable()
+print m.value
+m.add(10)
+print m.value
+
+
+# Result (success):
+none
+
+# Stdout:
+0
+10
+
+
