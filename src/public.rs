@@ -3,10 +3,10 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-pub use self::core::object::native::TypeInfo;
+pub use self::core::object::native::{InitFnPtr, MethodFnPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
-use crate::value as core;
+use crate::{value as core, Error, Result};
 
 // TODO: make macro for wrapping types
 // - `T` -> `T<'a> { inner: T, _lifetime: PhantomData<&'a ()> }`
@@ -349,6 +349,44 @@ impl<'a> Clone for UserData<'a> {
     Self {
       inner: self.inner.clone(),
       _lifetime: self._lifetime,
+    }
+  }
+}
+
+pub trait IntoUserData<'a> {
+  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>>;
+}
+
+impl<'a, T> IntoUserData<'a> for T
+where
+  T: TypeInfo + 'static,
+{
+  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
+    Ok(UserData::new(ctx, self))
+  }
+}
+
+impl<'a, T> IntoUserData<'a> for Option<T>
+where
+  T: IntoUserData<'a>,
+{
+  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
+    match self {
+      Some(v) => v.into_user_data(ctx),
+      None => Err(Error::runtime("failed to initialize user data")),
+    }
+  }
+}
+
+impl<'a, T, E> IntoUserData<'a> for Result<T, E>
+where
+  T: IntoUserData<'a>,
+  E: Into<Error>,
+{
+  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
+    match self {
+      Ok(v) => v.into_user_data(ctx),
+      Err(e) => Err(e.into()),
     }
   }
 }

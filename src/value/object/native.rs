@@ -38,7 +38,7 @@ where
   }
 }
 
-type FunctionPtr = for<'a> fn(
+pub type FunctionPtr = for<'a> fn(
   &'a public::Context<'a>,
   &'a [public::Value<'a>],
   Option<public::Dict<'a>>,
@@ -111,7 +111,7 @@ where
   }
 }
 
-type InitFnPtr = for<'a> fn(
+pub type InitFnPtr = for<'a> fn(
   &'a public::Context<'a>,
   &'a [public::Value<'a>],
   Option<public::Dict<'a>>,
@@ -148,7 +148,7 @@ where
   }
 }
 
-type MethodFnPtr = for<'a> fn(
+pub type MethodFnPtr = for<'a> fn(
   &'a public::Context<'a>,
   public::UserData<'a>,
   &'a [public::Value<'a>],
@@ -402,6 +402,7 @@ impl Access for NativeClassInstance {
   fn field_set(&mut self, ctx: &CoreContext, key: Handle<Str>, value: CoreValue) -> Result<()> {
     if let Some(set) = self.class.field_setter(key.as_str()) {
       set.call(ctx, self.user_data.clone(), &[value], None)?;
+      return Ok(());
     }
 
     Err(Error::runtime(format!("cannot set field `{key}`")))
@@ -417,110 +418,5 @@ impl Debug for NativeClassInstance {
 impl Display for NativeClassInstance {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<native class {} instance>", self.class.name())
-  }
-}
-
-// #[class]
-pub struct Test {
-  // #[access(get)]
-  pub value: i32,
-}
-
-// #[methods]
-impl Test {
-  // #[init]
-  pub fn new(value: i32) -> Self {
-    Test { value }
-  }
-
-  pub fn square(&self) -> i32 {
-    self.value * self.value
-  }
-}
-
-// Generates:
-
-struct _Test__InitTag {}
-trait _Test__Init {
-  fn init(self) -> Option<InitFnPtr>;
-}
-impl _Test__Init for &_Test__InitTag {
-  fn init(self) -> Option<InitFnPtr> {
-    None
-  }
-}
-impl _Test__Init for _Test__InitTag {
-  fn init(self) -> Option<InitFnPtr> {
-    use crate::{FromHebi, IntoHebi};
-    fn _Test__call__new<'a>(
-      ctx: &'a public::Context<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::UserData<'a>> {
-      let _0 = i32::from_hebi(ctx, argv[0].clone())?;
-      // should also support fallible `new`
-      let data = Test::new(_0);
-      Ok(public::UserData::new(ctx, data))
-    }
-    Some(_Test__call__new)
-  }
-}
-
-struct _Test__MethodsTag {}
-trait _Test__Methods {
-  fn methods(self) -> &'static [(&'static str, MethodFnPtr)];
-}
-impl _Test__Methods for &_Test__MethodsTag {
-  fn methods(self) -> &'static [(&'static str, MethodFnPtr)] {
-    &[]
-  }
-}
-impl _Test__Methods for _Test__MethodsTag {
-  fn methods(self) -> &'static [(&'static str, MethodFnPtr)] {
-    use crate::{FromHebi, IntoHebi};
-
-    fn _Test__call__square<'a>(
-      ctx: &'a public::Context<'a>,
-      this: public::UserData<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::Value<'a>> {
-      // gracefully handle this
-      let this = this.cast::<Test>().unwrap();
-      let value = this.square();
-      value.into_hebi(ctx)
-    }
-
-    &[("square", _Test__call__square)]
-  }
-}
-
-impl TypeInfo for Test {
-  fn name() -> &'static str {
-    "Test"
-  }
-
-  fn init() -> Option<InitFnPtr> {
-    _Test__InitTag {}.init()
-  }
-
-  fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)] {
-    use crate::{FromHebi, IntoHebi};
-    fn _Test__get__value<'a>(
-      ctx: &'a public::Context<'a>,
-      this: public::UserData<'a>,
-      argv: &'a [public::Value<'a>],
-      kwargs: Option<public::Dict<'a>>,
-    ) -> Result<public::Value<'a>> {
-      // gracefully handle this
-      let this = this.cast::<Test>().unwrap();
-      let value = this.value;
-      value.into_hebi(ctx)
-    }
-    &[("value", _Test__get__value, None)]
-  }
-
-  fn methods() -> &'static [(&'static str, MethodFnPtr)] {
-    _Test__MethodsTag {}.methods()
   }
 }

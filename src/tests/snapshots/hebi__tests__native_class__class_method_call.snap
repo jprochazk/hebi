@@ -1,0 +1,19 @@
+---
+source: src/tests/native_class.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+v := WithMethods()
+print v.exposed()
+
+
+# Result (success):
+none
+
+# Stdout:
+exposed
+
+

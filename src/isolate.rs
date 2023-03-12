@@ -495,10 +495,7 @@ impl op::Handler for Isolate {
     // this should always be a class descriptor
     let desc = desc.to_class_descriptor().unwrap();
 
-    self.acc = self
-      .ctx
-      .alloc(Class::new(self.ctx.clone(), desc, &[]))
-      .into();
+    self.acc = Class::new(&self.ctx, desc, &[])?.into();
 
     Ok(())
   }
@@ -508,15 +505,7 @@ impl op::Handler for Isolate {
     // this should always be a class descriptor
     let desc = desc.to_class_descriptor().unwrap();
 
-    let value = self
-      .ctx
-      .alloc(Class::new(
-        self.ctx.clone(),
-        desc,
-        &self.stack()[start as usize..],
-      ))
-      .into();
-    self.acc = value;
+    self.acc = Class::new(&self.ctx, desc, &self.stack()[start as usize..])?.into();
 
     Ok(())
   }
