@@ -6,21 +6,21 @@ fn simple(#[kw] v: i32) -> String {
 }
 check! {
   call_kw_simple,
-  register: [simple],
+  fns: [simple],
   r#"
     print simple(v=1)
   "#
 }
 check_error! {
   call_kw_simple_missing_args,
-  register: [simple],
+  fns: [simple],
   r#"
     print simple()
   "#
 }
 check_error! {
   call_kw_simple_too_many_args,
-  register: [simple],
+  fns: [simple],
   r#"
     print simple(v=1,test=2)
   "#
@@ -37,7 +37,7 @@ fn with_default(
 }
 check! {
   call_kw_with_default,
-  register: [with_default],
+  fns: [with_default],
   r#"
     print with_default(a=1)
     print with_default(a=1, b=2)
@@ -46,21 +46,21 @@ check! {
 }
 check_error! {
   call_kw_with_default_missing_args,
-  register: [with_default],
+  fns: [with_default],
   r#"
     print with_default()
   "#
 }
 check_error! {
   call_kw_with_default_too_many_args,
-  register: [with_default],
+  fns: [with_default],
   r#"
     print with_default(a=1,b=2,c=3)
   "#
 }
 check_error! {
   call_kw_with_default_too_many_args2,
-  register: [with_default],
+  fns: [with_default],
   r#"
     print with_default(a=1,b=2,c=3,d=4)
   "#
@@ -77,7 +77,7 @@ fn with_default_2(
 }
 check! {
   call_kw_with_default_2,
-  register: [with_default_2],
+  fns: [with_default_2],
   r#"
     print with_default_2(a=1)
     print with_default_2(a=1, b=2)
@@ -86,21 +86,21 @@ check! {
 }
 check_error! {
   call_kw_with_default_2_missing_args,
-  register: [with_default_2],
+  fns: [with_default_2],
   r#"
     print with_default_2()
   "#
 }
 check_error! {
   call_kw_with_default_2_too_many_args,
-  register: [with_default_2],
+  fns: [with_default_2],
   r#"
     print with_default_2(a=1,b=2,c=3)
   "#
 }
 check_error! {
   call_kw_with_default_2_too_many_args2,
-  register: [with_default_2],
+  fns: [with_default_2],
   r#"
     print with_default_2(a=1,b=2,c=3,d=4)
   "#

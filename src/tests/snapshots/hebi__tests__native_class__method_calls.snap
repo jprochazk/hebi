@@ -1,0 +1,32 @@
+---
+source: src/tests/native_class.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+v := Calls()
+
+print "simple:", v.simple()
+print "pos:", v.with_pos(10)
+print "kw:", v.with_kw(v=10)
+print "pos default:", v.with_pos_default(10)
+print "pos default with 2nd arg:", v.with_pos_default(10, -10)
+print "kw default:", v.with_kw_default(a=10)
+print "kw default with 2nd arg:", v.with_kw_default(a=10, b=-10)
+
+
+# Result (success):
+none
+
+# Stdout:
+simple: 0
+pos: 10
+kw: 10
+pos default: 110
+pos default with 2nd arg: 0
+kw default: 110
+kw default with 2nd arg: 0
+
+

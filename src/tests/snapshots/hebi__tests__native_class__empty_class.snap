@@ -1,18 +1,18 @@
 ---
-source: src/tests/native_fn.rs
+source: src/tests/native_class.rs
 expression: snapshot
 ---
 # Modules:
 
 
 # Input:
-print with_pos(1)
+print Test0
 
 
 # Result (success):
 none
 
 # Stdout:
-value: 1
+<native class "Test0">
 
 

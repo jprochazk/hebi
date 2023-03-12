@@ -15,7 +15,7 @@ use std::fmt::{Debug, Display};
 
 pub use error::Error;
 use isolate::{Isolate, Stdout};
-use public::IntoStr;
+use public::{IntoStr, TypeInfo};
 use value::Value as CoreValue;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -25,8 +25,8 @@ pub use derive::function;
 pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
 pub use public::Value;
 pub use value::object::module::ModuleLoader;
-use value::object::native::Callable;
-use value::object::NativeFunction;
+use value::object::native::Function;
+use value::object::{NativeClass, NativeFunction};
 
 pub struct Hebi {
   isolate: RefCell<Isolate>,
@@ -93,17 +93,6 @@ impl Hebi {
   }
 }
 
-impl Hebi {
-  pub fn create_function(&self, f: impl Callable + 'static) -> Value {
-    Value::bind(
-      self
-        .isolate
-        .borrow_mut()
-        .alloc(NativeFunction::new(Box::new(f))),
-    )
-  }
-}
-
 pub struct Globals<'a> {
   hebi: &'a Hebi,
 }
@@ -113,13 +102,29 @@ impl<'a> Globals<'a> {
     self.hebi.isolate.borrow().get_global(name).map(Value::bind)
   }
 
-  pub fn set(&mut self, name: impl IntoStr, value: Value<'a>) {
-    let name = name.into_str(&self.hebi.ctx());
+  pub fn set(&mut self, name: impl IntoStr<'a>, value: Value<'a>) {
+    let ctx = self.hebi.ctx();
+    let name = name.into_str(&ctx);
     self
       .hebi
       .isolate
       .borrow_mut()
       .set_global(name.unbind(), value.unbind());
+  }
+
+  pub fn register_fn(&mut self, name: impl IntoStr<'a>, f: impl Function + 'static) {
+    let ctx = self.hebi.ctx();
+    let name = name.into_str(&ctx);
+    self.set(
+      name.clone(),
+      Value::bind(NativeFunction::new(ctx.inner(), name.unbind(), Box::new(f))),
+    )
+  }
+
+  pub fn register_class<T: TypeInfo>(&mut self) {
+    let ctx = self.hebi.ctx();
+    let class = NativeClass::new::<T>(ctx.inner());
+    self.set(class.name(), Value::bind(class))
   }
 }
 

@@ -245,7 +245,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get(self.ctx.clone(), &self.acc, name)?;
+    self.acc = field::get(&self.ctx, &self.acc, name)?;
 
     Ok(())
   }
@@ -255,7 +255,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get_opt(self.ctx.clone(), &self.acc, name)?;
+    self.acc = field::get_opt(&self.ctx, &self.acc, name)?;
 
     Ok(())
   }
@@ -267,21 +267,21 @@ impl op::Handler for Isolate {
 
     let mut obj = self.get_reg(obj);
 
-    field::set(self.ctx.clone(), &mut obj, name, self.acc.clone())?;
+    field::set(&self.ctx, &mut obj, name, self.acc.clone())?;
 
     Ok(())
   }
 
   fn op_load_index(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    self.acc = index::get(self.acc.clone(), name)?;
+    self.acc = index::get(&self.ctx, self.acc.clone(), name)?;
 
     Ok(())
   }
 
   fn op_load_index_opt(&mut self, key: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
-    self.acc = index::get_opt(self.acc.clone(), name)?;
+    self.acc = index::get_opt(&self.ctx, self.acc.clone(), name)?;
 
     Ok(())
   }
@@ -289,7 +289,7 @@ impl op::Handler for Isolate {
   fn op_store_index(&mut self, key: u32, obj: u32) -> Result<(), Self::Error> {
     let name = self.get_reg(key);
     let obj = self.get_reg(obj);
-    index::set(self.ctx.clone(), obj, name, self.acc.clone())?;
+    index::set(&self.ctx, obj, name, self.acc.clone())?;
 
     Ok(())
   }
@@ -495,10 +495,7 @@ impl op::Handler for Isolate {
     // this should always be a class descriptor
     let desc = desc.to_class_descriptor().unwrap();
 
-    self.acc = self
-      .ctx
-      .alloc(Class::new(self.ctx.clone(), desc, &[]))
-      .into();
+    self.acc = Class::new(&self.ctx, desc, &[])?.into();
 
     Ok(())
   }
@@ -508,15 +505,7 @@ impl op::Handler for Isolate {
     // this should always be a class descriptor
     let desc = desc.to_class_descriptor().unwrap();
 
-    let value = self
-      .ctx
-      .alloc(Class::new(
-        self.ctx.clone(),
-        desc,
-        &self.stack()[start as usize..],
-      ))
-      .into();
-    self.acc = value;
+    self.acc = Class::new(&self.ctx, desc, &self.stack()[start as usize..])?.into();
 
     Ok(())
   }
@@ -751,6 +740,8 @@ impl op::Handler for Isolate {
     Ok(())
   }
 
+  // TODO: deduplicate call handlers
+
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
 
@@ -762,10 +753,42 @@ impl op::Handler for Isolate {
       return Ok(());
     }
 
-    if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &[], None)?;
+    if callable.is_native_class() {
+      let class = callable.to_native_class().unwrap();
+      self.acc = self.create_native_instance(class, &[], Value::none())?;
       self.pc = return_address;
       return Ok(());
+    }
+
+    if let Some(f) = callable.clone().to_native_function() {
+      self.acc = f.call(&self.ctx, &[], None)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(m) = callable.clone().to_method() {
+      if let Some(f) = m.func().to_native_class_method() {
+        let this = m
+          .this()
+          .to_native_class_instance()
+          .ok_or_else(|| {
+            Error::runtime(format!(
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
+          })?
+          .user_data();
+        self.acc = f.call(&self.ctx, this, &[], None)?;
+        self.pc = return_address;
+        return Ok(());
+      }
+    }
+
+    if callable.is_native_class_method() {
+      return Err(
+        Error::runtime("first argument to native method must be a native class instance").into(),
+      );
     }
 
     // regular function call
@@ -793,8 +816,51 @@ impl op::Handler for Isolate {
       return Ok(());
     }
 
+    if callable.is_native_class() {
+      let class = callable.to_native_class().unwrap();
+      self.acc = self.create_native_instance(class, &args, Value::none())?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &args, None)?;
+      self.acc = f.call(&self.ctx, &args, None)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    // v := Test(100)
+    // v.square()
+    // Test.square(v)
+
+    if let Some(m) = callable.clone().to_method() {
+      if let Some(f) = m.func().to_native_class_method() {
+        let this = m
+          .this()
+          .to_native_class_instance()
+          .ok_or_else(|| {
+            Error::runtime(format!(
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
+          })?
+          .user_data();
+        self.acc = f.call(&self.ctx, this, &args, None)?;
+        self.pc = return_address;
+        return Ok(());
+      }
+    }
+
+    if let Some(f) = callable.clone().to_native_class_method() {
+      let this = args[0]
+        .clone()
+        .to_native_class_instance()
+        .ok_or_else(|| {
+          Error::runtime("first argument to native method must be a native class instance")
+        })?
+        .user_data();
+      self.acc = f.call(&self.ctx, this, &args[1..], None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -831,8 +897,47 @@ impl op::Handler for Isolate {
       return Ok(());
     }
 
+    if callable.is_native_class() {
+      let class = callable.to_native_class().unwrap();
+      self.acc = self.create_native_instance(class, &args, kwargs)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(self.ctx(), &args, kwargs.to_dict())?;
+      self.acc = f.call(&self.ctx, &args, kwargs.to_dict())?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(m) = callable.clone().to_method() {
+      if let Some(f) = m.func().to_native_class_method() {
+        let this = m
+          .this()
+          .to_native_class_instance()
+          .ok_or_else(|| {
+            Error::runtime(format!(
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
+          })?
+          .user_data();
+        self.acc = f.call(&self.ctx, this, &args, kwargs.to_dict())?;
+        self.pc = return_address;
+        return Ok(());
+      }
+    }
+
+    if let Some(f) = callable.clone().to_native_class_method() {
+      let this = args[0]
+        .clone()
+        .to_native_class_instance()
+        .ok_or_else(|| {
+          Error::runtime("first argument to native method must be a native class instance")
+        })?
+        .user_data();
+      self.acc = f.call(&self.ctx, this, &args[1..], kwargs.to_dict())?;
       self.pc = return_address;
       return Ok(());
     }

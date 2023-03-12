@@ -1,18 +1,19 @@
 ---
-source: src/tests/native_fn.rs
+source: src/tests/native_class.rs
 expression: snapshot
 ---
 # Modules:
 
 
 # Input:
-print simple()
+v := WithMethods()
+print v.exposed()
 
 
 # Result (success):
 none
 
 # Stdout:
-test
+exposed
 
 

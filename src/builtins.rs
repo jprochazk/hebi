@@ -44,6 +44,6 @@ fn r#type<'a>(
 }
 
 pub fn register(hebi: &Hebi) {
-  hebi.globals().set("str", hebi.create_function(str));
-  hebi.globals().set("type", hebi.create_function(r#type));
+  hebi.globals().register_fn("str", str);
+  hebi.globals().register_fn("type", r#type);
 }

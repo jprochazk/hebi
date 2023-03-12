@@ -170,11 +170,11 @@ impl Access for Module {
 
   // TODO: tests
 
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
     Ok(self.module_vars.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> crate::Result<()> {
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> crate::Result<()> {
     let Some(slot) = self.module_vars.get_mut(&key) else {
       return Err(Error::runtime(format!("cannot set field `{key}`")));
     };

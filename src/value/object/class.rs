@@ -3,12 +3,14 @@ use std::hash::Hash;
 
 use indexmap::Equivalent;
 
-use super::func::{func_name, Params};
+use super::func::{self, Params};
 use super::{Access, Dict, Str};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::Value;
-use crate::Result;
+use crate::{Error, Result};
+
+// TODO: Display `class def` -> `class` ++ `class` -> `class instance`
 
 pub struct ClassInstance {
   name: Handle<Str>,
@@ -52,11 +54,11 @@ impl Access for ClassInstance {
     self.is_frozen
   }
 
-  fn field_get(&self, key: &str) -> crate::Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
     Ok(self.fields.get(key).cloned())
   }
 
-  fn field_set(&mut self, key: Handle<Str>, value: Value) -> Result<()> {
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> Result<()> {
     self.fields.insert(key, value);
     Ok(())
   }
@@ -121,18 +123,22 @@ impl Access for ClassSuperProxy {
     true
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>> {
-    self.parent().field_get(key)
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
+    self.parent().field_get(ctx, key)
   }
 }
 
 pub struct Method {
-  this: Value, // Class or Proxy
-  func: Value, // Func or Closure
+  this: Value, // ClassInstance, ClassSuperProxy, NativeClassInstance
+  func: Value, // Function, NativeFunction, NativeClassMethod, NativeClassMethodMut
 }
 
 impl Method {
   pub fn new(this: Value, func: Value) -> Self {
+    assert!(
+      this.is_class_instance() || this.is_class_super_proxy() || this.is_native_class_instance()
+    );
+    assert!(func.is_function() || func.is_native_function() || func.is_native_class_method());
     Self { this, func }
   }
 }
@@ -150,7 +156,7 @@ impl Method {
 
 impl Display for Method {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<method {}>", func_name(&self.func.clone()))
+    write!(f, "<method {}>", func::name(&self.func.clone()))
   }
 }
 
@@ -164,16 +170,24 @@ pub struct Class {
 }
 
 impl Class {
-  pub fn new(ctx: Context, desc: Handle<ClassDescriptor>, args: &[Value]) -> Self {
+  pub fn new(ctx: &Context, desc: Handle<ClassDescriptor>, args: &[Value]) -> Result<Handle<Self>> {
     assert!(args.len() >= desc.is_derived() as usize + desc.methods().len() + desc.fields().len());
 
     let parent_offset = 0;
     let methods_offset = parent_offset + desc.is_derived() as usize;
     let fields_offset = methods_offset + desc.methods().len();
 
-    let parent = desc
-      .is_derived()
-      .then(|| args[parent_offset].clone().to_object::<Class>().unwrap());
+    let mut parent = None;
+    if desc.is_derived() {
+      let parent_class = args[parent_offset].clone();
+      if parent_class.is_native_class() {
+        return Err(Error::runtime(format!("cannot inherit from `{parent_class}` because script-defined classes may not inherit from native classes")));
+      }
+      let Some(parent_class) = parent_class.clone().to_object::<Class>() else {
+        return Err(Error::runtime(format!("cannot inherit from `{parent_class}` because it is not a class")))
+      };
+      parent = Some(parent_class);
+    }
 
     let mut methods = Dict::with_capacity(desc.methods().len());
     for (k, v) in desc.methods().iter().zip(args[methods_offset..].iter()) {
@@ -195,12 +209,12 @@ impl Class {
       }
     }
 
-    Self {
+    Ok(ctx.alloc(Self {
       desc,
       methods,
       fields,
       parent,
-    }
+    }))
   }
 }
 
@@ -259,7 +273,7 @@ impl Access for Class {
     false
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
     Ok(self.method(key))
   }
 }

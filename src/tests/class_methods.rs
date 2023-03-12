@@ -67,3 +67,12 @@ check! {
     B().test() # params_base = 4 + implicit receiver
   "#
 }
+
+check_error! {
+  inherit_from_non_class,
+  r#"
+    test := 100
+    class Test(test):
+      pass
+  "#
+}

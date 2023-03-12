@@ -1,0 +1,18 @@
+---
+source: src/tests/native_class.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+v := WithMethods()
+print v.not_exposed()
+
+
+# Result (error):
+cannot get field `"not_exposed"` on value `<native class "WithMethods" instance>`
+
+# Stdout:
+
+

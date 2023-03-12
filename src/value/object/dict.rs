@@ -13,6 +13,7 @@ use std::ops::{Index, IndexMut, RangeBounds};
 use indexmap::{map, Equivalent, IndexMap};
 
 use super::{Access, Str, Value};
+use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::{Error, Result};
 
@@ -308,21 +309,21 @@ impl Access for Dict {
     false
   }
 
-  fn field_get(&self, key: &str) -> Result<Option<Value>, Error> {
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>, Error> {
     Ok(match key {
       "len" => Some(Value::int(self.inner.len() as i32)),
       _ => None,
     })
   }
 
-  fn index_get(&self, key: Value) -> Result<Option<Value>, Error> {
+  fn index_get(&self, ctx: &Context, key: Value) -> Result<Option<Value>, Error> {
     Ok(match key.to_str() {
       Some(key) => self.inner.get(key.as_str()).cloned(),
       None => None,
     })
   }
 
-  fn index_set(&mut self, key: Value, value: Value) -> Result<(), Error> {
+  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> Result<(), Error> {
     let Some(key) = key.clone().to_str() else {
       return Err(Error::runtime(format!("cannot index dictionary using {key}")))
     };

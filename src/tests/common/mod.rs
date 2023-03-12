@@ -32,7 +32,8 @@ macro_rules! check {
   (
     $name:ident,
     $(modules: {$($module:literal : $code:literal),*},)?
-    $(register: [$($fn_name:ident),*],)?
+    $(fns: [$($fn_name:ident),*],)?
+    $(classes: [$($class_name:ident),*],)?
     $input:literal
   ) => {
     #[test]
@@ -49,7 +50,10 @@ macro_rules! check {
         .with_builtins()
         .build();
       $($(
-        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+        vm.globals().register_fn(stringify!($fn_name), $fn_name);
+      )*)?
+      $($(
+        vm.globals().register_class::<$class_name>();
       )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {
@@ -100,7 +104,8 @@ macro_rules! check_error {
   (
     $name:ident,
     $(modules: {$($module:literal : $code:literal),*},)?
-    $(register: [$($fn_name:ident),*],)?
+    $(fns: [$($fn_name:ident),*],)?
+    $(classes: [$($class_name:ident),*],)?
     $input:literal
   ) => {
     #[test]
@@ -117,7 +122,10 @@ macro_rules! check_error {
         .with_builtins()
         .build();
       $($(
-        vm.globals().set(stringify!($fn_name), vm.create_function($fn_name));
+        vm.globals().register_fn(stringify!($fn_name), $fn_name);
+      )*)?
+      $($(
+        vm.globals().register_class::<$class_name>();
       )*)?
       let input = indoc::indoc!($input);
       match vm.eval::<Value>(input) {

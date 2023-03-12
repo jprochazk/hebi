@@ -3,6 +3,7 @@ use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 
 use super::{Access, Handle};
+use crate::ctx::Context;
 use crate::value::Value;
 use crate::{Error, Result};
 
@@ -141,7 +142,7 @@ impl Access for List {
   }
 
   // TODO: tests
-  fn field_get(&self, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
     // TODO: methods (push, pop, etc.)
     Ok(match key {
       "len" => Some(Value::int(self.0.len() as i32)),
@@ -149,14 +150,14 @@ impl Access for List {
     })
   }
 
-  fn index_get(&self, key: Value) -> Result<Option<Value>> {
+  fn index_get(&self, ctx: &Context, key: Value) -> Result<Option<Value>> {
     let Some(index) = key.clone().to_int() else {
       return Err(Error::runtime(format!("cannot index list using {key}")));
     };
     Ok(calculate_index(index, self.len()).and_then(|index| self.0.get(index).cloned()))
   }
 
-  fn index_set(&mut self, key: Value, value: Value) -> Result<()> {
+  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> Result<()> {
     let Some(index) = key.clone().to_int() else {
       return Err(Error::runtime(format!("cannot index list using {key}")));
     };
