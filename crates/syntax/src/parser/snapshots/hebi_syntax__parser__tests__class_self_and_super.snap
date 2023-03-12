@@ -71,28 +71,46 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [
-                    Field {
-                        name: "v",
-                        default: Some(
-                            Call(
-                                Call {
-                                    target: GetField(
-                                        GetField {
-                                            target: GetSuper,
-                                            name: "f",
+                fields: [],
+                methods: [
+                    Func {
+                        name: "init",
+                        params: Params {
+                            has_self: true,
+                            pos: [],
+                            argv: None,
+                            kw: [],
+                            kwargs: None,
+                        },
+                        body: [
+                            Expr(
+                                SetField(
+                                    SetField {
+                                        target: GetField {
+                                            target: GetSelf,
+                                            name: "v",
                                         },
-                                    ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
+                                        value: Call(
+                                            Call {
+                                                target: GetField(
+                                                    GetField {
+                                                        target: GetSuper,
+                                                        name: "f",
+                                                    },
+                                                ),
+                                                args: Args {
+                                                    pos: [],
+                                                    kw: [],
+                                                },
+                                            },
+                                        ),
                                     },
-                                },
+                                ),
                             ),
-                        ),
+                        ],
+                        has_yield: false,
                     },
                 ],
-                methods: [],
             },
         ),
     ],

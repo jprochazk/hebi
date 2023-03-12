@@ -256,6 +256,12 @@ impl<'src> Parser<'src> {
             self.previous().span,
           ));
         }
+        if !self.ctx.current_func.map(|f| f.has_self).unwrap_or(false) {
+          return Err(Error::new(
+            "cannot access `super` outside of a class method that takes `self`",
+            self.previous().span,
+          ));
+        }
       } else {
         return Err(Error::new(
           "cannot access `super` outside of class method",

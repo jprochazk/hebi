@@ -792,7 +792,8 @@ fn class_self_and_super() {
           print self, super
 
       class T(U):
-        v = super.f()
+        fn init(self):
+          self.v = super.f()
     "#
   }
 
@@ -842,6 +843,36 @@ fn class_self_and_super() {
       class T:
         fn f():
           print self
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        v = super
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        fn f():
+          print super
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T(U):
+        v = super
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T(U):
+        fn f():
+          print super
     "#
   }
 }
