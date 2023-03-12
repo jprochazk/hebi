@@ -24,6 +24,16 @@ t.test() # prints 20
 
   vm.eval::<()>(r#"greet(first_name="Salman", last_name=none)"#)
     .unwrap();
+
+  vm.globals().register_class::<Test>();
+  vm.globals().set("instance", vm.wrap(Test { value: 100 }));
+
+  vm.eval::<()>(
+    r#"
+print instance.value()
+"#,
+  )
+  .unwrap();
 }
 
 #[hebi::function]
@@ -32,5 +42,17 @@ fn greet(#[kw] first_name: &str, #[kw] last_name: Option<&str>) {
     println!("Hello, {first_name} {last_name}!");
   } else {
     println!("Hello, {first_name}!");
+  }
+}
+
+#[hebi::class]
+struct Test {
+  value: i32,
+}
+
+#[hebi::methods]
+impl Test {
+  pub fn value(&self) -> i32 {
+    self.value
   }
 }

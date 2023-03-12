@@ -10,10 +10,12 @@ pub mod public;
 pub mod util;
 mod value;
 
+use std::any;
 use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
 pub use error::Error;
+use indexmap::IndexMap;
 use isolate::{Isolate, Stdout};
 use public::{IntoStr, TypeInfo};
 use value::Value as CoreValue;
@@ -21,15 +23,17 @@ use value::Value as CoreValue;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 use ctx::Context;
-pub use derive::function;
+pub use derive::{class, function, methods};
 pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
 pub use public::Value;
+use value::handle::Handle;
 pub use value::object::module::ModuleLoader;
 use value::object::native::Function;
-use value::object::{NativeClass, NativeFunction};
+use value::object::{NativeClass, NativeClassInstance, NativeFunction, UserData};
 
 pub struct Hebi {
   isolate: RefCell<Isolate>,
+  classes: RefCell<IndexMap<any::TypeId, Handle<NativeClass>>>,
 }
 
 // # Safety:
@@ -87,6 +91,40 @@ impl Hebi {
   }
 }
 
+impl Hebi {
+  /// Wraps a `T` in a native class instance.
+  ///
+  /// # Panics
+  ///
+  /// If `T` has not been registered to this `Hebi` instance via `globals`.
+  pub fn wrap<T: TypeInfo + 'static>(&self, v: T) -> Value<'_> {
+    self.try_wrap(v).unwrap()
+  }
+
+  /// Attempts to wrap a `T` in a native class instance.
+  ///
+  /// Fails if `T` has not been registered to this `Hebi` instance via
+  /// `globals`.
+  pub fn try_wrap<T: TypeInfo + 'static>(&self, v: T) -> Result<Value<'_>> {
+    let class = {
+      let classes = self.classes.borrow();
+      let Some(class) = classes.get(&any::TypeId::of::<T>()) else {
+        return Err(Error::runtime(format!(
+          "`{}` has not been registered in this Hebi instance yet, use `Hebi::globals()` to register it",
+          any::type_name::<T>()
+        )));
+      };
+      class.clone()
+    };
+    let ctx = self.ctx();
+    Ok(Value::bind(NativeClassInstance::new(
+      ctx.inner(),
+      class,
+      UserData::new(ctx.inner(), v),
+    )))
+  }
+}
+
 pub struct Globals<'a> {
   hebi: &'a Hebi,
 }
@@ -115,9 +153,14 @@ impl<'a> Globals<'a> {
     )
   }
 
-  pub fn register_class<T: TypeInfo>(&mut self) {
+  pub fn register_class<T: TypeInfo + 'static>(&mut self) {
     let ctx = self.hebi.ctx();
     let class = NativeClass::new::<T>(ctx.inner());
+    self
+      .hebi
+      .classes
+      .borrow_mut()
+      .insert(any::TypeId::of::<T>(), class.clone());
     self.set(class.name(), Value::bind(class))
   }
 }
@@ -168,6 +211,7 @@ impl HebiBuilder {
 
     let vm = Hebi {
       isolate: RefCell::new(isolate),
+      classes: RefCell::new(IndexMap::new()),
     };
 
     if self.use_builtins {

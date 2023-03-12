@@ -225,8 +225,8 @@ pub struct UserData {
 }
 
 impl UserData {
-  pub fn new<T: AsUserData>(v: T) -> Self {
-    Self { inner: Box::new(v) }
+  pub fn new<T: AsUserData>(ctx: &CoreContext, v: T) -> Handle<Self> {
+    ctx.alloc(Self { inner: Box::new(v) })
   }
 }
 

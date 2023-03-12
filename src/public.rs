@@ -300,7 +300,7 @@ pub struct UserData<'a> {
 
 impl<'a> UserData<'a> {
   pub fn new<T: TypeInfo + 'static>(ctx: &Context, v: T) -> Self {
-    let inner = ctx.inner().alloc(core::object::UserData::new(v));
+    let inner = core::object::UserData::new(ctx.inner(), v);
     UserData {
       inner,
       _lifetime: PhantomData,
