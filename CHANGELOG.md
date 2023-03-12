@@ -1,3 +1,67 @@
+# 0.3.0
+
+## Breaking changes
+
+- `Hebi::create_function` has been removed. It has been replaced by the `Globals::register_fn` method.
+- `Hebi::with_io` (deprecated since `0.2.0`) has been removed.
+
+## New APIs
+
+- `Hebi::wrap` and `Hebi::try_wrap`
+- `Globals::register_fn` and `Globals::register_class`
+
+## New features
+
+This release introduces native class binding.
+
+```rust
+#[hebi::class]
+struct Number {
+  value: i32
+}
+
+#[hebi::methods]
+impl Number {
+  #[init]
+  pub fn new(value: i32) -> Self {
+    Self { value }
+  }
+
+  pub fn add(&mut self, value: i32) {
+    self.value += value;
+  }
+
+  pub fn square(&self) -> i32 {
+    self.value * self.value
+  }
+}
+
+let vm = Hebi::new();
+vm.globals().register_class::<Number>();
+
+vm.eval::<()>(r#"
+
+a := Number(100)
+print a.value # prints `100`
+a.add(10)
+print a.value # prints `110`
+
+"#).unwrap();
+```
+
+Native class methods also support the `#[kw]` and `#[default]` parameter attributes.
+
+It is also possible to pass a value to the VM instead of constructing it in a script:
+
+```rust
+// the type must be registered first, otherwise `wrap` will panic
+vm.globals().register_class::<Number>();
+vm.globals().set("n", vm.wrap(Number { value: 50 }));
+vm.eval::<()>(r#"print n.square()"#).unwrap();
+```
+
+The value will be managed by the runtime. If it is no longer in use, it may be dropped at some point. The only time the value is guaranteed to be dropped is when the `Hebi` instance is dropped.
+
 # 0.2.0
 
 Note: Accidentally skipped `0.1.0` by using `cargo workspaces publish` incorrectly.
