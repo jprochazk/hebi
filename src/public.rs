@@ -15,8 +15,6 @@ use crate::{value as core, Error, Result};
 // - From<T<'a>> for Value<'a>
 
 // TODO: `Context` type for allocating objects
-// TODO: convert all the `unsafe { transmute(v) }` into a safe interface with a
-// SAFETY comment
 
 #[repr(C)]
 pub struct Context<'a> {
@@ -309,13 +307,14 @@ impl<'a> UserData<'a> {
     }
   }
 
-  pub fn cast<T: TypeInfo + 'static>(&self) -> Option<&T> {
-    unsafe { self.inner._get() }.inner().as_any().downcast_ref()
+  #[doc(hidden)]
+  pub unsafe fn cast<T: TypeInfo + 'static>(&self) -> Option<&T> {
+    unsafe { self.inner._get().inner() }.as_any().downcast_ref()
   }
 
-  pub fn cast_mut<T: TypeInfo + 'static>(&mut self) -> Option<&mut T> {
-    unsafe { self.inner._get_mut() }
-      .inner_mut()
+  #[doc(hidden)]
+  pub unsafe fn cast_mut<T: TypeInfo + 'static>(&mut self) -> Option<&mut T> {
+    unsafe { self.inner._get_mut().inner_mut() }
       .as_any_mut()
       .downcast_mut()
   }

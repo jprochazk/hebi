@@ -220,7 +220,7 @@ impl Field {
           kwargs: Option<#crate_name::public::Dict<'a>>,
         ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
           use #crate_name::IntoHebi;
-          let this = match this.cast::<#type_name>() {
+          let this = match unsafe { this.cast::<#type_name>() } {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime(#cast_error_msg))
           };
@@ -247,7 +247,7 @@ impl Field {
           kwargs: Option<#crate_name::public::Dict<'a>>,
         ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
           use #crate_name::{FromHebi, IntoHebi};
-          let this = match this.cast_mut::<#type_name>() {
+          let this = match unsafe { this.cast_mut::<#type_name>() } {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime(#cast_error_msg))
           };

@@ -232,11 +232,11 @@ impl UserData {
 
 #[derive::delegate_to_handle]
 impl UserData {
-  pub(crate) fn inner(&self) -> &dyn AsUserData {
+  pub(crate) unsafe fn inner(&self) -> &dyn AsUserData {
     &*self.inner
   }
 
-  pub(crate) fn inner_mut(&mut self) -> &mut dyn AsUserData {
+  pub(crate) unsafe fn inner_mut(&mut self) -> &mut dyn AsUserData {
     &mut *self.inner
   }
 }

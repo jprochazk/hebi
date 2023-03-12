@@ -206,7 +206,7 @@ pub fn emit_input_mapping(
         false => format_ident!("cast"),
       };
       let this_mapping = quote! {
-        let this = match this.#cast::<#type_name>() {
+        let this = match unsafe { this.#cast::<#type_name>() } {
           Some(this) => this,
           None => return Err(#crate_name::Error::runtime(#cast_error_msg))
         };

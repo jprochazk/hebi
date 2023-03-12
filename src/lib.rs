@@ -46,14 +46,8 @@ pub struct Hebi {
 unsafe impl Send for Hebi {}
 
 impl Hebi {
-  #[deprecated = "use `Hebi::builder` or `Hebi::default` instead"]
   pub fn new() -> Self {
     Self::default()
-  }
-
-  #[deprecated = "use `Hebi::builder` instead"]
-  pub fn with_io(io: impl Stdout) -> Self {
-    Self::builder().with_io(io).build()
   }
 
   pub fn check(&self, src: &str) -> Result<(), Vec<syntax::Error>> {
