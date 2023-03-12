@@ -205,7 +205,7 @@ checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "hebi"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "beef",
  "dyn-clone",
@@ -221,7 +221,7 @@ dependencies = [
 
 [[package]]
 name = "hebi_cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "hebi_derive"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -257,7 +257,7 @@ version = "0.0.1"
 
 [[package]]
 name = "hebi_syntax"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "beef",
  "hebi_diag",
@@ -597,7 +597,7 @@ checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
 
 [[package]]
 name = "simple"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "hebi",
 ]

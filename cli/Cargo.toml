@@ -1,6 +1,6 @@
 [package]
 name = "hebi_cli"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 
 [dependencies]
-hebi = { version = "0.2.0", path = ".." }
+hebi = { version = "0.3.0", path = ".." }
 
 rustyline = { version = "10.1.0" }
 rustyline-derive = { version = "0.7.0" }
