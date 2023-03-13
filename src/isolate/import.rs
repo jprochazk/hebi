@@ -34,7 +34,7 @@ pub fn load(vm: &mut Isolate, path: Handle<Path>) -> Result<Handle<Module>> {
 
   vm.module_init_visited.insert(module_id);
 
-  let result = vm.call(module.root().into(), &[], Value::none());
+  let result = vm.run(module.root());
   if let Err(e) = result {
     // If executing the module root scope results in an error,
     // remove the module from the registry. We do this to ensure

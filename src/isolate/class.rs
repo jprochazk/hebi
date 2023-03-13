@@ -21,11 +21,8 @@ impl Isolate {
       let init = class.get("init").unwrap().clone();
       // call initializer
       // TODO: don't allocate temp object here
-      self.call(
-        Value::object(self.alloc(Method::new(Value::object(class.clone()), init))),
-        args,
-        kwargs,
-      )?;
+      let temp = self.alloc(Method::new(Value::object(class.clone()), init));
+      self.dispatch(temp.into(), args, kwargs)?;
     } else {
       // assign kwargs to fields
       if let Some(kwargs) = kwargs.to_dict() {

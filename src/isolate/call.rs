@@ -5,6 +5,7 @@ use crate::ctx::Context;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
+use crate::value::object::func::Function;
 use crate::value::object::{frame, func, Dict, List};
 use crate::value::Value;
 use crate::{op, Error, Result};
@@ -14,29 +15,11 @@ use crate::{op, Error, Result};
 // allocating an extra object.
 
 impl Isolate {
-  pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value> {
-    if let Some(f) = f.clone().to_native_function() {
-      return f.call(&self.ctx, Value::none(), args, kwargs.to_dict());
-    }
-
-    if let Some(m) = f.clone().to_method() {
-      if let Some(f) = m.func().to_native_function() {
-        let this = m
-          .this()
-          .to_native_class_instance()
-          .ok_or_else(|| {
-            Error::runtime(format!(
-              "attempted to call native class method `{}` bound to value `{}` which is not user data",
-              f.name(),
-              m.this()
-            ))
-          })?
-          .user_data();
-        return f.call(&self.ctx, this.into(), args, kwargs.to_dict());
-      }
-    }
-
-    let frame = self.prepare_call_frame(f, args, kwargs, frame::OnReturn::Yield)?;
+  /// Run `f` to completion or until a yield point.
+  ///
+  /// This is the entry point for bytecode execution.
+  pub fn run(&mut self, func: Handle<Function>) -> Result<Value> {
+    let frame = self.prepare_call_frame(func.into(), &[], Value::none(), frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
     self.push_frame(frame);
 
@@ -53,6 +36,93 @@ impl Isolate {
 
     // # Return
     Ok(std::mem::take(&mut self.acc))
+  }
+
+  // TODO: this shouldn't accept `Method`
+  /// Run `f` to completion or until a yield point.
+  ///
+  /// `f` must be a `Function` or `Method`.
+  pub fn dispatch(&mut self, func: Value, args: &[Value], kwargs: Value) -> Result<Value> {
+    assert!(func.is_function() || func.is_method());
+
+    let frame = self.prepare_call_frame(func, args, kwargs, frame::OnReturn::Yield)?;
+    let frame_depth = self.frames.len();
+    self.push_frame(frame);
+
+    self.width = op::Width::Single;
+    let saved_pc = self.pc;
+    self.pc = 0;
+    if let Err(e) = self.run_dispatch_loop() {
+      for _ in frame_depth..self.frames.len() {
+        self.pop_frame();
+      }
+      return Err(e);
+    }
+    self.pc = saved_pc;
+
+    // # Return
+    Ok(std::mem::take(&mut self.acc))
+  }
+
+  pub fn call(
+    &mut self,
+    callable: Value,
+    args: &[Value],
+    kwargs: Value,
+    return_address: Option<usize>,
+  ) -> Result<()> {
+    let return_address = return_address.unwrap_or(self.pc);
+    if callable.is_class() {
+      // class constructor
+      let def = callable.to_class().unwrap();
+      self.acc = self.create_instance(def, args, kwargs)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if callable.is_native_class() {
+      let class = callable.to_native_class().unwrap();
+      self.acc = self.create_native_instance(class, args, kwargs)?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(f) = callable.clone().to_native_function() {
+      self.acc = f.call(&self.ctx, Value::none(), args, kwargs.to_dict())?;
+      self.pc = return_address;
+      return Ok(());
+    }
+
+    if let Some(m) = callable.clone().to_method() {
+      if let Some(f) = m.func().to_native_function() {
+        let this = m
+          .this()
+          .to_native_class_instance()
+          .ok_or_else(|| {
+            Error::runtime(format!(
+              "attempted to call native class method `{}` bound to value `{}` which is not user data",
+              f.name(),
+              m.this()
+            ))
+          })?
+          .user_data();
+        self.acc = f.call(&self.ctx, this.into(), args, kwargs.to_dict())?;
+        self.pc = return_address;
+        return Ok(());
+      }
+    }
+
+    // regular function call
+    let frame = self.prepare_call_frame(
+      callable,
+      args,
+      kwargs,
+      frame::OnReturn::Jump(return_address),
+    )?;
+    self.push_frame(frame);
+    self.width = op::Width::Single;
+    self.pc = 0;
+    Ok(())
   }
 
   pub fn prepare_call_frame(
@@ -190,6 +260,7 @@ pub fn check_args(
     )));
   }
 
+  // TODO: deduplicate with `util`
   // check kw arguments
   let mut unknown = IndexSet::new();
   let mut missing = IndexSet::new();
@@ -284,6 +355,11 @@ fn init_params(
       kwargs
     };
   };
+
+  // TODO: unify calling conventions
+  // native functions take receiver as a separate param, not as part of `args`
+  // we should do this by always allocating the receiver register and leaving it
+  // empty if it is not being used
 
   // params
   let mut params_base = 3;

@@ -64,10 +64,7 @@ impl Hebi {
     let module = syntax::parse(src)?;
     let module = emit::emit(ctx.clone(), "code", &module, true).unwrap();
     let module = module.instance(&ctx, None);
-    let result = self
-      .isolate
-      .borrow_mut()
-      .call(module.root().into(), &[], CoreValue::none())?;
+    let result = self.isolate.borrow_mut().run(module.root())?;
     let result = Value::bind(result);
     let ctx = self.ctx();
     T::from_hebi(&ctx, result)

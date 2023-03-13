@@ -753,55 +753,8 @@ impl op::Handler for Isolate {
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
 
-    if callable.is_class() {
-      // class constructor
-      let class_def = callable.to_class().unwrap();
-      self.acc = self.create_instance(class_def, &[], Value::none())?;
-      self.pc = return_address;
-      return Ok(());
-    }
+    self.call(callable, &[], Value::none(), Some(return_address))?;
 
-    if callable.is_native_class() {
-      let class = callable.to_native_class().unwrap();
-      self.acc = self.create_native_instance(class, &[], Value::none())?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, Value::none(), &[], None)?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_function() {
-        let this = m
-          .this()
-          .to_native_class_instance()
-          .ok_or_else(|| {
-            Error::runtime(format!(
-              "attempted to call native class method `{}` bound to value `{}` which is not user data",
-              f.name(),
-              m.this()
-            ))
-          })?
-          .user_data();
-        self.acc = f.call(&self.ctx, this.into(), &[], None)?;
-        self.pc = return_address;
-        return Ok(());
-      }
-    }
-
-    // regular function call
-    let frame = self.prepare_call_frame(
-      callable,
-      &[],
-      Value::none(),
-      frame::OnReturn::Jump(return_address),
-    )?;
-    self.push_frame(frame);
-    self.pc = 0;
     Ok(())
   }
 
@@ -810,60 +763,8 @@ impl op::Handler for Isolate {
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize..][..args as usize].to_vec();
 
-    if callable.is_class() {
-      // class constructor
-      let class_def = callable.to_class().unwrap();
-      self.acc = self.create_instance(class_def, &args, Value::none())?;
-      self.pc = return_address;
-      return Ok(());
-    }
+    self.call(callable, &args, Value::none(), Some(return_address))?;
 
-    if callable.is_native_class() {
-      let class = callable.to_native_class().unwrap();
-      self.acc = self.create_native_instance(class, &args, Value::none())?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, Value::none(), &args, None)?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    // v := Test(100)
-    // v.square()
-    // Test.square(v)
-
-    if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_function() {
-        let this = m
-          .this()
-          .to_native_class_instance()
-          .ok_or_else(|| {
-            Error::runtime(format!(
-              "attempted to call native class method `{}` bound to value `{}` which is not user data",
-              f.name(),
-              m.this()
-            ))
-          })?
-          .user_data();
-        self.acc = f.call(&self.ctx, this.into(), &args, None)?;
-        self.pc = return_address;
-        return Ok(());
-      }
-    }
-
-    // regular function call
-    let frame = self.prepare_call_frame(
-      callable,
-      &args,
-      Value::none(),
-      frame::OnReturn::Jump(return_address),
-    )?;
-    self.push_frame(frame);
-    self.width = op::Width::Single;
-    self.pc = 0;
     Ok(())
   }
 
@@ -878,56 +779,8 @@ impl op::Handler for Isolate {
     // TODO: remove `to_vec` somehow
     let args = self.stack()[start as usize + 1..][..args as usize].to_vec();
 
-    if callable.is_class() {
-      // class constructor
-      let def = callable.to_class().unwrap();
-      self.acc = self.create_instance(def, &args, kwargs)?;
-      self.pc = return_address;
-      return Ok(());
-    }
+    self.call(callable, &args, kwargs, Some(return_address))?;
 
-    if callable.is_native_class() {
-      let class = callable.to_native_class().unwrap();
-      self.acc = self.create_native_instance(class, &args, kwargs)?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, Value::none(), &args, kwargs.to_dict())?;
-      self.pc = return_address;
-      return Ok(());
-    }
-
-    if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_function() {
-        let this = m
-          .this()
-          .to_native_class_instance()
-          .ok_or_else(|| {
-            Error::runtime(format!(
-              "attempted to call native class method `{}` bound to value `{}` which is not user data",
-              f.name(),
-              m.this()
-            ))
-          })?
-          .user_data();
-        self.acc = f.call(&self.ctx, this.into(), &args, kwargs.to_dict())?;
-        self.pc = return_address;
-        return Ok(());
-      }
-    }
-
-    // regular function call
-    let frame = self.prepare_call_frame(
-      callable,
-      &args,
-      kwargs,
-      frame::OnReturn::Jump(return_address),
-    )?;
-    self.push_frame(frame);
-    self.width = op::Width::Single;
-    self.pc = 0;
     Ok(())
   }
 
