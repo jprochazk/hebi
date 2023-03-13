@@ -249,8 +249,6 @@ pub fn name(f: &Value) -> Handle<Str> {
     f.descriptor().name()
   } else if let Some(f) = f.clone().to_native_function() {
     f.name()
-  } else if let Some(f) = f.clone().to_native_class_method() {
-    f.name()
   } else if let Some(f) = f.clone().to_method() {
     name(&f.func())
   } else {
@@ -260,5 +258,5 @@ pub fn name(f: &Value) -> Handle<Str> {
 
 /// Object types which may be called directly
 pub fn is_callable(f: &Value) -> bool {
-  f.is_function() || f.is_native_function() || f.is_method() || f.is_native_class_method()
+  f.is_function() || f.is_native_function() || f.is_method()
 }

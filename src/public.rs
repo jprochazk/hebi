@@ -3,7 +3,7 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-pub use self::core::object::native::{FunctionPtr, MethodFnPtr, TypeInfo};
+pub use self::core::object::native::{FunctionPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
 use crate::{value as core, Error, Result};
@@ -119,8 +119,18 @@ impl<'a> Value<'a> {
     self.inner.to_dict().map(Dict::bind)
   }
 
+  pub fn as_user_data(self) -> Option<UserData<'a>> {
+    self.inner.to_user_data().map(UserData::bind)
+  }
+
   pub(crate) fn is_object(&self) -> bool {
     self.inner.is_object()
+  }
+}
+
+impl<'a> Value<'a> {
+  pub fn none() -> Self {
+    Value::bind(CoreValue::none())
   }
 }
 

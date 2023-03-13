@@ -16,11 +16,11 @@ use crate::{op, Error, Result};
 impl Isolate {
   pub fn call(&mut self, f: Value, args: &[Value], kwargs: Value) -> Result<Value> {
     if let Some(f) = f.clone().to_native_function() {
-      return f.call(&self.ctx, args, kwargs.to_dict());
+      return f.call(&self.ctx, Value::none(), args, kwargs.to_dict());
     }
 
     if let Some(m) = f.clone().to_method() {
-      if let Some(f) = m.func().to_native_class_method() {
+      if let Some(f) = m.func().to_native_function() {
         let this = m
           .this()
           .to_native_class_instance()
@@ -32,7 +32,7 @@ impl Isolate {
             ))
           })?
           .user_data();
-        return f.call(&self.ctx, this, args, kwargs.to_dict());
+        return f.call(&self.ctx, this.into(), args, kwargs.to_dict());
       }
     }
 

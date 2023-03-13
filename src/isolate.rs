@@ -26,6 +26,14 @@ use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
 use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType, Str};
 use crate::value::Value;
 
+// in progress:
+// - instead of `&[Value]` as args, pass around something like `Args<'a>` that
+//   also contains kwargs
+// - `Args<'a>` will support:
+//   - holding a reference to the stack directly by using a raw const pointer
+//   - holding a receiver (as `Option`)
+// and then finally de-duplicate the call machinery!!!
+
 // TODO: fields should be private, even to ops
 pub struct Isolate {
   ctx: Context,
@@ -761,13 +769,13 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, &[], None)?;
+      self.acc = f.call(&self.ctx, Value::none(), &[], None)?;
       self.pc = return_address;
       return Ok(());
     }
 
     if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_class_method() {
+      if let Some(f) = m.func().to_native_function() {
         let this = m
           .this()
           .to_native_class_instance()
@@ -779,16 +787,10 @@ impl op::Handler for Isolate {
             ))
           })?
           .user_data();
-        self.acc = f.call(&self.ctx, this, &[], None)?;
+        self.acc = f.call(&self.ctx, this.into(), &[], None)?;
         self.pc = return_address;
         return Ok(());
       }
-    }
-
-    if callable.is_native_class_method() {
-      return Err(
-        Error::runtime("first argument to native method must be a native class instance").into(),
-      );
     }
 
     // regular function call
@@ -824,7 +826,7 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, &args, None)?;
+      self.acc = f.call(&self.ctx, Value::none(), &args, None)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -834,7 +836,7 @@ impl op::Handler for Isolate {
     // Test.square(v)
 
     if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_class_method() {
+      if let Some(f) = m.func().to_native_function() {
         let this = m
           .this()
           .to_native_class_instance()
@@ -846,23 +848,10 @@ impl op::Handler for Isolate {
             ))
           })?
           .user_data();
-        self.acc = f.call(&self.ctx, this, &args, None)?;
+        self.acc = f.call(&self.ctx, this.into(), &args, None)?;
         self.pc = return_address;
         return Ok(());
       }
-    }
-
-    if let Some(f) = callable.clone().to_native_class_method() {
-      let this = args[0]
-        .clone()
-        .to_native_class_instance()
-        .ok_or_else(|| {
-          Error::runtime("first argument to native method must be a native class instance")
-        })?
-        .user_data();
-      self.acc = f.call(&self.ctx, this, &args[1..], None)?;
-      self.pc = return_address;
-      return Ok(());
     }
 
     // regular function call
@@ -905,13 +894,13 @@ impl op::Handler for Isolate {
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, &args, kwargs.to_dict())?;
+      self.acc = f.call(&self.ctx, Value::none(), &args, kwargs.to_dict())?;
       self.pc = return_address;
       return Ok(());
     }
 
     if let Some(m) = callable.clone().to_method() {
-      if let Some(f) = m.func().to_native_class_method() {
+      if let Some(f) = m.func().to_native_function() {
         let this = m
           .this()
           .to_native_class_instance()
@@ -923,23 +912,10 @@ impl op::Handler for Isolate {
             ))
           })?
           .user_data();
-        self.acc = f.call(&self.ctx, this, &args, kwargs.to_dict())?;
+        self.acc = f.call(&self.ctx, this.into(), &args, kwargs.to_dict())?;
         self.pc = return_address;
         return Ok(());
       }
-    }
-
-    if let Some(f) = callable.clone().to_native_class_method() {
-      let this = args[0]
-        .clone()
-        .to_native_class_instance()
-        .ok_or_else(|| {
-          Error::runtime("first argument to native method must be a native class instance")
-        })?
-        .user_data();
-      self.acc = f.call(&self.ctx, this, &args[1..], kwargs.to_dict())?;
-      self.pc = return_address;
-      return Ok(());
     }
 
     // regular function call

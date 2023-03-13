@@ -1,20 +1,35 @@
 use std::fmt::{Debug, Display};
-use std::mem::transmute;
 
 use indexmap::IndexMap;
 
 use super::{Access, Str};
-use crate::ctx::Context as CoreContext;
+use crate::ctx::Context;
 use crate::value::handle::Handle;
-use crate::value::object::Dict as CoreDict;
-use crate::value::Value as CoreValue;
+use crate::value::object::Dict;
+use crate::value::Value;
 use crate::{public, Error, Result};
+
+pub(crate) fn call_native_fn(
+  f: FunctionPtr,
+  ctx: &Context,
+  this: Value,
+  args: &[Value],
+  kwargs: Option<Handle<Dict>>,
+) -> Result<Value> {
+  let ctx = public::Context::bind_ref(ctx);
+  let this = public::Value::bind(this);
+  let args = public::Value::bind_slice(args);
+  let kwargs = kwargs.map(public::Dict::bind);
+  let result = (f)(ctx, this, args, kwargs)?;
+  Ok(result.unbind())
+}
 
 pub trait Function {
   fn call<'a>(
     &self,
     ctx: &'a public::Context<'a>,
-    argv: &'a [public::Value<'a>],
+    this: public::Value<'a>,
+    args: &'a [public::Value<'a>],
     kwargs: Option<public::Dict<'a>>,
   ) -> Result<public::Value<'a>>;
 }
@@ -23,6 +38,7 @@ impl<F> Function for F
 where
   F: for<'a> Fn(
     &'a public::Context<'a>,
+    public::Value<'a>,
     &'a [public::Value<'a>],
     Option<public::Dict<'a>>,
   ) -> Result<public::Value<'a>>,
@@ -31,26 +47,30 @@ where
   fn call<'a>(
     &self,
     ctx: &'a public::Context<'a>,
-    argv: &'a [public::Value<'a>],
+    this: public::Value<'a>,
+    args: &'a [public::Value<'a>],
     kwargs: Option<public::Dict<'a>>,
   ) -> Result<public::Value<'a>> {
-    self(ctx, argv, kwargs)
+    self(ctx, this, args, kwargs)
   }
 }
 
 pub type FunctionPtr = for<'a> fn(
   &'a public::Context<'a>,
+  public::Value<'a>,
   &'a [public::Value<'a>],
   Option<public::Dict<'a>>,
 ) -> Result<public::Value<'a>>;
 
+// TODO: replace `Box<dyn Function>` with `FunctionPtr` + remove the `Callable`
+// trait to match
 pub struct NativeFunction {
   name: Handle<Str>,
   f: Box<dyn Function>,
 }
 
 impl NativeFunction {
-  pub fn new(ctx: &CoreContext, name: Handle<Str>, f: Box<dyn Function>) -> Handle<NativeFunction> {
+  pub fn new(ctx: &Context, name: Handle<Str>, f: Box<dyn Function>) -> Handle<NativeFunction> {
     ctx.alloc(Self { name, f })
   }
 }
@@ -59,14 +79,16 @@ impl NativeFunction {
 impl NativeFunction {
   pub fn call(
     &self,
-    ctx: &CoreContext,
-    argv: &[CoreValue],
-    kwargs: Option<Handle<CoreDict>>,
-  ) -> Result<CoreValue> {
+    ctx: &Context,
+    this: Value,
+    args: &[Value],
+    kwargs: Option<Handle<Dict>>,
+  ) -> Result<Value> {
     let ctx = public::Context::bind_ref(ctx);
-    let argv = public::Value::bind_slice(argv);
+    let this = public::Value::bind(this);
+    let args = public::Value::bind_slice(args);
     let kwargs = kwargs.map(public::Dict::bind);
-    let result = Function::call(&*self.f, ctx, argv, kwargs)?;
+    let result = Function::call(&*self.f, ctx, this, args, kwargs)?;
     Ok(result.unbind())
   }
 
@@ -83,84 +105,6 @@ impl Display for NativeFunction {
   }
 }
 
-pub trait Method {
-  fn call<'a>(
-    &self,
-    ctx: &'a public::Context<'a>,
-    this: public::UserData<'a>,
-    argv: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
-  ) -> Result<public::Value<'a>>;
-}
-
-impl<F> Method for F
-where
-  F: for<'a> Fn(
-    &'a public::Context<'a>,
-    public::UserData<'a>,
-    &'a [public::Value<'a>],
-    Option<public::Dict<'a>>,
-  ) -> Result<public::Value<'a>>,
-  F: Send + 'static,
-{
-  fn call<'a>(
-    &self,
-    ctx: &'a public::Context<'a>,
-    this: public::UserData<'a>,
-    argv: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
-  ) -> Result<public::Value<'a>> {
-    self(ctx, this, argv, kwargs)
-  }
-}
-
-pub type MethodFnPtr = for<'a> fn(
-  &'a public::Context<'a>,
-  public::UserData<'a>,
-  &'a [public::Value<'a>],
-  Option<public::Dict<'a>>,
-) -> Result<public::Value<'a>>;
-
-pub struct NativeClassMethod {
-  name: Handle<Str>,
-  f: MethodFnPtr,
-}
-
-impl NativeClassMethod {
-  pub fn new(ctx: &CoreContext, name: Handle<Str>, f: MethodFnPtr) -> Handle<NativeClassMethod> {
-    ctx.alloc(Self { name, f })
-  }
-}
-
-#[derive::delegate_to_handle]
-impl NativeClassMethod {
-  pub fn call(
-    &self,
-    ctx: &CoreContext,
-    this: Handle<UserData>,
-    argv: &[CoreValue],
-    kwargs: Option<Handle<CoreDict>>,
-  ) -> Result<CoreValue> {
-    let ctx = public::Context::bind_ref(ctx);
-    let argv = public::Value::bind_slice(argv);
-    let kwargs = kwargs.map(public::Dict::bind);
-    let result = Method::call(&self.f, ctx, public::UserData::bind(this), argv, kwargs)?;
-    Ok(result.unbind())
-  }
-
-  pub fn name(&self) -> Handle<Str> {
-    self.name.clone()
-  }
-}
-
-impl Access for NativeClassMethod {}
-
-impl Display for NativeClassMethod {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<native method {}>", self.name)
-  }
-}
-
 pub trait AsUserData: std::any::Any {
   fn as_any(&self) -> &dyn std::any::Any;
   fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
@@ -170,8 +114,8 @@ pub trait TypeInfo {
   fn name() -> &'static str;
   /// The init function must return a `UserData`.
   fn init() -> Option<FunctionPtr>;
-  fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)];
-  fn methods() -> &'static [(&'static str, MethodFnPtr)];
+  fn fields() -> &'static [(&'static str, FunctionPtr, Option<FunctionPtr>)];
+  fn methods() -> &'static [(&'static str, FunctionPtr)];
   fn static_methods() -> &'static [(&'static str, FunctionPtr)];
 }
 
@@ -192,7 +136,7 @@ pub struct UserData {
 }
 
 impl UserData {
-  pub fn new<T: AsUserData>(ctx: &CoreContext, v: T) -> Handle<Self> {
+  pub fn new<T: AsUserData>(ctx: &Context, v: T) -> Handle<Self> {
     ctx.alloc(Self { inner: Box::new(v) })
   }
 }
@@ -223,20 +167,20 @@ impl Display for UserData {
 }
 
 struct Accessor {
-  get: Handle<NativeClassMethod>,
-  set: Option<Handle<NativeClassMethod>>,
+  get: FunctionPtr,
+  set: Option<FunctionPtr>,
 }
 
 pub struct NativeClass {
   name: Handle<Str>,
   init: Option<FunctionPtr>,
   accessors: IndexMap<&'static str, Accessor>,
-  methods: IndexMap<&'static str, Handle<NativeClassMethod>>,
+  methods: IndexMap<&'static str, Handle<NativeFunction>>,
   static_methods: IndexMap<&'static str, Handle<NativeFunction>>,
 }
 
 impl NativeClass {
-  pub fn new<T: TypeInfo>(ctx: &CoreContext) -> Handle<NativeClass> {
+  pub fn new<T: TypeInfo>(ctx: &Context) -> Handle<NativeClass> {
     ctx.alloc(NativeClass {
       name: ctx.alloc(Str::from(T::name())),
       init: T::init(),
@@ -246,14 +190,8 @@ impl NativeClass {
           (
             field.0,
             Accessor {
-              get: NativeClassMethod::new(
-                ctx,
-                ctx.alloc(Str::from(format!("get {}", field.0))),
-                field.1,
-              ),
-              set: field.2.map(|f| {
-                NativeClassMethod::new(ctx, ctx.alloc(Str::from(format!("set {}", field.0))), f)
-              }),
+              get: field.1,
+              set: field.2,
             },
           )
         })
@@ -263,7 +201,7 @@ impl NativeClass {
         .map(|m| {
           (
             m.0,
-            NativeClassMethod::new(ctx, ctx.alloc(Str::from(m.0)), m.1),
+            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), Box::new(m.1)),
           )
         })
         .collect(),
@@ -290,15 +228,15 @@ impl NativeClass {
     self.init
   }
 
-  pub fn field_getter(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
-    self.accessors.get(key).map(|a| a.get.clone())
+  pub(self) fn field_getter(&self, key: &str) -> Option<FunctionPtr> {
+    self.accessors.get(key).map(|a| a.get)
   }
 
-  pub fn field_setter(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
-    self.accessors.get(key).and_then(|a| a.set.clone())
+  pub(self) fn field_setter(&self, key: &str) -> Option<FunctionPtr> {
+    self.accessors.get(key).and_then(|a| a.set)
   }
 
-  pub fn method(&self, key: &str) -> Option<Handle<NativeClassMethod>> {
+  pub fn method(&self, key: &str) -> Option<Handle<NativeFunction>> {
     self.methods.get(key).cloned()
   }
 
@@ -312,7 +250,7 @@ impl Access for NativeClass {
     false
   }
 
-  fn field_get(&self, _: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
+  fn field_get(&self, _: &Context, key: &str) -> Result<Option<Value>> {
     if let Some(method) = self.method(key) {
       Ok(Some(method.into()))
     } else if let Some(static_method) = self.static_method(key) {
@@ -342,7 +280,7 @@ pub struct NativeClassInstance {
 
 impl NativeClassInstance {
   pub fn new(
-    ctx: &CoreContext,
+    ctx: &Context,
     class: Handle<NativeClass>,
     user_data: Handle<UserData>,
   ) -> Handle<Self> {
@@ -370,9 +308,9 @@ impl Access for NativeClassInstance {
     true
   }
 
-  fn field_get(&self, ctx: &CoreContext, key: &str) -> Result<Option<CoreValue>> {
+  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
     if let Some(get) = self.class.field_getter(key) {
-      let result = get.call(ctx, self.user_data.clone(), &[], None)?;
+      let result = call_native_fn(get, ctx, self.user_data().into(), &[], None)?;
       return Ok(Some(result));
     }
 
@@ -383,9 +321,9 @@ impl Access for NativeClassInstance {
     Ok(None)
   }
 
-  fn field_set(&mut self, ctx: &CoreContext, key: Handle<Str>, value: CoreValue) -> Result<()> {
+  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> Result<()> {
     if let Some(set) = self.class.field_setter(key.as_str()) {
-      set.call(ctx, self.user_data.clone(), &[value], None)?;
+      call_native_fn(set, ctx, self.user_data().into(), &[value], None)?;
       return Ok(());
     }
 

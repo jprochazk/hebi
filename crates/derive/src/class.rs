@@ -65,11 +65,11 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         #[doc(hidden)]
         #[allow(non_camel_case_types)]
         trait #trait_ident {
-          fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)];
+          fn methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)];
           fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)];
         }
         impl #trait_ident for &#tag_ident {
-          fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
+          fn methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
             &[]
           }
           fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
@@ -117,10 +117,10 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         fn init() -> Option<#crate_name::public::FunctionPtr> {
           #init_tag {}.init()
         }
-        fn fields() -> &'static [(&'static str, #crate_name::public::MethodFnPtr, Option<#crate_name::public::MethodFnPtr>)] {
+        fn fields() -> &'static [(&'static str, #crate_name::public::FunctionPtr, Option<#crate_name::public::FunctionPtr>)] {
           &[#(#class_fields),*]
         }
-        fn methods() -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
+        fn methods() -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
           #methods_tag {}.methods()
         }
         fn static_methods() -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
@@ -209,17 +209,22 @@ impl Field {
     let field_name = &self.name;
     let getter_fn_ident = format_ident!("_{}__get__{}", type_name, field_name);
     let cast_error_msg = format!("class is not an instance of {}", type_name);
+    // TODO: generate `this` mapping using a separate function, so it can be reused
     (
       quote! {
         #[doc(hidden)]
         #[allow(non_snake_case)]
-        fn #getter_fn_ident <'a>(
-          ctx: &'a #crate_name::public::Context<'a>,
-          this: #crate_name::public::UserData<'a>,
-          argv: &'a [#crate_name::public::Value<'a>],
-          kwargs: Option<#crate_name::public::Dict<'a>>,
-        ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
+        fn #getter_fn_ident <'hebi>(
+          ctx: &'hebi #crate_name::public::Context<'hebi>,
+          mut this: #crate_name::public::Value<'hebi>,
+          args: &'hebi [#crate_name::public::Value<'hebi>],
+          kwargs: Option<#crate_name::public::Dict<'hebi>>,
+        ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
           use #crate_name::IntoHebi;
+          let this = match this.as_user_data() {
+            Some(this) => this,
+            None => return Err(#crate_name::Error::runtime("getter got receiver which is not user data")),
+          };
           let this = match unsafe { this.cast::<#type_name>() } {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime(#cast_error_msg))
@@ -240,21 +245,26 @@ impl Field {
       quote! {
         #[doc(hidden)]
         #[allow(non_snake_case)]
-        fn #setter_fn_ident <'a>(
-          ctx: &'a #crate_name::public::Context<'a>,
-          mut this: #crate_name::public::UserData<'a>,
-          argv: &'a [#crate_name::public::Value<'a>],
-          kwargs: Option<#crate_name::public::Dict<'a>>,
-        ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
+        fn #setter_fn_ident <'hebi>(
+          ctx: &'hebi #crate_name::public::Context<'hebi>,
+          mut this: #crate_name::public::Value<'hebi>,
+          args: &'hebi [#crate_name::public::Value<'hebi>],
+          kwargs: Option<#crate_name::public::Dict<'hebi>>,
+        ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
           use #crate_name::{FromHebi, IntoHebi};
-          let this = match unsafe { this.cast_mut::<#type_name>() } {
+          let mut this = match this.as_user_data() {
+            Some(this) => this,
+            None => return Err(#crate_name::Error::runtime("setter got receiver which is not user data")),
+          };
+          let mut this = match unsafe { this.cast_mut::<#type_name>() } {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime(#cast_error_msg))
           };
-          if argv.len() != 1 {
-            return Err(#crate_name::Error::runtime(format!("expected 1 argument, got {}", argv.len())))
-          }
-          this.#field_name = <#field_ty>::from_hebi(ctx, argv[0].clone())?;
+          let value = match args.get(0).cloned() {
+            Some(value) => value,
+            None => return Err(#crate_name::Error::runtime("setter expects value as 2nd argument, got none")),
+          };
+          this.#field_name = <#field_ty>::from_hebi(ctx, value)?;
           ().into_hebi(ctx)
         }
       },
@@ -337,11 +347,12 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
     Some(quote! {
       #[doc(hidden)]
       #[allow(non_snake_case)]
-      fn #fn_ident<'a>(
-        ctx: &'a #crate_name::public::Context<'a>,
-        args: &'a [#crate_name::public::Value<'a>],
-        kwargs: Option<#crate_name::public::Dict<'a>>,
-      ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
+      fn #fn_ident<'hebi>(
+        ctx: &'hebi #crate_name::public::Context<'hebi>,
+        mut this: #crate_name::public::Value<'hebi>,
+        args: &'hebi [#crate_name::public::Value<'hebi>],
+        kwargs: Option<#crate_name::public::Dict<'hebi>>,
+      ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
         #![allow(
           clippy::unnecessary_lazy_evaluations,
           clippy::absurd_extreme_comparisons,
@@ -398,7 +409,7 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
       #(#bindings)*
 
       impl #trait_ident for #tag_ident {
-        fn methods(self) -> &'static [(&'static str, #crate_name::public::MethodFnPtr)] {
+        fn methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
           &[#(#method_list),*]
         }
         fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {

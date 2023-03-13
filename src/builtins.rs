@@ -2,7 +2,12 @@ use crate::public::conv::IntoHebi;
 use crate::public::{Context, Dict, Value};
 use crate::{Error, Hebi, Result};
 
-fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: Option<Dict<'a>>) -> Result<Value<'a>> {
+fn str<'a>(
+  ctx: &'a Context<'a>,
+  _: Value<'a>,
+  args: &'a [Value<'a>],
+  _: Option<Dict<'a>>,
+) -> Result<Value<'a>> {
   if args.len() != 1 {
     return Err(Error::runtime(format!(
       "expected exactly 1 argument, got {}",
@@ -16,6 +21,7 @@ fn str<'a>(ctx: &'a Context<'a>, args: &'a [Value<'a>], _: Option<Dict<'a>>) -> 
 
 fn r#type<'a>(
   ctx: &'a Context<'a>,
+  _: Value<'a>,
   args: &'a [Value<'a>],
   _: Option<Dict<'a>>,
 ) -> Result<Value<'a>> {

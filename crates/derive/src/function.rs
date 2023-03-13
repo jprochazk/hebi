@@ -68,7 +68,6 @@ pub fn emit_fn(
   let vis = fn_info.vis.clone();
   let (input_mapping, arg_info) = emit_input_mapping(crate_name, &fn_info, type_name.as_ref());
   let args = arg_info.call_args;
-  let this_arg = arg_info.this_input_arg;
 
   let assoc_ty_path = if is_assoc_fn {
     let type_name = type_name.as_ref().unwrap();
@@ -86,7 +85,7 @@ pub fn emit_fn(
     #[allow(non_snake_case)]
     #vis fn #out_fn_name<'hebi>(
       ctx: &'hebi #crate_name::public::Context<'hebi>,
-      #this_arg
+      mut this: #crate_name::public::Value<'hebi>,
       args: &'hebi [#crate_name::public::Value<'hebi>],
       kwargs: Option<#crate_name::public::Dict<'hebi>>,
     ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
@@ -190,13 +189,9 @@ pub fn emit_input_mapping(
     })
     .collect::<Vec<_>>();
 
-  let (this_arg, this_mapping) = match params.receiver.as_ref().map(|r| r.mutability) {
+  let this_mapping = match params.receiver.as_ref().map(|r| r.mutability) {
     Some(m) => {
       let is_mut = m.is_some();
-      let this_arg = match is_mut {
-        true => quote!(mut this: #crate_name::public::UserData<'hebi>,),
-        false => quote!(this: #crate_name::public::UserData<'hebi>,),
-      };
       let cast_error_msg = format!(
         "class is not an instance of {}",
         type_name.as_ref().unwrap()
@@ -206,14 +201,18 @@ pub fn emit_input_mapping(
         false => format_ident!("cast"),
       };
       let this_mapping = quote! {
-        let this = match unsafe { this.#cast::<#type_name>() } {
+        let mut this = match this.as_user_data() {
           Some(this) => this,
-          None => return Err(#crate_name::Error::runtime(#cast_error_msg))
+          None => return Err(#crate_name::Error::runtime("receiver is not user data")),
+        };
+        let mut this = match unsafe { this.#cast::<#type_name>() } {
+          Some(this) => this,
+          None => return Err(#crate_name::Error::runtime(#cast_error_msg)),
         };
       };
-      (Some(this_arg), Some(this_mapping))
+      Some(this_mapping)
     }
-    _ => (None, None),
+    _ => None,
   };
 
   let input_mapping = positional_param_mapping
@@ -228,7 +227,6 @@ pub fn emit_input_mapping(
     .collect::<Vec<_>>();
 
   let out_args = ArgInfo {
-    this_input_arg: this_arg,
     call_args: args.iter().map(|&i| i.clone()).collect(),
   };
 
@@ -265,7 +263,6 @@ pub fn clear_sig_attrs(sig: &mut Signature) {
 }
 
 pub struct ArgInfo {
-  pub this_input_arg: Option<TokenStream2>,
   pub call_args: Vec<Ident>,
 }
 

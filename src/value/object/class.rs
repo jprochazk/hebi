@@ -138,7 +138,7 @@ impl Method {
     assert!(
       this.is_class_instance() || this.is_class_super_proxy() || this.is_native_class_instance()
     );
-    assert!(func.is_function() || func.is_native_function() || func.is_native_class_method());
+    assert!(func.is_function() || func.is_native_function());
     Self { this, func }
   }
 }

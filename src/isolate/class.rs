@@ -57,6 +57,7 @@ impl Isolate {
     let user_data = Function::call(
       &init,
       &public::Context::bind(self.ctx()),
+      public::Value::none(),
       public::Value::bind_slice(args),
       kwargs.to_dict().map(public::Dict::bind),
     )?
