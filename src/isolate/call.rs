@@ -4,22 +4,98 @@ use super::{Control, Isolate};
 use crate::ctx::Context;
 use crate::util::JoinIter;
 use crate::value::handle::Handle;
-use crate::value::object::frame::{Frame, Stack};
+use crate::value::object::frame::{Frame, Stack, StackSlice};
 use crate::value::object::func::Function;
 use crate::value::object::{frame, func, Dict, List};
 use crate::value::Value;
 use crate::{op, Error, Result};
 
-// TODO: factor `method` out of this process, so `invoke` can be implemented as
-// a fast-track, all it needs to do is place the receiver. currently it's
-// allocating an extra object.
+#[derive(Clone)]
+pub struct Args {
+  this: Value,
+  args: Option<StackSlice>,
+  kwargs: Option<Handle<Dict>>,
+}
+
+impl Args {
+  /// # Safety
+  /// Caller must guarantee that `args` will not outlive the returned struct,
+  /// and that `args` will not be borrowed mutably for as long as the returned
+  /// struct exists.
+  pub fn new(this: Value, args: Option<StackSlice>, kwargs: Option<Handle<Dict>>) -> Self {
+    Self { this, args, kwargs }
+  }
+
+  pub fn with_receiver(self, this: Value) -> Self {
+    Self {
+      this,
+      args: self.args,
+      kwargs: self.kwargs,
+    }
+  }
+
+  pub fn empty() -> Self {
+    Self {
+      this: Value::none(),
+      args: None,
+      kwargs: None,
+    }
+  }
+
+  pub fn this(&self) -> &Value {
+    &self.this
+  }
+
+  pub fn pos(&self, index: usize) -> Option<Value> {
+    match &self.args {
+      Some(slice) => Some(slice[index].clone()),
+      None => panic!("{index} out of bounds in stack slice of len 0"),
+    }
+  }
+
+  pub fn num_positional(&self) -> usize {
+    match &self.args {
+      Some(slice) => slice.len(),
+      None => 0,
+    }
+  }
+
+  pub fn kw(&self, key: &str) -> Option<Value> {
+    self
+      .kwargs
+      .as_ref()
+      .and_then(|kwargs| kwargs.get(key).cloned())
+  }
+
+  pub fn has_kw(&self) -> bool {
+    self.kwargs.is_some()
+  }
+
+  pub fn keys(&self) -> impl Iterator<Item = &str> {
+    self
+      .kwargs
+      .iter()
+      .flat_map(|kwargs| kwargs.keys().map(|k| k.as_str()))
+  }
+
+  pub(crate) fn all_kw(&self) -> Option<Handle<Dict>> {
+    self.kwargs.clone()
+  }
+
+  pub(crate) unsafe fn all_pos(&self) -> &[Value] {
+    match &self.args {
+      Some(slice) => &slice[..],
+      None => &[],
+    }
+  }
+}
 
 impl Isolate {
-  /// Run `f` to completion or until a yield point.
+  /// Run `func` to completion or until a yield point.
   ///
   /// This is the entry point for bytecode execution.
   pub fn run(&mut self, func: Handle<Function>) -> Result<Value> {
-    let frame = self.prepare_call_frame(func.into(), &[], Value::none(), frame::OnReturn::Yield)?;
+    let frame = self.prepare_call(func, Args::empty(), frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
     self.push_frame(frame);
 
@@ -38,14 +114,9 @@ impl Isolate {
     Ok(std::mem::take(&mut self.acc))
   }
 
-  // TODO: this shouldn't accept `Method`
-  /// Run `f` to completion or until a yield point.
-  ///
-  /// `f` must be a `Function` or `Method`.
-  pub fn dispatch(&mut self, func: Value, args: &[Value], kwargs: Value) -> Result<Value> {
-    assert!(func.is_function() || func.is_method());
-
-    let frame = self.prepare_call_frame(func, args, kwargs, frame::OnReturn::Yield)?;
+  /// Run `func` to completion or until a yield point.
+  pub fn call_recurse(&mut self, func: Handle<Function>, args: Args) -> Result<Value> {
+    let frame = self.prepare_call(func, args, frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
     self.push_frame(frame);
 
@@ -64,31 +135,26 @@ impl Isolate {
     Ok(std::mem::take(&mut self.acc))
   }
 
-  pub fn call(
-    &mut self,
-    callable: Value,
-    args: &[Value],
-    kwargs: Value,
-    return_address: Option<usize>,
-  ) -> Result<()> {
+  /// Call `callable` with the given `args`, `kwargs`.
+  pub fn call(&mut self, callable: Value, args: Args, return_address: Option<usize>) -> Result<()> {
     let return_address = return_address.unwrap_or(self.pc);
     if callable.is_class() {
       // class constructor
       let def = callable.to_class().unwrap();
-      self.acc = self.create_instance(def, args, kwargs)?;
+      self.acc = self.create_instance(def, args)?;
       self.pc = return_address;
       return Ok(());
     }
 
     if callable.is_native_class() {
       let class = callable.to_native_class().unwrap();
-      self.acc = self.create_native_instance(class, args, kwargs)?;
+      self.acc = self.create_native_instance(class, args)?;
       self.pc = return_address;
       return Ok(());
     }
 
     if let Some(f) = callable.clone().to_native_function() {
-      self.acc = f.call(&self.ctx, Value::none(), args, kwargs.to_dict())?;
+      self.acc = f.call(&self.ctx, args)?;
       self.pc = return_address;
       return Ok(());
     }
@@ -106,48 +172,46 @@ impl Isolate {
             ))
           })?
           .user_data();
-        self.acc = f.call(&self.ctx, this.into(), args, kwargs.to_dict())?;
+        self.acc = f.call(&self.ctx, args.with_receiver(this.into()))?;
         self.pc = return_address;
         return Ok(());
       }
     }
 
+    let (callable, args) = if let Some(m) = callable.clone().to_method() {
+      (m.func(), args.with_receiver(m.this()))
+    } else {
+      (callable, args)
+    };
+    let Some(callable) = callable.clone().to_function() else {
+      return Err(Error::runtime(format!("cannot call `{callable}`")));
+    };
+
     // regular function call
-    let frame = self.prepare_call_frame(
-      callable,
-      args,
-      kwargs,
-      frame::OnReturn::Jump(return_address),
-    )?;
+    let on_return = frame::OnReturn::Jump(return_address);
+    let frame = self.prepare_call(callable, args, on_return)?;
     self.push_frame(frame);
     self.width = op::Width::Single;
     self.pc = 0;
     Ok(())
   }
 
-  pub fn prepare_call_frame(
+  pub fn prepare_call(
     &mut self,
-    callable: Value,
-    args: &[Value],
-    kwargs: Value,
+    callable: Handle<Function>,
+    args: Args,
     on_return: frame::OnReturn,
   ) -> Result<Frame> {
-    // # Check that callee is callable
-    // TODO: trait
-    if !func::is_callable(&callable) {
-      // TODO: span
-      return Err(Error::runtime("value is not callable"));
-    }
-
     // # Check arguments
-    let param_info = check_func_args(callable.clone(), args, kwargs.clone())?;
+    let descriptor = callable.descriptor();
+    let param_info = check_args(!args.this().is_none(), descriptor.params(), &args)?;
 
     // # Create a new call frame
     let mut frame = match self.frames.last_mut() {
       Some(frame) => Frame::with_stack(
         &self.module_registry,
         callable.clone(),
-        args.len(),
+        args.num_positional(),
         on_return,
         Stack::view(&frame.stack, frame.stack_base() + frame.frame_size),
       )?,
@@ -155,7 +219,7 @@ impl Isolate {
         self.ctx.clone(),
         &self.module_registry,
         callable.clone(),
-        args.len(),
+        args.num_positional(),
         on_return,
       )?,
     };
@@ -165,9 +229,8 @@ impl Isolate {
       self.ctx.clone(),
       callable,
       &mut frame.stack,
-      param_info,
+      &param_info,
       args,
-      kwargs,
     );
 
     Ok(frame)
@@ -201,32 +264,10 @@ impl Isolate {
   }
 }
 
-// Returns `(has_argv, max_params)`
-fn check_func_args(func: Value, args: &[Value], kwargs: Value) -> crate::Result<ParamInfo> {
-  fn check_func_args_inner(
-    has_implicit_receiver: bool,
-    func: Value,
-    args: &[Value],
-    kwargs: Value,
-  ) -> crate::Result<ParamInfo> {
-    let kw = kwargs.to_dict();
-    if let Some(f) = func.clone().to_function() {
-      check_args(has_implicit_receiver, f.descriptor().params(), args, kw)
-    } else {
-      panic!("check_func_args not implemented for {func}");
-    }
-  }
-  if let Some(m) = func.clone().to_method() {
-    return check_func_args_inner(true, m.func(), args, kwargs);
-  }
-  check_func_args_inner(false, func, args, kwargs)
-}
-
 pub fn check_args(
   has_implicit_receiver: bool,
   params: &func::Params,
-  args: &[Value],
-  kw: Option<Handle<Dict>>,
+  args: &Args,
 ) -> crate::Result<ParamInfo> {
   let has_self_param = params.has_self && !has_implicit_receiver;
 
@@ -243,20 +284,24 @@ pub fn check_args(
   };
 
   // check positional arguments
-  if args.len() < min {
+  if args.num_positional() < min {
     return Err(Error::runtime(format!(
       "missing required positional params: {}",
       if has_self_param { Some("self") } else { None }
         .into_iter()
-        .chain(params.pos[args.len()..min].iter().map(|s| s.as_str()))
+        .chain(
+          params.pos[args.num_positional()..min]
+            .iter()
+            .map(|s| s.as_str())
+        )
         .join(", "),
     )));
   }
-  if !params.argv && args.len() > max {
+  if !params.argv && args.num_positional() > max {
     return Err(Error::runtime(format!(
       "expected at most {} args, got {}",
       max,
-      args.len()
+      args.num_positional()
     )));
   }
 
@@ -264,10 +309,10 @@ pub fn check_args(
   // check kw arguments
   let mut unknown = IndexSet::new();
   let mut missing = IndexSet::new();
-  if let Some(kw) = kw {
+  if args.has_kw() {
     // we have kwargs,
     // - check for unknown keywords
-    for key in kw.iter().map(|(k, _)| k.as_str()) {
+    for key in args.keys() {
       if !params.kwargs && !params.kw.contains_key(key) {
         unknown.insert(key.to_string());
       }
@@ -279,7 +324,7 @@ pub fn check_args(
       // only check required keyword params
       .filter_map(|(k, v)| if !*v { Some(k.as_str()) } else { None })
     {
-      if !kw.contains_key(key) {
+      if args.kw(key).is_none() {
         missing.insert(key.to_string());
       }
     }
@@ -330,55 +375,41 @@ pub struct ParamInfo {
 #[allow(clippy::identity_op, clippy::needless_range_loop)]
 fn init_params(
   ctx: Context,
-  f: Value,
+  func: Handle<Function>,
   stack: &mut Stack,
-  param_info: ParamInfo,
-  args: &[Value],
-  kwargs: Value,
+  param_info: &ParamInfo,
+  args: Args,
 ) {
-  // function
-  stack[0] = f.clone();
+  stack[0] = func.into();
 
-  // argv
-  if param_info.has_argv && args.len() > param_info.max_params {
-    let argv = args[param_info.max_params..args.len()].to_vec();
+  if args.num_positional() > param_info.max_params {
+    let mut argv = Vec::with_capacity(args.num_positional() - param_info.max_params);
+    for i in param_info.max_params..args.num_positional() {
+      argv.push(args.pos(i).unwrap())
+    }
     stack[1] = ctx.alloc(List::from(argv)).into();
-  } else {
+  } else if param_info.has_argv {
     stack[1] = ctx.alloc(List::new()).into();
+  } else {
+    stack[1] = Value::none();
   }
 
-  // kwargs
-  if param_info.has_kw {
-    stack[2] = if kwargs.is_none() {
-      ctx.alloc(Dict::new()).into()
-    } else {
-      kwargs
-    };
-  };
-
-  // TODO: unify calling conventions
-  // native functions take receiver as a separate param, not as part of `args`
-  // we should do this by always allocating the receiver register and leaving it
-  // empty if it is not being used
-
-  // params
-  let mut params_base = 3;
-  if let Some(m) = f.to_method() {
-    // method call - set implicit receiver
-    // because we set it, it can't be part of `args`
-    // so we also bump `params_base` to `4`
-    stack[params_base] = m.this();
-    params_base += 1;
-  } else if !param_info.has_self {
-    // regular function call without `self`
-    // there is no `self` implicitly nor explicitly passed in
-    // the first non-self param is at `4`, so we bump `params_base`
-    params_base += 1;
+  if !args.has_kw() && param_info.has_kw {
+    stack[2] = ctx.alloc(Dict::new()).into();
+  } else {
+    stack[2] = args.all_kw().map(Value::from).unwrap_or(Value::none());
   }
-  // `args` contains just the params, or in the case of a static call of a method,
-  // it will also contain `self`. if it contains `self`, `params_base` must be
-  // `3`, because `self` is always at `stack_base + 3`.
-  for i in 0..std::cmp::min(args.len(), param_info.max_params) {
-    stack[params_base + i] = args[i].clone();
+
+  let len = std::cmp::min(args.num_positional(), param_info.max_params);
+  if args.this().is_none() && param_info.has_self {
+    stack[3] = args.pos(0).unwrap();
+    for i in 1..len {
+      stack[4 + i] = args.pos(i).unwrap();
+    }
+  } else {
+    stack[3] = args.this().clone();
+    for i in 0..len {
+      stack[4 + i] = args.pos(i).unwrap();
+    }
   }
 }

@@ -1,42 +1,32 @@
+use super::call::Args;
 use super::{call, Isolate};
 use crate::value::handle::Handle;
-use crate::value::object::native::Function;
-use crate::value::object::{Class, Method, NativeClass, NativeClassInstance};
+use crate::value::object::{native, Class, NativeClass, NativeClassInstance};
 use crate::value::Value;
-use crate::{public, Error, Result};
+use crate::{Error, Result};
 
 // TODO: `kwargs: Value` -> `kwargs: Option<Handle<Dict>>`
 
 impl Isolate {
-  pub fn create_instance(
-    &mut self,
-    def: Handle<Class>,
-    args: &[Value],
-    kwargs: Value,
-  ) -> Result<Value> {
+  pub fn create_instance(&mut self, class: Handle<Class>, args: Args) -> Result<Value> {
     // create instance
-    let mut class = self.ctx.alloc(def.instance());
+    let mut instance = self.ctx.alloc(class.instance());
 
-    if class.has("init") {
-      let init = class.get("init").unwrap().clone();
+    if let Some(init) = class.init() {
       // call initializer
-      // TODO: don't allocate temp object here
-      let temp = self.alloc(Method::new(Value::object(class.clone()), init));
-      self.dispatch(temp.into(), args, kwargs)?;
+      self.call_recurse(init, args.with_receiver(instance.clone().into()))?;
     } else {
+      call::check_args(true, class.params(), &args)?;
       // assign kwargs to fields
-      if let Some(kwargs) = kwargs.to_dict() {
-        call::check_args(true, def.params(), args, Some(kwargs.clone()))?;
-        for (k, v) in kwargs.iter() {
-          class.insert(k.clone(), v.clone());
+      if let Some(kw) = args.all_kw() {
+        for (k, v) in kw.iter() {
+          instance.insert(k.clone(), v.clone());
         }
-      } else {
-        call::check_args(true, def.params(), args, None)?;
       }
     }
-    class.freeze();
+    instance.freeze();
 
-    Ok(Value::object(class))
+    Ok(Value::object(instance))
   }
 
   // TODO: add a way to create native instances from native functions
@@ -44,21 +34,19 @@ impl Isolate {
   pub fn create_native_instance(
     &mut self,
     class: Handle<NativeClass>,
-    args: &[Value],
-    kwargs: Value,
+    args: Args,
   ) -> Result<Value> {
     let Some(init) = class.init() else {
       return Err(Error::runtime(format!("cannot initialize class {}", class.name())))
     };
 
-    let user_data = Function::call(
-      &init,
-      &public::Context::bind(self.ctx()),
-      public::Value::none(),
-      public::Value::bind_slice(args),
-      kwargs.to_dict().map(public::Dict::bind),
+    let user_data = native::call_native_fn(
+      init,
+      &self.ctx,
+      args.this().clone(),
+      unsafe { args.all_pos() },
+      args.all_kw(),
     )?
-    .unbind()
     .to_user_data()
     .expect("init function returned something other than UserData");
 

@@ -296,6 +296,8 @@ impl<'src> Emitter<'src> {
     if let Some(name) = func.params.argv.as_ref() {
       self.state.declare_local(name.deref().clone(), argv);
     }
+
+    // TODO: this should not be declared in a class method
     self
       .state
       .declare_local(func.name.deref().clone(), this_func);

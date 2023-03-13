@@ -17,8 +17,6 @@ use crate::{Error, Result};
 // primitive?
 
 pub trait ModuleLoader {
-  // TODO: how will loading native modules work?
-  // maybe directly `.register` with the `Hebi` instance?
   /// Load a module at the `path`, returning its source code.
   fn load(&mut self, path: &[String]) -> Result<&str, Box<dyn StdError + 'static>>;
 }

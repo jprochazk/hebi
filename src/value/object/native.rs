@@ -2,10 +2,10 @@ use std::fmt::{Debug, Display};
 
 use indexmap::IndexMap;
 
-use super::{Access, Str};
+use super::{Access, Dict, Str};
 use crate::ctx::Context;
+use crate::isolate::call::Args;
 use crate::value::handle::Handle;
-use crate::value::object::Dict;
 use crate::value::Value;
 use crate::{public, Error, Result};
 
@@ -17,10 +17,8 @@ pub(crate) fn call_native_fn(
   kwargs: Option<Handle<Dict>>,
 ) -> Result<Value> {
   let ctx = public::Context::bind_ref(ctx);
-  let this = public::Value::bind(this);
-  let args = public::Value::bind_slice(args);
-  let kwargs = kwargs.map(public::Dict::bind);
-  let result = (f)(ctx, this, args, kwargs)?;
+  let args = public::Args::new(this, args, kwargs);
+  let result = (f)(ctx, args)?;
   Ok(result.unbind())
 }
 
@@ -28,67 +26,48 @@ pub trait Function {
   fn call<'a>(
     &self,
     ctx: &'a public::Context<'a>,
-    this: public::Value<'a>,
-    args: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
+    args: public::Args<'a>,
   ) -> Result<public::Value<'a>>;
 }
 
 impl<F> Function for F
 where
-  F: for<'a> Fn(
-    &'a public::Context<'a>,
-    public::Value<'a>,
-    &'a [public::Value<'a>],
-    Option<public::Dict<'a>>,
-  ) -> Result<public::Value<'a>>,
+  F: for<'a> Fn(&'a public::Context<'a>, public::Args<'a>) -> Result<public::Value<'a>>,
   F: Send + 'static,
 {
   fn call<'a>(
     &self,
     ctx: &'a public::Context<'a>,
-    this: public::Value<'a>,
-    args: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
+    args: public::Args<'a>,
   ) -> Result<public::Value<'a>> {
-    self(ctx, this, args, kwargs)
+    self(ctx, args)
   }
 }
 
-pub type FunctionPtr = for<'a> fn(
-  &'a public::Context<'a>,
-  public::Value<'a>,
-  &'a [public::Value<'a>],
-  Option<public::Dict<'a>>,
-) -> Result<public::Value<'a>>;
+pub type FunctionPtr =
+  for<'a> fn(&'a public::Context<'a>, public::Args<'a>) -> Result<public::Value<'a>>;
 
-// TODO: replace `Box<dyn Function>` with `FunctionPtr` + remove the `Callable`
-// trait to match
 pub struct NativeFunction {
   name: Handle<Str>,
-  f: Box<dyn Function>,
+  f: FunctionPtr,
 }
 
 impl NativeFunction {
-  pub fn new(ctx: &Context, name: Handle<Str>, f: Box<dyn Function>) -> Handle<NativeFunction> {
+  pub fn new(ctx: &Context, name: Handle<Str>, f: FunctionPtr) -> Handle<NativeFunction> {
     ctx.alloc(Self { name, f })
   }
 }
 
 #[derive::delegate_to_handle]
 impl NativeFunction {
-  pub fn call(
-    &self,
-    ctx: &Context,
-    this: Value,
-    args: &[Value],
-    kwargs: Option<Handle<Dict>>,
-  ) -> Result<Value> {
+  pub fn call(&self, ctx: &Context, args: Args) -> Result<Value> {
     let ctx = public::Context::bind_ref(ctx);
-    let this = public::Value::bind(this);
-    let args = public::Value::bind_slice(args);
-    let kwargs = kwargs.map(public::Dict::bind);
-    let result = Function::call(&*self.f, ctx, this, args, kwargs)?;
+    let args = public::Args::new(
+      args.this().clone(),
+      unsafe { args.all_pos() },
+      args.all_kw(),
+    );
+    let result = Function::call(&self.f, ctx, args)?;
     Ok(result.unbind())
   }
 
@@ -201,7 +180,7 @@ impl NativeClass {
         .map(|m| {
           (
             m.0,
-            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), Box::new(m.1)),
+            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), m.1),
           )
         })
         .collect(),
@@ -210,7 +189,7 @@ impl NativeClass {
         .map(|m| {
           (
             m.0,
-            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), Box::new(m.1)),
+            NativeFunction::new(ctx, ctx.alloc(Str::from(m.0)), m.1),
           )
         })
         .collect(),

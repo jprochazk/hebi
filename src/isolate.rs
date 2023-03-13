@@ -3,7 +3,7 @@
 // TODO: store the reserved stack slots as constants somewhere (??)
 
 mod binop;
-mod call;
+pub(crate) mod call;
 mod class;
 mod cmp;
 mod field;
@@ -16,6 +16,7 @@ use std::mem::take;
 
 use indexmap::IndexSet;
 
+use self::call::Args;
 use super::op;
 use crate::ctx::Context;
 use crate::error::Error;
@@ -25,14 +26,6 @@ use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
 use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType, Str};
 use crate::value::Value;
-
-// in progress:
-// - instead of `&[Value]` as args, pass around something like `Args<'a>` that
-//   also contains kwargs
-// - `Args<'a>` will support:
-//   - holding a reference to the stack directly by using a raw const pointer
-//   - holding a receiver (as `Option`)
-// and then finally de-duplicate the call machinery!!!
 
 // TODO: fields should be private, even to ops
 pub struct Isolate {
@@ -748,22 +741,23 @@ impl op::Handler for Isolate {
     Ok(())
   }
 
-  // TODO: deduplicate call handlers
-
   fn op_call0(&mut self, return_address: usize) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
+    let args = Args::empty();
 
-    self.call(callable, &[], Value::none(), Some(return_address))?;
+    self.call(callable, args, Some(return_address))?;
 
     Ok(())
   }
 
   fn op_call(&mut self, start: u32, args: u32, return_address: usize) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
-    // TODO: remove `to_vec` somehow
-    let args = self.stack()[start as usize..][..args as usize].to_vec();
+    let start = start as usize;
+    let args = args as usize;
+    let args = Some(self.stack().slice(start..start + args));
+    let args = Args::new(Value::none(), args, None);
 
-    self.call(callable, &args, Value::none(), Some(return_address))?;
+    self.call(callable, args, Some(return_address))?;
 
     Ok(())
   }
@@ -776,10 +770,12 @@ impl op::Handler for Isolate {
   ) -> Result<(), Self::Error> {
     let callable = self.acc.clone();
     let kwargs = self.get_reg(start);
-    // TODO: remove `to_vec` somehow
-    let args = self.stack()[start as usize + 1..][..args as usize].to_vec();
+    let start = start as usize;
+    let args = args as usize;
+    let args = Some(self.stack().slice(start..start + args));
+    let args = Args::new(Value::none(), args, kwargs.to_dict());
 
-    self.call(callable, &args, kwargs, Some(return_address))?;
+    self.call(callable, args, Some(return_address))?;
 
     Ok(())
   }

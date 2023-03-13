@@ -4,7 +4,7 @@ use std::hash::Hash;
 use indexmap::Equivalent;
 
 use super::func::{self, Params};
-use super::{Access, Dict, Str};
+use super::{Access, Dict, Function, Str};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::Value;
@@ -164,6 +164,7 @@ impl Access for Method {}
 
 pub struct Class {
   desc: Handle<ClassDescriptor>,
+  init: Option<Handle<Function>>,
   methods: Dict,
   fields: Dict,
   parent: Option<Handle<Class>>,
@@ -189,9 +190,14 @@ impl Class {
       parent = Some(parent_class);
     }
 
+    let mut init = None;
     let mut methods = Dict::with_capacity(desc.methods().len());
     for (k, v) in desc.methods().iter().zip(args[methods_offset..].iter()) {
+      assert!(v.is_function());
       methods.insert(ctx.alloc(k.clone()), v.clone());
+      if k.as_str() == "init" {
+        init = Some(v.clone().to_function().unwrap());
+      }
     }
 
     let mut fields = Dict::with_capacity(desc.fields().len());
@@ -211,6 +217,7 @@ impl Class {
 
     Ok(ctx.alloc(Self {
       desc,
+      init,
       methods,
       fields,
       parent,
@@ -239,6 +246,10 @@ impl Class {
 
   pub fn name(&self) -> Handle<Str> {
     self.desc.name()
+  }
+
+  pub fn init(&self) -> Option<Handle<Function>> {
+    self.init.clone()
   }
 
   pub fn method(&self, key: &str) -> Option<Value> {

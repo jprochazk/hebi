@@ -85,9 +85,7 @@ pub fn emit_fn(
     #[allow(non_snake_case)]
     #vis fn #out_fn_name<'hebi>(
       ctx: &'hebi #crate_name::public::Context<'hebi>,
-      mut this: #crate_name::public::Value<'hebi>,
-      args: &'hebi [#crate_name::public::Value<'hebi>],
-      kwargs: Option<#crate_name::public::Dict<'hebi>>,
+      args: #crate_name::public::Args<'hebi>,
     ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
       #![allow(
         clippy::unnecessary_lazy_evaluations,
@@ -116,8 +114,8 @@ pub fn emit_input_mapping(
 ) -> (TokenStream2, ArgInfo) {
   let from_hebi = format_ident!("from_hebi");
   let from_hebi_ref = format_ident!("from_hebi_ref");
-  let args_ref = quote!(&args);
-  let args_owned = quote!(args);
+  let positional_ref = quote!(&positional);
+  let positional_owned = quote!(positional);
   let clone_call = Some(quote!(.clone()));
   let no_clone_call = None;
 
@@ -138,13 +136,13 @@ pub fn emit_input_mapping(
       let name = format_ident!("_pos_{i}");
       let ty = &p.ty;
       let (from_fn, args, clone_call) = if !is_ref(ty) {
-        (&from_hebi, &args_owned, &clone_call)
+        (&from_hebi, &positional_owned, &clone_call)
       } else {
-        (&from_hebi_ref, &args_ref, &no_clone_call)
+        (&from_hebi_ref, &positional_ref, &no_clone_call)
       };
       let init = match &p.default {
         Some(v) => quote! {
-          if args.len() <= #i {
+          if positional.len() <= #i {
             #v
           } else {
             <#ty>::#from_fn(ctx, #args[#i]#clone_call)?
@@ -174,14 +172,14 @@ pub fn emit_input_mapping(
       };
       let init = match &p.default {
         Some(v) => quote! {
-          if let Some(value) = kwargs.as_ref().and_then(|kw| kw.get(#key)) {
+          if let Some(value) = keyword.as_ref().and_then(|kw| kw.get(#key)) {
             <#ty>::#from_fn(ctx, value #clone_call)?
           } else {
             #v
           }
         },
         None => quote! {
-          <#ty>::#from_fn(ctx, kwargs.as_ref().and_then(|kw| kw.get(#key)).unwrap() #clone_call)?
+          <#ty>::#from_fn(ctx, keyword.as_ref().and_then(|kw| kw.get(#key)).unwrap() #clone_call)?
         },
       };
 
@@ -232,11 +230,14 @@ pub fn emit_input_mapping(
 
   (
     quote! {
+      let mut this = args.this();
+      let positional = args.positional();
+      let keyword = args.keyword();
+
       #this_mapping
 
       check_args(
-        args,
-        kwargs.as_ref(),
+        &args,
         /* pos_required */ &[#(#required_positional_params),*],
         /* pos_max */ #max_positional_params,
         /* kw */ &[#(#keyword_params),*],

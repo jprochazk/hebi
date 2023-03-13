@@ -2,8 +2,7 @@ use std::fmt::Display;
 
 use indexmap::IndexSet;
 
-use crate::public::{Context, Dict};
-use crate::{Error, IntoHebi, Result, Value};
+use crate::{Args, Error, Result};
 
 pub struct Join<Iter, Sep>(pub Iter, pub Sep);
 
@@ -44,29 +43,30 @@ mod private {
 }
 
 pub fn check_args(
-  args: &[Value<'_>],
-  kwargs: Option<&Dict<'_>>,
+  args: &Args<'_>,
   required_positional_params: &[&str],
   max_positional_params: usize,
   keyword_params: &[(&str, bool)],
 ) -> Result<()> {
-  if args.len() < required_positional_params.len() {
+  if args.positional().len() < required_positional_params.len() {
     return Err(crate::Error::runtime(format!(
       "missing required positional params: {}",
-      required_positional_params[args.len()..].iter().join(", "),
+      required_positional_params[args.positional().len()..]
+        .iter()
+        .join(", "),
     )));
   }
 
-  if args.len() > max_positional_params {
+  if args.positional().len() > max_positional_params {
     return Err(crate::Error::runtime(format!(
       "expected at most {max_positional_params} args, got {}",
-      args.len(),
+      args.positional().len(),
     )));
   }
 
   let mut unknown = IndexSet::new();
   let mut missing = IndexSet::new();
-  if let Some(kwargs) = kwargs {
+  if let Some(kwargs) = args.keyword() {
     // we have kwargs,
     // - check for unknown keywords
     for (key, _) in kwargs.iter() {

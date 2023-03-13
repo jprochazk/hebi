@@ -1,38 +1,28 @@
 use crate::public::conv::IntoHebi;
-use crate::public::{Context, Dict, Value};
+use crate::public::{Args, Context, Value};
 use crate::{Error, Hebi, Result};
 
-fn str<'a>(
-  ctx: &'a Context<'a>,
-  _: Value<'a>,
-  args: &'a [Value<'a>],
-  _: Option<Dict<'a>>,
-) -> Result<Value<'a>> {
-  if args.len() != 1 {
+fn str<'a>(ctx: &'a Context<'a>, args: Args<'a>) -> Result<Value<'a>> {
+  if args.positional().len() != 1 {
     return Err(Error::runtime(format!(
       "expected exactly 1 argument, got {}",
-      args.len()
+      args.positional().len()
     )));
   }
 
-  let value = args[0].clone();
+  let value = args.positional()[0].clone();
   format!("{value}").into_hebi(ctx)
 }
 
-fn r#type<'a>(
-  ctx: &'a Context<'a>,
-  _: Value<'a>,
-  args: &'a [Value<'a>],
-  _: Option<Dict<'a>>,
-) -> Result<Value<'a>> {
-  if args.len() != 1 {
+fn r#type<'a>(ctx: &'a Context<'a>, args: Args<'a>) -> Result<Value<'a>> {
+  if args.positional().len() != 1 {
     return Err(Error::runtime(format!(
       "expected exactly 1 argument, got {}",
-      args.len()
+      args.positional().len()
     )));
   }
 
-  let value = args[0].clone();
+  let value = args.positional()[0].clone();
   let ty = if value.is_float() {
     "float"
   } else if value.is_int() {

@@ -216,11 +216,10 @@ impl Field {
         #[allow(non_snake_case)]
         fn #getter_fn_ident <'hebi>(
           ctx: &'hebi #crate_name::public::Context<'hebi>,
-          mut this: #crate_name::public::Value<'hebi>,
-          args: &'hebi [#crate_name::public::Value<'hebi>],
-          kwargs: Option<#crate_name::public::Dict<'hebi>>,
+          args: #crate_name::public::Args<'hebi>,
         ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
           use #crate_name::IntoHebi;
+          let this = args.this();
           let this = match this.as_user_data() {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime("getter got receiver which is not user data")),
@@ -247,11 +246,10 @@ impl Field {
         #[allow(non_snake_case)]
         fn #setter_fn_ident <'hebi>(
           ctx: &'hebi #crate_name::public::Context<'hebi>,
-          mut this: #crate_name::public::Value<'hebi>,
-          args: &'hebi [#crate_name::public::Value<'hebi>],
-          kwargs: Option<#crate_name::public::Dict<'hebi>>,
+          args: #crate_name::public::Args<'hebi>,
         ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
           use #crate_name::{FromHebi, IntoHebi};
+          let mut this = args.this();
           let mut this = match this.as_user_data() {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime("setter got receiver which is not user data")),
@@ -260,7 +258,7 @@ impl Field {
             Some(this) => this,
             None => return Err(#crate_name::Error::runtime(#cast_error_msg))
           };
-          let value = match args.get(0).cloned() {
+          let value = match args.positional().get(0).cloned() {
             Some(value) => value,
             None => return Err(#crate_name::Error::runtime("setter expects value as 2nd argument, got none")),
           };
@@ -349,9 +347,7 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
       #[allow(non_snake_case)]
       fn #fn_ident<'hebi>(
         ctx: &'hebi #crate_name::public::Context<'hebi>,
-        mut this: #crate_name::public::Value<'hebi>,
-        args: &'hebi [#crate_name::public::Value<'hebi>],
-        kwargs: Option<#crate_name::public::Dict<'hebi>>,
+        args: #crate_name::public::Args<'hebi>,
       ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
         #![allow(
           clippy::unnecessary_lazy_evaluations,

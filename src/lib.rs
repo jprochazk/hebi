@@ -17,15 +17,14 @@ use std::fmt::{Debug, Display};
 pub use error::Error;
 use indexmap::IndexMap;
 use isolate::{Isolate, Stdout};
-use public::{IntoStr, TypeInfo};
-use value::Value as CoreValue;
+use public::{FunctionPtr, IntoStr, TypeInfo};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 use ctx::Context;
 pub use derive::{class, function, methods};
 pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
-pub use public::Value;
+pub use public::{Args, Value};
 use value::handle::Handle;
 pub use value::object::module::ModuleLoader;
 use value::object::native::Function;
@@ -141,12 +140,12 @@ impl<'a> Globals<'a> {
       .set_global(name.unbind(), value.unbind());
   }
 
-  pub fn register_fn(&mut self, name: impl IntoStr<'a>, f: impl Function + 'static) {
+  pub fn register_fn(&mut self, name: impl IntoStr<'a>, f: FunctionPtr) {
     let ctx = self.hebi.ctx();
     let name = name.into_str(&ctx);
     self.set(
       name.clone(),
-      Value::bind(NativeFunction::new(ctx.inner(), name.unbind(), Box::new(f))),
+      Value::bind(NativeFunction::new(ctx.inner(), name.unbind(), f)),
     )
   }
 

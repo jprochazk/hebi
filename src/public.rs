@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 pub use self::core::object::native::{FunctionPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
+use crate::isolate::call::Args as CoreArgs;
 use crate::{value as core, Error, Result};
 
 // TODO: make macro for wrapping types
@@ -399,5 +400,38 @@ where
       Ok(v) => v.into_user_data(ctx),
       Err(e) => Err(e.into()),
     }
+  }
+}
+
+#[repr(C)]
+pub struct Args<'a> {
+  this: CoreValue,
+  positional: &'a [CoreValue],
+  keyword: Option<core::handle::Handle<core::object::Dict>>,
+}
+
+impl<'a> Args<'a> {
+  pub(crate) fn new(
+    this: CoreValue,
+    positional: &'a [CoreValue],
+    keyword: Option<core::handle::Handle<core::object::Dict>>,
+  ) -> Self {
+    Self {
+      this,
+      positional,
+      keyword,
+    }
+  }
+
+  pub fn this(&self) -> Value<'a> {
+    Value::bind(self.this.clone())
+  }
+
+  pub fn positional(&self) -> &[Value<'a>] {
+    Value::bind_slice(self.positional)
+  }
+
+  pub fn keyword(&self) -> Option<Dict<'a>> {
+    self.keyword.clone().map(Dict::bind)
   }
 }
