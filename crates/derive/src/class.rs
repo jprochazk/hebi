@@ -42,10 +42,10 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         #[doc(hidden)]
         #[allow(non_camel_case_types)]
         trait #trait_ident {
-          fn init(self) -> Option<#crate_name::public::InitFnPtr>;
+          fn init(self) -> Option<#crate_name::public::FunctionPtr>;
         }
         impl #trait_ident for &#tag_ident {
-          fn init(self) -> Option<#crate_name::public::InitFnPtr> {
+          fn init(self) -> Option<#crate_name::public::FunctionPtr> {
             None
           }
         }
@@ -114,7 +114,7 @@ pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
         fn name() -> &'static str {
           #class_name_str
         }
-        fn init() -> Option<#crate_name::public::InitFnPtr> {
+        fn init() -> Option<#crate_name::public::FunctionPtr> {
           #init_tag {}.init()
         }
         fn fields() -> &'static [(&'static str, #crate_name::public::MethodFnPtr, Option<#crate_name::public::MethodFnPtr>)] {
@@ -341,7 +341,7 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
         ctx: &'a #crate_name::public::Context<'a>,
         args: &'a [#crate_name::public::Value<'a>],
         kwargs: Option<#crate_name::public::Dict<'a>>,
-      ) -> #crate_name::Result<#crate_name::public::UserData<'a>> {
+      ) -> #crate_name::Result<#crate_name::public::Value<'a>> {
         #![allow(
           clippy::unnecessary_lazy_evaluations,
           clippy::absurd_extreme_comparisons,
@@ -358,7 +358,7 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
       }
 
       impl #trait_ident for #tag_ident {
-        fn init(self) -> Option<#crate_name::public::InitFnPtr> {
+        fn init(self) -> Option<#crate_name::public::FunctionPtr> {
           Some(#fn_ident)
         }
       }

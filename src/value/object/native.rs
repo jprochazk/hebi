@@ -83,40 +83,6 @@ impl Display for NativeFunction {
   }
 }
 
-pub trait InitFn {
-  fn call<'a>(
-    &self,
-    ctx: &'a public::Context<'a>,
-    argv: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
-  ) -> Result<public::UserData<'a>>;
-}
-
-impl<F> InitFn for F
-where
-  F: for<'a> Fn(
-    &'a public::Context<'a>,
-    &'a [public::Value<'a>],
-    Option<public::Dict<'a>>,
-  ) -> Result<public::UserData<'a>>,
-  F: Send + 'static,
-{
-  fn call<'a>(
-    &self,
-    ctx: &'a public::Context<'a>,
-    argv: &'a [public::Value<'a>],
-    kwargs: Option<public::Dict<'a>>,
-  ) -> Result<public::UserData<'a>> {
-    self(ctx, argv, kwargs)
-  }
-}
-
-pub type InitFnPtr = for<'a> fn(
-  &'a public::Context<'a>,
-  &'a [public::Value<'a>],
-  Option<public::Dict<'a>>,
-) -> Result<public::UserData<'a>>;
-
 pub trait Method {
   fn call<'a>(
     &self,
@@ -202,7 +168,8 @@ pub trait AsUserData: std::any::Any {
 
 pub trait TypeInfo {
   fn name() -> &'static str;
-  fn init() -> Option<InitFnPtr>;
+  /// The init function must return a `UserData`.
+  fn init() -> Option<FunctionPtr>;
   fn fields() -> &'static [(&'static str, MethodFnPtr, Option<MethodFnPtr>)];
   fn methods() -> &'static [(&'static str, MethodFnPtr)];
   fn static_methods() -> &'static [(&'static str, FunctionPtr)];
@@ -262,7 +229,7 @@ struct Accessor {
 
 pub struct NativeClass {
   name: Handle<Str>,
-  init: Option<InitFnPtr>,
+  init: Option<FunctionPtr>,
   accessors: IndexMap<&'static str, Accessor>,
   methods: IndexMap<&'static str, Handle<NativeClassMethod>>,
   static_methods: IndexMap<&'static str, Handle<NativeFunction>>,
@@ -319,7 +286,7 @@ impl NativeClass {
     self.name.clone()
   }
 
-  pub(crate) fn init(&self) -> Option<InitFnPtr> {
+  pub(crate) fn init(&self) -> Option<FunctionPtr> {
     self.init
   }
 

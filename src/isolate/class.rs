@@ -1,7 +1,7 @@
 use super::{call, Isolate};
 use crate::value::handle::Handle;
-use crate::value::object::native::InitFn;
-use crate::value::object::{Class, Dict, Method, NativeClass, NativeClassInstance};
+use crate::value::object::native::Function;
+use crate::value::object::{Class, Method, NativeClass, NativeClassInstance};
 use crate::value::Value;
 use crate::{public, Error, Result};
 
@@ -54,13 +54,15 @@ impl Isolate {
       return Err(Error::runtime(format!("cannot initialize class {}", class.name())))
     };
 
-    let user_data = InitFn::call(
+    let user_data = Function::call(
       &init,
       &public::Context::bind(self.ctx()),
       public::Value::bind_slice(args),
       kwargs.to_dict().map(public::Dict::bind),
     )?
-    .unbind();
+    .unbind()
+    .to_user_data()
+    .expect("init function returned something other than UserData");
 
     let instance = NativeClassInstance::new(&self.ctx, class, user_data);
 

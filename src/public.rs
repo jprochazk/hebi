@@ -3,7 +3,7 @@ pub(crate) mod conv;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-pub use self::core::object::native::{FunctionPtr, InitFnPtr, MethodFnPtr, TypeInfo};
+pub use self::core::object::native::{FunctionPtr, MethodFnPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
 use crate::{value as core, Error, Result};
@@ -352,16 +352,18 @@ impl<'a> Clone for UserData<'a> {
   }
 }
 
+/// Internal trait used by derive macros. Do not use directly.
+#[doc(hidden)]
 pub trait IntoUserData<'a> {
-  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>>;
+  fn into_user_data(self, ctx: &Context) -> Result<Value<'a>>;
 }
 
 impl<'a, T> IntoUserData<'a> for T
 where
   T: TypeInfo + 'static,
 {
-  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
-    Ok(UserData::new(ctx, self))
+  fn into_user_data(self, ctx: &Context) -> Result<Value<'a>> {
+    Ok(Value::bind(UserData::new(ctx, self).unbind()))
   }
 }
 
@@ -369,7 +371,7 @@ impl<'a, T> IntoUserData<'a> for Option<T>
 where
   T: IntoUserData<'a>,
 {
-  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
+  fn into_user_data(self, ctx: &Context) -> Result<Value<'a>> {
     match self {
       Some(v) => v.into_user_data(ctx),
       None => Err(Error::runtime("failed to initialize user data")),
@@ -382,7 +384,7 @@ where
   T: IntoUserData<'a>,
   E: Into<Error>,
 {
-  fn into_user_data(self, ctx: &Context) -> Result<UserData<'a>> {
+  fn into_user_data(self, ctx: &Context) -> Result<Value<'a>> {
     match self {
       Ok(v) => v.into_user_data(ctx),
       Err(e) => Err(e.into()),
