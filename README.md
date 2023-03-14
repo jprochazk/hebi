@@ -17,13 +17,12 @@ Everything is still in flux, and many interesting features are not yet implement
 ```rust
 use hebi::Hebi;
 
-let hebi = Hebi::new();
+let vm = Hebi::new();
 
-// prints `2`
-println!("{}", hebi.eval::<i32>("1 + 1").unwrap());
+println!("{}", vm.eval::<i32>("1 + 1").unwrap());
 
-hebi.eval::<()>(
-  r#"
+vm.eval::<()>(r#"
+
 class Test:
   v = 10
   fn test(self):
@@ -33,12 +32,11 @@ t := Test(v=100)
 t.test() # prints 100
 t.v = 20
 t.test() # prints 20
-"#,
-)
-.unwrap();
+
+"#).unwrap();
 ```
 
-A general overview of the language's currently implemented syntax and semantics is available in the [design](./design.md) file. To see more examples, visit [src/tests](./src/tests) or [samples](./samples/)[^1].
+A general overview of the language's currently implemented syntax and semantics is available in the [design](./design.md) file. To see more examples, visit [src/tests](./src/tests) or [samples](./samples/)[^1]. Some features are currently only documented in the [changelog](./CHANGELOG.md).
 
 The language also has a REPL at [cli](./cli):
 
