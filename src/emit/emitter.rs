@@ -754,6 +754,7 @@ mod stmt {
       Ok(())
     }
 
+    // TODO: iterator protocol
     fn emit_for_iter_loop(
       &mut self,
       stmt: &'src ast::For<'src>,

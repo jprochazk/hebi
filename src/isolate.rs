@@ -3,6 +3,7 @@
 // TODO: store the reserved stack slots as constants somewhere (??)
 
 mod binop;
+mod builtin;
 pub(crate) mod call;
 mod class;
 mod cmp;
@@ -40,7 +41,7 @@ pub struct Isolate {
   module_registry: ModuleRegistry,
   module_loader: Box<dyn ModuleLoader>,
   module_init_visited: IndexSet<ModuleId>,
-  pub classes: ClassMap,
+  pub class_map: ClassMap,
 
   width: op::Width,
   pc: usize,
@@ -65,14 +66,20 @@ impl Isolate {
     stdout: Box<dyn Stdout>,
     module_loader: Box<dyn ModuleLoader>,
   ) -> Isolate {
-    let globals = ctx.alloc(Dict::new());
+    let mut globals = Dict::new();
+    let mut class_map = ClassMap::new();
+    builtin::register_builtins(&ctx, &mut class_map, &mut globals);
+
+    let globals = ctx.alloc(globals);
+    let class_map = class_map;
+
     Isolate {
       ctx,
       globals,
       module_registry: ModuleRegistry::new(),
       module_loader,
       module_init_visited: IndexSet::new(),
-      classes: ClassMap::new(),
+      class_map,
 
       width: op::Width::Single,
       pc: 0,
@@ -255,7 +262,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get(&self.ctx, &self.acc, name)?;
+    self.acc = field::get(&self.ctx, &self.class_map, &self.acc, name)?;
 
     Ok(())
   }
@@ -265,7 +272,7 @@ impl op::Handler for Isolate {
     // name used in named load is always a string
     let name = name.to_str().unwrap();
 
-    self.acc = field::get_opt(&self.ctx, &self.acc, name)?;
+    self.acc = field::get_opt(&self.ctx, &self.class_map, &self.acc, name)?;
 
     Ok(())
   }

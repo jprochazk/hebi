@@ -1,0 +1,27 @@
+---
+source: src/tests/builtins.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+v := []
+
+v.push(0)
+List.push(v, 1)
+f := List.push
+f(v, 2)
+f := v.push
+f(3)
+
+print v
+
+
+# Result (success):
+none
+
+# Stdout:
+[0, 1, 2, 3]
+
+

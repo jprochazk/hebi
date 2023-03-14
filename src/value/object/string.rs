@@ -40,7 +40,7 @@ impl<'a> From<&'a str> for Str {
 }
 
 impl Access for Str {
-  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, _: &Context, key: &str) -> Result<Option<Value>> {
     Ok(match key {
       "len" => Some(Value::int(self.0.len() as i32)),
       _ => None,

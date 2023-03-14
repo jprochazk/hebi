@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 
+mod builtin;
 mod class;
 mod delegate;
 mod function;
@@ -24,4 +25,10 @@ pub fn class(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn methods(args: TokenStream, input: TokenStream) -> TokenStream {
   class::methods_macro_impl(args, input)
+}
+
+#[doc(hidden)]
+#[proc_macro_attribute]
+pub fn builtin(args: TokenStream, input: TokenStream) -> TokenStream {
+  builtin::macro_impl(args, input)
 }

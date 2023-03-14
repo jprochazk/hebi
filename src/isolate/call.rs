@@ -135,7 +135,7 @@ impl Isolate {
     Ok(std::mem::take(&mut self.acc))
   }
 
-  /// Call `callable` with the given `args`, `kwargs`.
+  /// Call `callable` with the given `args`.
   pub fn call(&mut self, callable: Value, args: Args, return_address: Option<usize>) -> Result<()> {
     let return_address = return_address.unwrap_or(self.pc);
     if callable.is_class() {
@@ -161,18 +161,11 @@ impl Isolate {
 
     if let Some(m) = callable.clone().to_method() {
       if let Some(f) = m.func().to_native_function() {
-        let this = m
-          .this()
-          .to_native_class_instance()
-          .ok_or_else(|| {
-            Error::runtime(format!(
-              "attempted to call native class method `{}` bound to value `{}` which is not user data",
-              f.name(),
-              m.this()
-            ))
-          })?
-          .user_data();
-        self.acc = f.call(&self.ctx, args.with_receiver(this.into()))?;
+        let this = match m.this().to_native_class_instance() {
+          Some(instance) => instance.user_data().into(),
+          None => m.this(),
+        };
+        self.acc = f.call(&self.ctx, args.with_receiver(this))?;
         self.pc = return_address;
         return Ok(());
       }

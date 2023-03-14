@@ -63,6 +63,7 @@ impl WithMethods {
     Self {}
   }
 
+  #[allow(dead_code)]
   fn not_exposed(&self) -> &'static str {
     "not exposed"
   }

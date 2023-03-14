@@ -84,7 +84,7 @@ impl Debug for Value {
       f.debug_tuple("Bool").field(&v).finish()
     } else if v.is_none() {
       f.debug_tuple("None").finish()
-    } else if let Some(_) = v.to_object_raw() {
+    } else if v.to_object_raw().is_some() {
       // TODO: maybe also include inner object repr in the debug output
       f.debug_tuple("Object").finish()
     } else {

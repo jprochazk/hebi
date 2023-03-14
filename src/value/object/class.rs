@@ -54,11 +54,11 @@ impl Access for ClassInstance {
     self.is_frozen
   }
 
-  fn field_get(&self, ctx: &Context, key: &str) -> crate::Result<Option<Value>> {
+  fn field_get(&self, _: &Context, key: &str) -> crate::Result<Option<Value>> {
     Ok(self.fields.get(key).cloned())
   }
 
-  fn field_set(&mut self, ctx: &Context, key: Handle<Str>, value: Value) -> Result<()> {
+  fn field_set(&mut self, _: &Context, key: Handle<Str>, value: Value) -> Result<()> {
     self.fields.insert(key, value);
     Ok(())
   }
@@ -135,9 +135,6 @@ pub struct Method {
 
 impl Method {
   pub fn new(this: Value, func: Value) -> Self {
-    assert!(
-      this.is_class_instance() || this.is_class_super_proxy() || this.is_native_class_instance()
-    );
     assert!(func.is_function() || func.is_native_function());
     Self { this, func }
   }
@@ -284,7 +281,7 @@ impl Access for Class {
     false
   }
 
-  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, _: &Context, key: &str) -> Result<Option<Value>> {
     Ok(self.method(key))
   }
 }

@@ -34,6 +34,13 @@ print instance.value()
 "#,
   )
   .unwrap();
+
+  vm.eval::<()>(
+    r#"
+print Test.value(instance)
+"#,
+  )
+  .unwrap();
 }
 
 #[hebi::function]

@@ -782,6 +782,7 @@ pub struct Chunk<Value: Hash + Eq + Clone> {
   pub const_pool: Vec<Value>,
 }
 
+#[allow(dead_code)]
 impl<Value: std::fmt::Display + Hash + Eq + Clone> Chunk<Value> {
   pub fn disassemble(&self, print_bytes: bool) -> String {
     use std::fmt::Write;

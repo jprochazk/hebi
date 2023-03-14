@@ -7,6 +7,9 @@ pub struct Error {
   pub span: Span,
 }
 
+// TODO: spans + reports
+
+#[allow(dead_code)]
 impl Error {
   pub fn new(message: impl Into<Cow<'static, str>>, span: impl Into<Span>) -> Self {
     let message = message.into();

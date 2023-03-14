@@ -44,10 +44,19 @@ mod private {
 
 pub fn check_args(
   args: &Args<'_>,
+  has_self: bool,
   required_positional_params: &[&str],
-  max_positional_params: usize,
+  mut max_positional_params: usize,
   keyword_params: &[(&str, bool)],
 ) -> Result<()> {
+  if has_self && args.this().is_none() {
+    if args.positional().is_empty() {
+      return Err(crate::Error::runtime("missing `self` param"));
+    } else {
+      max_positional_params += 1;
+    }
+  }
+
   if args.positional().len() < required_positional_params.len() {
     return Err(crate::Error::runtime(format!(
       "missing required positional params: {}",

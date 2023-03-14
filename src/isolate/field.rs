@@ -1,3 +1,4 @@
+use super::ClassMap;
 use crate::ctx::Context;
 use crate::value::handle::Handle;
 use crate::value::object::{func, Access, Method, Str};
@@ -19,7 +20,12 @@ pub fn set(ctx: &Context, receiver: &mut Value, key: Handle<Str>, value: Value) 
   )))
 }
 
-pub fn get(ctx: &Context, receiver: &Value, key: Handle<Str>) -> Result<Value> {
+pub fn get(
+  ctx: &Context,
+  class_map: &ClassMap,
+  receiver: &Value,
+  key: Handle<Str>,
+) -> Result<Value> {
   if let Some(o) = receiver.clone().to_object_raw() {
     if let Some(value) = o.field_get(ctx, key.as_str())? {
       if o.should_bind_methods() && func::is_callable(&value) {
@@ -29,6 +35,16 @@ pub fn get(ctx: &Context, receiver: &Value, key: Handle<Str>) -> Result<Value> {
       }
       return Ok(value);
     }
+
+    let type_id = unsafe { o._get() }.repr_type_id();
+    if let Some(method) = class_map
+      .get(&type_id)
+      .and_then(|ty| ty.method(key.as_str()))
+    {
+      return Ok(Value::object(
+        ctx.alloc(Method::new(receiver.clone(), method.into())),
+      ));
+    }
   }
 
   Err(Error::runtime(format!(
@@ -36,7 +52,12 @@ pub fn get(ctx: &Context, receiver: &Value, key: Handle<Str>) -> Result<Value> {
   )))
 }
 
-pub fn get_opt(ctx: &Context, receiver: &Value, key: Handle<Str>) -> Result<Value> {
+pub fn get_opt(
+  ctx: &Context,
+  class_map: &ClassMap,
+  receiver: &Value,
+  key: Handle<Str>,
+) -> Result<Value> {
   // early exit if on `none`
   if receiver.is_none() {
     return Ok(Value::none());
@@ -50,6 +71,16 @@ pub fn get_opt(ctx: &Context, receiver: &Value, key: Handle<Str>) -> Result<Valu
         ));
       }
       return Ok(value);
+    }
+
+    let type_id = unsafe { o._get() }.repr_type_id();
+    if let Some(method) = class_map
+      .get(&type_id)
+      .and_then(|ty| ty.method(key.as_str()))
+    {
+      return Ok(Value::object(
+        ctx.alloc(Method::new(receiver.clone(), method.into())),
+      ));
     }
   }
 

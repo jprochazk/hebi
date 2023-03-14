@@ -47,7 +47,7 @@ macro_rules! check {
       let vm = Hebi::builder()
         .with_io(Vec::new())
         .with_module_loader(module_loader)
-        .with_builtins()
+        .with_std()
         .build();
       $($(
         vm.globals().register_fn(stringify!($fn_name), $fn_name);
@@ -119,7 +119,7 @@ macro_rules! check_error {
       let vm = Hebi::builder()
         .with_io(Vec::new())
         .with_module_loader(module_loader)
-        .with_builtins()
+        .with_std()
         .build();
       $($(
         vm.globals().register_fn(stringify!($fn_name), $fn_name);

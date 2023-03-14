@@ -309,21 +309,21 @@ impl Access for Dict {
     false
   }
 
-  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>, Error> {
+  fn field_get(&self, _: &Context, key: &str) -> Result<Option<Value>, Error> {
     Ok(match key {
       "len" => Some(Value::int(self.inner.len() as i32)),
       _ => None,
     })
   }
 
-  fn index_get(&self, ctx: &Context, key: Value) -> Result<Option<Value>, Error> {
+  fn index_get(&self, _: &Context, key: Value) -> Result<Option<Value>, Error> {
     Ok(match key.to_str() {
       Some(key) => self.inner.get(key.as_str()).cloned(),
       None => None,
     })
   }
 
-  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> Result<(), Error> {
+  fn index_set(&mut self, _: &Context, key: Value, value: Value) -> Result<(), Error> {
     let Some(key) = key.clone().to_str() else {
       return Err(Error::runtime(format!("cannot index dictionary using {key}")))
     };

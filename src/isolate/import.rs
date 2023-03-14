@@ -1,7 +1,6 @@
 use super::Isolate;
 use crate::value::handle::Handle;
 use crate::value::object::{Module, Path};
-use crate::value::Value;
 use crate::{Error, Result};
 
 /// Load module (parse -> emit -> eval root)

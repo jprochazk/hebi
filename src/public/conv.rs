@@ -1,5 +1,4 @@
-use super::{Context, TypeInfo};
-use crate::value::object::UserData;
+use super::Context;
 use crate::value::{object, Value as CoreValue};
 use crate::{Error, Result, Value};
 

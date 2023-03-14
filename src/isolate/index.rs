@@ -34,7 +34,7 @@ pub fn get_opt(ctx: &Context, obj: Value, key: Value) -> Result<Value> {
     return Ok(Value::none());
   }
 
-  if let Some(o) = obj.clone().to_object_raw() {
+  if let Some(o) = obj.to_object_raw() {
     if let Some(value) = o.index_get(ctx, key)? {
       return Ok(value);
     }

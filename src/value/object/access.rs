@@ -4,6 +4,7 @@ use crate::value::handle::Handle;
 use crate::value::Value;
 use crate::{Error, Result};
 
+#[allow(unused_variables)]
 pub trait Access {
   fn is_frozen(&self) -> bool {
     true

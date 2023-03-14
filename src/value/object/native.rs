@@ -267,6 +267,7 @@ impl NativeClassInstance {
   }
 }
 
+#[allow(dead_code)]
 #[derive::delegate_to_handle]
 impl NativeClassInstance {
   pub(crate) fn class(&self) -> Handle<NativeClass> {

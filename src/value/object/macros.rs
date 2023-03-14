@@ -32,6 +32,13 @@ macro_rules! object_repr {
             }
           }
         )*
+
+
+        pub fn repr_type_id(&self) -> ::std::any::TypeId {
+          match &self.repr {
+            $($Repr::$ty(_) => ::std::any::TypeId::of::<$ty>(),)*
+          }
+        }
       }
 
       impl ::std::fmt::Display for Object {

@@ -1,12 +1,12 @@
 #![allow(clippy::wrong_self_convention)]
 
-mod builtins;
 mod ctx;
 mod emit;
 mod error;
 mod isolate;
 mod op;
 pub mod public;
+mod stdlib;
 pub mod util;
 mod value;
 
@@ -98,7 +98,7 @@ impl Hebi {
   /// Fails if `T` has not been registered to this `Hebi` instance via
   /// `globals`.
   pub fn try_wrap<T: TypeInfo + 'static>(&self, v: T) -> Result<Value<'_>> {
-    let Some(class) = self.isolate.borrow().classes.get(&any::TypeId::of::<T>()).cloned() else {
+    let Some(class) = self.isolate.borrow().class_map.get(&any::TypeId::of::<T>()).cloned() else {
       return Err(Error::runtime(format!(
         "`{}` has not been registered in this Hebi instance yet, use `Hebi::globals()` to register it",
         any::type_name::<T>()
@@ -148,7 +148,7 @@ impl<'a> Globals<'a> {
       .hebi
       .isolate
       .borrow_mut()
-      .classes
+      .class_map
       .insert(any::TypeId::of::<T>(), class.clone());
     self.set(class.name(), Value::bind(class))
   }
@@ -157,7 +157,7 @@ impl<'a> Globals<'a> {
 pub struct HebiBuilder {
   stdout: Option<Box<dyn Stdout>>,
   module_loader: Option<Box<dyn ModuleLoader>>,
-  use_builtins: bool,
+  use_std: bool,
 }
 
 impl Hebi {
@@ -165,7 +165,7 @@ impl Hebi {
     HebiBuilder {
       stdout: None,
       module_loader: None,
-      use_builtins: false,
+      use_std: false,
     }
   }
 }
@@ -181,8 +181,8 @@ impl HebiBuilder {
     self
   }
 
-  pub fn with_builtins(mut self) -> Self {
-    self.use_builtins = true;
+  pub fn with_std(mut self) -> Self {
+    self.use_std = true;
     self
   }
 
@@ -202,8 +202,8 @@ impl HebiBuilder {
       isolate: RefCell::new(isolate),
     };
 
-    if self.use_builtins {
-      builtins::register(&vm);
+    if self.use_std {
+      stdlib::register(&vm);
     }
 
     vm
@@ -212,7 +212,7 @@ impl HebiBuilder {
 
 impl Default for Hebi {
   fn default() -> Self {
-    Self::builder().with_builtins().build()
+    Self::builder().with_std().build()
   }
 }
 

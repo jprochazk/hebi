@@ -2,16 +2,16 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::spanned::Spanned;
-use syn::{Attribute, ImplItem, ImplItemMethod, ItemFn, ItemImpl, ItemStruct, Type, Visibility};
+use syn::{Attribute, ImplItem, ImplItemMethod, ItemImpl, ItemStruct, Type, Visibility};
 
 use crate::function;
-use crate::function::{clear_sig_attrs, FnInfo};
+use crate::function::{clear_sig_attrs, FnInfo, Func};
 use crate::util::is_attr;
 
 // TODO: ensure generics are not allowed
 // TODO: static methods?
 
-pub fn class_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn class_macro_impl(_: TokenStream, input: TokenStream) -> TokenStream {
   let input = syn::parse_macro_input!(input as ItemStruct);
 
   let crate_name = match proc_macro_crate::crate_name("hebi") {
@@ -305,7 +305,7 @@ impl FieldKind {
   }
 }
 
-pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn methods_macro_impl(_: TokenStream, input: TokenStream) -> TokenStream {
   let input = syn::parse_macro_input!(input as ItemImpl);
 
   let crate_name = match proc_macro_crate::crate_name("hebi") {
@@ -337,7 +337,7 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
     };
 
     let (input_mapping, arg_info) =
-      function::emit_input_mapping(&crate_name, &fn_info, Some(&methods.type_name));
+      function::emit_input_mapping(&crate_name, &fn_info, Some(&methods.type_name), None);
     let input_fn_name = init.sig.ident.clone();
     let args = &arg_info.call_args;
     let call = quote! {#input_fn_name(#(#args),*)};
@@ -374,45 +374,9 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
     None
   };
 
-  let methods_impl = {
-    let tag_ident = format_ident!("_{}__MethodsTag", methods.type_name);
-    let trait_ident = format_ident!("_{}__Methods", methods.type_name);
-    let mut bindings = vec![];
-    let mut method_list = vec![];
-    let mut static_method_list = vec![];
-    for method in methods.other.iter() {
-      let out_fn_name = format_ident!("_{}__call__{}", methods.type_name, method.sig.ident);
-      let fn_info = match FnInfo::parse(Visibility::Inherited, &method.sig) {
-        Ok(fn_info) => fn_info,
-        Err(e) => return e.into_compile_error().into(),
-      };
-      bindings.push(function::emit_fn(
-        &crate_name,
-        out_fn_name.clone(),
-        fn_info,
-        None,
-        Some(methods.type_name.clone()),
-        true,
-      ));
-      let sig_name = method.sig.ident.to_string();
-      if method.sig.receiver().is_some() {
-        method_list.push(quote!((#sig_name, #out_fn_name)));
-      } else {
-        static_method_list.push(quote!((#sig_name, #out_fn_name)));
-      }
-    }
-    quote! {
-      #(#bindings)*
-
-      impl #trait_ident for #tag_ident {
-        fn methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
-          &[#(#method_list),*]
-        }
-        fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
-          &[#(#static_method_list),*]
-        }
-      }
-    }
+  let methods_impl = match methods.gen_methods_impl(&crate_name, None, None) {
+    Ok(v) => v,
+    Err(e) => return e.into_compile_error().into(),
   };
 
   let mut input = input;
@@ -438,14 +402,68 @@ pub fn methods_macro_impl(args: TokenStream, input: TokenStream) -> TokenStream 
   .into()
 }
 
-struct Methods {
-  type_name: Ident,
-  init: Option<ImplItemMethod>,
-  other: Vec<ImplItemMethod>,
+pub struct ReceiverMapping {
+  pub ref_: TokenStream2,
+  pub mut_: TokenStream2,
+}
+
+pub struct Methods {
+  pub type_name: Ident,
+  pub init: Option<ImplItemMethod>,
+  pub other: Vec<ImplItemMethod>,
 }
 
 impl Methods {
-  fn parse(input: &ItemImpl) -> syn::Result<Self> {
+  pub fn gen_methods_impl(
+    &self,
+    crate_name: &Ident,
+    receiver_mapping: Option<&ReceiverMapping>,
+    method_name_prefix: Option<&str>,
+  ) -> syn::Result<TokenStream2> {
+    let tag_ident = format_ident!("_{}__MethodsTag", self.type_name);
+    let trait_ident = format_ident!("_{}__Methods", self.type_name);
+    let mut bindings = vec![];
+    let mut method_list = vec![];
+    let mut static_method_list = vec![];
+    for method in self.other.iter() {
+      let out_fn_name = format_ident!("_{}__call__{}", self.type_name, method.sig.ident);
+      let fn_info = FnInfo::parse(Visibility::Inherited, &method.sig)?;
+      let in_fn_name = method_name_prefix.map(|prefix| format_ident!("{prefix}{}", fn_info.name));
+      bindings.push(
+        Func {
+          crate_name,
+          out_fn_name: out_fn_name.clone(),
+          in_fn_name,
+          fn_info,
+          input_fn: None,
+          type_name: Some(self.type_name.clone()),
+          is_assoc_fn: true,
+          receiver_mapping,
+        }
+        .emit(),
+      );
+      let sig_name = method.sig.ident.to_string();
+      if method.sig.receiver().is_some() {
+        method_list.push(quote!((#sig_name, #out_fn_name)));
+      } else {
+        static_method_list.push(quote!((#sig_name, #out_fn_name)));
+      }
+    }
+    Ok(quote! {
+      #(#bindings)*
+
+      impl #trait_ident for #tag_ident {
+        fn methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
+          &[#(#method_list),*]
+        }
+        fn static_methods(self) -> &'static [(&'static str, #crate_name::public::FunctionPtr)] {
+          &[#(#static_method_list),*]
+        }
+      }
+    })
+  }
+
+  pub fn parse(input: &ItemImpl) -> syn::Result<Self> {
     let type_name = *input.self_ty.clone();
     let type_name = match type_name {
       Type::Path(p)

@@ -6,7 +6,6 @@ use std::marker::PhantomData;
 pub use self::core::object::native::{FunctionPtr, TypeInfo};
 use self::core::{object, Value as CoreValue};
 use crate::ctx::Context as CoreContext;
-use crate::isolate::call::Args as CoreArgs;
 use crate::{value as core, Error, Result};
 
 // TODO: make macro for wrapping types
@@ -42,6 +41,7 @@ impl<'a> Context<'a> {
     unsafe { std::mem::transmute::<&CoreContext, &Context<'a>>(v) }
   }
 
+  #[allow(dead_code)]
   pub(crate) fn unbind(self) -> CoreContext {
     self.inner
   }
@@ -122,10 +122,6 @@ impl<'a> Value<'a> {
 
   pub fn as_user_data(self) -> Option<UserData<'a>> {
     self.inner.to_user_data().map(UserData::bind)
-  }
-
-  pub(crate) fn is_object(&self) -> bool {
-    self.inner.is_object()
   }
 }
 
@@ -433,5 +429,13 @@ impl<'a> Args<'a> {
 
   pub fn keyword(&self) -> Option<Dict<'a>> {
     self.keyword.clone().map(Dict::bind)
+  }
+
+  pub fn resolve_receiver(mut self) -> Result<Self> {
+    if self.this.is_none() {
+      self.this = self.positional[0].clone();
+      self.positional = &self.positional[1..];
+    }
+    Ok(self)
   }
 }

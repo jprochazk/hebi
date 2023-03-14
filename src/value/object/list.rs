@@ -5,7 +5,7 @@ use std::slice::SliceIndex;
 use super::{Access, Handle};
 use crate::ctx::Context;
 use crate::value::Value;
-use crate::{Error, Result};
+use crate::{public, Error, Result};
 
 #[derive(Clone, Default)]
 pub struct List(Vec<Value>);
@@ -57,10 +57,6 @@ impl List {
 
   pub fn truncate(&mut self, len: usize) {
     self.0.truncate(len)
-  }
-
-  pub fn len(&self) -> usize {
-    self.0.len()
   }
 
   pub fn is_empty(&self) -> bool {
@@ -142,7 +138,7 @@ impl Access for List {
   }
 
   // TODO: tests
-  fn field_get(&self, ctx: &Context, key: &str) -> Result<Option<Value>> {
+  fn field_get(&self, _: &Context, key: &str) -> Result<Option<Value>> {
     // TODO: methods (push, pop, etc.)
     Ok(match key {
       "len" => Some(Value::int(self.0.len() as i32)),
@@ -150,18 +146,18 @@ impl Access for List {
     })
   }
 
-  fn index_get(&self, ctx: &Context, key: Value) -> Result<Option<Value>> {
+  fn index_get(&self, _: &Context, key: Value) -> Result<Option<Value>> {
     let Some(index) = key.clone().to_int() else {
       return Err(Error::runtime(format!("cannot index list using {key}")));
     };
-    Ok(calculate_index(index, self.len()).and_then(|index| self.0.get(index).cloned()))
+    Ok(calculate_index(index, self.0.len()).and_then(|index| self.0.get(index).cloned()))
   }
 
-  fn index_set(&mut self, ctx: &Context, key: Value, value: Value) -> Result<()> {
+  fn index_set(&mut self, _: &Context, key: Value, value: Value) -> Result<()> {
     let Some(index) = key.clone().to_int() else {
       return Err(Error::runtime(format!("cannot index list using {key}")));
     };
-    let index = calculate_index(index, self.len())
+    let index = calculate_index(index, self.0.len())
       .ok_or_else(|| Error::runtime(format!("index {index} is out of bounds")))?;
     let Some(slot) = self.0.get_mut(index) else {
       return Err(Error::runtime(format!("index {index} is out of bounds")));
@@ -193,5 +189,16 @@ impl Display for List {
       }
     }
     write!(f, "]")
+  }
+}
+
+#[derive::builtin]
+impl List {
+  /* pub fn len(&self) -> i32 {
+    self.0.len() as i32
+  } */
+
+  pub fn push(&mut self, v: public::Value) {
+    self.push(v.unbind());
   }
 }

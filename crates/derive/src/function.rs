@@ -1,9 +1,10 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote};
 use syn::spanned::Spanned;
 use syn::{Expr, ItemFn, PatType, Receiver, Signature, Type, Visibility};
 
+use crate::class::ReceiverMapping;
 use crate::util::is_attr;
 
 // TODO: don't fully clear attrs, only those we use
@@ -45,64 +46,84 @@ pub fn macro_impl(args: TokenStream, input: TokenStream) -> TokenStream {
   let mut input = input;
   clear_sig_attrs(&mut input.sig);
 
-  emit_fn(
-    &crate_name,
-    fn_info.name.clone(),
+  Func {
+    crate_name: &crate_name,
+    out_fn_name: fn_info.name.clone(),
+    in_fn_name: None,
     fn_info,
-    Some(input),
-    None,
-    false,
-  )
+    input_fn: Some(input),
+    type_name: None,
+    is_assoc_fn: false,
+    receiver_mapping: None,
+  }
+  .emit()
   .into()
 }
 
-pub fn emit_fn(
-  crate_name: &Ident,
-  out_fn_name: Ident,
-  fn_info: FnInfo,
-  input_fn: Option<ItemFn>,
-  type_name: Option<Ident>,
-  is_assoc_fn: bool,
-) -> TokenStream2 {
-  let input_fn_name = fn_info.name.clone();
-  let vis = fn_info.vis.clone();
-  let (input_mapping, arg_info) = emit_input_mapping(crate_name, &fn_info, type_name.as_ref());
-  let args = arg_info.call_args;
+pub struct Func<'a> {
+  pub crate_name: &'a Ident,
+  pub out_fn_name: Ident,
+  pub in_fn_name: Option<Ident>,
+  pub fn_info: FnInfo,
+  pub input_fn: Option<ItemFn>,
+  pub type_name: Option<Ident>,
+  pub is_assoc_fn: bool,
+  pub receiver_mapping: Option<&'a ReceiverMapping>,
+}
 
-  let assoc_ty_path = if is_assoc_fn {
-    let type_name = type_name.as_ref().unwrap();
-    Some(quote!(#type_name::))
-  } else {
-    None
-  };
-  let call = if fn_info.receiver.is_some() {
-    quote! {#assoc_ty_path #input_fn_name(this, #(#args),*)}
-  } else {
-    quote! {#assoc_ty_path #input_fn_name(#(#args),*)}
-  };
+impl<'a> Func<'a> {
+  pub fn emit(self) -> TokenStream2 {
+    let Func {
+      crate_name,
+      out_fn_name,
+      in_fn_name,
+      fn_info,
+      input_fn,
+      type_name,
+      is_assoc_fn,
+      receiver_mapping,
+    } = self;
+    let input_fn_name = in_fn_name.unwrap_or_else(|| fn_info.name.clone());
+    let vis = fn_info.vis.clone();
+    let (input_mapping, arg_info) =
+      emit_input_mapping(crate_name, &fn_info, type_name.as_ref(), receiver_mapping);
+    let args = arg_info.call_args;
 
-  quote! {
-    #[allow(non_snake_case)]
-    #vis fn #out_fn_name<'hebi>(
-      ctx: &'hebi #crate_name::public::Context<'hebi>,
-      args: #crate_name::public::Args<'hebi>,
-    ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
-      #![allow(
-        clippy::unnecessary_lazy_evaluations,
-        clippy::absurd_extreme_comparisons,
-        unused_imports,
-        unused_variables,
-        dead_code
-      )]
+    let assoc_ty_path = if is_assoc_fn {
+      let type_name = type_name.as_ref().unwrap();
+      Some(quote!(#type_name::))
+    } else {
+      None
+    };
+    let call = if fn_info.receiver.is_some() {
+      quote! {#assoc_ty_path #input_fn_name(this, #(#args),*)}
+    } else {
+      quote! {#assoc_ty_path #input_fn_name(#(#args),*)}
+    };
 
-      use #crate_name::util::check_args;
-      use #crate_name::{FromHebi, FromHebiRef, IntoHebi};
+    quote! {
+      #[allow(non_snake_case)]
+      #vis fn #out_fn_name<'hebi>(
+        ctx: &'hebi #crate_name::public::Context<'hebi>,
+        args: #crate_name::public::Args<'hebi>,
+      ) -> #crate_name::Result<#crate_name::public::Value<'hebi>> {
+        #![allow(
+          clippy::unnecessary_lazy_evaluations,
+          clippy::absurd_extreme_comparisons,
+          unused_imports,
+          unused_variables,
+          dead_code
+        )]
 
-      #input_fn
+        use #crate_name::util::check_args;
+        use #crate_name::{FromHebi, FromHebiRef, IntoHebi};
 
-      #input_mapping
+        #input_fn
 
-      #call.into_hebi(ctx)
+        #input_mapping
+
+        #call.into_hebi(ctx)
+      }
     }
   }
 }
@@ -111,6 +132,7 @@ pub fn emit_input_mapping(
   crate_name: &Ident,
   params: &FnInfo,
   type_name: Option<&Ident>,
+  receiver_mapping: Option<&ReceiverMapping>,
 ) -> (TokenStream2, ArgInfo) {
   let from_hebi = format_ident!("from_hebi");
   let from_hebi_ref = format_ident!("from_hebi_ref");
@@ -118,6 +140,8 @@ pub fn emit_input_mapping(
   let positional_owned = quote!(positional);
   let clone_call = Some(quote!(.clone()));
   let no_clone_call = None;
+
+  let has_self = params.receiver.is_some();
 
   let required_positional_params = params.required_positional().map(|v| v.name.to_string());
   let max_positional_params = params.max_positional();
@@ -190,27 +214,35 @@ pub fn emit_input_mapping(
   let this_mapping = match params.receiver.as_ref().map(|r| r.mutability) {
     Some(m) => {
       let is_mut = m.is_some();
-      let cast_error_msg = format!(
-        "class is not an instance of {}",
-        type_name.as_ref().unwrap()
-      );
-      let cast = match is_mut {
-        true => format_ident!("cast_mut"),
-        false => format_ident!("cast"),
-      };
-      let this_mapping = quote! {
-        let mut this = match this.as_user_data() {
-          Some(this) => this,
-          None => return Err(#crate_name::Error::runtime("receiver is not user data")),
+      if let Some(mapping) = receiver_mapping {
+        match is_mut {
+          true => mapping.mut_.clone(),
+          false => mapping.ref_.clone(),
+        }
+      } else {
+        let cast_error_msg = format!(
+          "receiver is not an instance of {}",
+          type_name.as_ref().unwrap()
+        );
+        let cast = match is_mut {
+          true => format_ident!("cast_mut"),
+          false => format_ident!("cast"),
         };
-        let mut this = match unsafe { this.#cast::<#type_name>() } {
-          Some(this) => this,
-          None => return Err(#crate_name::Error::runtime(#cast_error_msg)),
-        };
-      };
-      Some(this_mapping)
+        quote! {
+          let mut args = args;
+          let args = args.resolve_receiver()?;
+          let mut this = match args.this().as_user_data() {
+            Some(this) => this,
+            None => return Err(#crate_name::Error::runtime(#cast_error_msg)),
+          };
+          let mut this = match unsafe { this.#cast::<#type_name>() } {
+            Some(this) => this,
+            None => return Err(#crate_name::Error::runtime(#cast_error_msg)),
+          };
+        }
+      }
     }
-    _ => None,
+    _ => TokenStream2::new(),
   };
 
   let input_mapping = positional_param_mapping
@@ -230,18 +262,17 @@ pub fn emit_input_mapping(
 
   (
     quote! {
-      let mut this = args.this();
-      let positional = args.positional();
-      let keyword = args.keyword();
-
-      #this_mapping
-
       check_args(
         &args,
+        /* has_self */ #has_self,
         /* pos_required */ &[#(#required_positional_params),*],
         /* pos_max */ #max_positional_params,
         /* kw */ &[#(#keyword_params),*],
       )?;
+
+      #this_mapping
+      let positional = args.positional();
+      let keyword = args.keyword();
 
       #(#input_mapping)*
     },
