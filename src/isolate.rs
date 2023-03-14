@@ -12,9 +12,10 @@ mod index;
 mod string;
 mod truth;
 
+use std::any;
 use std::mem::take;
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
 use self::call::Args;
 use super::op;
@@ -24,16 +25,22 @@ use crate::util::JoinIter;
 use crate::value::handle::Handle;
 use crate::value::object::frame::{Frame, Stack};
 use crate::value::object::module::{ModuleId, ModuleLoader, ModuleRegistry};
-use crate::value::object::{frame, Class, ClassSuperProxy, Dict, Function, List, ObjectType, Str};
+use crate::value::object::{
+  frame, Class, ClassSuperProxy, Dict, Function, List, NativeClass, ObjectType, Str,
+};
 use crate::value::Value;
 
 // TODO: fields should be private, even to ops
+
+type ClassMap = IndexMap<any::TypeId, Handle<NativeClass>>;
+
 pub struct Isolate {
   ctx: Context,
   globals: Handle<Dict>,
   module_registry: ModuleRegistry,
   module_loader: Box<dyn ModuleLoader>,
   module_init_visited: IndexSet<ModuleId>,
+  pub classes: ClassMap,
 
   width: op::Width,
   pc: usize,
@@ -65,6 +72,8 @@ impl Isolate {
       module_registry: ModuleRegistry::new(),
       module_loader,
       module_init_visited: IndexSet::new(),
+      classes: ClassMap::new(),
+
       width: op::Width::Single,
       pc: 0,
 

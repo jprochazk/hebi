@@ -15,7 +15,6 @@ use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 
 pub use error::Error;
-use indexmap::IndexMap;
 use isolate::{Isolate, Stdout};
 use public::{FunctionPtr, IntoStr, TypeInfo};
 
@@ -25,14 +24,11 @@ use ctx::Context;
 pub use derive::{class, function, methods};
 pub use public::conv::{FromHebi, FromHebiRef, IntoHebi};
 pub use public::{Args, Value};
-use value::handle::Handle;
 pub use value::object::module::ModuleLoader;
-use value::object::native::Function;
 use value::object::{NativeClass, NativeClassInstance, NativeFunction, UserData};
 
 pub struct Hebi {
   isolate: RefCell<Isolate>,
-  classes: RefCell<IndexMap<any::TypeId, Handle<NativeClass>>>,
 }
 
 // # Safety:
@@ -102,15 +98,11 @@ impl Hebi {
   /// Fails if `T` has not been registered to this `Hebi` instance via
   /// `globals`.
   pub fn try_wrap<T: TypeInfo + 'static>(&self, v: T) -> Result<Value<'_>> {
-    let class = {
-      let classes = self.classes.borrow();
-      let Some(class) = classes.get(&any::TypeId::of::<T>()) else {
-        return Err(Error::runtime(format!(
-          "`{}` has not been registered in this Hebi instance yet, use `Hebi::globals()` to register it",
-          any::type_name::<T>()
-        )));
-      };
-      class.clone()
+    let Some(class) = self.isolate.borrow().classes.get(&any::TypeId::of::<T>()).cloned() else {
+      return Err(Error::runtime(format!(
+        "`{}` has not been registered in this Hebi instance yet, use `Hebi::globals()` to register it",
+        any::type_name::<T>()
+      )));
     };
     let ctx = self.ctx();
     Ok(Value::bind(NativeClassInstance::new(
@@ -154,8 +146,9 @@ impl<'a> Globals<'a> {
     let class = NativeClass::new::<T>(ctx.inner());
     self
       .hebi
-      .classes
+      .isolate
       .borrow_mut()
+      .classes
       .insert(any::TypeId::of::<T>(), class.clone());
     self.set(class.name(), Value::bind(class))
   }
@@ -207,7 +200,6 @@ impl HebiBuilder {
 
     let vm = Hebi {
       isolate: RefCell::new(isolate),
-      classes: RefCell::new(IndexMap::new()),
     };
 
     if self.use_builtins {
