@@ -1,3 +1,22 @@
+# 0.3.1
+
+## New features
+
+This release introduces methods on builtin types.
+
+```rust
+let vm = Hebi::new();
+
+// prints `[0, 1, 2, 3]`
+vm.eval::<()>(r#"
+v := [0,1,2]
+v.push(3)
+print v
+"#).unwrap();
+```
+
+This release only adds a single method on the builtin `List` type, `push`. The goal was to lay the groundwork for implementing a proper standard library in the future.
+
 # 0.3.0
 
 ## Breaking changes
