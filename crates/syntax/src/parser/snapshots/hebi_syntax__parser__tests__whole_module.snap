@@ -1602,123 +1602,126 @@ Module {
             Class {
                 name: "Test",
                 parent: None,
-                fields: [],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [
-                                (
-                                    "n",
-                                    None,
-                                ),
-                            ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
-                                            target: GetSelf,
-                                            name: "n",
-                                        },
-                                        value: GetVar(
-                                            GetVar {
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    (
+                                        "n",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
                                                 name: "n",
                                             },
-                                        ),
-                                    },
-                                ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                    Func {
-                        name: "get_n",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Ctrl(
-                                Return(
-                                    Return {
-                                        value: Some(
-                                            GetField(
-                                                GetField {
-                                                    target: GetSelf,
+                                            value: GetVar(
+                                                GetVar {
                                                     name: "n",
                                                 },
                                             ),
-                                        ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: "get_n",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                GetField(
+                                                    GetField {
+                                                        target: GetSelf,
+                                                        name: "n",
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: "test1",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            Literal(
+                                                String(
+                                                    "instance",
+                                                ),
+                                            ),
+                                            GetSelf,
+                                        ],
                                     },
                                 ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                    Func {
-                        name: "test1",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            ],
+                            has_yield: false,
                         },
-                        body: [
-                            Print(
-                                Print {
-                                    values: [
-                                        Literal(
-                                            String(
-                                                "instance",
+                        Func {
+                            name: "test0",
+                            params: Params {
+                                has_self: false,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            Literal(
+                                                String(
+                                                    "static",
+                                                ),
                                             ),
-                                        ),
-                                        GetSelf,
-                                    ],
-                                },
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                    Func {
-                        name: "test0",
-                        params: Params {
-                            has_self: false,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                                            GetVar(
+                                                GetVar {
+                                                    name: "Test",
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
                         },
-                        body: [
-                            Print(
-                                Print {
-                                    values: [
-                                        Literal(
-                                            String(
-                                                "static",
-                                            ),
-                                        ),
-                                        GetVar(
-                                            GetVar {
-                                                name: "Test",
-                                            },
-                                        ),
-                                    ],
-                                },
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    meta: [],
+                },
             },
         ),
         Expr(
@@ -1944,19 +1947,22 @@ Module {
             Class {
                 name: "A",
                 parent: None,
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            Literal(
-                                Int(
-                                    100,
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                Literal(
+                                    Int(
+                                        100,
+                                    ),
                                 ),
                             ),
-                        ),
-                    },
-                ],
-                methods: [],
+                        },
+                    ],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Print(
@@ -2020,34 +2026,37 @@ Module {
             Class {
                 name: "B",
                 parent: None,
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            Literal(
-                                Int(
-                                    100,
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                Literal(
+                                    Int(
+                                        100,
+                                    ),
                                 ),
                             ),
-                        ),
-                    },
-                ],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
                         },
-                        body: [
-                            Pass,
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Print(
@@ -2106,37 +2115,40 @@ Module {
             Class {
                 name: "C",
                 parent: None,
-                fields: [],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
-                                            target: GetSelf,
-                                            name: "a",
-                                        },
-                                        value: Literal(
-                                            Int(
-                                                10,
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: "a",
+                                            },
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
                                             ),
-                                        ),
-                                    },
+                                        },
+                                    ),
                                 ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Print(
@@ -2194,33 +2206,36 @@ Module {
             Class {
                 name: "A",
                 parent: None,
-                fields: [],
-                methods: [
-                    Func {
-                        name: "inherited",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Print(
-                                Print {
-                                    values: [
-                                        Literal(
-                                            String(
-                                                "test 0",
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "inherited",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            Literal(
+                                                String(
+                                                    "test 0",
+                                                ),
                                             ),
-                                        ),
-                                    ],
-                                },
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                                        ],
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -2229,8 +2244,11 @@ Module {
                 parent: Some(
                     "A",
                 ),
-                fields: [],
-                methods: [],
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Expr(
@@ -2295,33 +2313,36 @@ Module {
                 parent: Some(
                     "B",
                 ),
-                fields: [],
-                methods: [
-                    Func {
-                        name: "inherited",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Print(
-                                Print {
-                                    values: [
-                                        Literal(
-                                            String(
-                                                "test 1",
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "inherited",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            Literal(
+                                                String(
+                                                    "test 1",
+                                                ),
                                             ),
-                                        ),
-                                    ],
-                                },
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                                        ],
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Expr(
@@ -2358,49 +2379,52 @@ Module {
                 parent: Some(
                     "C",
                 ),
-                fields: [],
-                methods: [
-                    Func {
-                        name: "inherited",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetField(
-                                            GetField {
-                                                target: GetSuper,
-                                                name: "inherited",
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "inherited",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    Call(
+                                        Call {
+                                            target: GetField(
+                                                GetField {
+                                                    target: GetSuper,
+                                                    name: "inherited",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
                                             },
-                                        ),
-                                        args: Args {
-                                            pos: [],
-                                            kw: [],
                                         },
+                                    ),
+                                ),
+                                Print(
+                                    Print {
+                                        values: [
+                                            Literal(
+                                                String(
+                                                    "test 2",
+                                                ),
+                                            ),
+                                        ],
                                     },
                                 ),
-                            ),
-                            Print(
-                                Print {
-                                    values: [
-                                        Literal(
-                                            String(
-                                                "test 2",
-                                            ),
-                                        ),
-                                    ],
-                                },
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Expr(
@@ -2435,37 +2459,40 @@ Module {
             Class {
                 name: "X",
                 parent: None,
-                fields: [],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
-                                            target: GetSelf,
-                                            name: "v",
-                                        },
-                                        value: Literal(
-                                            Int(
-                                                10,
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: "v",
+                                            },
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
                                             ),
-                                        ),
-                                    },
+                                        },
+                                    ),
                                 ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -2474,37 +2501,40 @@ Module {
                 parent: Some(
                     "X",
                 ),
-                fields: [],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
-                        },
-                        body: [
-                            Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
-                                            target: GetSelf,
-                                            name: "v",
-                                        },
-                                        value: Literal(
-                                            Int(
-                                                10,
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: "v",
+                                            },
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
                                             ),
-                                        ),
-                                    },
+                                        },
+                                    ),
                                 ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -2513,69 +2543,72 @@ Module {
                 parent: Some(
                     "X",
                 ),
-                fields: [],
-                methods: [
-                    Func {
-                        name: "init",
-                        params: Params {
-                            has_self: true,
-                            pos: [
-                                (
-                                    "v",
-                                    None,
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "init",
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    (
+                                        "v",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Expr(
+                                    Call(
+                                        Call {
+                                            target: GetField(
+                                                GetField {
+                                                    target: GetSuper,
+                                                    name: "init",
+                                                },
+                                            ),
+                                            args: Args {
+                                                pos: [],
+                                                kw: [],
+                                            },
+                                        },
+                                    ),
+                                ),
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: "v",
+                                            },
+                                            value: Binary(
+                                                Binary {
+                                                    op: Add,
+                                                    left: GetField(
+                                                        GetField {
+                                                            target: GetSelf,
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                    right: GetVar(
+                                                        GetVar {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
                                 ),
                             ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            has_yield: false,
                         },
-                        body: [
-                            Expr(
-                                Call(
-                                    Call {
-                                        target: GetField(
-                                            GetField {
-                                                target: GetSuper,
-                                                name: "init",
-                                            },
-                                        ),
-                                        args: Args {
-                                            pos: [],
-                                            kw: [],
-                                        },
-                                    },
-                                ),
-                            ),
-                            Expr(
-                                SetField(
-                                    SetField {
-                                        target: GetField {
-                                            target: GetSelf,
-                                            name: "v",
-                                        },
-                                        value: Binary(
-                                            Binary {
-                                                op: Add,
-                                                left: GetField(
-                                                    GetField {
-                                                        target: GetSelf,
-                                                        name: "v",
-                                                    },
-                                                ),
-                                                right: GetVar(
-                                                    GetVar {
-                                                        name: "v",
-                                                    },
-                                                ),
-                                            },
-                                        ),
-                                    },
-                                ),
-                            ),
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    meta: [],
+                },
             },
         ),
         Print(

@@ -81,6 +81,10 @@ impl<T: ObjectType> Handle<T> {
     debug_assert!(<T as ObjectType>::is(obj));
     unsafe { T::as_mut(obj).unwrap_unchecked() }
   }
+
+  pub fn ptr_eq(&self, other: &Self) -> bool {
+    std::ptr::eq(self.obj.0.get(), other.obj.0.get())
+  }
 }
 
 impl<T: ObjectType + Display> Display for Handle<T> {

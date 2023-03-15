@@ -8,83 +8,95 @@ Module {
             Class {
                 name: "T",
                 parent: None,
-                fields: [],
-                methods: [],
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
             Class {
                 name: "T",
                 parent: None,
-                fields: [],
-                methods: [],
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
             Class {
                 name: "T",
                 parent: None,
-                fields: [],
-                methods: [
-                    Func {
-                        name: "f",
-                        params: Params {
-                            has_self: false,
-                            pos: [
-                                (
-                                    "v",
-                                    None,
-                                ),
+                members: ClassMembers {
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: "f",
+                            params: Params {
+                                has_self: false,
+                                pos: [
+                                    (
+                                        "v",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Pass,
                             ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            has_yield: false,
                         },
-                        body: [
-                            Pass,
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
             Class {
                 name: "T",
                 parent: None,
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            GetVar(
-                                GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                    },
-                ],
-                methods: [
-                    Func {
-                        name: "f",
-                        params: Params {
-                            has_self: false,
-                            pos: [
-                                (
-                                    "v",
-                                    None,
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
                                 ),
-                            ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            ),
                         },
-                        body: [
-                            Pass,
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    methods: [
+                        Func {
+                            name: "f",
+                            params: Params {
+                                has_self: false,
+                                pos: [
+                                    (
+                                        "v",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -93,8 +105,11 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [],
-                methods: [],
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -103,8 +118,11 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [],
-                methods: [],
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -113,60 +131,22 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            GetVar(
-                                GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                    },
-                ],
-                methods: [],
-            },
-        ),
-        Class(
-            Class {
-                name: "T",
-                parent: Some(
-                    "U",
-                ),
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            GetVar(
-                                GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                    },
-                ],
-                methods: [
-                    Func {
-                        name: "f",
-                        params: Params {
-                            has_self: false,
-                            pos: [
-                                (
-                                    "v",
-                                    None,
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
                                 ),
-                            ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            ),
                         },
-                        body: [
-                            Pass,
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -175,52 +155,102 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [
-                    Field {
-                        name: "a",
-                        default: Some(
-                            GetVar(
-                                GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                    },
-                ],
-                methods: [
-                    Func {
-                        name: "f",
-                        params: Params {
-                            has_self: false,
-                            pos: [
-                                (
-                                    "v",
-                                    None,
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
                                 ),
-                            ],
-                            argv: None,
-                            kw: [],
-                            kwargs: None,
+                            ),
                         },
-                        body: [
-                            Pass,
-                        ],
-                        has_yield: false,
-                    },
-                ],
+                    ],
+                    methods: [
+                        Func {
+                            name: "f",
+                            params: Params {
+                                has_self: false,
+                                pos: [
+                                    (
+                                        "v",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: "T",
+                parent: Some(
+                    "U",
+                ),
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "b",
+                                    },
+                                ),
+                            ),
+                        },
+                    ],
+                    methods: [
+                        Func {
+                            name: "f",
+                            params: Params {
+                                has_self: false,
+                                pos: [
+                                    (
+                                        "v",
+                                        None,
+                                    ),
+                                ],
+                                argv: None,
+                                kw: [],
+                                kwargs: None,
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                    meta: [],
+                },
             },
         ),
         Class(
             Class {
                 name: "T",
                 parent: None,
-                fields: [
-                    Field {
-                        name: "a",
-                        default: None,
-                    },
-                ],
-                methods: [],
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: None,
+                        },
+                    ],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
         Class(
@@ -229,13 +259,16 @@ Module {
                 parent: Some(
                     "U",
                 ),
-                fields: [
-                    Field {
-                        name: "a",
-                        default: None,
-                    },
-                ],
-                methods: [],
+                members: ClassMembers {
+                    fields: [
+                        Field {
+                            name: "a",
+                            default: None,
+                        },
+                    ],
+                    methods: [],
+                    meta: [],
+                },
             },
         ),
     ],

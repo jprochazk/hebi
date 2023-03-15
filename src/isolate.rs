@@ -552,7 +552,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::add(lhs, rhs)?;
+    self.acc = binop::add(self, lhs, rhs)?;
 
     Ok(())
   }
@@ -562,7 +562,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::sub(lhs, rhs)?;
+    self.acc = binop::sub(self, lhs, rhs)?;
 
     Ok(())
   }
@@ -572,7 +572,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::mul(lhs, rhs)?;
+    self.acc = binop::mul(self, lhs, rhs)?;
 
     Ok(())
   }
@@ -582,7 +582,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::div(lhs, rhs)?;
+    self.acc = binop::div(self, lhs, rhs)?;
 
     Ok(())
   }
@@ -592,7 +592,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::rem(lhs, rhs)?;
+    self.acc = binop::rem(self, lhs, rhs)?;
 
     Ok(())
   }
@@ -602,7 +602,7 @@ impl op::Handler for Isolate {
     let lhs = self.get_reg(lhs);
     let rhs = take(&mut self.acc);
 
-    self.acc = binop::pow(lhs, rhs)?;
+    self.acc = binop::pow(self, lhs, rhs)?;
 
     Ok(())
   }

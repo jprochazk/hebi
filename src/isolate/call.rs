@@ -18,10 +18,6 @@ pub struct Args {
 }
 
 impl Args {
-  /// # Safety
-  /// Caller must guarantee that `args` will not outlive the returned struct,
-  /// and that `args` will not be borrowed mutably for as long as the returned
-  /// struct exists.
   pub fn new(this: Value, args: Option<StackSlice>, kwargs: Option<Handle<Dict>>) -> Self {
     Self { this, args, kwargs }
   }
@@ -89,6 +85,8 @@ impl Args {
     }
   }
 }
+
+// TODO: check for stack overflow in `run` and `call_recurse`
 
 impl Isolate {
   /// Run `func` to completion or until a yield point.

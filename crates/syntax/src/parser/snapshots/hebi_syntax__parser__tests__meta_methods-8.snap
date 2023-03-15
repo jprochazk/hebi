@@ -1,0 +1,11 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: errors
+---
+[31merror[0m: meta method `str` expects `self` and no other params
+[34m>[0m code:2
+[34m|[0m 
+[34m|[0m   fn [31;4mmeta:str[0m(self, **other): pass
+[34m|[0m 
+
+

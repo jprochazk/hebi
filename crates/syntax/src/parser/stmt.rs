@@ -192,6 +192,14 @@ impl<'src> Parser<'src> {
     let start = self.previous().span.start;
     self.no_indent()?;
     let name = self.ident().context("function name")?;
+
+    if name.as_ref() == "meta" && self.ctx.current_class.is_none() {
+      return Err(Error::new(
+        "meta methods may only appear in classes",
+        name.span,
+      ));
+    }
+
     self.no_indent()?; // func's opening paren must be unindented
     let func = self.func(name)?;
     let end = self.previous().span.end;
@@ -339,32 +347,28 @@ impl<'src> Parser<'src> {
     };
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let mut fields = vec![];
-    let mut funcs = vec![];
     let ctx = Context::with_class(parent.is_some());
-    self.with_ctx(ctx, |this| this.class_members(&mut fields, &mut funcs))?;
+    let members = self.with_ctx(ctx, |this| this.class_members())?;
     let end = self.previous().span.end;
-    Ok(ast::class_stmt(start..end, name, parent, fields, funcs))
+    Ok(ast::class_stmt(start..end, name, parent, members))
   }
 
-  fn class_members(
-    &mut self,
-    fields: &mut Vec<ast::Field<'src>>,
-    funcs: &mut Vec<ast::Func<'src>>,
-  ) -> Result<()> {
+  fn class_members(&mut self) -> Result<ast::ClassMembers<'src>> {
+    let mut members = ast::ClassMembers::new();
+
     if self.no_indent().is_ok() {
       // empty class (single line)
       self
         .expect(Kw_Pass)
         .map_err(|e| Error::new("invalid indentation", e.span))?;
-      return Ok(());
+      return Ok(members);
     }
 
     self.indent_gt()?;
     if self.bump_if(Kw_Pass) {
       // empty class (indented)
       self.dedent()?;
-      return Ok(());
+      return Ok(members);
     }
 
     let mut names = HashSet::new();
@@ -385,9 +389,9 @@ impl<'src> Parser<'src> {
         self.bump(); // bump op_equal
         self.no_indent()?;
         let default = Some(self.expr()?);
-        fields.push(ast::Field { name, default });
+        members.fields.push(ast::Field { name, default });
       } else {
-        fields.push(ast::Field {
+        members.fields.push(ast::Field {
           name,
           default: None,
         });
@@ -397,16 +401,41 @@ impl<'src> Parser<'src> {
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
       self.expect(Kw_Fn)?;
       let name = self.ident()?;
-      if names.contains(&name) {
-        self
-          .errors
-          .push(Error::new(format!("duplicate field {name}"), name.span));
+      if name.as_ref() == "meta" {
+        self.no_indent()?;
+        self.expect(Tok_Colon)?;
+        self.no_indent()?;
+        let which = self.ident()?;
+        let meta = ast::Meta::parse(&which)
+          .ok_or_else(|| Error::new(format!("unknown meta method `{which}`"), which.span))?;
+        if members.meta.iter().any(|(k, _)| *k == meta) {
+          return Err(Error::new(
+            format!("duplicate meta method `{which}`"),
+            which.span,
+          ));
+        }
+        self.no_indent()?;
+        let f = self.func(ast::Ident::new(
+          name.span.join(which.span),
+          meta.as_str().into(),
+        ))?;
+        if !f.params.has_self {
+          return Err(Error::new("meta methods must take `self`", f.name.span));
+        }
+        check_meta_params(&meta, &f.params, f.name.span)?;
+        members.meta.push((meta, f));
       } else {
-        names.insert(name.clone());
+        if names.contains(&name) {
+          self
+            .errors
+            .push(Error::new(format!("duplicate field {name}"), name.span));
+        } else {
+          names.insert(name.clone());
+        }
+        self.no_indent()?; // func's opening paren must be unindented
+        let f = self.func(name)?;
+        members.methods.push(f);
       }
-      self.no_indent()?; // func's opening paren must be unindented
-      let f = self.func(name)?;
-      funcs.push(f);
     }
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       return Err(Error::new(
@@ -417,7 +446,7 @@ impl<'src> Parser<'src> {
 
     self.dedent()?;
 
-    Ok(())
+    Ok(members)
   }
 
   fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
@@ -549,6 +578,33 @@ impl<'src> Parser<'src> {
     self.bump(); // bump operator
     Some(kind)
   }
+}
+
+fn check_meta_params(meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
+  let arity = meta.arity();
+
+  if !params.has_self
+    || params.argv.is_some()
+    || !params.kw.is_empty()
+    || params.kwargs.is_some()
+    || params.pos.len() != meta.arity()
+  {
+    let msg = if arity > 1 {
+      format!(
+        "meta method `{}` expects `self` and {} params",
+        meta.as_str(),
+        meta.arity()
+      )
+    } else {
+      format!(
+        "meta method `{}` expects `self` and no other params",
+        meta.as_str()
+      )
+    };
+    return Err(Error::new(msg, span));
+  }
+
+  Ok(())
 }
 
 #[allow(clippy::ptr_arg)]

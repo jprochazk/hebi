@@ -1,0 +1,11 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: errors
+---
+[31merror[0m: unknown meta method `unknown`
+[34m>[0m code:2
+[34m|[0m 
+[34m|[0m   fn meta:[31;4munknown[0m(self): pass
+[34m|[0m 
+
+

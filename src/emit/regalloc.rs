@@ -67,6 +67,10 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
+// TODO: rework this to not use `Rc<State>`
+// it should be as simple as `Register(usize)`
+// and `RegAlloc::index_of(&Register)`
+
 #[derive(Clone)]
 pub struct RegAlloc(Rc<RefCell<Tracking>>);
 

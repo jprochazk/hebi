@@ -1,7 +1,8 @@
 use std::fmt::Display;
 use std::hash::Hash;
 
-use indexmap::Equivalent;
+use indexmap::{Equivalent, IndexMap};
+use syntax::ast;
 
 use super::func::{self, Params};
 use super::{Access, Dict, Function, Str};
@@ -161,6 +162,7 @@ impl Access for Method {}
 
 pub struct Class {
   desc: Handle<ClassDescriptor>,
+  meta_methods: IndexMap<ast::Meta, Handle<Function>>,
   init: Option<Handle<Function>>,
   methods: Dict,
   fields: Dict,
@@ -172,7 +174,8 @@ impl Class {
     assert!(args.len() >= desc.is_derived() as usize + desc.methods().len() + desc.fields().len());
 
     let parent_offset = 0;
-    let methods_offset = parent_offset + desc.is_derived() as usize;
+    let meta_methods_offset = parent_offset + desc.is_derived() as usize;
+    let methods_offset = meta_methods_offset + desc.meta().len();
     let fields_offset = methods_offset + desc.methods().len();
 
     let mut parent = None;
@@ -185,6 +188,11 @@ impl Class {
         return Err(Error::runtime(format!("cannot inherit from `{parent_class}` because it is not a class")))
       };
       parent = Some(parent_class);
+    }
+
+    let mut meta_methods = IndexMap::with_capacity(desc.meta().len());
+    for (k, v) in desc.meta().iter().zip(args[meta_methods_offset..].iter()) {
+      meta_methods.insert(*k, v.clone().to_function().unwrap());
     }
 
     let mut init = None;
@@ -204,6 +212,9 @@ impl Class {
 
     // inherit methods and field defaults
     if let Some(parent) = &parent {
+      for (k, v) in parent.meta_methods().iter() {
+        meta_methods.entry(*k).or_insert_with(|| v.clone());
+      }
       for (k, v) in parent.methods().iter() {
         methods.entry(k.clone()).or_insert_with(|| v.clone());
       }
@@ -214,6 +225,7 @@ impl Class {
 
     Ok(ctx.alloc(Self {
       desc,
+      meta_methods,
       init,
       methods,
       fields,
@@ -245,6 +257,10 @@ impl Class {
     self.desc.name()
   }
 
+  pub fn meta_method(&self, key: &ast::Meta) -> Option<Handle<Function>> {
+    self.meta_methods.get(key).cloned()
+  }
+
   pub fn init(&self) -> Option<Handle<Function>> {
     self.init.clone()
   }
@@ -255,6 +271,10 @@ impl Class {
 
   pub fn parent(&self) -> Option<Handle<Class>> {
     self.parent.clone()
+  }
+
+  pub fn meta_methods(&self) -> &IndexMap<ast::Meta, Handle<Function>> {
+    &self.meta_methods
   }
 
   pub fn methods(&self) -> &Dict {
@@ -290,6 +310,7 @@ pub struct ClassDescriptor {
   name: Handle<Str>,
   params: Params,
   is_derived: bool,
+  meta: Vec<ast::Meta>,
   methods: Vec<Str>,
   fields: Vec<Str>,
 }
@@ -299,6 +320,7 @@ impl ClassDescriptor {
     name: Handle<Str>,
     params: Params,
     is_derived: bool,
+    meta: Vec<ast::Meta>,
     methods: Vec<Str>,
     fields: Vec<Str>,
   ) -> Self {
@@ -308,6 +330,7 @@ impl ClassDescriptor {
       is_derived,
       methods,
       fields,
+      meta,
     }
   }
 }
@@ -324,6 +347,10 @@ impl ClassDescriptor {
 
   pub fn is_derived(&self) -> bool {
     self.is_derived
+  }
+
+  pub fn meta(&self) -> &[ast::Meta] {
+    &self.meta
   }
 
   pub fn methods(&self) -> &[Str] {

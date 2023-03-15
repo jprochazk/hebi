@@ -90,14 +90,116 @@ impl<'src> Params<'src> {
 pub struct Class<'src> {
   pub name: Ident<'src>,
   pub parent: Option<Ident<'src>>,
+  pub members: ClassMembers<'src>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct ClassMembers<'src> {
   pub fields: Vec<Field<'src>>,
   pub methods: Vec<Func<'src>>,
+  pub meta: Vec<(Meta, Func<'src>)>,
+}
+
+impl<'src> ClassMembers<'src> {
+  #[allow(clippy::new_without_default)]
+  pub fn new() -> Self {
+    Self {
+      fields: vec![],
+      methods: vec![],
+      meta: vec![],
+    }
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
 pub struct Field<'src> {
   pub name: Ident<'src>,
   pub default: Option<Expr<'src>>,
+}
+
+#[cfg_attr(test, derive(Debug))]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Meta {
+  Str,
+
+  Add,
+  Sub,
+  Mul,
+  Div,
+  Rem,
+  Pow,
+
+  Cmp,
+
+  Index,
+
+  Iter,
+  Next,
+  Done,
+
+  Enter,
+  Leave,
+}
+
+impl Meta {
+  pub fn parse(s: &str) -> Option<Self> {
+    let v = match s {
+      "str" => Self::Str,
+      "add" => Self::Add,
+      "sub" => Self::Sub,
+      "mul" => Self::Mul,
+      "div" => Self::Div,
+      "rem" => Self::Rem,
+      "pow" => Self::Pow,
+      "cmp" => Self::Cmp,
+      "index" => Self::Index,
+      "iter" => Self::Iter,
+      "next" => Self::Next,
+      "done" => Self::Done,
+      "enter" => Self::Enter,
+      "leave" => Self::Leave,
+      _ => return None,
+    };
+    Some(v)
+  }
+
+  pub fn arity(&self) -> usize {
+    match self {
+      Meta::Str => 0,
+      Meta::Add => 1,
+      Meta::Sub => 1,
+      Meta::Mul => 1,
+      Meta::Div => 1,
+      Meta::Rem => 1,
+      Meta::Pow => 1,
+      Meta::Cmp => 1,
+      Meta::Index => 1,
+      Meta::Iter => 0,
+      Meta::Next => 0,
+      Meta::Done => 0,
+      Meta::Enter => 1,
+      Meta::Leave => 1,
+    }
+  }
+
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      Self::Str => "str",
+      Self::Add => "add",
+      Self::Sub => "sub",
+      Self::Mul => "mul",
+      Self::Div => "div",
+      Self::Rem => "rem",
+      Self::Pow => "pow",
+      Self::Cmp => "cmp",
+      Self::Index => "index",
+      Self::Iter => "iter",
+      Self::Next => "next",
+      Self::Done => "done",
+      Self::Enter => "enter",
+      Self::Leave => "leave",
+    }
+  }
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -520,16 +622,14 @@ pub fn class_stmt<'src>(
   s: impl Into<Span>,
   name: Ident<'src>,
   parent: Option<Ident<'src>>,
-  fields: Vec<Field<'src>>,
-  methods: Vec<Func<'src>>,
+  members: ClassMembers<'src>,
 ) -> Stmt<'src> {
   Stmt::new(
     s,
     StmtKind::Class(Box::new(Class {
       name,
       parent,
-      fields,
-      methods,
+      members,
     })),
   )
 }

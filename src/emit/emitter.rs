@@ -399,6 +399,7 @@ fn ast_params_to_func_params(params: &ast::Params) -> func::Params {
 
 fn ast_class_to_params(class: &ast::Class) -> func::Params {
   class
+    .members
     .methods
     .iter()
     .find(|m| m.name.deref() == "init")
@@ -411,6 +412,7 @@ fn ast_class_to_params(class: &ast::Class) -> func::Params {
       kwargs: false,
       pos: vec![],
       kw: class
+        .members
         .fields
         .iter()
         .map(|f| (f.name.to_string(), f.default.is_some()))
@@ -893,12 +895,15 @@ mod stmt {
           self.ctx.alloc_interned_string(stmt.name.deref()),
           ast_class_to_params(stmt),
           stmt.parent.is_some(),
+          stmt.members.meta.iter().map(|(k, _)| *k).collect(),
           stmt
+            .members
             .methods
             .iter()
             .map(|f| f.name.to_string().into())
             .collect(),
           stmt
+            .members
             .fields
             .iter()
             .map(|f| f.name.to_string().into())
@@ -927,21 +932,30 @@ mod stmt {
       };
 
       // allocate registers
-      let methods = (0..stmt.methods.len())
+      let meta = (0..stmt.members.meta.len())
         .map(|_| self.reg())
         .collect::<Vec<_>>();
-      let fields = (0..stmt.fields.len())
+      let methods = (0..stmt.members.methods.len())
+        .map(|_| self.reg())
+        .collect::<Vec<_>>();
+      let fields = (0..stmt.members.fields.len())
         .map(|_| self.reg())
         .collect::<Vec<_>>();
 
+      // emit meta methods
+      for ((_, method), reg) in stmt.members.meta.iter().zip(meta.iter()) {
+        self.emit_func_const(method)?;
+        self.emit_op(StoreReg { reg: reg.index() });
+      }
+
       // emit methods
-      for (method, reg) in stmt.methods.iter().zip(methods.iter()) {
+      for (method, reg) in stmt.members.methods.iter().zip(methods.iter()) {
         self.emit_func_const(method)?;
         self.emit_op(StoreReg { reg: reg.index() });
       }
 
       // emit field defaults
-      for (field, value) in stmt.fields.iter().zip(fields.iter()) {
+      for (field, value) in stmt.members.fields.iter().zip(fields.iter()) {
         match &field.default {
           Some(default) => self.emit_expr(default)?,
           None => self.emit_op(PushNone),
@@ -953,12 +967,15 @@ mod stmt {
       if let Some(parent) = &parent {
         let start = parent.index();
         self.emit_op(CreateClass { desc, start });
+      } else if !meta.is_empty() {
+        let start = meta[0].index();
+        self.emit_op(CreateClass { desc, start });
       } else if !methods.is_empty() {
         let start = methods[0].index();
-        self.emit_op(CreateClass { desc, start })
+        self.emit_op(CreateClass { desc, start });
       } else if !fields.is_empty() {
         let start = fields[0].index();
-        self.emit_op(CreateClass { desc, start })
+        self.emit_op(CreateClass { desc, start });
       } else {
         self.emit_op(CreateClassEmpty { desc });
       }
@@ -985,6 +1002,9 @@ mod stmt {
         v.index();
       }
       for m in methods.iter().rev() {
+        m.index();
+      }
+      for m in meta.iter().rev() {
         m.index();
       }
       if let Some(parent) = parent {

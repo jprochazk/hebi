@@ -1,0 +1,59 @@
+---
+source: crates/syntax/src/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: "T",
+                parent: None,
+                members: ClassMembers {
+                    fields: [],
+                    methods: [],
+                    meta: [
+                        (
+                            Str,
+                            Func {
+                                name: "str",
+                                params: Params {
+                                    has_self: true,
+                                    pos: [],
+                                    argv: None,
+                                    kw: [],
+                                    kwargs: None,
+                                },
+                                body: [
+                                    Pass,
+                                ],
+                                has_yield: false,
+                            },
+                        ),
+                        (
+                            Add,
+                            Func {
+                                name: "add",
+                                params: Params {
+                                    has_self: true,
+                                    pos: [
+                                        (
+                                            "other",
+                                            None,
+                                        ),
+                                    ],
+                                    argv: None,
+                                    kw: [],
+                                    kwargs: None,
+                                },
+                                body: [
+                                    Pass,
+                                ],
+                                has_yield: false,
+                            },
+                        ),
+                    ],
+                },
+            },
+        ),
+    ],
+}
