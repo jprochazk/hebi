@@ -25,7 +25,9 @@ pub fn register_builtins(ctx: &Context, class_map: &mut ClassMap, globals: &mut 
 
   register! {
     class_map {
-      object::List
+      object::List,
+      object::Str,
+      object::Dict
     }
   }
 }

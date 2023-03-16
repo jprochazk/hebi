@@ -15,7 +15,7 @@ use indexmap::{map, Equivalent, IndexMap};
 use super::{Access, Str, Value};
 use crate::ctx::Context;
 use crate::value::handle::Handle;
-use crate::{Error, Result};
+use crate::{public, Error, Result};
 
 type Inner = IndexMap<Handle<Str>, Value>;
 
@@ -418,3 +418,6 @@ impl Display for Dict {
     write!(f, "}}")
   }
 }
+
+#[derive::builtin]
+impl Dict {}

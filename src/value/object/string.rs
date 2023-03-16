@@ -71,3 +71,21 @@ impl<'a> Equivalent<&'a str> for Handle<Str> {
     unsafe { self._get() }.as_str() == *key
   }
 }
+
+#[derive::builtin]
+impl Str {
+  pub fn upper(&self) -> String {
+    self.0.to_uppercase()
+  }
+
+  pub fn lower(&self) -> String {
+    self.0.to_lowercase()
+  }
+
+  pub fn concat(&self, other: &str) -> String {
+    let mut out = String::with_capacity(self.as_str().len() + other.len());
+    out.push_str(self.as_str());
+    out.push_str(other);
+    out
+  }
+}
