@@ -13,8 +13,13 @@ use crate::{Error, Result};
 
 // TODO: Display `class def` -> `class` ++ `class` -> `class instance`
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClassId(usize);
+
 pub struct ClassInstance {
+  class_id: ClassId,
   name: Handle<Str>,
+  meta_methods: Handle<MetaMethods>,
   fields: Dict,
   parent: Option<Handle<Class>>,
   is_frozen: bool,
@@ -22,12 +27,20 @@ pub struct ClassInstance {
 
 #[derive::delegate_to_handle]
 impl ClassInstance {
+  pub fn id(&self) -> ClassId {
+    self.class_id
+  }
+
   pub fn name(&self) -> Handle<Str> {
     self.name.clone()
   }
 
   pub fn parent(&self) -> Option<Handle<Class>> {
     self.parent.clone()
+  }
+
+  pub fn meta_method(&self, key: &ast::Meta) -> Option<Handle<Function>> {
+    self.meta_methods.get(key)
   }
 
   pub fn has<Q>(&self, key: &Q) -> bool
@@ -160,9 +173,48 @@ impl Display for Method {
 
 impl Access for Method {}
 
+pub struct MetaMethods(IndexMap<ast::Meta, Handle<Function>>);
+
+impl MetaMethods {
+  pub fn new<'a>(
+    ctx: &Context,
+    items: impl Iterator<Item = (&'a ast::Meta, &'a Value)>,
+  ) -> Handle<Self> {
+    let map = IndexMap::from_iter(items.map(|(k, v)| (*k, v.clone().to_function().unwrap())));
+    ctx.alloc(Self(map))
+  }
+}
+
+#[derive::delegate_to_handle]
+impl MetaMethods {
+  pub fn get(&self, key: &ast::Meta) -> Option<Handle<Function>> {
+    self.0.get(key).cloned()
+  }
+
+  pub(super) fn entry(
+    &mut self,
+    key: ast::Meta,
+  ) -> indexmap::map::Entry<ast::Meta, Handle<Function>> {
+    self.0.entry(key)
+  }
+
+  pub(super) fn iter(&self) -> indexmap::map::Iter<ast::Meta, Handle<Function>> {
+    self.0.iter()
+  }
+}
+
+impl Access for MetaMethods {}
+
+impl Display for MetaMethods {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<meta methods>")
+  }
+}
+
 pub struct Class {
+  class_id: ClassId,
   desc: Handle<ClassDescriptor>,
-  meta_methods: IndexMap<ast::Meta, Handle<Function>>,
+  meta_methods: Handle<MetaMethods>,
   init: Option<Handle<Function>>,
   methods: Dict,
   fields: Dict,
@@ -190,10 +242,10 @@ impl Class {
       parent = Some(parent_class);
     }
 
-    let mut meta_methods = IndexMap::with_capacity(desc.meta().len());
-    for (k, v) in desc.meta().iter().zip(args[meta_methods_offset..].iter()) {
-      meta_methods.insert(*k, v.clone().to_function().unwrap());
-    }
+    let mut meta_methods = MetaMethods::new(
+      ctx,
+      desc.meta().iter().zip(args[meta_methods_offset..].iter()),
+    );
 
     let mut init = None;
     let mut methods = Dict::with_capacity(desc.methods().len());
@@ -223,7 +275,10 @@ impl Class {
       }
     }
 
+    let class_id = ClassId(ctx.get_class_id());
+
     Ok(ctx.alloc(Self {
+      class_id,
       desc,
       meta_methods,
       init,
@@ -237,20 +292,27 @@ impl Class {
 #[derive::delegate_to_handle]
 impl Class {
   pub fn instance(&self) -> ClassInstance {
+    let class_id = self.class_id;
     let name = self.name();
     let parent = self.parent.clone();
-
+    let meta_methods = self.meta_methods();
     let mut fields = Dict::with_capacity(self.fields.len() + self.methods.len());
     for (k, v) in self.fields.iter().chain(self.methods.iter()) {
       fields.insert(k.clone(), v.clone());
     }
 
     ClassInstance {
+      class_id,
       name,
+      meta_methods,
       fields,
       parent,
       is_frozen: false,
     }
+  }
+
+  pub fn id(&self) -> ClassId {
+    self.class_id
   }
 
   pub fn name(&self) -> Handle<Str> {
@@ -258,7 +320,7 @@ impl Class {
   }
 
   pub fn meta_method(&self, key: &ast::Meta) -> Option<Handle<Function>> {
-    self.meta_methods.get(key).cloned()
+    self.meta_methods.get(key)
   }
 
   pub fn init(&self) -> Option<Handle<Function>> {
@@ -273,8 +335,8 @@ impl Class {
     self.parent.clone()
   }
 
-  pub fn meta_methods(&self) -> &IndexMap<ast::Meta, Handle<Function>> {
-    &self.meta_methods
+  pub fn meta_methods(&self) -> Handle<MetaMethods> {
+    self.meta_methods.clone()
   }
 
   pub fn methods(&self) -> &Dict {

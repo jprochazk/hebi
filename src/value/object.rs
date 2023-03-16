@@ -16,7 +16,7 @@ pub mod string;
 
 pub use access::Access;
 use beef::lean::Cow;
-pub use class::{Class, ClassDescriptor, ClassInstance, ClassSuperProxy, Method};
+pub use class::{Class, ClassDescriptor, ClassInstance, ClassSuperProxy, MetaMethods, Method};
 pub use dict::Dict;
 use frame::Frame;
 pub use func::{Function, FunctionDescriptor};
@@ -46,6 +46,7 @@ object_repr! {
     ClassDescriptor,
     Method,
     ClassSuperProxy,
+    MetaMethods,
     Module,
     ModuleDescriptor,
     Path,

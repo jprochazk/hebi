@@ -95,6 +95,7 @@ impl Isolate {
   pub fn run(&mut self, func: Handle<Function>) -> Result<Value> {
     let frame = self.prepare_call(func, Args::empty(), frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
+    // this frame will be popped by the `ret` instruction at the end of `func`
     self.push_frame(frame);
 
     self.width = op::Width::Single;
@@ -116,6 +117,7 @@ impl Isolate {
   pub fn call_recurse(&mut self, func: Handle<Function>, args: Args) -> Result<Value> {
     let frame = self.prepare_call(func, args, frame::OnReturn::Yield)?;
     let frame_depth = self.frames.len();
+    // this frame will be popped by the `ret` instruction at the end of `func`
     self.push_frame(frame);
 
     self.width = op::Width::Single;
@@ -181,6 +183,7 @@ impl Isolate {
     // regular function call
     let on_return = frame::OnReturn::Jump(return_address);
     let frame = self.prepare_call(callable, args, on_return)?;
+    // this frame will be popped by the `ret` instruction at the end of `func`
     self.push_frame(frame);
     self.width = op::Width::Single;
     self.pc = 0;

@@ -1,0 +1,27 @@
+---
+source: src/tests/meta_methods.rs
+expression: snapshot
+---
+# Modules:
+
+
+# Input:
+class T:
+  value = 0
+  fn meta:add(self, other):
+    self.value += other.value
+    return self
+
+a := T(value=2)
+b := T(value=5)
+r := a + b
+print r.value
+
+
+# Result (success):
+none
+
+# Stdout:
+7
+
+

@@ -4,6 +4,8 @@ use syntax::ast;
 
 use super::call::Args;
 use super::Isolate;
+use crate::value::object::frame::{Frame, OnReturn, Stack};
+use crate::value::object::Str;
 use crate::value::Value;
 use crate::{Error, Result};
 
@@ -24,14 +26,34 @@ pub fn add(vm: &mut Isolate, lhs: Value, rhs: Value) -> Result<Value> {
 
   if let Some(lhs) = lhs.to_class_instance() {
     if let Some(rhs) = rhs.to_class_instance() {
-      let parent = match (lhs.parent(), rhs.parent()) {
-        (Some(lhs_p), Some(rhs_p)) if lhs_p.ptr_eq(&rhs_p) => Some(lhs_p),
-        _ => None,
-      };
-      if let Some(parent) = parent {
-        if let Some(m) = parent.meta_method(&ast::Meta::Add) {
-          // TODO call it somehow idk
-          vm.call_recurse(m, Args::new(lhs.clone().into(), vm.stack().slice()));
+      if let Some(meta_method) = lhs.meta_method(&ast::Meta::Add) {
+        if lhs.id() == rhs.id() {
+          vm.push_frame(Frame::with_stack(
+            &vm.module_registry,
+            meta_method.clone(),
+            1,
+            OnReturn::Yield,
+            Stack::view(vm.stack(), vm.current_frame().frame_size),
+          )?);
+          vm.stack_mut()[0] = rhs.into();
+          let result = vm.call_recurse(
+            meta_method,
+            Args::new(lhs.clone().into(), Some(vm.stack().slice(0..1)), None),
+          );
+          vm.pop_frame();
+          let value = result?;
+          if value
+            .clone()
+            .to_class_instance()
+            .filter(|v| v.id() == lhs.id())
+            .is_none()
+          {
+            return Err(Error::runtime(format!(
+              "`add` meta method must return an instance of `{}`",
+              lhs.name().as_str()
+            )));
+          }
+          return Ok(value);
         }
       }
     }

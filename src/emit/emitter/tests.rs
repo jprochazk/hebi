@@ -570,6 +570,19 @@ fn fn_in_module() {
   }
 }
 
+#[test]
+fn meta_methods() {
+  check! {
+    r#"
+      class U: pass
+      class T(U):
+        value = 0
+        fn meta:add(self, other): pass
+        fn add(self, other): pass
+    "#
+  }
+}
+
 /* #[test]
 fn _temp() {
   check! {

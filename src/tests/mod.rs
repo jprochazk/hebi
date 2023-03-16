@@ -16,6 +16,7 @@ mod fn_call_kw;
 mod list;
 mod literals;
 mod loops;
+mod meta_methods;
 mod modules;
 mod native_class;
 mod native_fn_call;

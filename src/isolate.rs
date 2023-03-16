@@ -177,6 +177,10 @@ impl Isolate {
   fn stack(&self) -> &Stack {
     &self.current_frame().stack
   }
+
+  fn stack_mut(&mut self) -> &mut Stack {
+    &mut self.current_frame_mut().stack
+  }
 }
 
 pub enum Control {

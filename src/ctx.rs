@@ -13,6 +13,7 @@ pub struct Context {
 
 pub struct Inner {
   intern_table: IndexSet<Handle<Str>>,
+  next_class_id: usize,
 }
 
 impl Context {
@@ -21,6 +22,7 @@ impl Context {
     Self {
       inner: Rc::new(RefCell::new(Inner {
         intern_table: IndexSet::new(),
+        next_class_id: 0,
       })),
     }
   }
@@ -41,5 +43,11 @@ impl Context {
 
   pub fn alloc<T: ObjectType>(&self, value: T) -> Handle<T> {
     Handle::_alloc(value)
+  }
+
+  pub fn get_class_id(&self) -> usize {
+    let mut this = self.inner.borrow_mut();
+    this.next_class_id += 1;
+    this.next_class_id - 1
   }
 }
