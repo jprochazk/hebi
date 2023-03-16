@@ -24,6 +24,15 @@ pub fn add(vm: &mut Isolate, lhs: Value, rhs: Value) -> Result<Value> {
     }
   }
 
+  if let Some(lhs) = lhs.clone().to_str() {
+    if let Some(rhs) = rhs.clone().to_str() {
+      return Ok(
+        vm.alloc(Str::from(format!("{}{}", lhs.as_str(), rhs.as_str())))
+          .into(),
+      );
+    }
+  }
+
   if let Some(lhs) = lhs.to_class_instance() {
     if let Some(rhs) = rhs.to_class_instance() {
       if let Some(meta_method) = lhs.meta_method(&ast::Meta::Add) {
