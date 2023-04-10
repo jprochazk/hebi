@@ -49,24 +49,36 @@ impl Error {
 
     writeln!(f, "{}", self.message).unwrap();
     let mut lines = content.lines().peekable();
-    fn u(v: &str) -> &str {
-      if v.is_empty() {
-        "_"
-      } else {
-        v
+    let line = lines.next().unwrap().or("_");
+    if lines.peek().is_some() {
+      writeln!(f, "| {pre}{c}{line}{r}").unwrap();
+      while let Some(line) = lines.next() {
+        let line = line.or("_");
+        if lines.peek().is_some() {
+          writeln!(f, "| {c}{line}{r}").unwrap();
+        } else {
+          write!(f, "| {c}{line}{r}{post}").unwrap();
+        }
       }
-    }
-    let line = u(lines.next().unwrap());
-    writeln!(f, "| {pre}{c}{line}{r}").unwrap();
-    while let Some(line) = lines.next().map(u) {
-      if lines.peek().is_some() {
-        writeln!(f, "| {c}{line}{r}").unwrap();
-      } else {
-        write!(f, "| {c}{line}{r}{post}").unwrap();
-      }
+    } else {
+      writeln!(f, "| {pre}{c}{line}{r}{post}").unwrap();
     }
 
     out
+  }
+}
+
+trait EmptyOr {
+  fn or<'a>(&'a self, v: &'a Self) -> &'a Self;
+}
+
+impl EmptyOr for str {
+  fn or<'a>(&'a self, v: &'a Self) -> &'a Self {
+    if self.is_empty() {
+      v
+    } else {
+      self
+    }
   }
 }
 
