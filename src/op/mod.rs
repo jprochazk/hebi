@@ -766,10 +766,20 @@ where
 }
 
 fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [T; N] {
-  let mut array: [_; N] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+  use std::mem::MaybeUninit;
+
+  // SAFETY: It is safe to assume that `[MaybeUninit<T>; N]` is initialized,
+  //         because its contents do not require initialization.
+  #[allow(clippy::uninit_assumed_init)]
+  let mut array: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
   for (i, value) in array.iter_mut().enumerate() {
-    *value = std::mem::MaybeUninit::new(f(i));
+    MaybeUninit::write(value, f(i));
   }
+  // SAFETY: The contents of `array` have been initialized, so it is safe to read from it.
+  //         The code below is analogue to `std::mem::transmute::<_, [T; N]>(array)`,
+  //         and we do this only because we cannot use `transmute` due to this issue:
+  //           https://github.com/rust-lang/rust/issues/61956
+  //         which is actually a more general lack of support for const generics in `transmute`.
   let out = unsafe { std::ptr::read(&mut array as *mut _ as *mut [T; N]) };
   std::mem::forget(array);
   out
