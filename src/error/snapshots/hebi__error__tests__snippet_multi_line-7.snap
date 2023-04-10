@@ -1,0 +1,7 @@
+---
+source: src/error/tests.rs
+expression: "Error::new(\"error: test\", 0..2).report(\"З  \", true)"
+---
+error: test
+| [4;31mЗ[0m
+

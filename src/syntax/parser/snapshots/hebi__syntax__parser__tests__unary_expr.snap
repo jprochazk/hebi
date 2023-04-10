@@ -1,0 +1,14 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Unary(
+    Unary {
+        op: Plus,
+        right: GetVar(
+            GetVar {
+                name: "a",
+            },
+        ),
+    },
+)

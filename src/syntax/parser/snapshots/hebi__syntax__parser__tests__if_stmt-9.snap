@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+invalid indentation
+| [4;31melse[0m
+
+

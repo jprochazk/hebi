@@ -1,0 +1,7 @@
+---
+source: src/error/tests.rs
+expression: "Error::new(\"error: test\", 4..6).report(\"\\u{9389a}\\\"\\n\", true)"
+---
+error: test
+| 򓢚[4;31m"[0m
+

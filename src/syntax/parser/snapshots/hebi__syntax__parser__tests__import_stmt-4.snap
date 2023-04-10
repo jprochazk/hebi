@@ -1,0 +1,11 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+invalid indentation
+| [4;31mfrom[0m
+
+invalid indentation
+| from m [4;31mimport[0m
+
+

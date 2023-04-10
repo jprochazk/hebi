@@ -1,0 +1,41 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Unary(
+    Unary {
+        op: Opt,
+        right: Call(
+            Call {
+                target: GetField(
+                    GetField {
+                        target: GetIndex(
+                            GetIndex {
+                                target: GetField(
+                                    GetField {
+                                        target: GetVar(
+                                            GetVar {
+                                                name: "a",
+                                            },
+                                        ),
+                                        name: "b",
+                                    },
+                                ),
+                                key: GetVar(
+                                    GetVar {
+                                        name: "c",
+                                    },
+                                ),
+                            },
+                        ),
+                        name: "d",
+                    },
+                ),
+                args: Args {
+                    pos: [],
+                    kw: [],
+                },
+            },
+        ),
+    },
+)

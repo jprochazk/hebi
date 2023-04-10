@@ -1,0 +1,66 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Binary(
+                            Binary {
+                                op: Or,
+                                left: Binary(
+                                    Binary {
+                                        op: And,
+                                        left: GetVar(
+                                            GetVar {
+                                                name: "some_very_long_condition",
+                                            },
+                                        ),
+                                        right: Call(
+                                            Call {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "with_many_sub_expressions",
+                                                    },
+                                                ),
+                                                args: Args {
+                                                    pos: [],
+                                                    kw: [],
+                                                },
+                                            },
+                                        ),
+                                    },
+                                ),
+                                right: Call(
+                                    Call {
+                                        target: GetField(
+                                            GetField {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: "which_are_complex",
+                                                    },
+                                                ),
+                                                name: "too",
+                                            },
+                                        ),
+                                        args: Args {
+                                            pos: [],
+                                            kw: [],
+                                        },
+                                    },
+                                ),
+                            },
+                        ),
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+                default: None,
+            },
+        ),
+    ],
+}

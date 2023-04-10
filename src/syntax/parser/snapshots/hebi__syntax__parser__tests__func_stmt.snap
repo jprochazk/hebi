@@ -1,0 +1,178 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            None,
+                        ),
+                        (
+                            "c",
+                            None,
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            None,
+                        ),
+                        (
+                            "c",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "d",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ],
+                    argv: None,
+                    kw: [],
+                    kwargs: None,
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [],
+                    kwargs: None,
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [],
+                    argv: None,
+                    kw: [],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: "f",
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        (
+                            "a",
+                            None,
+                        ),
+                        (
+                            "b",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "c",
+                                    },
+                                ),
+                            ),
+                        ),
+                    ],
+                    argv: Some(
+                        "argv",
+                    ),
+                    kw: [
+                        (
+                            "d",
+                            Some(
+                                GetVar(
+                                    GetVar {
+                                        name: "f",
+                                    },
+                                ),
+                            ),
+                        ),
+                        (
+                            "g",
+                            None,
+                        ),
+                    ],
+                    kwargs: Some(
+                        "kwargs",
+                    ),
+                },
+                body: [
+                    Pass,
+                ],
+                has_yield: false,
+            },
+        ),
+    ],
+}

@@ -1,0 +1,42 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: GetVar(
+                        GetVar {
+                            name: "a",
+                        },
+                    ),
+                    right: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: GetVar(
+                        GetVar {
+                            name: "c",
+                        },
+                    ),
+                    right: GetVar(
+                        GetVar {
+                            name: "d",
+                        },
+                    ),
+                },
+            ),
+        ),
+    ],
+}

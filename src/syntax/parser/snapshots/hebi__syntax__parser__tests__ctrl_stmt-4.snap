@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+continue outside of loop
+| [4;31mcontinue[0m
+
+

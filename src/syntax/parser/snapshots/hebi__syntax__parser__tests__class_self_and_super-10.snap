@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+cannot access `super` in a class with no parent class
+| print [4;31msuper[0m
+
+

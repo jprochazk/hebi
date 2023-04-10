@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+keyword rest argument must be named
+| fn f([4;31m**[0m
+
+

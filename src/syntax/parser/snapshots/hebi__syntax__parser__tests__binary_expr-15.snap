@@ -1,0 +1,19 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Binary(
+    Binary {
+        op: Maybe,
+        left: GetVar(
+            GetVar {
+                name: "a",
+            },
+        ),
+        right: GetVar(
+            GetVar {
+                name: "b",
+            },
+        ),
+    },
+)

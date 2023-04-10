@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+duplicate field a
+| [4;31ma[0m
+
+

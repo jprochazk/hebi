@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+cannot access `super` outside of a class method that takes `self`
+| v = [4;31msuper[0m
+
+

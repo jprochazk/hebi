@@ -1,0 +1,95 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Import(
+            Module {
+                path: [
+                    "module",
+                ],
+                alias: None,
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    "module",
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: "z",
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    "module",
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: "x",
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: "y",
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: "z",
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Module {
+                path: [
+                    "module",
+                    "nested",
+                ],
+                alias: None,
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    "module",
+                    "nested",
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: "z",
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    "module",
+                    "nested",
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: "x",
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: "y",
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: "z",
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+    ],
+}

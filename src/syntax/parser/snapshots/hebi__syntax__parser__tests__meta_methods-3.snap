@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+unknown meta method `unknown`
+| fn meta:[4;31munknown[0m
+
+

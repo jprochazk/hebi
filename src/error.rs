@@ -1,66 +1,82 @@
 use std::error::Error as StdError;
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Write};
 
-pub enum Error {
-  Other(Box<dyn StdError + 'static>),
-  Syntax(Vec<syntax::Error>),
-  Runtime(String),
+use crate::span::Span;
+
+pub type Result<T, E = Error> = ::core::result::Result<T, E>;
+
+#[derive(Clone, Debug)]
+pub struct Error {
+  pub span: Span,
+  pub message: String,
 }
 
 impl Error {
-  pub fn other(e: Box<dyn StdError + 'static>) -> Self {
-    Self::Other(e)
+  pub fn new(message: impl ToString, span: impl Into<Span>) -> Self {
+    Self {
+      span: span.into(),
+      message: message.to_string(),
+    }
   }
 
-  pub fn syntax(e: Vec<syntax::Error>) -> Self {
-    Self::Syntax(e)
-  }
+  pub fn report(&self, src: &str, use_color: bool) -> String {
+    if self.span.is_empty() {
+      return self.message.clone();
+    }
+    if self.span.start > src.len() || self.span.end > src.len() {
+      panic!("invalid span {self}");
+    }
 
-  pub fn runtime(message: impl ToString) -> Self {
-    Self::Runtime(message.to_string())
+    let start = src[..self.span.start].rfind('\n').unwrap_or(0);
+    let end = src[self.span.end..]
+      .find('\n')
+      .map(|v| v + self.span.end)
+      .unwrap_or(src.len());
+
+    // print snippet
+    let (r, c) = if use_color {
+      ("\x1b[0m", "\x1b[4;31m")
+    } else {
+      ("", "")
+    };
+
+    let pre = &src[start..self.span.start].trim_start();
+    let content = &src[self.span.start..self.span.end];
+    let post = &src[self.span.end..end].trim_end();
+
+    let mut out = String::new();
+    let f = &mut out;
+
+    writeln!(f, "{}", self.message).unwrap();
+    let mut lines = content.lines().peekable();
+    fn u(v: &str) -> &str {
+      if v.is_empty() {
+        "_"
+      } else {
+        v
+      }
+    }
+    let line = u(lines.next().unwrap());
+    writeln!(f, "| {pre}{c}{line}{r}").unwrap();
+    while let Some(line) = lines.next().map(u) {
+      if lines.peek().is_some() {
+        writeln!(f, "| {c}{line}{r}").unwrap();
+      } else {
+        write!(f, "| {c}{line}{r}{post}").unwrap();
+      }
+    }
+
+    out
   }
 }
 
-impl From<Box<dyn StdError + 'static>> for Error {
-  fn from(value: Box<dyn StdError + 'static>) -> Self {
-    Self::other(value)
-  }
-}
-
-impl From<Vec<syntax::Error>> for Error {
-  fn from(value: Vec<syntax::Error>) -> Self {
-    Self::syntax(value)
-  }
-}
-
-impl From<String> for Error {
-  fn from(value: String) -> Self {
-    Self::runtime(value)
-  }
-}
-
-impl crate::value::object::Access for Error {}
-impl StdError for Error {}
 impl Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self {
-      Error::Other(e) => write!(f, "{e}"),
-      Error::Syntax(e) => {
-        for error in e.iter() {
-          writeln!(f, "syntax error: {error}")?;
-        }
-        Ok(())
-      }
-      Error::Runtime(e) => write!(f, "error: {e}"),
-    }
+    write!(f, "{}", self.message)
   }
 }
-impl Debug for Error {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match &self {
-      Error::Other(e) => f.debug_tuple("Error").field(&e).finish(),
-      Error::Syntax(e) => f.debug_tuple("Error").field(&e).finish(),
-      Error::Runtime(e) => f.debug_tuple("Error").field(&e).finish(),
-    }
-  }
-}
+
+impl StdError for Error {}
+
+#[cfg(test)]
+mod tests;

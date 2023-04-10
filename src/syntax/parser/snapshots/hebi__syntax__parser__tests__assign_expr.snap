@@ -1,0 +1,200 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: GetVar(
+                        GetVar {
+                            name: "b",
+                        },
+                    ),
+                },
+            ),
+        ),
+        Var(
+            Var {
+                name: "a",
+                value: GetVar(
+                    GetVar {
+                        name: "b",
+                    },
+                ),
+            },
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Sub,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Div,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Mul,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Rem,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Pow,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            SetVar(
+                SetVar {
+                    target: GetVar {
+                        name: "a",
+                    },
+                    value: Binary(
+                        Binary {
+                            op: Maybe,
+                            left: GetVar(
+                                GetVar {
+                                    name: "a",
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: "b",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+    ],
+}

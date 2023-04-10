@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+duplicate meta method `str`
+| fn meta:[4;31mstr[0m
+
+

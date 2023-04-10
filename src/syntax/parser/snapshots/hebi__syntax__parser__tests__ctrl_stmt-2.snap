@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+return outside of function
+| [4;31mreturn[0m
+
+

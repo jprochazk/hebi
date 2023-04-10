@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+invalid assignment target
+| [4;31ma() =[0m
+
+

@@ -1,0 +1,8 @@
+---
+source: src/syntax/parser/tests.rs
+expression: errors
+---
+keyword rest argument followed by another argument
+| fn f(**kwargs, [4;31ma[0m
+
+

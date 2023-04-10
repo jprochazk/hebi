@@ -1,0 +1,38 @@
+---
+source: src/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Loop(
+            Infinite(
+                Infinite {
+                    body: [
+                        Loop(
+                            Infinite(
+                                Infinite {
+                                    body: [
+                                        Expr(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "a",
+                                                },
+                                            ),
+                                        ),
+                                        Expr(
+                                            GetVar(
+                                                GetVar {
+                                                    name: "a",
+                                                },
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ],
+}
