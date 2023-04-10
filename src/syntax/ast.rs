@@ -73,17 +73,11 @@ pub struct Func<'src> {
 pub struct Params<'src> {
   pub has_self: bool,
   pub pos: Vec<(Ident<'src>, Option<Expr<'src>>)>,
-  pub argv: Option<Ident<'src>>,
-  pub kw: Vec<(Ident<'src>, Option<Expr<'src>>)>,
-  pub kwargs: Option<Ident<'src>>,
 }
 
 impl<'src> Params<'src> {
   pub fn contains(&self, param: &Ident<'src>) -> bool {
     self.pos.iter().any(|v| v.0.as_ref() == param.as_ref())
-      || self.argv.as_ref() == Some(param)
-      || self.kw.iter().any(|v| v.0.as_ref() == param.as_ref())
-      || self.kwargs.as_ref() == Some(param)
   }
 }
 
@@ -409,37 +403,7 @@ pub struct Return<'src> {
 #[derive(Clone)]
 pub struct Call<'src> {
   pub target: Expr<'src>,
-  pub args: Args<'src>,
-}
-
-#[cfg_attr(test, derive(Debug))]
-#[derive(Clone)]
-pub struct Args<'src> {
-  pub pos: Vec<Expr<'src>>,
-  pub kw: Vec<(Ident<'src>, Expr<'src>)>,
-}
-
-impl<'src> Args<'src> {
-  pub fn new() -> Self {
-    Self {
-      pos: Vec::new(),
-      kw: Vec::new(),
-    }
-  }
-
-  pub fn pos(&mut self, value: Expr<'src>) {
-    self.pos.push(value);
-  }
-
-  pub fn kw(&mut self, name: Ident<'src>, value: Expr<'src>) {
-    self.kw.push((name, value));
-  }
-}
-
-impl<'src> Default for Args<'src> {
-  fn default() -> Self {
-    Self::new()
-  }
+  pub args: Vec<Expr<'src>>,
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -542,7 +506,11 @@ pub fn expr_unary(s: impl Into<Span>, op: UnaryOp, right: Expr) -> Expr {
   Expr::new(s, ExprKind::Unary(Box::new(Unary { op, right })))
 }
 
-pub fn expr_call<'src>(s: impl Into<Span>, target: Expr<'src>, args: Args<'src>) -> Expr<'src> {
+pub fn expr_call<'src>(
+  s: impl Into<Span>,
+  target: Expr<'src>,
+  args: Vec<Expr<'src>>,
+) -> Expr<'src> {
   Expr::new(s, ExprKind::Call(Box::new(Call { target, args })))
 }
 

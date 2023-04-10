@@ -190,25 +190,17 @@ fn postfix_expr() {
 
 #[test]
 fn call_expr() {
-  check_expr!(r#"a(b, c, d=e, f=g)"#);
+  check_expr!(r#"a(b, c,)"#);
   check_module! {
     r#"
-      a(b, c, d=e, f=g)
+      a(b, c,)
       a(
         b,
       c, d
-          =e,
-        f=
-        g,
+          ,
           )
     "#
   };
-
-  check_error! {
-    r#"
-      a(b=c, d)
-    "#
-  }
 }
 
 #[test]
@@ -533,10 +525,7 @@ fn func_stmt() {
     r#"
       fn f(a, b, c,): pass
       fn f(a, b, c=d): pass
-      fn f(*argv,): pass
-      fn f(**kwargs,): pass
-      fn f(*argv, **kwargs,): pass
-      fn f(a, b=c, *argv, d=f, g, **kwargs,): pass
+      fn f(a, b=c, d=e,): pass
     "#
   }
 
@@ -1068,7 +1057,7 @@ fn whole_module() {
       v = Test()
       print(v.get_n() == Test.get_n(v)) # true
 
-      v = Test(n=10)
+      v = Test(10)
 
       Test.test0()
       v.test1()
@@ -1089,17 +1078,16 @@ fn whole_module() {
         # fn init(self, a = 100):
         #   self.a = a
 
-      print(A().a)     # 100
-      print(A(a=10).a) # 10
+      print(A().a)   # 100
+      print(A(10).a) # 10
 
       class B:
         a = 100
         fn init(self): # override the implicit initializer
           pass
 
-      print(B().a)   # 100
-      # `a` is ignored
-      print(B(a=10)) # 100
+      print(B().a) # 100
+      print(B(10).a) # error
 
       class C:
         # fields do not have to be declared
@@ -1148,7 +1136,7 @@ fn whole_module() {
           super.init()
           self.v += v
 
-      print(Z(v=15).v) # 25
+      print(Z(15).v) # 25
     "#
   }
 }

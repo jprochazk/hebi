@@ -24,9 +24,6 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Ctrl(
@@ -107,9 +104,6 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Func(
@@ -118,9 +112,6 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Ctrl(
@@ -221,9 +212,6 @@ Module {
                                 params: Params {
                                     has_self: false,
                                     pos: [],
-                                    argv: None,
-                                    kw: [],
-                                    kwargs: None,
                                 },
                                 body: [
                                     Ctrl(
@@ -286,9 +274,6 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Loop(
@@ -359,9 +344,6 @@ Module {
                                 params: Params {
                                     has_self: false,
                                     pos: [],
-                                    argv: None,
-                                    kw: [],
-                                    kwargs: None,
                                 },
                                 body: [
                                     Loop(
@@ -438,9 +420,6 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Loop(
@@ -453,9 +432,6 @@ Module {
                                             params: Params {
                                                 has_self: false,
                                                 pos: [],
-                                                argv: None,
-                                                kw: [],
-                                                kwargs: None,
                                             },
                                             body: [
                                                 Ctrl(

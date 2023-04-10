@@ -2,7 +2,7 @@
 source: src/syntax/parser/tests.rs
 expression: errors
 ---
-keyword rest argument must be named
+expected `identifier`
 | fn f([4;31m**[0m
 
 

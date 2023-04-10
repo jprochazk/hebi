@@ -16,9 +16,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -50,9 +47,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -85,9 +79,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -105,10 +96,7 @@ Module {
                                                             name: "f",
                                                         },
                                                     ),
-                                                    args: Args {
-                                                        pos: [],
-                                                        kw: [],
-                                                    },
+                                                    args: [],
                                                 },
                                             ),
                                         },

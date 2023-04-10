@@ -16,10 +16,7 @@ Module {
                                         name: "iter",
                                     },
                                 ),
-                                args: Args {
-                                    pos: [],
-                                    kw: [],
-                                },
+                                args: [],
                             },
                         ),
                     ),
@@ -41,10 +38,7 @@ Module {
                                         name: "iter",
                                     },
                                 ),
-                                args: Args {
-                                    pos: [],
-                                    kw: [],
-                                },
+                                args: [],
                             },
                         ),
                     ),
@@ -117,10 +111,7 @@ Module {
                                             name: "a",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             end: Call(
@@ -130,10 +121,7 @@ Module {
                                             name: "b",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             inclusive: false,
@@ -158,10 +146,7 @@ Module {
                                             name: "a",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             end: Call(
@@ -171,10 +156,7 @@ Module {
                                             name: "b",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             inclusive: false,
@@ -249,10 +231,7 @@ Module {
                                             name: "a",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             end: Call(
@@ -262,10 +241,7 @@ Module {
                                             name: "b",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             inclusive: true,
@@ -290,10 +266,7 @@ Module {
                                             name: "a",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             end: Call(
@@ -303,10 +276,7 @@ Module {
                                             name: "b",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             inclusive: true,

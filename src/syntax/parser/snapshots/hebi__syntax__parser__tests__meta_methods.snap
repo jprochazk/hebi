@@ -19,9 +19,6 @@ Module {
                                 params: Params {
                                     has_self: true,
                                     pos: [],
-                                    argv: None,
-                                    kw: [],
-                                    kwargs: None,
                                 },
                                 body: [
                                     Pass,
@@ -41,9 +38,6 @@ Module {
                                             None,
                                         ),
                                     ],
-                                    argv: None,
-                                    kw: [],
-                                    kwargs: None,
                                 },
                                 body: [
                                     Pass,

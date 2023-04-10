@@ -301,48 +301,20 @@ impl<'src> Parser<'src> {
     }
   }
 
-  fn call_args(&mut self) -> Result<ast::Args<'src>> {
-    let mut args = ast::Args::new();
+  fn call_args(&mut self) -> Result<Vec<ast::Expr<'src>>> {
+    let mut args = Vec::new();
     self.expect(Brk_ParenL)?;
     if !self.current().is(Brk_ParenR) {
       let ctx = self.ctx.with_ignore_indent();
       self.with_ctx(ctx, |p| {
-        let mut parsing_kw = false;
-        p.call_arg_one(&mut args, &mut parsing_kw)?;
+        args.push(p.expr()?);
         while p.bump_if(Tok_Comma) && !p.current().is(Brk_ParenR) {
-          p.call_arg_one(&mut args, &mut parsing_kw)?;
+          args.push(p.expr()?);
         }
         Ok(())
       })?;
     }
     self.expect(Brk_ParenR)?;
     Ok(args)
-  }
-
-  fn call_arg_one(&mut self, args: &mut ast::Args<'src>, parsing_kw: &mut bool) -> Result<()> {
-    // to avoid lookahead or backtracking, `GetVar` is treated as the identifier in
-    // f(<ident> = <value>)
-    let expr = self.expr()?;
-    if *parsing_kw {
-      let expr_span = expr.span;
-      let ast::ExprKind::GetVar(ident) = expr.into_inner() else {
-        return Err(Error::new("positional argument follows keyword argument", expr_span));
-      };
-      self.expect(Op_Equal)?;
-      let value = self.expr()?;
-      args.kw(ident.name, value);
-    } else if self.bump_if(Op_Equal) {
-      *parsing_kw = true;
-      let expr_span = expr.span;
-      let ast::ExprKind::GetVar(ident) = expr.into_inner() else {
-        return Err(Error::new("positional argument follows keyword argument", expr_span));
-      };
-      let value = self.expr()?;
-      args.kw(ident.name, value);
-    } else {
-      args.pos(expr);
-    }
-
-    Ok(())
   }
 }

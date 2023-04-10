@@ -9,37 +9,17 @@ Call(
                 name: "a",
             },
         ),
-        args: Args {
-            pos: [
-                GetVar(
-                    GetVar {
-                        name: "b",
-                    },
-                ),
-                GetVar(
-                    GetVar {
-                        name: "c",
-                    },
-                ),
-            ],
-            kw: [
-                (
-                    "d",
-                    GetVar(
-                        GetVar {
-                            name: "e",
-                        },
-                    ),
-                ),
-                (
-                    "f",
-                    GetVar(
-                        GetVar {
-                            name: "g",
-                        },
-                    ),
-                ),
-            ],
-        },
+        args: [
+            GetVar(
+                GetVar {
+                    name: "b",
+                },
+            ),
+            GetVar(
+                GetVar {
+                    name: "c",
+                },
+            ),
+        ],
     },
 )

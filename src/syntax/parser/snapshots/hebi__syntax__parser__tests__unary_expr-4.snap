@@ -31,10 +31,7 @@ Unary(
                         name: "d",
                     },
                 ),
-                args: Args {
-                    pos: [],
-                    kw: [],
-                },
+                args: [],
             },
         ),
     },

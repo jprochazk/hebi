@@ -242,12 +242,6 @@ impl<'src> Parser<'src> {
       while self.bump_if(Tok_Comma) && !self.current().is(Brk_ParenR) {
         self.param(&mut params, &mut state)?;
       }
-      if state == ParamState::KeywordOnly && params.argv.is_none() && params.kw.is_empty() {
-        return Err(Error::new(
-          "positional rest argument must be followed by at least one keyword argument",
-          self.current().span,
-        ));
-      }
     }
     self.expect(Brk_ParenR)?;
 
@@ -255,78 +249,28 @@ impl<'src> Parser<'src> {
   }
 
   fn param(&mut self, params: &mut ast::Params<'src>, state: &mut ParamState) -> Result<()> {
-    // no arguments after `**`
-    if matches!(*state, ParamState::End) {
-      if [Op_Star, Lit_Ident, Op_StarStar].contains(&self.current().kind) {
-        return Err(Error::new(
-          "keyword rest argument followed by another argument",
-          self.current().span,
-        ));
-      }
-      return Err(Error::new("unexpected token", self.current().span));
+    let name = self.ident()?;
+    if params.contains(&name) {
+      return Err(Error::new(
+        format!("duplicate argument `{name}`"),
+        name.span,
+      ));
     }
-
-    if self.bump_if(Op_StarStar) {
-      // **kwargs - must be named
-      let Ok(name) = self.ident() else {
-        return Err(Error::new("keyword rest argument must be named", self.previous().span));
-      };
-      if params.contains(&name) {
-        return Err(Error::new(
-          format!("duplicate argument `{name}`"),
-          name.span,
-        ));
-      }
-      params.kwargs = Some(name);
-      *state = ParamState::End;
-    } else if self.bump_if(Op_Star) {
-      // * / *argv
-      // note: bare `*` error is handled in `Parser::func_params`
-      if let Ok(name) = self.ident() {
-        if params.contains(&name) {
-          return Err(Error::new(
-            format!("duplicate argument `{name}`"),
-            name.span,
-          ));
-        }
-        params.argv = Some(name);
-      }
-      *state = ParamState::KeywordOnly;
+    let param = if self.bump_if(Op_Equal) {
+      *state = ParamState::Default;
+      (name, Some(self.expr()?))
     } else {
-      // arg / arg = value
-      let name = self.ident()?;
-      if params.contains(&name) {
+      if *state == ParamState::Default {
         return Err(Error::new(
-          format!("duplicate argument `{name}`"),
-          name.span,
+          "non-default argument follows default argument",
+          self.previous().span,
         ));
       }
-      let param = if self.bump_if(Op_Equal) {
-        // when parsing keyword arguments, a non-default argument
-        // may follow a default argument
-        if *state != ParamState::KeywordOnly {
-          *state = ParamState::PositionalDefaultOnly;
-        }
-        let default = self.expr()?;
 
-        (name, Some(default))
-      } else {
-        if *state == ParamState::PositionalDefaultOnly {
-          return Err(Error::new(
-            "non-default argument follows default argument",
-            self.previous().span,
-          ));
-        }
+      (name, None)
+    };
 
-        (name, None)
-      };
-
-      if *state == ParamState::KeywordOnly {
-        params.kw.push(param);
-      } else {
-        params.pos.push(param);
-      }
-    }
+    params.pos.push(param);
 
     Ok(())
   }
@@ -583,12 +527,7 @@ impl<'src> Parser<'src> {
 fn check_meta_params(meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
   let arity = meta.arity();
 
-  if !params.has_self
-    || params.argv.is_some()
-    || !params.kw.is_empty()
-    || params.kwargs.is_some()
-    || params.pos.len() != meta.arity()
-  {
+  if !params.has_self || params.pos.len() != meta.arity() {
     let msg = if arity > 1 {
       format!(
         "meta method `{}` expects `self` and {} params",
@@ -617,7 +556,5 @@ fn extend_path<'src>(p: &Vec<ast::Ident<'src>>, v: ast::Ident<'src>) -> Vec<ast:
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ParamState {
   Positional,
-  PositionalDefaultOnly,
-  KeywordOnly,
-  End,
+  Default,
 }

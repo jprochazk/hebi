@@ -23,9 +23,6 @@ Module {
                             None,
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Pass,
@@ -58,65 +55,6 @@ Module {
                             ),
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
-                },
-                body: [
-                    Pass,
-                ],
-                has_yield: false,
-            },
-        ),
-        Func(
-            Func {
-                name: "f",
-                params: Params {
-                    has_self: false,
-                    pos: [],
-                    argv: Some(
-                        "argv",
-                    ),
-                    kw: [],
-                    kwargs: None,
-                },
-                body: [
-                    Pass,
-                ],
-                has_yield: false,
-            },
-        ),
-        Func(
-            Func {
-                name: "f",
-                params: Params {
-                    has_self: false,
-                    pos: [],
-                    argv: None,
-                    kw: [],
-                    kwargs: Some(
-                        "kwargs",
-                    ),
-                },
-                body: [
-                    Pass,
-                ],
-                has_yield: false,
-            },
-        ),
-        Func(
-            Func {
-                name: "f",
-                params: Params {
-                    has_self: false,
-                    pos: [],
-                    argv: Some(
-                        "argv",
-                    ),
-                    kw: [],
-                    kwargs: Some(
-                        "kwargs",
-                    ),
                 },
                 body: [
                     Pass,
@@ -144,29 +82,17 @@ Module {
                                 ),
                             ),
                         ),
-                    ],
-                    argv: Some(
-                        "argv",
-                    ),
-                    kw: [
                         (
                             "d",
                             Some(
                                 GetVar(
                                     GetVar {
-                                        name: "f",
+                                        name: "e",
                                     },
                                 ),
                             ),
                         ),
-                        (
-                            "g",
-                            None,
-                        ),
                     ],
-                    kwargs: Some(
-                        "kwargs",
-                    ),
                 },
                 body: [
                     Pass,

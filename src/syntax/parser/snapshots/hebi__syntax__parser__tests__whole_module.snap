@@ -900,16 +900,13 @@ Module {
                             name: "v",
                         },
                     ),
-                    args: Args {
-                        pos: [
-                            GetVar(
-                                GetVar {
-                                    name: "a",
-                                },
-                            ),
-                        ],
-                        kw: [],
-                    },
+                    args: [
+                        GetVar(
+                            GetVar {
+                                name: "a",
+                            },
+                        ),
+                    ],
                 },
             ),
         ),
@@ -928,9 +925,6 @@ Module {
                             None,
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Ctrl(
@@ -973,21 +967,18 @@ Module {
                                     name: "add",
                                 },
                             ),
-                            args: Args {
-                                pos: [
-                                    Literal(
-                                        Int(
-                                            0,
-                                        ),
+                            args: [
+                                Literal(
+                                    Int(
+                                        0,
                                     ),
-                                    Literal(
-                                        Int(
-                                            1,
-                                        ),
+                                ),
+                                Literal(
+                                    Int(
+                                        1,
                                     ),
-                                ],
-                                kw: [],
-                            },
+                                ),
+                            ],
                         },
                     ),
                 },
@@ -1004,9 +995,6 @@ Module {
                             None,
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     If(
@@ -1066,26 +1054,23 @@ Module {
                                                                             name: "fact",
                                                                         },
                                                                     ),
-                                                                    args: Args {
-                                                                        pos: [
-                                                                            Binary(
-                                                                                Binary {
-                                                                                    op: Sub,
-                                                                                    left: GetVar(
-                                                                                        GetVar {
-                                                                                            name: "n",
-                                                                                        },
+                                                                    args: [
+                                                                        Binary(
+                                                                            Binary {
+                                                                                op: Sub,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: "n",
+                                                                                    },
+                                                                                ),
+                                                                                right: Literal(
+                                                                                    Int(
+                                                                                        1,
                                                                                     ),
-                                                                                    right: Literal(
-                                                                                        Int(
-                                                                                            1,
-                                                                                        ),
-                                                                                    ),
-                                                                                },
-                                                                            ),
-                                                                        ],
-                                                                        kw: [],
-                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ],
                                                                 },
                                                             ),
                                                         },
@@ -1113,9 +1098,6 @@ Module {
                             None,
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Print(
@@ -1128,16 +1110,13 @@ Module {
                                                 name: "fact",
                                             },
                                         ),
-                                        args: Args {
-                                            pos: [
-                                                GetVar(
-                                                    GetVar {
-                                                        name: "n",
-                                                    },
-                                                ),
-                                            ],
-                                            kw: [],
-                                        },
+                                        args: [
+                                            GetVar(
+                                                GetVar {
+                                                    name: "n",
+                                                },
+                                            ),
+                                        ],
                                     },
                                 ),
                             ],
@@ -1201,9 +1180,6 @@ Module {
                             None,
                         ),
                     ],
-                    argv: None,
-                    kw: [],
-                    kwargs: None,
                 },
                 body: [
                     Var(
@@ -1320,26 +1296,23 @@ Module {
                                         name: "counter",
                                     },
                                 ),
-                                args: Args {
-                                    pos: [
-                                        Literal(
-                                            Int(
-                                                0,
-                                            ),
+                                args: [
+                                    Literal(
+                                        Int(
+                                            0,
                                         ),
-                                        Literal(
-                                            Int(
-                                                10,
-                                            ),
+                                    ),
+                                    Literal(
+                                        Int(
+                                            10,
                                         ),
-                                        Literal(
-                                            Int(
-                                                100,
-                                            ),
+                                    ),
+                                    Literal(
+                                        Int(
+                                            100,
                                         ),
-                                    ],
-                                    kw: [],
-                                },
+                                    ),
+                                ],
                             },
                         ),
                     ),
@@ -1615,9 +1588,6 @@ Module {
                                         None,
                                     ),
                                 ],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -1643,9 +1613,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Ctrl(
@@ -1670,9 +1637,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -1695,9 +1659,6 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -1737,10 +1698,7 @@ Module {
                                     name: "Test",
                                 },
                             ),
-                            args: Args {
-                                pos: [],
-                                kw: [],
-                            },
+                            args: [],
                         },
                     ),
                 },
@@ -1764,10 +1722,7 @@ Module {
                                             name: "get_n",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             right: Call(
@@ -1782,16 +1737,13 @@ Module {
                                             name: "get_n",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [
-                                            GetVar(
-                                                GetVar {
-                                                    name: "v",
-                                                },
-                                            ),
-                                        ],
-                                        kw: [],
-                                    },
+                                    args: [
+                                        GetVar(
+                                            GetVar {
+                                                name: "v",
+                                            },
+                                        ),
+                                    ],
                                 },
                             ),
                         },
@@ -1812,19 +1764,13 @@ Module {
                                     name: "Test",
                                 },
                             ),
-                            args: Args {
-                                pos: [],
-                                kw: [
-                                    (
-                                        "n",
-                                        Literal(
-                                            Int(
-                                                10,
-                                            ),
-                                        ),
+                            args: [
+                                Literal(
+                                    Int(
+                                        10,
                                     ),
-                                ],
-                            },
+                                ),
+                            ],
                         },
                     ),
                 },
@@ -1843,10 +1789,7 @@ Module {
                             name: "test0",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -1863,10 +1806,7 @@ Module {
                             name: "test1",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -1878,16 +1818,13 @@ Module {
                             name: "panic",
                         },
                     ),
-                    args: Args {
-                        pos: [
-                            Literal(
-                                String(
-                                    "asdf",
-                                ),
+                    args: [
+                        Literal(
+                            String(
+                                "asdf",
                             ),
-                        ],
-                        kw: [],
-                    },
+                        ),
+                    ],
                 },
             ),
         ),
@@ -1917,16 +1854,13 @@ Module {
                                     name: "parse",
                                 },
                             ),
-                            args: Args {
-                                pos: [
-                                    Literal(
-                                        String(
-                                            "{\"a\":0, \"b\":1}",
-                                        ),
+                            args: [
+                                Literal(
+                                    String(
+                                        "{\"a\":0, \"b\":1}",
                                     ),
-                                ],
-                                kw: [],
-                            },
+                                ),
+                            ],
                         },
                     ),
                 },
@@ -1977,10 +1911,7 @@ Module {
                                             name: "A",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "a",
@@ -2001,19 +1932,13 @@ Module {
                                             name: "A",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [
-                                            (
-                                                "a",
-                                                Literal(
-                                                    Int(
-                                                        10,
-                                                    ),
-                                                ),
+                                    args: [
+                                        Literal(
+                                            Int(
+                                                10,
                                             ),
-                                        ],
-                                    },
+                                        ),
+                                    ],
                                 },
                             ),
                             name: "a",
@@ -2045,9 +1970,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Pass,
@@ -2071,10 +1993,7 @@ Module {
                                             name: "B",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "a",
@@ -2086,26 +2005,25 @@ Module {
         Print(
             Print {
                 values: [
-                    Call(
-                        Call {
-                            target: GetVar(
-                                GetVar {
-                                    name: "B",
-                                },
-                            ),
-                            args: Args {
-                                pos: [],
-                                kw: [
-                                    (
-                                        "a",
+                    GetField(
+                        GetField {
+                            target: Call(
+                                Call {
+                                    target: GetVar(
+                                        GetVar {
+                                            name: "B",
+                                        },
+                                    ),
+                                    args: [
                                         Literal(
                                             Int(
                                                 10,
                                             ),
                                         ),
-                                    ),
-                                ],
-                            },
+                                    ],
+                                },
+                            ),
+                            name: "a",
                         },
                     ),
                 ],
@@ -2123,9 +2041,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -2163,10 +2078,7 @@ Module {
                                             name: "C",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "a",
@@ -2186,10 +2098,7 @@ Module {
                                         name: "C",
                                     },
                                 ),
-                                args: Args {
-                                    pos: [],
-                                    kw: [],
-                                },
+                                args: [],
                             },
                         ),
                         name: "b",
@@ -2214,9 +2123,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -2263,19 +2169,13 @@ Module {
                                             name: "A",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "inherited",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -2291,19 +2191,13 @@ Module {
                                             name: "B",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "inherited",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -2321,9 +2215,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Print(
@@ -2357,19 +2248,13 @@ Module {
                                             name: "C",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "inherited",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -2387,9 +2272,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -2401,10 +2283,7 @@ Module {
                                                     name: "inherited",
                                                 },
                                             ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
+                                            args: [],
                                         },
                                     ),
                                 ),
@@ -2439,19 +2318,13 @@ Module {
                                             name: "D",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [],
-                                    },
+                                    args: [],
                                 },
                             ),
                             name: "inherited",
                         },
                     ),
-                    args: Args {
-                        pos: [],
-                        kw: [],
-                    },
+                    args: [],
                 },
             ),
         ),
@@ -2467,9 +2340,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -2509,9 +2379,6 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -2556,9 +2423,6 @@ Module {
                                         None,
                                     ),
                                 ],
-                                argv: None,
-                                kw: [],
-                                kwargs: None,
                             },
                             body: [
                                 Expr(
@@ -2570,10 +2434,7 @@ Module {
                                                     name: "init",
                                                 },
                                             ),
-                                            args: Args {
-                                                pos: [],
-                                                kw: [],
-                                            },
+                                            args: [],
                                         },
                                     ),
                                 ),
@@ -2623,19 +2484,13 @@ Module {
                                             name: "Z",
                                         },
                                     ),
-                                    args: Args {
-                                        pos: [],
-                                        kw: [
-                                            (
-                                                "v",
-                                                Literal(
-                                                    Int(
-                                                        15,
-                                                    ),
-                                                ),
+                                    args: [
+                                        Literal(
+                                            Int(
+                                                15,
                                             ),
-                                        ],
-                                    },
+                                        ),
+                                    ],
                                 },
                             ),
                             name: "v",

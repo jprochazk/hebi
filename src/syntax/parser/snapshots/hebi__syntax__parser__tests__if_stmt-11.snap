@@ -26,10 +26,7 @@ Module {
                                                         name: "with_many_sub_expressions",
                                                     },
                                                 ),
-                                                args: Args {
-                                                    pos: [],
-                                                    kw: [],
-                                                },
+                                                args: [],
                                             },
                                         ),
                                     },
@@ -46,10 +43,7 @@ Module {
                                                 name: "too",
                                             },
                                         ),
-                                        args: Args {
-                                            pos: [],
-                                            kw: [],
-                                        },
+                                        args: [],
                                     },
                                 ),
                             },

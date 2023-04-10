@@ -2,7 +2,7 @@
 source: src/syntax/parser/tests.rs
 expression: errors
 ---
-positional rest argument must be followed by at least one keyword argument
-| fn f(*,[4;31m)[0m
+expected `identifier`
+| fn f([4;31m*[0m
 
 
