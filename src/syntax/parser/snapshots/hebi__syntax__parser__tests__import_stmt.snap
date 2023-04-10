@@ -7,7 +7,9 @@ Module {
         Import(
             Module {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 alias: None,
             },
@@ -15,11 +17,15 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: None,
                     },
                 ],
@@ -28,19 +34,27 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "x",
+                        name: Ident(
+                            "x",
+                        ),
                         alias: None,
                     },
                     ImportSymbol {
-                        name: "y",
+                        name: Ident(
+                            "y",
+                        ),
                         alias: None,
                     },
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: None,
                     },
                 ],
@@ -49,8 +63,12 @@ Module {
         Import(
             Module {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 alias: None,
             },
@@ -58,12 +76,18 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: None,
                     },
                 ],
@@ -72,20 +96,30 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "x",
+                        name: Ident(
+                            "x",
+                        ),
                         alias: None,
                     },
                     ImportSymbol {
-                        name: "y",
+                        name: Ident(
+                            "y",
+                        ),
                         alias: None,
                     },
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: None,
                     },
                 ],

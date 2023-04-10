@@ -7,13 +7,17 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Expr(
                         Call(
                             Call {
                                 target: GetVar(
                                     GetVar {
-                                        name: "iter",
+                                        name: Ident(
+                                            "iter",
+                                        ),
                                     },
                                 ),
                                 args: [],
@@ -29,13 +33,17 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Expr(
                         Call(
                             Call {
                                 target: GetVar(
                                     GetVar {
-                                        name: "iter",
+                                        name: Ident(
+                                            "iter",
+                                        ),
                                     },
                                 ),
                                 args: [],
@@ -51,7 +59,9 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Literal(
@@ -76,7 +86,9 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Literal(
@@ -101,14 +113,18 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Call(
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -118,7 +134,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "b",
+                                            name: Ident(
+                                                "b",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -136,14 +154,18 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Call(
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -153,7 +175,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "b",
+                                            name: Ident(
+                                                "b",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -171,7 +195,9 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Literal(
@@ -196,7 +222,9 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Literal(
@@ -221,14 +249,18 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Call(
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -238,7 +270,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "b",
+                                            name: Ident(
+                                                "b",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -256,14 +290,18 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Call(
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -273,7 +311,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "b",
+                                            name: Ident(
+                                                "b",
+                                            ),
                                         },
                                     ),
                                     args: [],

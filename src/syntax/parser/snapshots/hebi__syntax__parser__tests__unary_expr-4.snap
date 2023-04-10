@@ -15,20 +15,28 @@ Unary(
                                     GetField {
                                         target: GetVar(
                                             GetVar {
-                                                name: "a",
+                                                name: Ident(
+                                                    "a",
+                                                ),
                                             },
                                         ),
-                                        name: "b",
+                                        name: Ident(
+                                            "b",
+                                        ),
                                     },
                                 ),
                                 key: GetVar(
                                     GetVar {
-                                        name: "c",
+                                        name: Ident(
+                                            "c",
+                                        ),
                                     },
                                 ),
                             },
                         ),
-                        name: "d",
+                        name: Ident(
+                            "d",
+                        ),
                     },
                 ),
                 args: [],

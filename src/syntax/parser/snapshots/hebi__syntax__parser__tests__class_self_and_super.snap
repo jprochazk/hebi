@@ -6,13 +6,17 @@ Module {
     body: [
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -35,15 +39,21 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -67,15 +77,21 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -86,14 +102,18 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "v",
+                                                name: Ident(
+                                                    "v",
+                                                ),
                                             },
                                             value: Call(
                                                 Call {
                                                     target: GetField(
                                                         GetField {
                                                             target: GetSuper,
-                                                            name: "f",
+                                                            name: Ident(
+                                                                "f",
+                                                            ),
                                                         },
                                                     ),
                                                     args: [],

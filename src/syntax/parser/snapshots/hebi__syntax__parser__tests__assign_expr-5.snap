@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 invalid variable declaration
-| [4;31ma.b :=[0m
+| [4;31ma.b :=[0m c
 
 

@@ -7,23 +7,33 @@ Module {
         Import(
             Module {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 alias: Some(
-                    "temp",
+                    Ident(
+                        "temp",
+                    ),
                 ),
             },
         ),
         Import(
             Symbols {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                 ],
@@ -32,25 +42,39 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
+                    Ident(
+                        "module",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "x",
+                        name: Ident(
+                            "x",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                     ImportSymbol {
-                        name: "y",
+                        name: Ident(
+                            "y",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                 ],
@@ -59,25 +83,39 @@ Module {
         Import(
             Module {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 alias: Some(
-                    "temp",
+                    Ident(
+                        "temp",
+                    ),
                 ),
             },
         ),
         Import(
             Symbols {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                 ],
@@ -86,26 +124,42 @@ Module {
         Import(
             Symbols {
                 path: [
-                    "module",
-                    "nested",
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
                 ],
                 symbols: [
                     ImportSymbol {
-                        name: "x",
+                        name: Ident(
+                            "x",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                     ImportSymbol {
-                        name: "y",
+                        name: Ident(
+                            "y",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                     ImportSymbol {
-                        name: "z",
+                        name: Ident(
+                            "z",
+                        ),
                         alias: Some(
-                            "temp",
+                            Ident(
+                                "temp",
+                            ),
                         ),
                     },
                 ],

@@ -6,18 +6,24 @@ Call(
     Call {
         target: GetVar(
             GetVar {
-                name: "a",
+                name: Ident(
+                    "a",
+                ),
             },
         ),
         args: [
             GetVar(
                 GetVar {
-                    name: "b",
+                    name: Ident(
+                        "b",
+                    ),
                 },
             ),
             GetVar(
                 GetVar {
-                    name: "c",
+                    name: Ident(
+                        "c",
+                    ),
                 },
             ),
         ],

@@ -20,7 +20,9 @@ Module {
         ),
         Func(
             Func {
-                name: "f",
+                name: Ident(
+                    "f",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [],
@@ -39,7 +41,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -59,7 +63,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -100,7 +106,9 @@ Module {
         ),
         Func(
             Func {
-                name: "g",
+                name: Ident(
+                    "g",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [],
@@ -108,7 +116,9 @@ Module {
                 body: [
                     Func(
                         Func {
-                            name: "h",
+                            name: Ident(
+                                "h",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [],
@@ -127,7 +137,9 @@ Module {
                                             value: Some(
                                                 GetVar(
                                                     GetVar {
-                                                        name: "v",
+                                                        name: Ident(
+                                                            "v",
+                                                        ),
                                                     },
                                                 ),
                                             ),
@@ -147,7 +159,9 @@ Module {
                                             value: Some(
                                                 GetVar(
                                                     GetVar {
-                                                        name: "v",
+                                                        name: Ident(
+                                                            "v",
+                                                        ),
                                                     },
                                                 ),
                                             ),
@@ -171,7 +185,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -191,7 +207,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -208,7 +226,9 @@ Module {
                     body: [
                         Func(
                             Func {
-                                name: "i",
+                                name: Ident(
+                                    "i",
+                                ),
                                 params: Params {
                                     has_self: false,
                                     pos: [],
@@ -227,7 +247,9 @@ Module {
                                                 value: Some(
                                                     GetVar(
                                                         GetVar {
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                 ),
@@ -247,7 +269,9 @@ Module {
                                                 value: Some(
                                                     GetVar(
                                                         GetVar {
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                 ),
@@ -270,7 +294,9 @@ Module {
         ),
         Func(
             Func {
-                name: "j",
+                name: Ident(
+                    "j",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [],
@@ -303,7 +329,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -323,7 +351,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -340,7 +370,9 @@ Module {
                     body: [
                         Func(
                             Func {
-                                name: "k",
+                                name: Ident(
+                                    "k",
+                                ),
                                 params: Params {
                                     has_self: false,
                                     pos: [],
@@ -373,7 +405,9 @@ Module {
                                                 value: Some(
                                                     GetVar(
                                                         GetVar {
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                 ),
@@ -393,7 +427,9 @@ Module {
                                                 value: Some(
                                                     GetVar(
                                                         GetVar {
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                 ),
@@ -416,7 +452,9 @@ Module {
         ),
         Func(
             Func {
-                name: "l",
+                name: Ident(
+                    "l",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [],
@@ -428,7 +466,9 @@ Module {
                                 body: [
                                     Func(
                                         Func {
-                                            name: "m",
+                                            name: Ident(
+                                                "m",
+                                            ),
                                             params: Params {
                                                 has_self: false,
                                                 pos: [],
@@ -447,7 +487,9 @@ Module {
                                                             value: Some(
                                                                 GetVar(
                                                                     GetVar {
-                                                                        name: "v",
+                                                                        name: Ident(
+                                                                            "v",
+                                                                        ),
                                                                     },
                                                                 ),
                                                             ),
@@ -467,7 +509,9 @@ Module {
                                                             value: Some(
                                                                 GetVar(
                                                                     GetVar {
-                                                                        name: "v",
+                                                                        name: Ident(
+                                                                            "v",
+                                                                        ),
                                                                     },
                                                                 ),
                                                             ),
@@ -501,7 +545,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),
@@ -521,7 +567,9 @@ Module {
                                 value: Some(
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ),

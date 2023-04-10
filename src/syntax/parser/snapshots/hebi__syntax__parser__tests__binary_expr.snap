@@ -7,12 +7,16 @@ Binary(
         op: Add,
         left: GetVar(
             GetVar {
-                name: "a",
+                name: Ident(
+                    "a",
+                ),
             },
         ),
         right: GetVar(
             GetVar {
-                name: "b",
+                name: Ident(
+                    "b",
+                ),
             },
         ),
     },

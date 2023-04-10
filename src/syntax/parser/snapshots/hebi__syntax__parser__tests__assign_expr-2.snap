@@ -10,14 +10,20 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: GetVar(
                         GetVar {
-                            name: "b",
+                            name: Ident(
+                                "b",
+                            ),
                         },
                     ),
                 },
@@ -29,10 +35,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -41,15 +51,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -63,10 +79,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -75,15 +95,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -97,10 +123,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -109,15 +139,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -131,10 +167,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -143,15 +183,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -165,10 +211,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -177,15 +227,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -199,10 +255,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -211,15 +271,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -233,10 +299,14 @@ Module {
                     target: GetField {
                         target: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -245,15 +315,21 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "a",
+                                            name: Ident(
+                                                "a",
+                                            ),
                                         },
                                     ),
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },

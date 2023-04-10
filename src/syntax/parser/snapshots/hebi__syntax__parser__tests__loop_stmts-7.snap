@@ -15,14 +15,18 @@ Module {
                                         Expr(
                                             GetVar(
                                                 GetVar {
-                                                    name: "a",
+                                                    name: Ident(
+                                                        "a",
+                                                    ),
                                                 },
                                             ),
                                         ),
                                         Expr(
                                             GetVar(
                                                 GetVar {
-                                                    name: "a",
+                                                    name: Ident(
+                                                        "a",
+                                                    ),
                                                 },
                                             ),
                                         ),

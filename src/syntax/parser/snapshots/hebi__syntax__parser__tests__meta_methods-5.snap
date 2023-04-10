@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 meta methods must take `self`
-| fn [4;31mmeta:str[0m
+| fn [4;31m@str[0m(): pass
 
 

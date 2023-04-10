@@ -4,7 +4,15 @@ use crate::span::Spanned;
 impl<'src> Parser<'src> {
   pub(super) fn ident(&mut self) -> Result<ast::Ident<'src>> {
     self.expect(Lit_Ident)?;
-    Ok(Spanned::new(
+    Ok(ast::Ident::new(
+      self.previous().span,
+      Cow::from(self.lex.lexeme(self.previous())),
+    ))
+  }
+
+  pub(super) fn symbol(&mut self) -> Result<ast::Symbol<'src>> {
+    self.expect(Lit_Symbol)?;
+    Ok(ast::Symbol::new(
       self.previous().span,
       Cow::from(self.lex.lexeme(self.previous())),
     ))

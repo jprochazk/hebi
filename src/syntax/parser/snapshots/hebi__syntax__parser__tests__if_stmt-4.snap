@@ -10,7 +10,9 @@ Module {
                     Branch {
                         cond: GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
                         body: [
@@ -20,7 +22,9 @@ Module {
                                         Branch {
                                             cond: GetVar(
                                                 GetVar {
-                                                    name: "b",
+                                                    name: Ident(
+                                                        "b",
+                                                    ),
                                                 },
                                             ),
                                             body: [

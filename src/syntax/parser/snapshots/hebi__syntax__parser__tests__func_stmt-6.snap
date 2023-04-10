@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 unexpected token
-| fn f(a, b=[4;31m,[0m
+| fn f(a, b=[4;31m,[0m): pass
 
 

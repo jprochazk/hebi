@@ -192,14 +192,6 @@ impl<'src> Parser<'src> {
     let start = self.previous().span.start;
     self.no_indent()?;
     let name = self.ident()?;
-
-    if name.as_ref() == "meta" && self.ctx.current_class.is_none() {
-      return Err(Error::new(
-        "meta methods may only appear in classes",
-        name.span,
-      ));
-    }
-
     self.no_indent()?; // func's opening paren must be unindented
     let func = self.func(name)?;
     let end = self.previous().span.end;
@@ -344,31 +336,30 @@ impl<'src> Parser<'src> {
 
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
       self.expect(Kw_Fn)?;
-      let name = self.ident()?;
-      if name.as_ref() == "meta" {
+
+      if self.current().is(Lit_Symbol) {
+        let name = self.symbol()?;
+        let ident = name.ident();
         self.no_indent()?;
-        self.expect(Tok_Colon)?;
-        self.no_indent()?;
-        let which = self.ident()?;
-        let meta = ast::Meta::parse(&which)
-          .ok_or_else(|| Error::new(format!("unknown meta method `{which}`"), which.span))?;
-        if members.meta.iter().any(|(k, _)| *k == meta) {
+        let f = self.func(ident)?;
+
+        let which = name
+          .which()
+          .ok_or_else(|| Error::new(format!("unknown meta method `{}`", f.name), name.span))?;
+        if members.meta.iter().any(|(k, _)| *k == which) {
           return Err(Error::new(
-            format!("duplicate meta method `{which}`"),
-            which.span,
+            format!("duplicate meta method `{}`", f.name),
+            name.span,
           ));
         }
-        self.no_indent()?;
-        let f = self.func(ast::Ident::new(
-          name.span.join(which.span),
-          meta.as_str().into(),
-        ))?;
         if !f.params.has_self {
           return Err(Error::new("meta methods must take `self`", f.name.span));
         }
-        check_meta_params(&meta, &f.params, f.name.span)?;
-        members.meta.push((meta, f));
+        check_meta_params(&which, &f.params, f.name.span)?;
+
+        members.meta.push((which, f));
       } else {
+        let name = self.ident()?;
         if names.contains(&name) {
           self
             .errors
@@ -381,6 +372,7 @@ impl<'src> Parser<'src> {
         members.methods.push(f);
       }
     }
+
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       return Err(Error::new(
         "fields may not appear after methods",

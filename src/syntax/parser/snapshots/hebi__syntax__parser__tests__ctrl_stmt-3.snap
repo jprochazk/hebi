@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 yield outside of function
-| [4;31myield[0m
+| [4;31myield[0m v
 
 

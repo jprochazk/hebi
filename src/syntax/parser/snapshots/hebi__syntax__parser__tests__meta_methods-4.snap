@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 duplicate meta method `str`
-| fn meta:[4;31mstr[0m
+| fn [4;31m@str[0m(self): pass
 
 

@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 unknown meta method `unknown`
-| fn meta:[4;31munknown[0m
+| fn [4;31m@unknown[0m(self): pass
 
 

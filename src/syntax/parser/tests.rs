@@ -882,57 +882,57 @@ fn meta_methods() {
   check_module! {
     r#"
       class T:
-        fn meta:str(self): pass
-        fn meta:add(self, other): pass
+        fn @str(self): pass
+        fn @add(self, other): pass
     "#
   }
 
   check_error! {
     r#"
-      fn meta:test(): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn meta:unknown(self): pass
+      fn @test(): pass
     "#
   }
 
   check_error! {
     r#"
       class T:
-        fn meta:str(self): pass
-        fn meta:str(self): pass
+        fn @unknown(self): pass
     "#
   }
 
   check_error! {
     r#"
       class T:
-        fn meta:str(): pass
+        fn @str(self): pass
+        fn @str(self): pass
     "#
   }
 
   check_error! {
     r#"
       class T:
-        fn meta:str(self, other): pass
+        fn @str(): pass
     "#
   }
 
   check_error! {
     r#"
       class T:
-        fn meta:str(self, *other): pass
+        fn @str(self, other): pass
     "#
   }
 
   check_error! {
     r#"
       class T:
-        fn meta:str(self, **other): pass
+        fn @str(self, *other): pass
+    "#
+  }
+
+  check_error! {
+    r#"
+      class T:
+        fn @str(self, **other): pass
     "#
   }
 }

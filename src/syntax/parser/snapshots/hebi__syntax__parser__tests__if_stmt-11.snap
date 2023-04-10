@@ -16,14 +16,18 @@ Module {
                                         op: And,
                                         left: GetVar(
                                             GetVar {
-                                                name: "some_very_long_condition",
+                                                name: Ident(
+                                                    "some_very_long_condition",
+                                                ),
                                             },
                                         ),
                                         right: Call(
                                             Call {
                                                 target: GetVar(
                                                     GetVar {
-                                                        name: "with_many_sub_expressions",
+                                                        name: Ident(
+                                                            "with_many_sub_expressions",
+                                                        ),
                                                     },
                                                 ),
                                                 args: [],
@@ -37,10 +41,14 @@ Module {
                                             GetField {
                                                 target: GetVar(
                                                     GetVar {
-                                                        name: "which_are_complex",
+                                                        name: Ident(
+                                                            "which_are_complex",
+                                                        ),
                                                     },
                                                 ),
-                                                name: "too",
+                                                name: Ident(
+                                                    "too",
+                                                ),
                                             },
                                         ),
                                         args: [],

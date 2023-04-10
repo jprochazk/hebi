@@ -16,7 +16,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         ),
@@ -28,7 +30,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "d",
+                                    name: Ident(
+                                        "d",
+                                    ),
                                 },
                             ),
                         ),
@@ -40,7 +44,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "f",
+                                    name: Ident(
+                                        "f",
+                                    ),
                                 },
                             ),
                         ),
@@ -60,7 +66,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         ),
@@ -72,7 +80,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "d",
+                                    name: Ident(
+                                        "d",
+                                    ),
                                 },
                             ),
                         ),
@@ -84,7 +94,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "f",
+                                    name: Ident(
+                                        "f",
+                                    ),
                                 },
                             ),
                         ),
@@ -104,7 +116,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         ),
@@ -116,7 +130,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "d",
+                                    name: Ident(
+                                        "d",
+                                    ),
                                 },
                             ),
                         ),
@@ -128,7 +144,9 @@ Module {
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "f",
+                                    name: Ident(
+                                        "f",
+                                    ),
                                 },
                             ),
                         ),

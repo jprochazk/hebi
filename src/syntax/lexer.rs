@@ -261,6 +261,9 @@ pub enum TokenKind {
   /// `a`, `b_c`, `__x0`, etc.
   #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
   Lit_Ident,
+  /// `@a`, `@b_c, `@__x0`, etc.
+  #[regex("@[a-zA-Z_][a-zA-Z0-9_]*")]
+  Lit_Symbol,
 
   #[doc(hidden)]
   #[regex(r"(\r?\n)+[ ]*", priority = 10)]
@@ -345,6 +348,7 @@ impl TokenKind {
       TokenKind::Lit_Bool => "bool",
       TokenKind::Lit_String => "string",
       TokenKind::Lit_Ident => "identifier",
+      TokenKind::Lit_Symbol => "symbol",
       TokenKind::_Tok_Indent => "<indentation>",
       TokenKind::_Tok_Whitespace => "<whitespace>",
       TokenKind::_Tok_Comment => "<comment>",

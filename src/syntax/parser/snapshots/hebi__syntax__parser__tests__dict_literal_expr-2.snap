@@ -11,80 +11,48 @@ Module {
                         (
                             GetVar(
                                 GetVar {
-                                    name: "a",
+                                    name: Ident(
+                                        "a",
+                                    ),
                                 },
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                        (
-                            GetVar(
-                                GetVar {
-                                    name: "c",
-                                },
-                            ),
-                            GetVar(
-                                GetVar {
-                                    name: "d",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         ),
                         (
                             GetVar(
                                 GetVar {
-                                    name: "e",
+                                    name: Ident(
+                                        "c",
+                                    ),
                                 },
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "f",
-                                },
-                            ),
-                        ),
-                    ],
-                ),
-            ),
-        ),
-        Expr(
-            Literal(
-                Dict(
-                    [
-                        (
-                            GetVar(
-                                GetVar {
-                                    name: "a",
-                                },
-                            ),
-                            GetVar(
-                                GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "d",
+                                    ),
                                 },
                             ),
                         ),
                         (
                             GetVar(
                                 GetVar {
-                                    name: "c",
+                                    name: Ident(
+                                        "e",
+                                    ),
                                 },
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "d",
-                                },
-                            ),
-                        ),
-                        (
-                            GetVar(
-                                GetVar {
-                                    name: "e",
-                                },
-                            ),
-                            GetVar(
-                                GetVar {
-                                    name: "f",
+                                    name: Ident(
+                                        "f",
+                                    ),
                                 },
                             ),
                         ),
@@ -99,36 +67,104 @@ Module {
                         (
                             GetVar(
                                 GetVar {
-                                    name: "a",
+                                    name: Ident(
+                                        "a",
+                                    ),
                                 },
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "b",
-                                },
-                            ),
-                        ),
-                        (
-                            GetVar(
-                                GetVar {
-                                    name: "c",
-                                },
-                            ),
-                            GetVar(
-                                GetVar {
-                                    name: "d",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         ),
                         (
                             GetVar(
                                 GetVar {
-                                    name: "e",
+                                    name: Ident(
+                                        "c",
+                                    ),
                                 },
                             ),
                             GetVar(
                                 GetVar {
-                                    name: "f",
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Dict(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "c",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
                                 },
                             ),
                         ),

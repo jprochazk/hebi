@@ -6,20 +6,28 @@ Module {
     body: [
         Func(
             Func {
-                name: "f",
+                name: Ident(
+                    "f",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "a",
+                            Ident(
+                                "a",
+                            ),
                             None,
                         ),
                         (
-                            "b",
+                            Ident(
+                                "b",
+                            ),
                             None,
                         ),
                         (
-                            "c",
+                            Ident(
+                                "c",
+                            ),
                             None,
                         ),
                     ],
@@ -32,24 +40,34 @@ Module {
         ),
         Func(
             Func {
-                name: "f",
+                name: Ident(
+                    "f",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "a",
+                            Ident(
+                                "a",
+                            ),
                             None,
                         ),
                         (
-                            "b",
+                            Ident(
+                                "b",
+                            ),
                             None,
                         ),
                         (
-                            "c",
+                            Ident(
+                                "c",
+                            ),
                             Some(
                                 GetVar(
                                     GetVar {
-                                        name: "d",
+                                        name: Ident(
+                                            "d",
+                                        ),
                                     },
                                 ),
                             ),
@@ -64,30 +82,42 @@ Module {
         ),
         Func(
             Func {
-                name: "f",
+                name: Ident(
+                    "f",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "a",
+                            Ident(
+                                "a",
+                            ),
                             None,
                         ),
                         (
-                            "b",
+                            Ident(
+                                "b",
+                            ),
                             Some(
                                 GetVar(
                                     GetVar {
-                                        name: "c",
+                                        name: Ident(
+                                            "c",
+                                        ),
                                     },
                                 ),
                             ),
                         ),
                         (
-                            "d",
+                            Ident(
+                                "d",
+                            ),
                             Some(
                                 GetVar(
                                     GetVar {
-                                        name: "e",
+                                        name: Ident(
+                                            "e",
+                                        ),
                                     },
                                 ),
                             ),

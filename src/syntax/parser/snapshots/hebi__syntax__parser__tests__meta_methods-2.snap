@@ -2,7 +2,7 @@
 source: src/syntax/parser/tests.rs
 expression: errors
 ---
-meta methods may only appear in classes
-| fn [4;31mmeta[0m
+expected `identifier`
+| fn [4;31m@test[0m(): pass
 
 

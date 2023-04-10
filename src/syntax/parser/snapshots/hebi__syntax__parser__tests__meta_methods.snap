@@ -6,7 +6,9 @@ Module {
     body: [
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
@@ -15,7 +17,9 @@ Module {
                         (
                             Str,
                             Func {
-                                name: "str",
+                                name: Ident(
+                                    "str",
+                                ),
                                 params: Params {
                                     has_self: true,
                                     pos: [],
@@ -29,12 +33,16 @@ Module {
                         (
                             Add,
                             Func {
-                                name: "add",
+                                name: Ident(
+                                    "add",
+                                ),
                                 params: Params {
                                     has_self: true,
                                     pos: [
                                         (
-                                            "other",
+                                            Ident(
+                                                "other",
+                                            ),
                                             None,
                                         ),
                                     ],

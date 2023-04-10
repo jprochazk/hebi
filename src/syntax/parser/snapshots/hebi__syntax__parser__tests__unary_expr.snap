@@ -7,7 +7,9 @@ Unary(
         op: Plus,
         right: GetVar(
             GetVar {
-                name: "a",
+                name: Ident(
+                    "a",
+                ),
             },
         ),
     },

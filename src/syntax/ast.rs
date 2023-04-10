@@ -1,12 +1,79 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::collections::BTreeMap;
+use std::fmt::Display;
+use std::ops::{Deref, DerefMut};
 
 use beef::lean::Cow;
 
 use crate::span::{Span, Spanned};
 
-pub type Ident<'src> = Spanned<Cow<'src, str>>;
+#[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Ident<'src>(Spanned<Cow<'src, str>>);
+
+impl<'src> Ident<'src> {
+  pub fn new(span: impl Into<Span>, lexeme: Cow<'src, str>) -> Self {
+    Self(Spanned::new(span, lexeme))
+  }
+
+  pub fn lexeme(&self) -> Cow<'src, str> {
+    self.0.deref().clone()
+  }
+}
+
+impl<'src> Deref for Ident<'src> {
+  type Target = Spanned<Cow<'src, str>>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl<'src> DerefMut for Ident<'src> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
+  }
+}
+
+#[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Symbol<'src>(Spanned<Cow<'src, str>>);
+
+impl<'src> Symbol<'src> {
+  pub fn new(span: impl Into<Span>, lexeme: Cow<'src, str>) -> Self {
+    Self(Spanned::new(span, lexeme))
+  }
+
+  /// Strips the leading `@` and returns the result as an identifier.
+  ///
+  /// This copies the string.
+  pub fn ident<'a>(&'a self) -> Ident<'src> {
+    let span = self.0.span;
+    Ident::new(span, Cow::from(self.0.deref()[1..].to_string()))
+  }
+
+  pub fn which(&self) -> Option<Meta> {
+    Meta::parse(&self.0.deref()[1..])
+  }
+
+  pub fn lexeme(&self) -> Cow<'src, str> {
+    self.0.deref().clone()
+  }
+}
+
+impl<'src> Deref for Symbol<'src> {
+  type Target = Spanned<Cow<'src, str>>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl<'src> DerefMut for Symbol<'src> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
+  }
+}
+
 pub type Map<K, V> = BTreeMap<K, V>;
 
 #[cfg_attr(test, derive(Debug))]
@@ -533,7 +600,7 @@ pub fn expr_list(s: impl Into<Span>, items: Vec<Expr>) -> Expr {
 pub fn ident_key(v: Ident) -> Expr {
   Expr::new(
     v.span,
-    ExprKind::Literal(Box::new(Literal::String(v.into_inner()))),
+    ExprKind::Literal(Box::new(Literal::String(v.lexeme()))),
   )
 }
 
@@ -829,5 +896,17 @@ pub mod lit {
     u32::from_str_radix(&unicode_seq, 16)
       .ok()
       .and_then(char::from_u32)
+  }
+}
+
+impl<'src> Display for Ident<'src> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.0)
+  }
+}
+
+impl<'src> Display for Symbol<'src> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "@{}", self.0)
   }
 }

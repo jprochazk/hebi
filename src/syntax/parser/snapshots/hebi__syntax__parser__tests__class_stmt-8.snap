@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 fields may not appear after methods
-| [4;31ma[0m
+| [4;31ma[0m = b
 
 

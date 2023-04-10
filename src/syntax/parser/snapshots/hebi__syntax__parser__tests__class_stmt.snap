@@ -6,7 +6,9 @@ Module {
     body: [
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
@@ -17,7 +19,9 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
@@ -28,18 +32,24 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [
                                     (
-                                        "v",
+                                        Ident(
+                                            "v",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -56,16 +66,22 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 GetVar(
                                     GetVar {
-                                        name: "b",
+                                        name: Ident(
+                                            "b",
+                                        ),
                                     },
                                 ),
                             ),
@@ -73,12 +89,16 @@ Module {
                     ],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [
                                     (
-                                        "v",
+                                        Ident(
+                                            "v",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -95,9 +115,13 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
@@ -108,9 +132,13 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
@@ -121,18 +149,26 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 GetVar(
                                     GetVar {
-                                        name: "b",
+                                        name: Ident(
+                                            "b",
+                                        ),
                                     },
                                 ),
                             ),
@@ -145,18 +181,26 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 GetVar(
                                     GetVar {
-                                        name: "b",
+                                        name: Ident(
+                                            "b",
+                                        ),
                                     },
                                 ),
                             ),
@@ -164,12 +208,16 @@ Module {
                     ],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [
                                     (
-                                        "v",
+                                        Ident(
+                                            "v",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -186,18 +234,26 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 GetVar(
                                     GetVar {
-                                        name: "b",
+                                        name: Ident(
+                                            "b",
+                                        ),
                                     },
                                 ),
                             ),
@@ -205,12 +261,16 @@ Module {
                     ],
                     methods: [
                         Func {
-                            name: "f",
+                            name: Ident(
+                                "f",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [
                                     (
-                                        "v",
+                                        Ident(
+                                            "v",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -227,12 +287,16 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: None,
                         },
                     ],
@@ -243,14 +307,20 @@ Module {
         ),
         Class(
             Class {
-                name: "T",
+                name: Ident(
+                    "T",
+                ),
                 parent: Some(
-                    "U",
+                    Ident(
+                        "U",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: None,
                         },
                     ],

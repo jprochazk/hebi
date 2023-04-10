@@ -6,7 +6,9 @@ Module {
     body: [
         Var(
             Var {
-                name: "v",
+                name: Ident(
+                    "v",
+                ),
                 value: Literal(
                     Int(
                         0,
@@ -18,7 +20,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         None,
@@ -30,7 +34,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Float(
@@ -44,7 +50,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Bool(
@@ -58,7 +66,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         String(
@@ -72,7 +82,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         List(
@@ -105,7 +117,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Dict(
@@ -166,7 +180,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Dict(
@@ -227,7 +243,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Dict(
@@ -288,7 +306,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -312,7 +332,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -336,7 +358,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -360,7 +384,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -384,7 +410,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -408,7 +436,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -432,7 +462,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -456,7 +488,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -480,7 +514,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -504,7 +540,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -528,7 +566,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -552,7 +592,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -576,7 +618,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Unary(
                         Unary {
@@ -595,7 +639,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Unary(
                         Unary {
@@ -614,7 +660,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -638,7 +686,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
@@ -662,19 +712,25 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Maybe,
                             left: GetVar(
                                 GetVar {
-                                    name: "a",
+                                    name: Ident(
+                                        "a",
+                                    ),
                                 },
                             ),
                             right: GetVar(
                                 GetVar {
-                                    name: "b",
+                                    name: Ident(
+                                        "b",
+                                    ),
                                 },
                             ),
                         },
@@ -686,7 +742,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Int(
@@ -700,14 +758,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Add,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -724,14 +786,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Sub,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -748,14 +814,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Div,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -772,14 +842,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Mul,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -796,14 +870,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Rem,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -820,14 +898,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Pow,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -844,14 +926,18 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Binary(
                         Binary {
                             op: Maybe,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -869,10 +955,14 @@ Module {
                 GetField {
                     target: GetVar(
                         GetVar {
-                            name: "v",
+                            name: Ident(
+                                "v",
+                            ),
                         },
                     ),
-                    name: "a",
+                    name: Ident(
+                        "a",
+                    ),
                 },
             ),
         ),
@@ -881,7 +971,9 @@ Module {
                 GetIndex {
                     target: GetVar(
                         GetVar {
-                            name: "v",
+                            name: Ident(
+                                "v",
+                            ),
                         },
                     ),
                     key: Literal(
@@ -897,13 +989,17 @@ Module {
                 Call {
                     target: GetVar(
                         GetVar {
-                            name: "v",
+                            name: Ident(
+                                "v",
+                            ),
                         },
                     ),
                     args: [
                         GetVar(
                             GetVar {
-                                name: "a",
+                                name: Ident(
+                                    "a",
+                                ),
                             },
                         ),
                     ],
@@ -912,16 +1008,22 @@ Module {
         ),
         Func(
             Func {
-                name: "add",
+                name: Ident(
+                    "add",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "a",
+                            Ident(
+                                "a",
+                            ),
                             None,
                         ),
                         (
-                            "b",
+                            Ident(
+                                "b",
+                            ),
                             None,
                         ),
                     ],
@@ -936,12 +1038,16 @@ Module {
                                             op: Add,
                                             left: GetVar(
                                                 GetVar {
-                                                    name: "a",
+                                                    name: Ident(
+                                                        "a",
+                                                    ),
                                                 },
                                             ),
                                             right: GetVar(
                                                 GetVar {
-                                                    name: "b",
+                                                    name: Ident(
+                                                        "b",
+                                                    ),
                                                 },
                                             ),
                                         },
@@ -958,13 +1064,17 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Call(
                         Call {
                             target: GetVar(
                                 GetVar {
-                                    name: "add",
+                                    name: Ident(
+                                        "add",
+                                    ),
                                 },
                             ),
                             args: [
@@ -986,12 +1096,16 @@ Module {
         ),
         Func(
             Func {
-                name: "fact",
+                name: Ident(
+                    "fact",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "n",
+                            Ident(
+                                "n",
+                            ),
                             None,
                         ),
                     ],
@@ -1006,7 +1120,9 @@ Module {
                                             op: Less,
                                             left: GetVar(
                                                 GetVar {
-                                                    name: "n",
+                                                    name: Ident(
+                                                        "n",
+                                                    ),
                                                 },
                                             ),
                                             right: Literal(
@@ -1023,7 +1139,9 @@ Module {
                                                     value: Some(
                                                         GetVar(
                                                             GetVar {
-                                                                name: "n",
+                                                                name: Ident(
+                                                                    "n",
+                                                                ),
                                                             },
                                                         ),
                                                     ),
@@ -1044,14 +1162,18 @@ Module {
                                                             op: Mul,
                                                             left: GetVar(
                                                                 GetVar {
-                                                                    name: "n",
+                                                                    name: Ident(
+                                                                        "n",
+                                                                    ),
                                                                 },
                                                             ),
                                                             right: Call(
                                                                 Call {
                                                                     target: GetVar(
                                                                         GetVar {
-                                                                            name: "fact",
+                                                                            name: Ident(
+                                                                                "fact",
+                                                                            ),
                                                                         },
                                                                     ),
                                                                     args: [
@@ -1060,7 +1182,9 @@ Module {
                                                                                 op: Sub,
                                                                                 left: GetVar(
                                                                                     GetVar {
-                                                                                        name: "n",
+                                                                                        name: Ident(
+                                                                                            "n",
+                                                                                        ),
                                                                                     },
                                                                                 ),
                                                                                 right: Literal(
@@ -1089,12 +1213,16 @@ Module {
         ),
         Func(
             Func {
-                name: "print_fact",
+                name: Ident(
+                    "print_fact",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "n",
+                            Ident(
+                                "n",
+                            ),
                             None,
                         ),
                     ],
@@ -1107,13 +1235,17 @@ Module {
                                     Call {
                                         target: GetVar(
                                             GetVar {
-                                                name: "fact",
+                                                name: Ident(
+                                                    "fact",
+                                                ),
                                             },
                                         ),
                                         args: [
                                             GetVar(
                                                 GetVar {
-                                                    name: "n",
+                                                    name: Ident(
+                                                        "n",
+                                                    ),
                                                 },
                                             ),
                                         ],
@@ -1129,7 +1261,9 @@ Module {
         Loop(
             For(
                 For {
-                    item: "i",
+                    item: Ident(
+                        "i",
+                    ),
                     iter: Range(
                         IterRange {
                             start: Literal(
@@ -1151,7 +1285,9 @@ Module {
                                 values: [
                                     GetVar(
                                         GetVar {
-                                            name: "i",
+                                            name: Ident(
+                                                "i",
+                                            ),
                                         },
                                     ),
                                 ],
@@ -1163,20 +1299,28 @@ Module {
         ),
         Func(
             Func {
-                name: "counter",
+                name: Ident(
+                    "counter",
+                ),
                 params: Params {
                     has_self: false,
                     pos: [
                         (
-                            "start",
+                            Ident(
+                                "start",
+                            ),
                             None,
                         ),
                         (
-                            "step",
+                            Ident(
+                                "step",
+                            ),
                             None,
                         ),
                         (
-                            "end",
+                            Ident(
+                                "end",
+                            ),
                             None,
                         ),
                     ],
@@ -1184,10 +1328,14 @@ Module {
                 body: [
                     Var(
                         Var {
-                            name: "n",
+                            name: Ident(
+                                "n",
+                            ),
                             value: GetVar(
                                 GetVar {
-                                    name: "start",
+                                    name: Ident(
+                                        "start",
+                                    ),
                                 },
                             ),
                         },
@@ -1202,7 +1350,9 @@ Module {
                                                 value: Some(
                                                     GetVar(
                                                         GetVar {
-                                                            name: "n",
+                                                            name: Ident(
+                                                                "n",
+                                                            ),
                                                         },
                                                     ),
                                                 ),
@@ -1213,19 +1363,25 @@ Module {
                                         SetVar(
                                             SetVar {
                                                 target: GetVar {
-                                                    name: "n",
+                                                    name: Ident(
+                                                        "n",
+                                                    ),
                                                 },
                                                 value: Binary(
                                                     Binary {
                                                         op: Add,
                                                         left: GetVar(
                                                             GetVar {
-                                                                name: "n",
+                                                                name: Ident(
+                                                                    "n",
+                                                                ),
                                                             },
                                                         ),
                                                         right: GetVar(
                                                             GetVar {
-                                                                name: "step",
+                                                                name: Ident(
+                                                                    "step",
+                                                                ),
                                                             },
                                                         ),
                                                     },
@@ -1242,7 +1398,9 @@ Module {
                                                             op: And,
                                                             left: GetVar(
                                                                 GetVar {
-                                                                    name: "end",
+                                                                    name: Ident(
+                                                                        "end",
+                                                                    ),
                                                                 },
                                                             ),
                                                             right: Binary(
@@ -1250,12 +1408,16 @@ Module {
                                                                     op: More,
                                                                     left: GetVar(
                                                                         GetVar {
-                                                                            name: "n",
+                                                                            name: Ident(
+                                                                                "n",
+                                                                            ),
                                                                         },
                                                                     ),
                                                                     right: GetVar(
                                                                         GetVar {
-                                                                            name: "end",
+                                                                            name: Ident(
+                                                                                "end",
+                                                                            ),
                                                                         },
                                                                     ),
                                                                 },
@@ -1287,13 +1449,17 @@ Module {
         Loop(
             For(
                 For {
-                    item: "n",
+                    item: Ident(
+                        "n",
+                    ),
                     iter: Expr(
                         Call(
                             Call {
                                 target: GetVar(
                                     GetVar {
-                                        name: "counter",
+                                        name: Ident(
+                                            "counter",
+                                        ),
                                     },
                                 ),
                                 args: [
@@ -1322,7 +1488,9 @@ Module {
                                 values: [
                                     GetVar(
                                         GetVar {
-                                            name: "n",
+                                            name: Ident(
+                                                "n",
+                                            ),
                                         },
                                     ),
                                 ],
@@ -1336,7 +1504,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Int(
@@ -1354,7 +1524,9 @@ Module {
                             op: Less,
                             left: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
                             right: Literal(
@@ -1370,7 +1542,9 @@ Module {
                                 values: [
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ],
@@ -1380,14 +1554,18 @@ Module {
                             SetVar(
                                 SetVar {
                                     target: GetVar {
-                                        name: "v",
+                                        name: Ident(
+                                            "v",
+                                        ),
                                     },
                                     value: Binary(
                                         Binary {
                                             op: Add,
                                             left: GetVar(
                                                 GetVar {
-                                                    name: "v",
+                                                    name: Ident(
+                                                        "v",
+                                                    ),
                                                 },
                                             ),
                                             right: Literal(
@@ -1408,7 +1586,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Literal(
                         Int(
@@ -1431,7 +1611,9 @@ Module {
                                                 op: MoreEq,
                                                 left: GetVar(
                                                     GetVar {
-                                                        name: "v",
+                                                        name: Ident(
+                                                            "v",
+                                                        ),
                                                     },
                                                 ),
                                                 right: Literal(
@@ -1456,7 +1638,9 @@ Module {
                                 values: [
                                     GetVar(
                                         GetVar {
-                                            name: "v",
+                                            name: Ident(
+                                                "v",
+                                            ),
                                         },
                                     ),
                                 ],
@@ -1466,14 +1650,18 @@ Module {
                             SetVar(
                                 SetVar {
                                     target: GetVar {
-                                        name: "v",
+                                        name: Ident(
+                                            "v",
+                                        ),
                                     },
                                     value: Binary(
                                         Binary {
                                             op: Add,
                                             left: GetVar(
                                                 GetVar {
-                                                    name: "v",
+                                                    name: Ident(
+                                                        "v",
+                                                    ),
                                                 },
                                             ),
                                             right: Literal(
@@ -1499,7 +1687,9 @@ Module {
                                 op: Less,
                                 left: GetVar(
                                     GetVar {
-                                        name: "v",
+                                        name: Ident(
+                                            "v",
+                                        ),
                                     },
                                 ),
                                 right: Literal(
@@ -1529,7 +1719,9 @@ Module {
                                 op: Less,
                                 left: GetVar(
                                     GetVar {
-                                        name: "v",
+                                        name: Ident(
+                                            "v",
+                                        ),
                                     },
                                 ),
                                 right: Literal(
@@ -1573,18 +1765,24 @@ Module {
         ),
         Class(
             Class {
-                name: "Test",
+                name: Ident(
+                    "Test",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [
                                     (
-                                        "n",
+                                        Ident(
+                                            "n",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -1595,11 +1793,15 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "n",
+                                                name: Ident(
+                                                    "n",
+                                                ),
                                             },
                                             value: GetVar(
                                                 GetVar {
-                                                    name: "n",
+                                                    name: Ident(
+                                                        "n",
+                                                    ),
                                                 },
                                             ),
                                         },
@@ -1609,7 +1811,9 @@ Module {
                             has_yield: false,
                         },
                         Func {
-                            name: "get_n",
+                            name: Ident(
+                                "get_n",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -1622,7 +1826,9 @@ Module {
                                                 GetField(
                                                     GetField {
                                                         target: GetSelf,
-                                                        name: "n",
+                                                        name: Ident(
+                                                            "n",
+                                                        ),
                                                     },
                                                 ),
                                             ),
@@ -1633,7 +1839,9 @@ Module {
                             has_yield: false,
                         },
                         Func {
-                            name: "test1",
+                            name: Ident(
+                                "test1",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -1655,7 +1863,9 @@ Module {
                             has_yield: false,
                         },
                         Func {
-                            name: "test0",
+                            name: Ident(
+                                "test0",
+                            ),
                             params: Params {
                                 has_self: false,
                                 pos: [],
@@ -1671,7 +1881,9 @@ Module {
                                             ),
                                             GetVar(
                                                 GetVar {
-                                                    name: "Test",
+                                                    name: Ident(
+                                                        "Test",
+                                                    ),
                                                 },
                                             ),
                                         ],
@@ -1689,13 +1901,17 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Call(
                         Call {
                             target: GetVar(
                                 GetVar {
-                                    name: "Test",
+                                    name: Ident(
+                                        "Test",
+                                    ),
                                 },
                             ),
                             args: [],
@@ -1716,10 +1932,14 @@ Module {
                                         GetField {
                                             target: GetVar(
                                                 GetVar {
-                                                    name: "v",
+                                                    name: Ident(
+                                                        "v",
+                                                    ),
                                                 },
                                             ),
-                                            name: "get_n",
+                                            name: Ident(
+                                                "get_n",
+                                            ),
                                         },
                                     ),
                                     args: [],
@@ -1731,16 +1951,22 @@ Module {
                                         GetField {
                                             target: GetVar(
                                                 GetVar {
-                                                    name: "Test",
+                                                    name: Ident(
+                                                        "Test",
+                                                    ),
                                                 },
                                             ),
-                                            name: "get_n",
+                                            name: Ident(
+                                                "get_n",
+                                            ),
                                         },
                                     ),
                                     args: [
                                         GetVar(
                                             GetVar {
-                                                name: "v",
+                                                name: Ident(
+                                                    "v",
+                                                ),
                                             },
                                         ),
                                     ],
@@ -1755,13 +1981,17 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Call(
                         Call {
                             target: GetVar(
                                 GetVar {
-                                    name: "Test",
+                                    name: Ident(
+                                        "Test",
+                                    ),
                                 },
                             ),
                             args: [
@@ -1783,10 +2013,14 @@ Module {
                         GetField {
                             target: GetVar(
                                 GetVar {
-                                    name: "Test",
+                                    name: Ident(
+                                        "Test",
+                                    ),
                                 },
                             ),
-                            name: "test0",
+                            name: Ident(
+                                "test0",
+                            ),
                         },
                     ),
                     args: [],
@@ -1800,10 +2034,14 @@ Module {
                         GetField {
                             target: GetVar(
                                 GetVar {
-                                    name: "v",
+                                    name: Ident(
+                                        "v",
+                                    ),
                                 },
                             ),
-                            name: "test1",
+                            name: Ident(
+                                "test1",
+                            ),
                         },
                     ),
                     args: [],
@@ -1815,7 +2053,9 @@ Module {
                 Call {
                     target: GetVar(
                         GetVar {
-                            name: "panic",
+                            name: Ident(
+                                "panic",
+                            ),
                         },
                     ),
                     args: [
@@ -1831,7 +2071,9 @@ Module {
         Import(
             Module {
                 path: [
-                    "json",
+                    Ident(
+                        "json",
+                    ),
                 ],
                 alias: None,
             },
@@ -1840,7 +2082,9 @@ Module {
             SetVar(
                 SetVar {
                     target: GetVar {
-                        name: "v",
+                        name: Ident(
+                            "v",
+                        ),
                     },
                     value: Call(
                         Call {
@@ -1848,10 +2092,14 @@ Module {
                                 GetField {
                                     target: GetVar(
                                         GetVar {
-                                            name: "json",
+                                            name: Ident(
+                                                "json",
+                                            ),
                                         },
                                     ),
-                                    name: "parse",
+                                    name: Ident(
+                                        "parse",
+                                    ),
                                 },
                             ),
                             args: [
@@ -1871,7 +2119,9 @@ Module {
                 values: [
                     GetVar(
                         GetVar {
-                            name: "v",
+                            name: Ident(
+                                "v",
+                            ),
                         },
                     ),
                 ],
@@ -1879,12 +2129,16 @@ Module {
         ),
         Class(
             Class {
-                name: "A",
+                name: Ident(
+                    "A",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 Literal(
                                     Int(
@@ -1908,13 +2162,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "A",
+                                            name: Ident(
+                                                "A",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                         },
                     ),
                 ],
@@ -1929,7 +2187,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "A",
+                                            name: Ident(
+                                                "A",
+                                            ),
                                         },
                                     ),
                                     args: [
@@ -1941,7 +2201,9 @@ Module {
                                     ],
                                 },
                             ),
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                         },
                     ),
                 ],
@@ -1949,12 +2211,16 @@ Module {
         ),
         Class(
             Class {
-                name: "B",
+                name: Ident(
+                    "B",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [
                         Field {
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                             default: Some(
                                 Literal(
                                     Int(
@@ -1966,7 +2232,9 @@ Module {
                     ],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -1990,13 +2258,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "B",
+                                            name: Ident(
+                                                "B",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                         },
                     ),
                 ],
@@ -2011,7 +2283,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "B",
+                                            name: Ident(
+                                                "B",
+                                            ),
                                         },
                                     ),
                                     args: [
@@ -2023,7 +2297,9 @@ Module {
                                     ],
                                 },
                             ),
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                         },
                     ),
                 ],
@@ -2031,13 +2307,17 @@ Module {
         ),
         Class(
             Class {
-                name: "C",
+                name: Ident(
+                    "C",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2048,7 +2328,9 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "a",
+                                                name: Ident(
+                                                    "a",
+                                                ),
                                             },
                                             value: Literal(
                                                 Int(
@@ -2075,13 +2357,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "C",
+                                            name: Ident(
+                                                "C",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "a",
+                            name: Ident(
+                                "a",
+                            ),
                         },
                     ),
                 ],
@@ -2095,13 +2381,17 @@ Module {
                             Call {
                                 target: GetVar(
                                     GetVar {
-                                        name: "C",
+                                        name: Ident(
+                                            "C",
+                                        ),
                                     },
                                 ),
                                 args: [],
                             },
                         ),
-                        name: "b",
+                        name: Ident(
+                            "b",
+                        ),
                     },
                     value: Literal(
                         Int(
@@ -2113,13 +2403,17 @@ Module {
         ),
         Class(
             Class {
-                name: "A",
+                name: Ident(
+                    "A",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2146,9 +2440,13 @@ Module {
         ),
         Class(
             Class {
-                name: "B",
+                name: Ident(
+                    "B",
+                ),
                 parent: Some(
-                    "A",
+                    Ident(
+                        "A",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
@@ -2166,13 +2464,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "A",
+                                            name: Ident(
+                                                "A",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                         },
                     ),
                     args: [],
@@ -2188,13 +2490,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "B",
+                                            name: Ident(
+                                                "B",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                         },
                     ),
                     args: [],
@@ -2203,15 +2509,21 @@ Module {
         ),
         Class(
             Class {
-                name: "C",
+                name: Ident(
+                    "C",
+                ),
                 parent: Some(
-                    "B",
+                    Ident(
+                        "B",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2245,13 +2557,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "C",
+                                            name: Ident(
+                                                "C",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                         },
                     ),
                     args: [],
@@ -2260,15 +2576,21 @@ Module {
         ),
         Class(
             Class {
-                name: "D",
+                name: Ident(
+                    "D",
+                ),
                 parent: Some(
-                    "C",
+                    Ident(
+                        "C",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2280,7 +2602,9 @@ Module {
                                             target: GetField(
                                                 GetField {
                                                     target: GetSuper,
-                                                    name: "inherited",
+                                                    name: Ident(
+                                                        "inherited",
+                                                    ),
                                                 },
                                             ),
                                             args: [],
@@ -2315,13 +2639,17 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "D",
+                                            name: Ident(
+                                                "D",
+                                            ),
                                         },
                                     ),
                                     args: [],
                                 },
                             ),
-                            name: "inherited",
+                            name: Ident(
+                                "inherited",
+                            ),
                         },
                     ),
                     args: [],
@@ -2330,13 +2658,17 @@ Module {
         ),
         Class(
             Class {
-                name: "X",
+                name: Ident(
+                    "X",
+                ),
                 parent: None,
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2347,7 +2679,9 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "v",
+                                                name: Ident(
+                                                    "v",
+                                                ),
                                             },
                                             value: Literal(
                                                 Int(
@@ -2367,15 +2701,21 @@ Module {
         ),
         Class(
             Class {
-                name: "Y",
+                name: Ident(
+                    "Y",
+                ),
                 parent: Some(
-                    "X",
+                    Ident(
+                        "X",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [],
@@ -2386,7 +2726,9 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "v",
+                                                name: Ident(
+                                                    "v",
+                                                ),
                                             },
                                             value: Literal(
                                                 Int(
@@ -2406,20 +2748,28 @@ Module {
         ),
         Class(
             Class {
-                name: "Z",
+                name: Ident(
+                    "Z",
+                ),
                 parent: Some(
-                    "X",
+                    Ident(
+                        "X",
+                    ),
                 ),
                 members: ClassMembers {
                     fields: [],
                     methods: [
                         Func {
-                            name: "init",
+                            name: Ident(
+                                "init",
+                            ),
                             params: Params {
                                 has_self: true,
                                 pos: [
                                     (
-                                        "v",
+                                        Ident(
+                                            "v",
+                                        ),
                                         None,
                                     ),
                                 ],
@@ -2431,7 +2781,9 @@ Module {
                                             target: GetField(
                                                 GetField {
                                                     target: GetSuper,
-                                                    name: "init",
+                                                    name: Ident(
+                                                        "init",
+                                                    ),
                                                 },
                                             ),
                                             args: [],
@@ -2443,7 +2795,9 @@ Module {
                                         SetField {
                                             target: GetField {
                                                 target: GetSelf,
-                                                name: "v",
+                                                name: Ident(
+                                                    "v",
+                                                ),
                                             },
                                             value: Binary(
                                                 Binary {
@@ -2451,12 +2805,16 @@ Module {
                                                     left: GetField(
                                                         GetField {
                                                             target: GetSelf,
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                     right: GetVar(
                                                         GetVar {
-                                                            name: "v",
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
                                                         },
                                                     ),
                                                 },
@@ -2481,7 +2839,9 @@ Module {
                                 Call {
                                     target: GetVar(
                                         GetVar {
-                                            name: "Z",
+                                            name: Ident(
+                                                "Z",
+                                            ),
                                         },
                                     ),
                                     args: [
@@ -2493,7 +2853,9 @@ Module {
                                     ],
                                 },
                             ),
-                            name: "v",
+                            name: Ident(
+                                "v",
+                            ),
                         },
                     ),
                 ],

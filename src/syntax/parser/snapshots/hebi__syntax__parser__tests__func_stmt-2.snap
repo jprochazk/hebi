@@ -3,6 +3,6 @@ source: src/syntax/parser/tests.rs
 expression: errors
 ---
 non-default argument follows default argument
-| fn f(a, b=c, [4;31md[0m
+| fn f(a, b=c, [4;31md[0m,): pass
 
 
