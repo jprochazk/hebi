@@ -1,7 +1,3 @@
-/*
-
-*/
-
 use std::alloc::Layout;
 use std::any::{Any as DynAny, TypeId};
 use std::cell::Cell;

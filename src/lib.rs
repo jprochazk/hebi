@@ -1,3 +1,5 @@
+// TODO: get rid of this somehow
+// it's only used in `value/object.rs` to access the vtable of a `dyn Object`
 #![feature(ptr_metadata)]
 
 #[macro_use]
