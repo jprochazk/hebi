@@ -161,13 +161,13 @@ impl Object for Any {
 }
 
 impl<T: Object> Ptr<T> {
-  fn as_any(self) -> Ptr<Any> {
+  pub fn into_any(self) -> Ptr<Any> {
     unsafe { mem::transmute::<Ptr<T>, Ptr<Any>>(self) }
   }
 }
 
 impl Ptr<Any> {
-  fn cast<T: Object>(self) -> Option<Ptr<T>> {
+  pub fn cast<T: Object>(self) -> Option<Ptr<T>> {
     match self.inner().type_id == TypeId::of::<T>() {
       true => Some(unsafe { mem::transmute::<Ptr<Any>, Ptr<T>>(self) }),
       false => None,
@@ -240,7 +240,7 @@ mod tests {
         value: 100,
         on_drop: Box::new(noop),
       })
-      .as_any();
+      .into_any();
     assert_eq!(foo.refs(), 1);
     let foo2 = foo.clone();
     assert_eq!(foo.refs(), 2);
@@ -257,7 +257,7 @@ mod tests {
       value: 100,
       on_drop: Box::new(noop),
     });
-    let foo = foo.as_any();
+    let foo = foo.into_any();
     assert_eq!(foo.name(cx), "Foo");
     let foo = foo.cast::<Foo>().unwrap();
     assert_eq!(foo.value, 100);
@@ -292,7 +292,7 @@ mod tests {
           move || *dropped.borrow_mut() = true
         }),
       });
-      let foo = foo.as_any();
+      let foo = foo.into_any();
       drop(foo);
       assert!(*dropped.borrow());
     }

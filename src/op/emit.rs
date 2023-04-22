@@ -1,7 +1,3 @@
-use beef::lean::Cow;
-
-use crate::syntax::ast;
-
 /* pub fn emit<'a, 'src>(
   ctx: Ctx,
   name: impl Into<Cow<'src, str>>,
