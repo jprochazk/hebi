@@ -8,6 +8,11 @@ authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
+[features]
+default = ["nanbox"]
+nanbox = []
+check-recursion-limit = []
+
 [dependencies]
 beef = "0.5.2"
 indexmap = "1.9.3"
