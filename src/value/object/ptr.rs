@@ -2,6 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::cell::Cell;
 use std::fmt::{Debug, Display};
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ptr::{self, NonNull, Pointee};
@@ -79,6 +80,14 @@ impl<T> Ptr<T> {
     let repr = unsafe { ptr.as_ref() };
     repr.refs.set(repr.refs.get() - 1);
   }
+
+  pub fn ptr_hash<H: Hasher>(&self, state: &mut H) {
+    self.repr.hash(state)
+  }
+
+  pub fn ptr_eq(&self, other: &Ptr<T>) -> bool {
+    self.repr.eq(&other.repr)
+  }
 }
 
 impl<T> Deref for Ptr<T> {
@@ -112,8 +121,8 @@ impl<T> Clone for Ptr<T> {
 }
 
 impl<T: Object> Object for Ptr<T> {
-  fn name(&self) -> &'static str {
-    self.inner().data.name()
+  fn type_name(&self) -> &'static str {
+    self.inner().data.type_name()
   }
 
   fn get_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
@@ -134,6 +143,32 @@ impl<T: Debug> Debug for Ptr<T> {
 impl<T: Display> Display for Ptr<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     Display::fmt(&self.inner().data, f)
+  }
+}
+
+impl<T: PartialEq> PartialEq for Ptr<T> {
+  fn eq(&self, other: &Self) -> bool {
+    self.inner().data == other.inner().data
+  }
+}
+
+impl<T: Eq> Eq for Ptr<T> {}
+
+impl<T: PartialOrd> PartialOrd for Ptr<T> {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    self.inner().data.partial_cmp(&other.inner().data)
+  }
+}
+
+impl<T: Ord> Ord for Ptr<T> {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.inner().data.cmp(&other.inner().data)
+  }
+}
+
+impl<T: Hash> Hash for Ptr<T> {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.inner().data.hash(state);
   }
 }
 
@@ -207,9 +242,9 @@ impl Drop for Any {
 }
 
 impl Object for Any {
-  fn name(&self) -> &'static str {
+  fn type_name(&self) -> &'static str {
     let this = unsafe { self.as_dyn_object() };
-    this.name()
+    this.type_name()
   }
 
   fn get_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
@@ -265,7 +300,7 @@ mod tests {
   }
 
   impl Object for Foo {
-    fn name(&self) -> &'static str {
+    fn type_name(&self) -> &'static str {
       "Foo"
     }
   }
@@ -288,19 +323,16 @@ mod tests {
     }
   }
 
+  #[derive(Debug)]
   struct Bar {
+    // it's not dead, we're using it via the `Debug` impl
+    #[allow(dead_code)]
     value: u64,
   }
 
   impl Object for Bar {
-    fn name(&self) -> &'static str {
+    fn type_name(&self) -> &'static str {
       "Bar"
-    }
-  }
-
-  impl Debug for Bar {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      f.debug_struct("Bar").field("value", &self.value).finish()
     }
   }
 
@@ -356,7 +388,7 @@ mod tests {
       on_drop: Box::new(noop),
     });
     let foo = foo.into_any();
-    assert_eq!(foo.name(), "Foo");
+    assert_eq!(foo.type_name(), "Foo");
     let foo = foo.cast::<Foo>().unwrap();
     assert_eq!(foo.value, 100);
     drop(foo);

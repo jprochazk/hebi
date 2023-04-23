@@ -8,6 +8,7 @@ mod portable;
 #[cfg(not(feature = "nanbox"))]
 pub use portable::Value;
 
+pub mod constant;
 pub mod object;
 
 use std::fmt::{Debug, Display};
@@ -55,7 +56,7 @@ impl Debug for Value {
       f.debug_tuple("None").finish()
     } else if let Some(v) = v.to_object() {
       // TODO: maybe also include inner object repr in the debug output
-      f.debug_tuple("Object").field(&v.name()).finish()
+      f.debug_tuple("Object").field(&v.type_name()).finish()
     } else {
       unreachable!("invalid type");
     }
@@ -74,7 +75,7 @@ mod tests {
   }
 
   impl Object for Bar {
-    fn name(&self) -> &'static str {
+    fn type_name(&self) -> &'static str {
       "Bar"
     }
   }
