@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
@@ -42,5 +42,5 @@ impl Display for Module {
 pub struct ModuleDescriptor {
   pub name: Ptr<String>,
   pub root: Ptr<FunctionDescriptor>,
-  pub module_vars: Vec<Ptr<String>>,
+  pub module_vars: IndexSet<Ptr<String>>,
 }

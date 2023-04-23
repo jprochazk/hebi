@@ -10,6 +10,12 @@ pub struct String {
   data: Cow<'static, str>,
 }
 
+impl String {
+  pub fn new(data: Cow<'static, str>) -> Self {
+    Self { data }
+  }
+}
+
 impl Object for String {
   fn type_name(&self) -> &'static str {
     "String"

@@ -99,12 +99,12 @@ pub enum Instruction {
 
 static_assert_size!(Instruction, u32);
 
-pub struct Offset(u16);
+pub struct Offset(pub u16);
 
-pub struct Constant(u16);
+pub struct Constant(pub u16);
 
-pub struct Register(u8);
+pub struct Register(pub u8);
 
-pub struct Upvalue(u8);
+pub struct Upvalue(pub u8);
 
-pub struct ModuleVar(u16);
+pub struct ModuleVar(pub u16);

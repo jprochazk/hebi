@@ -34,6 +34,7 @@ pub struct FunctionDescriptor {
   pub frame_size: u16,
   pub instructions: NonNull<[Instruction]>,
   pub constants: NonNull<[Constant]>,
+  // TODO: spans
 }
 
 fn vec_to_nonnull_ptr<T>(v: Vec<T>) -> NonNull<[T]> {
