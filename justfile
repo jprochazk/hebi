@@ -4,4 +4,4 @@ test *ARGS:
   cargo insta test --review --delete-unreferenced-snapshots --no-ignore {{ARGS}}
 
 miri *ARGS:
-  MIRIFLAGS='-Zmiri-tree-borrows' cargo miri {{ARGS}}
+  MIRIFLAGS='-Zmiri-tree-borrows -Zmiri-permissive-provenance' cargo miri {{ARGS}} --no-default-features -F __miri

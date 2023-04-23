@@ -1,10 +1,12 @@
-/* #[derive(Clone)]
+use crate::value::object::ptr::{Any, Ptr};
+use crate::value::object::Object;
+
 pub enum Value {
   Float(f64),
   Int(i32),
   Bool(bool),
   None,
-  Object(Ptr<object::Object>),
+  Object(Ptr<Any>),
 }
 
 const QNAN: u64 = 0b01111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000;
@@ -31,12 +33,8 @@ impl Value {
     Self::None
   }
 
-  pub fn object<T: ObjectType>(v: Handle<T>) -> Self {
-    Self::Object(v.widen())
-  }
-
-  pub fn object_raw(v: Ptr<Object>) -> Self {
-    Self::Object(v)
+  pub fn object<T: Object>(ptr: Ptr<T>) -> Self {
+    Self::Object(ptr.into_any())
   }
 }
 
@@ -65,6 +63,18 @@ impl Value {
   #[inline]
   pub fn is_object(&self) -> bool {
     matches!(self, Self::Object(..))
+  }
+}
+
+impl Clone for Value {
+  fn clone(&self) -> Self {
+    match self {
+      Self::Float(v) => Self::Float(v.clone()),
+      Self::Int(v) => Self::Int(v.clone()),
+      Self::Bool(v) => Self::Bool(v.clone()),
+      Self::None => Self::None,
+      Self::Object(v) => Self::Object(v.clone()),
+    }
   }
 }
 
@@ -98,22 +108,10 @@ impl Value {
     }
   }
 
-  pub fn to_object<T: ObjectType>(self) -> Option<Handle<T>> {
-    self.to_object_raw().and_then(Handle::from_ptr)
-  }
-
-  pub fn to_object_raw(self) -> Option<Ptr<Object>> {
+  pub fn to_object(self) -> Option<Ptr<Any>> {
     match self {
       Value::Object(v) => Some(v),
       _ => None,
     }
   }
-
-  pub fn as_object_raw(&self) -> Option<&Object> {
-    match self {
-      Value::Object(v) => Some(unsafe { v._get() }),
-      _ => None,
-    }
-  }
 }
- */

@@ -10,12 +10,16 @@ readme = "README.md"
 
 [features]
 default = ["nanbox", "__check_recursion_limit", "__assert_snapshots"]
-# feature set used when running tests under miri
-__miri = ["nanbox"]
 
+# public features
 nanbox = []
+
+# private features
 __check_recursion_limit = []
 __assert_snapshots = []
+
+# feature set used instead of `default` when running tests under miri
+__miri = ["nanbox"]
 
 
 [dependencies]

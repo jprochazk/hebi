@@ -10,7 +10,7 @@ macro_rules! check_module {
   ($input:literal) => {
     let cx = Context::for_test();
     let input = indoc!($input);
-    match parse(cx, input) {
+    match parse(&cx, input) {
       Ok(module) => assert_debug_snapshot!(module),
       Err(e) => {
         for err in e {
@@ -26,7 +26,7 @@ macro_rules! check_expr {
   ($input:literal) => {
     let cx = Context::for_test();
     let input = $input;
-    match Parser::new(cx, Lexer::new(input)).expr() {
+    match Parser::new(&cx, Lexer::new(input)).expr() {
       Ok(module) => assert_debug_snapshot!(module),
       Err(err) => {
         eprintln!("{}", err.report(input, true));
@@ -40,7 +40,7 @@ macro_rules! check_error {
   ($input:literal) => {
     let cx = Context::for_test();
     let input = indoc!($input);
-    match parse(cx, input) {
+    match parse(&cx, input) {
       Ok(_) => panic!("module parsed successfully"),
       Err(e) => {
         let mut errors = String::new();

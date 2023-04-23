@@ -4,107 +4,107 @@ pub mod emit;
 // TODO: document the rest
 
 #[repr(u8)]
-pub enum Op {
-  Nop,
+pub enum Instruction {
+  Noop,
 
   /// Load a constant into the accumulator.
-  Ldac(Const),
+  LoadConstant(Constant),
   /// Load a register into the accumulator.
-  Ldar(Reg),
+  LoadRegister(Register),
   /// Store the accumulator into a register.
-  Star(Reg),
+  StoreRegister(Register),
 
   /// Load an upvalue into the accumulator.
-  Ldau(Upval),
+  LoadUpvalue(Upvalue),
   /// Store the accumulator into an upvalue.
-  Stau(Upval),
+  StoreUpvalue(Upvalue),
 
   /// Load a module variable into the accumulator.
-  Ldamv(Mvar),
+  LoadModuleVar(ModuleVar),
   /// Store the accumulator into a module variable.
-  Stamv(Mvar),
+  StoreModuleVar(ModuleVar),
 
   /// Load a global into the accumulator.
-  Ldag(Const),
+  LoadGlobal(Constant),
   /// Store the accumulator into a global.
-  Stag(Const),
+  StoreGlobal(Constant),
 
   /// Load a field from the object in the accumulator into the accumulator.
   ///
   /// If the object does not have the field, panic.
-  LdaField(Const),
+  LoadField(Constant),
   /// Load an object field into the accumulator.
   ///
   /// The object is stored in the accumulator.
   ///
   /// If the object does not have the field, load `none` into the accumulator.
-  LdaFieldOpt(Const),
+  MaybeLoadField(Constant),
   /// Store the accumulator into an object field.
   ///
   /// The object is stored in a register.
-  StaField(Reg, Const),
+  StoreField(Register, Constant),
 
-  LdaIndex(Reg),
-  LdaIndexOpt(Reg),
-  StaIndex(Reg),
+  LoadIndex(Register),
+  MaybeLoadIndex(Register),
+  StoreIndex(Register),
 
-  LdaSelf,
-  LdaSuper,
+  LoadSelf,
+  LoadSuper,
 
-  LdaNone,
-  LdaTrue,
-  LdaFalse,
-  LdaSmi(i16),
+  LoadNone,
+  LoadTrue,
+  LoadFalse,
+  LoadSmi(i16),
 
-  MakeFn(Const),
-  CloseReg(Reg, Upval),
-  CloseSlot(Upval, Upval),
+  MakeFn(Constant),
+  CloseReg(Register, Upvalue),
+  CloseSlot(Upvalue, Upvalue),
 
-  MakeClass(Reg, Const),
+  MakeClass(Register, Constant),
 
-  Jmp(Offset),
-  JmpL(Const),
+  Jump(Offset),
+  LongJump(Constant),
   Loop(Offset),
-  LoopL(Const),
-  Jmpa(Offset),
-  JmpaL(Const),
+  LongLoop(Constant),
+  JumpIfFalse(Offset),
+  LongJumpIfFalse(Constant),
 
-  Add(Reg),
-  Sub(Reg),
-  Mul(Reg),
-  Div(Reg),
-  Rem(Reg),
-  Pow(Reg),
-  Inv,
+  Add(Register),
+  Sub(Register),
+  Multiplty(Register),
+  Divide(Register),
+  Remainder(Register),
+  Power(Register),
+  Inverse,
   Not,
 
-  CmpEq(Reg),
-  CmpNe(Reg),
-  CmpGt(Reg),
-  CmpGe(Reg),
-  CmpLt(Reg),
-  CmpLe(Reg),
+  CompareEqual(Register),
+  CompareNotEqual(Register),
+  CompareGreaterThan(Register),
+  CompareGreaterEqual(Register),
+  CompareLessThan(Register),
+  CompareLessEqual(Register),
 
-  Is(Reg),
-  In(Reg),
+  Is(Register),
+  In(Register),
 
-  Print(Reg, u8),
-  PrintL(Const),
+  Print(Register, u8),
+  PrintList(Constant),
 
-  Call(Reg, u8),
+  Call(Register, u8),
 
-  Ret,
+  Return,
   Yield = u8::MAX,
 }
 
-static_assert_size!(Op, u32);
+static_assert_size!(Instruction, u32);
 
 pub struct Offset(u16);
 
-pub struct Const(u16);
+pub struct Constant(u16);
 
-pub struct Reg(u8);
+pub struct Register(u8);
 
-pub struct Upval(u8);
+pub struct Upvalue(u8);
 
-pub struct Mvar(u16);
+pub struct ModuleVar(u16);

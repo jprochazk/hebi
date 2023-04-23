@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'src> Parser<'src> {
+impl<'cx, 'src> Parser<'cx, 'src> {
   pub(super) fn expr(&mut self) -> Result<ast::Expr<'src>> {
     self.maybe_expr()
   }
@@ -176,22 +176,22 @@ impl<'src> Parser<'src> {
     self.check_recursion_limit(self.current().span)?;
 
     if self.bump_if(Lit_None) {
-      return Ok(ast::lit::none(self.cx.clone(), self.previous().span));
+      return Ok(ast::lit::none(self.cx, self.previous().span));
     }
 
     if self.bump_if(Lit_Bool) {
       let token = self.previous();
-      return ast::lit::bool(self.cx.clone(), token.span, self.lex.lexeme(token));
+      return ast::lit::bool(self.cx, token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_Int) {
       let token = self.previous();
-      return ast::lit::int(self.cx.clone(), token.span, self.lex.lexeme(token));
+      return ast::lit::int(self.cx, token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_Float) {
       let token = self.previous();
-      return ast::lit::float(self.cx.clone(), token.span, self.lex.lexeme(token));
+      return ast::lit::float(self.cx, token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_String) {

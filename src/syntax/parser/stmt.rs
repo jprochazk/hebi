@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::*;
 
-impl<'src> Parser<'src> {
+impl<'cx, 'src> Parser<'cx, 'src> {
   pub(super) fn top_level_stmt(&mut self) -> Result<()> {
     self.indent_eq()?;
     let stmt = self.stmt()?;

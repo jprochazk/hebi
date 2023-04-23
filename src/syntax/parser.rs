@@ -14,7 +14,7 @@ use crate::span::Span;
 // TODO: `is` and `in`
 // TODO: `async`/`await` - maybe post-MVP
 
-pub fn parse(cx: Context, src: &str) -> Result<ast::Module, Vec<Error>> {
+pub fn parse<'src>(cx: &Context, src: &'src str) -> Result<ast::Module<'src>, Vec<Error>> {
   let lexer = Lexer::new(src);
   let parser = Parser::new(cx, lexer);
   parser.module()
@@ -102,8 +102,8 @@ impl Default for Func {
   }
 }
 
-struct Parser<'src> {
-  cx: Context,
+struct Parser<'cx, 'src> {
+  cx: &'cx Context,
   module: ast::Module<'src>,
   lex: Lexer<'src>,
   errors: Vec<Error>,
@@ -111,8 +111,8 @@ struct Parser<'src> {
   state: State,
 }
 
-impl<'src> Parser<'src> {
-  fn new(cx: Context, lex: Lexer<'src>) -> Self {
+impl<'cx, 'src> Parser<'cx, 'src> {
+  fn new(cx: &'cx Context, lex: Lexer<'src>) -> Self {
     Self {
       cx,
       module: ast::Module::new(),
@@ -274,7 +274,7 @@ mod indent;
 mod module;
 mod stmt;
 
-impl<'a> Parser<'a> {
+impl<'cx, 'a> Parser<'cx, 'a> {
   // On average, a single parse_XXX() method consumes between 10 and 700 bytes of
   // stack space. Assuming ~50 recursive calls per dive and 700 bytes of stack
   // space per call, we'll require 50 * 700 = 35k bytes of stack space in order
