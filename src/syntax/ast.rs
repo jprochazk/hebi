@@ -179,8 +179,7 @@ pub struct Field<'src> {
   pub default: Option<Expr<'src>>,
 }
 
-#[cfg_attr(test, derive(Debug))]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Meta {
   Str,
 
