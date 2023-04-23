@@ -285,15 +285,15 @@ impl<'a> Parser<'a> {
   // are converted to exceptions and handled by the host, which means a
   // `try { ... } catch { ... }` around a call to one of the Hebi compiler
   // functions would be enough to properly handle this case.
-  #[cfg(any(target_family = "wasm", not(feature = "check-recursion-limit")))]
+  #[cfg(any(target_family = "wasm", not(feature = "__check_recursion_limit")))]
   fn check_recursion_limit(&self, _span: Span) -> Result<(), Error> {
     Ok(())
   }
 
-  #[cfg(all(not(target_family = "wasm"), feature = "check-recursion-limit"))]
+  #[cfg(all(not(target_family = "wasm"), feature = "__check_recursion_limit"))]
   fn check_recursion_limit(&self, span: Span) -> Result<()> {
     if stacker::remaining_stack()
-      .map(|available| available > MINIMUM_STACK_REQUIRED)
+      .map(|available| available > Self::MINIMUM_STACK_REQUIRED)
       .unwrap_or(true)
     {
       Ok(())

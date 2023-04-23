@@ -138,5 +138,5 @@ print(v) # { a: 0, b: 1 }
     .map(|(s, t)| DebugToken(t, s))
     .collect::<Vec<_>>();
 
-  insta::assert_debug_snapshot!(tokens)
+  assert_debug_snapshot!(tokens)
 }

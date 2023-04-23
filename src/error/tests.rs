@@ -4,7 +4,7 @@ macro_rules! check {
   ($input:literal, $span:expr) => {{
     let cx = Context::for_test();
 
-    insta::assert_snapshot!(cx.error("error: test", $span).report($input, true))
+    assert_snapshot!(cx.error("error: test", $span).report($input, true));
   }};
 }
 

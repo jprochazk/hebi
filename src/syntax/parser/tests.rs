@@ -11,7 +11,7 @@ macro_rules! check_module {
     let cx = Context::for_test();
     let input = indoc!($input);
     match parse(cx, input) {
-      Ok(module) => insta::assert_debug_snapshot!(module),
+      Ok(module) => assert_debug_snapshot!(module),
       Err(e) => {
         for err in e {
           eprintln!("{}", err.report(input, true));
@@ -27,7 +27,7 @@ macro_rules! check_expr {
     let cx = Context::for_test();
     let input = $input;
     match Parser::new(cx, Lexer::new(input)).expr() {
-      Ok(module) => insta::assert_debug_snapshot!(module),
+      Ok(module) => assert_debug_snapshot!(module),
       Err(err) => {
         eprintln!("{}", err.report(input, true));
         panic!("Failed to parse source, see errors above.")
@@ -48,7 +48,7 @@ macro_rules! check_error {
           errors += &err.report(input, true);
           errors += "\n";
         }
-        insta::assert_snapshot!(errors);
+        assert_snapshot!(errors);
       }
     };
   };

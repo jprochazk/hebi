@@ -9,9 +9,14 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
-default = ["nanbox"]
+default = ["nanbox", "__check_recursion_limit", "__assert_snapshots"]
+# feature set used when running tests under miri
+__miri = ["nanbox"]
+
 nanbox = []
-check-recursion-limit = []
+__check_recursion_limit = []
+__assert_snapshots = []
+
 
 [dependencies]
 beef = "0.5.2"
