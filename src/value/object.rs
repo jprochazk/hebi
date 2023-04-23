@@ -1,18 +1,24 @@
 use std::alloc::Layout;
 use std::any::{Any as DynAny, TypeId};
 use std::cell::Cell;
+use std::fmt::{Debug, Display};
 use std::ops::Deref;
 use std::ptr::{self, NonNull, Pointee};
 use std::{alloc, mem};
 
 use crate::ctx::Context;
+use crate::error::Result;
 
 pub struct Value {}
 
-pub trait Object: DynAny {
+pub trait Object: DynAny + Debug + Display {
   fn name(&self, cx: Context) -> &'static str;
-  fn get_field(&self, cx: Context, key: &str) -> Option<Value>;
-  fn set_field(&self, cx: Context, key: &str, value: Value);
+  fn get_field(&self, _: Context, _: &str) -> Result<Option<Value>> {
+    Ok(None)
+  }
+  fn set_field(&self, cx: Context, key: &str, _: Value) -> Result<()> {
+    Err(cx.error(format!("cannot set field `{key}`"), None))
+  }
   /* fn get_index(&self, key: Value) -> Option<Value>;
   fn set_index(&self, key: Value, value: Value); */
 }
@@ -78,12 +84,24 @@ impl<T: Object> Object for Ptr<T> {
     self.inner().data.name(cx)
   }
 
-  fn get_field(&self, cx: Context, key: &str) -> Option<Value> {
+  fn get_field(&self, cx: Context, key: &str) -> Result<Option<Value>> {
     self.inner().data.get_field(cx, key)
   }
 
-  fn set_field(&self, cx: Context, key: &str, value: Value) {
+  fn set_field(&self, cx: Context, key: &str, value: Value) -> Result<()> {
     self.inner().data.set_field(cx, key, value)
+  }
+}
+
+impl<T: Debug> Debug for Ptr<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    Debug::fmt(&self.inner().data, f)
+  }
+}
+
+impl<T: Display> Display for Ptr<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    Display::fmt(&self.inner().data, f)
   }
 }
 
@@ -149,14 +167,28 @@ impl Object for Any {
     this.name(cx)
   }
 
-  fn get_field(&self, cx: Context, key: &str) -> Option<Value> {
+  fn get_field(&self, cx: Context, key: &str) -> Result<Option<Value>> {
     let this = unsafe { self.as_dyn_object() };
     this.get_field(cx, key)
   }
 
-  fn set_field(&self, cx: Context, key: &str, value: Value) {
+  fn set_field(&self, cx: Context, key: &str, value: Value) -> Result<()> {
     let this = unsafe { self.as_dyn_object() };
     this.set_field(cx, key, value)
+  }
+}
+
+impl Debug for Any {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let this = unsafe { self.as_dyn_object() };
+    Debug::fmt(this, f)
+  }
+}
+
+impl Display for Any {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let this = unsafe { self.as_dyn_object() };
+    Display::fmt(this, f)
   }
 }
 
@@ -167,10 +199,10 @@ impl<T: Object> Ptr<T> {
 }
 
 impl Ptr<Any> {
-  pub fn cast<T: Object>(self) -> Option<Ptr<T>> {
+  pub fn cast<T: Object>(self) -> Result<Ptr<T>, Ptr<Any>> {
     match self.inner().type_id == TypeId::of::<T>() {
-      true => Some(unsafe { mem::transmute::<Ptr<Any>, Ptr<T>>(self) }),
-      false => None,
+      true => Ok(unsafe { mem::transmute::<Ptr<Any>, Ptr<T>>(self) }),
+      false => Err(self),
     }
   }
 }
@@ -192,23 +224,45 @@ mod tests {
       let _ = cx;
       "Foo"
     }
+  }
 
-    fn get_field(&self, cx: Context, key: &str) -> Option<Value> {
-      let _ = cx;
-      let _ = key;
-      None
+  impl Debug for Foo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      f.debug_struct("Foo").field("value", &self.value).finish()
     }
+  }
 
-    fn set_field(&self, cx: Context, key: &str, value: Value) {
-      let _ = cx;
-      let _ = key;
-      let _ = value;
+  impl Display for Foo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      Debug::fmt(self, f)
     }
   }
 
   impl Drop for Foo {
     fn drop(&mut self) {
       (self.on_drop)();
+    }
+  }
+
+  struct Bar {
+    value: u64,
+  }
+
+  impl Object for Bar {
+    fn name(&self, _: Context) -> &'static str {
+      "Bar"
+    }
+  }
+
+  impl Debug for Bar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      f.debug_struct("Bar").field("value", &self.value).finish()
+    }
+  }
+
+  impl Display for Bar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      Debug::fmt(self, f)
     }
   }
 
@@ -296,5 +350,25 @@ mod tests {
       drop(foo);
       assert!(*dropped.borrow());
     }
+  }
+
+  #[test]
+  fn any_casting() {
+    let cx = Context::for_test();
+
+    let v = cx.alloc(Bar { value: 100 });
+    let v = v.into_any();
+    let v = v.cast::<Foo>().unwrap_err();
+    let _ = v.cast::<Bar>().unwrap();
+  }
+
+  #[test]
+  fn debug_and_display_fmt() {
+    let cx = Context::for_test();
+
+    let v = cx.alloc(Bar { value: 100 });
+    assert_eq!("Bar { value: 100 }", v.to_string());
+    let v = v.into_any();
+    assert_eq!("Bar { value: 100 }", v.to_string());
   }
 }
