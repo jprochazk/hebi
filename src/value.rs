@@ -102,9 +102,7 @@ mod tests {
       Value::object(cx.alloc(Bar { value: 100 })),
     ];
     let snapshot = format!("[{}]", values.iter().join(", "));
-    if cfg!(feature = "emit_snapshots") {
-      insta::assert_snapshot!(snapshot);
-    }
+    assert_snapshot!(snapshot);
   }
 
   #[test]

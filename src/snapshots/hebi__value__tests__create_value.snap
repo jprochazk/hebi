@@ -1,0 +1,5 @@
+---
+source: src/value.rs
+expression: snapshot
+---
+[3.141592653589793, -1000000, true, none, Bar { value: 100 }]
