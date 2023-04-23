@@ -1,6 +1,8 @@
 use std::error::Error as StdError;
 use std::fmt::{Debug, Display, Write};
+use std::ops::Range;
 
+use crate::ctx::Context;
 use crate::span::Span;
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
@@ -11,10 +13,47 @@ pub struct Error {
   pub message: String,
 }
 
+pub trait MaybeSpan {
+  fn into_span(self) -> Span;
+}
+
+impl MaybeSpan for Span {
+  fn into_span(self) -> Span {
+    self
+  }
+}
+
+impl MaybeSpan for Range<usize> {
+  fn into_span(self) -> Span {
+    self.into()
+  }
+}
+
+impl MaybeSpan for Option<Range<usize>> {
+  fn into_span(self) -> Span {
+    match self {
+      Some(v) => v.into(),
+      None => (0..0).into(),
+    }
+  }
+}
+
+impl Context {
+  pub fn error(&self, message: impl ToString, span: impl MaybeSpan) -> Error {
+    Error::new(message, span)
+  }
+}
+
+macro_rules! fail {
+  ($cx:expr, $message:expr, $span:expr $(,)?) => {
+    return Err($cx.error($message, $span))
+  };
+}
+
 impl Error {
-  pub fn new(message: impl ToString, span: impl Into<Span>) -> Self {
+  fn new(message: impl ToString, span: impl MaybeSpan) -> Self {
     Self {
-      span: span.into(),
+      span: span.into_span(),
       message: message.to_string(),
     }
   }

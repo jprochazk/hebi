@@ -5,8 +5,10 @@
 #[macro_use]
 mod util;
 
-pub mod ctx;
+#[macro_use]
 pub mod error;
+
+pub mod ctx;
 pub mod op;
 pub mod span;
 pub mod syntax;

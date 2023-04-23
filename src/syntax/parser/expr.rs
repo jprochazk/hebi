@@ -173,32 +173,32 @@ impl<'src> Parser<'src> {
   }
 
   fn primary_expr(&mut self) -> Result<ast::Expr<'src>> {
-    check_recursion_limit(self.current().span)?;
+    self.check_recursion_limit(self.current().span)?;
 
     if self.bump_if(Lit_None) {
-      return Ok(ast::lit::none(self.previous().span));
+      return Ok(ast::lit::none(self.cx.clone(), self.previous().span));
     }
 
     if self.bump_if(Lit_Bool) {
       let token = self.previous();
-      return Ok(ast::lit::bool(token.span, self.lex.lexeme(token)));
+      return ast::lit::bool(self.cx.clone(), token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_Int) {
       let token = self.previous();
-      return ast::lit::int(token.span, self.lex.lexeme(token));
+      return ast::lit::int(self.cx.clone(), token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_Float) {
       let token = self.previous();
-      return ast::lit::float(token.span, self.lex.lexeme(token));
+      return ast::lit::float(self.cx.clone(), token.span, self.lex.lexeme(token));
     }
 
     if self.bump_if(Lit_String) {
       let token = self.previous();
       match ast::lit::str(token.span, self.lex.lexeme(token)) {
         Some(str) => return Ok(str),
-        None => return Err(Error::new("invalid escape sequence", token.span)),
+        None => fail!(self.cx, "invalid escape sequence", token.span),
       }
     }
 
@@ -235,36 +235,40 @@ impl<'src> Parser<'src> {
     }
 
     if self.bump_if(Kw_Self) {
-      if self.ctx.current_class.is_none()
-        || !self.ctx.current_func.map(|f| f.has_self).unwrap_or(false)
+      if self.state.current_class.is_none()
+        || !self.state.current_func.map(|f| f.has_self).unwrap_or(false)
       {
-        return Err(Error::new(
+        fail!(
+          self.cx,
           "cannot access `self` outside of class method",
           self.previous().span,
-        ));
+        );
       }
       return Ok(ast::expr_get_self(self.previous().span));
     }
 
     if self.bump_if(Kw_Super) {
-      if let Some(c) = &self.ctx.current_class {
+      if let Some(c) = &self.state.current_class {
         if !c.has_super {
-          return Err(Error::new(
+          fail!(
+            self.cx,
             "cannot access `super` in a class with no parent class",
             self.previous().span,
-          ));
+          );
         }
-        if !self.ctx.current_func.map(|f| f.has_self).unwrap_or(false) {
-          return Err(Error::new(
+        if !self.state.current_func.map(|f| f.has_self).unwrap_or(false) {
+          fail!(
+            self.cx,
             "cannot access `super` outside of a class method that takes `self`",
             self.previous().span,
-          ));
+          );
         }
       } else {
-        return Err(Error::new(
+        fail!(
+          self.cx,
           "cannot access `super` outside of class method",
           self.previous().span,
-        ));
+        )
       }
       return Ok(ast::expr_get_super(self.previous().span));
     }
@@ -274,13 +278,13 @@ impl<'src> Parser<'src> {
     }
 
     if self.bump_if(Brk_ParenL) {
-      let ctx = self.ctx.with_ignore_indent();
-      let expr = self.with_ctx(ctx, |p| p.expr())?;
+      let state = self.state.with_ignore_indent();
+      let expr = self.with_state(state, |p| p.expr())?;
       self.expect(Brk_ParenR)?;
       return Ok(expr);
     }
 
-    Err(Error::new("unexpected token", self.current().span))
+    Err(self.cx.error("unexpected token", self.current().span))
   }
 
   fn dict_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
@@ -305,8 +309,8 @@ impl<'src> Parser<'src> {
     let mut args = Vec::new();
     self.expect(Brk_ParenL)?;
     if !self.current().is(Brk_ParenR) {
-      let ctx = self.ctx.with_ignore_indent();
-      self.with_ctx(ctx, |p| {
+      let state = self.state.with_ignore_indent();
+      self.with_state(state, |p| {
         args.push(p.expr()?);
         while p.bump_if(Tok_Comma) && !p.current().is(Brk_ParenR) {
           args.push(p.expr()?);

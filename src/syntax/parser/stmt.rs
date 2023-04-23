@@ -53,10 +53,11 @@ impl<'src> Parser<'src> {
       let end = self.previous().span.end;
       Ok(ast::import_symbols_stmt(start..end, module, symbols))
     } else {
-      Err(Error::new(
-        "expected `from` or `import`",
-        self.previous().span,
-      ))
+      Err(
+        self
+          .cx
+          .error("expected `from` or `import`", self.previous().span),
+      )
     }
   }
 
@@ -179,10 +180,10 @@ impl<'src> Parser<'src> {
   }
 
   fn loop_body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
-    let ctx = Context::with_loop(&self.ctx);
-    let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
+    let state = State::with_loop(&self.state);
+    let (state, body) = self.with_state2(state, Self::body)?;
     // yield may appear in loop, in which case we have to propagate it upwards here
-    self.ctx.current_func = ctx.current_func;
+    self.state.current_func = state.current_func;
 
     Ok(body)
   }
@@ -202,12 +203,12 @@ impl<'src> Parser<'src> {
     let params = self.func_params()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let ctx = self.ctx.with_func(params.has_self);
-    let (ctx, body) = self.with_ctx2(ctx, Self::body)?;
-    let has_yield = ctx
+    let state = self.state.with_func(params.has_self);
+    let (state, body) = self.with_state2(state, Self::body)?;
+    let has_yield = state
       .current_func
-      // TODO: improve `ctx` API to make this impossible?
-      .expect("`ctx.current_func` set to `None` by a mysterious force outside of `Parser::func`")
+      // TODO: improve `state` API to make this impossible?
+      .expect("`state.current_func` set to `None` by a mysterious force outside of `Parser::func`")
       .has_yield;
     Ok(ast::func(name, params, body, has_yield))
   }
@@ -219,8 +220,8 @@ impl<'src> Parser<'src> {
     if has_self {
       let span = self.previous().span;
       self.bump_if(Tok_Comma);
-      if self.ctx.current_class.is_none() {
-        return Err(Error::new("cannot access `self` outside of class", span));
+      if self.state.current_class.is_none() {
+        fail!(self.cx, "cannot access `self` outside of class", span);
       }
     }
 
@@ -243,20 +244,18 @@ impl<'src> Parser<'src> {
   fn param(&mut self, params: &mut ast::Params<'src>, state: &mut ParamState) -> Result<()> {
     let name = self.ident()?;
     if params.contains(&name) {
-      return Err(Error::new(
-        format!("duplicate argument `{name}`"),
-        name.span,
-      ));
+      fail!(self.cx, format!("duplicate argument `{name}`"), name.span,);
     }
     let param = if self.bump_if(Op_Equal) {
       *state = ParamState::Default;
       (name, Some(self.expr()?))
     } else {
       if *state == ParamState::Default {
-        return Err(Error::new(
+        fail!(
+          self.cx,
           "non-default argument follows default argument",
           self.previous().span,
-        ));
+        );
       }
 
       (name, None)
@@ -283,8 +282,8 @@ impl<'src> Parser<'src> {
     };
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let ctx = Context::with_class(parent.is_some());
-    let members = self.with_ctx(ctx, |this| this.class_members())?;
+    let state = State::with_class(parent.is_some());
+    let members = self.with_state(state, |this| this.class_members())?;
     let end = self.previous().span.end;
     Ok(ast::class_stmt(start..end, name, parent, members))
   }
@@ -296,7 +295,7 @@ impl<'src> Parser<'src> {
       // empty class (single line)
       self
         .expect(Kw_Pass)
-        .map_err(|e| Error::new("invalid indentation", e.span))?;
+        .map_err(|e| self.cx.error("invalid indentation", e.span))?;
       return Ok(members);
     }
 
@@ -315,7 +314,7 @@ impl<'src> Parser<'src> {
       if names.contains(&name) {
         self
           .errors
-          .push(Error::new(format!("duplicate field {name}"), name.span));
+          .push(self.cx.error(format!("duplicate field {name}"), name.span));
       } else {
         names.insert(name.clone());
       }
@@ -343,19 +342,22 @@ impl<'src> Parser<'src> {
         self.no_indent()?;
         let f = self.func(ident)?;
 
-        let which = name
-          .which()
-          .ok_or_else(|| Error::new(format!("unknown meta method `{}`", f.name), name.span))?;
+        let which = name.which().ok_or_else(|| {
+          self
+            .cx
+            .error(format!("unknown meta method `{}`", f.name), name.span)
+        })?;
         if members.meta.iter().any(|(k, _)| *k == which) {
-          return Err(Error::new(
+          fail!(
+            self.cx,
             format!("duplicate meta method `{}`", f.name),
             name.span,
-          ));
+          );
         }
         if !f.params.has_self {
-          return Err(Error::new("meta methods must take `self`", f.name.span));
+          fail!(self.cx, "meta methods must take `self`", f.name.span);
         }
-        check_meta_params(&which, &f.params, f.name.span)?;
+        self.check_meta_params(&which, &f.params, f.name.span)?;
 
         members.meta.push((which, f));
       } else {
@@ -363,7 +365,7 @@ impl<'src> Parser<'src> {
         if names.contains(&name) {
           self
             .errors
-            .push(Error::new(format!("duplicate field {name}"), name.span));
+            .push(self.cx.error(format!("duplicate field {name}"), name.span));
         } else {
           names.insert(name.clone());
         }
@@ -374,10 +376,11 @@ impl<'src> Parser<'src> {
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
-      return Err(Error::new(
+      fail!(
+        self.cx,
         "fields may not appear after methods",
         self.current().span,
-      ));
+      );
     }
 
     self.dedent()?;
@@ -386,7 +389,7 @@ impl<'src> Parser<'src> {
   }
 
   fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
-    check_recursion_limit(self.current().span)?;
+    self.check_recursion_limit(self.current().span)?;
     if self.no_indent().is_ok() {
       Ok(vec![self.simple_stmt()?])
     } else {
@@ -420,11 +423,8 @@ impl<'src> Parser<'src> {
   }
 
   fn return_stmt(&mut self) -> Result<ast::Stmt<'src>> {
-    if self.ctx.current_func.is_none() {
-      return Err(Error::new(
-        "return outside of function",
-        self.current().span,
-      ));
+    if self.state.current_func.is_none() {
+      fail!(self.cx, "return outside of function", self.current().span);
     }
 
     self.expect(Kw_Return)?;
@@ -435,8 +435,8 @@ impl<'src> Parser<'src> {
   }
 
   fn continue_stmt(&mut self) -> Result<ast::Stmt<'src>> {
-    if self.ctx.current_loop.is_none() {
-      return Err(Error::new("continue outside of loop", self.current().span));
+    if self.state.current_loop.is_none() {
+      fail!(self.cx, "continue outside of loop", self.current().span);
     }
 
     self.expect(Kw_Continue)?;
@@ -444,8 +444,8 @@ impl<'src> Parser<'src> {
   }
 
   fn break_stmt(&mut self) -> Result<ast::Stmt<'src>> {
-    if self.ctx.current_loop.is_none() {
-      return Err(Error::new("break outside of loop", self.current().span));
+    if self.state.current_loop.is_none() {
+      fail!(self.cx, "break outside of loop", self.current().span);
     }
 
     self.expect(Kw_Break)?;
@@ -489,7 +489,7 @@ impl<'src> Parser<'src> {
             ast::AssignKind::Decl => "invalid variable declaration",
             ast::AssignKind::Op(_) => "invalid assignment target",
           };
-          return Err(Error::new(msg, error_span));
+          fail!(self.cx, msg, error_span);
         };
         return Ok(stmt);
       }
@@ -514,28 +514,28 @@ impl<'src> Parser<'src> {
     self.bump(); // bump operator
     Some(kind)
   }
-}
 
-fn check_meta_params(meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
-  let arity = meta.arity();
+  fn check_meta_params(&self, meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
+    let arity = meta.arity();
 
-  if !params.has_self || params.pos.len() != meta.arity() {
-    let msg = if arity > 1 {
-      format!(
-        "meta method `{}` expects `self` and {} params",
-        meta.as_str(),
-        meta.arity()
-      )
-    } else {
-      format!(
-        "meta method `{}` expects `self` and no other params",
-        meta.as_str()
-      )
-    };
-    return Err(Error::new(msg, span));
+    if !params.has_self || params.pos.len() != meta.arity() {
+      let msg = if arity > 1 {
+        format!(
+          "meta method `{}` expects `self` and {} params",
+          meta.as_str(),
+          meta.arity()
+        )
+      } else {
+        format!(
+          "meta method `{}` expects `self` and no other params",
+          meta.as_str()
+        )
+      };
+      fail!(self.cx, msg, span);
+    }
+
+    Ok(())
   }
-
-  Ok(())
 }
 
 #[allow(clippy::ptr_arg)]

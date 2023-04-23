@@ -7,27 +7,28 @@ use self::indent::IndentStack;
 use super::ast;
 use super::lexer::TokenKind::*;
 use super::lexer::{Lexer, Token, TokenKind};
+use crate::ctx::Context;
 use crate::error::{Error, Result};
 use crate::span::Span;
 
 // TODO: `is` and `in`
 // TODO: `async`/`await` - maybe post-MVP
 
-pub fn parse(src: &str) -> Result<ast::Module, Vec<Error>> {
+pub fn parse(cx: Context, src: &str) -> Result<ast::Module, Vec<Error>> {
   let lexer = Lexer::new(src);
-  let parser = Parser::new(lexer);
+  let parser = Parser::new(cx, lexer);
   parser.module()
 }
 
 #[derive(Clone)]
-struct Context {
+struct State {
   ignore_indent: bool,
   current_loop: Option<()>,
   current_func: Option<Func>,
   current_class: Option<Class>,
 }
 
-impl Context {
+impl State {
   pub fn with_ignore_indent(&self) -> Self {
     Self {
       ignore_indent: true,
@@ -80,7 +81,7 @@ struct Func {
 }
 
 #[allow(clippy::derivable_impls)]
-impl Default for Context {
+impl Default for State {
   fn default() -> Self {
     Self {
       ignore_indent: false,
@@ -102,68 +103,70 @@ impl Default for Func {
 }
 
 struct Parser<'src> {
+  cx: Context,
   module: ast::Module<'src>,
   lex: Lexer<'src>,
   errors: Vec<Error>,
   indent: IndentStack,
-  ctx: Context,
+  state: State,
 }
 
 impl<'src> Parser<'src> {
-  fn new(lex: Lexer<'src>) -> Self {
+  fn new(cx: Context, lex: Lexer<'src>) -> Self {
     Self {
+      cx,
       module: ast::Module::new(),
       lex,
       errors: Vec::new(),
       indent: IndentStack::new(),
-      ctx: Context::default(),
+      state: State::default(),
     }
   }
 
   fn no_indent(&self) -> Result<()> {
     let token = self.current();
-    if self.ctx.ignore_indent || token.is(Tok_Eof) || token.ws.is_none() {
+    if self.state.ignore_indent || token.is(Tok_Eof) || token.ws.is_none() {
       Ok(())
     } else {
-      Err(Error::new("invalid indentation", token.span))
+      Err(self.cx.error("invalid indentation", token.span))
     }
   }
 
   fn indent_eq(&self) -> Result<()> {
     let token = self.current();
-    if self.ctx.ignore_indent
+    if self.state.ignore_indent
       || token.is(Tok_Eof)
       || matches!(token.ws, Some(n) if self.indent.is_eq(n))
     {
       Ok(())
     } else {
-      Err(Error::new("invalid indentation", token.span))
+      Err(self.cx.error("invalid indentation", token.span))
     }
   }
 
   fn indent_gt(&mut self) -> Result<()> {
     let token = self.current();
-    if self.ctx.ignore_indent
+    if self.state.ignore_indent
       || token.is(Tok_Eof)
       || matches!(token.ws, Some(n) if self.indent.is_gt(n))
     {
       self.indent.push(token.ws.unwrap());
       Ok(())
     } else {
-      Err(Error::new("invalid indentation", token.span))
+      Err(self.cx.error("invalid indentation", token.span))
     }
   }
 
   fn dedent(&mut self) -> Result<()> {
     let token = self.current();
-    if self.ctx.ignore_indent
+    if self.state.ignore_indent
       || token.is(Tok_Eof)
       || matches!(token.ws, Some(n) if self.indent.is_lt(n))
     {
       self.indent.pop();
       Ok(())
     } else {
-      Err(Error::new("invalid indentation", token.span))
+      Err(self.cx.error("invalid indentation", token.span))
     }
   }
 
@@ -182,10 +185,11 @@ impl<'src> Parser<'src> {
     if self.bump_if(kind) {
       Ok(())
     } else {
-      Err(Error::new(
-        format!("expected `{}`", kind.name()),
-        self.current().span,
-      ))
+      Err(
+        self
+          .cx
+          .error(format!("expected `{}`", kind.name()), self.current().span),
+      )
     }
   }
 
@@ -204,7 +208,7 @@ impl<'src> Parser<'src> {
   fn bump(&mut self) -> &Token {
     self.lex.bump();
     while self.current().is(Tok_Error) {
-      self.errors.push(Error::new(
+      self.errors.push(self.cx.error(
         format!("invalid token `{}`", self.lex.lexeme(self.current())),
         self.current().span,
       ));
@@ -213,26 +217,30 @@ impl<'src> Parser<'src> {
     self.previous()
   }
 
-  /// Calls `f` in the context `ctx`.
-  /// `ctx` is used only for the duration of the call to `f`.
+  /// Calls `f` in the context of `state`.
+  /// `state` is used only for the duration of the call to `f`.
   #[inline]
-  fn with_ctx<T>(&mut self, mut ctx: Context, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-    std::mem::swap(&mut self.ctx, &mut ctx);
+  fn with_state<T>(
+    &mut self,
+    mut state: State,
+    f: impl FnOnce(&mut Self) -> Result<T>,
+  ) -> Result<T> {
+    std::mem::swap(&mut self.state, &mut state);
     let res = f(self);
-    std::mem::swap(&mut self.ctx, &mut ctx);
+    std::mem::swap(&mut self.state, &mut state);
     res
   }
 
   #[inline]
-  fn with_ctx2<T>(
+  fn with_state2<T>(
     &mut self,
-    mut ctx: Context,
+    mut state: State,
     f: impl FnOnce(&mut Self) -> Result<T>,
-  ) -> Result<(Context, T)> {
-    std::mem::swap(&mut self.ctx, &mut ctx);
+  ) -> Result<(State, T)> {
+    std::mem::swap(&mut self.state, &mut state);
     let res = f(self);
-    std::mem::swap(&mut self.ctx, &mut ctx);
-    Ok((ctx, res?))
+    std::mem::swap(&mut self.state, &mut state);
+    Ok((state, res?))
   }
 
   fn sync(&mut self) {
@@ -248,7 +256,7 @@ impl<'src> Parser<'src> {
         // break on keywords that begin statements
         Kw_Import | Kw_From | Kw_Fn | Kw_Class | Kw_For | Kw_While | Kw_Loop | Kw_If => break,
         // handle any errors
-        Tok_Error => self.errors.push(Error::new(
+        Tok_Error => self.errors.push(self.cx.error(
           format!("invalid token `{}`", self.lex.lexeme(self.current())),
           self.current().span,
         )),
@@ -266,30 +274,32 @@ mod indent;
 mod module;
 mod stmt;
 
-// On average, a single parse_XXX() method consumes between 10 and 700 bytes of
-// stack space. Assuming ~50 recursive calls per dive and 700 bytes of stack
-// space per call, we'll require 50 * 700 = 35k bytes of stack space in order
-// to dive. For future proofing, we round this value up to 64k bytes.
-const MINIMUM_STACK_REQUIRED: usize = 64_000;
+impl<'a> Parser<'a> {
+  // On average, a single parse_XXX() method consumes between 10 and 700 bytes of
+  // stack space. Assuming ~50 recursive calls per dive and 700 bytes of stack
+  // space per call, we'll require 50 * 700 = 35k bytes of stack space in order
+  // to dive. For future proofing, we round this value up to 64k bytes.
+  const MINIMUM_STACK_REQUIRED: usize = 64_000;
 
-// On WASM, remaining_stack() will always return None. Stack overflow panics
-// are converted to exceptions and handled by the host, which means a
-// `try { ... } catch { ... }` around a call to one of the Hebi compiler
-// functions would be enough to properly handle this case.
-#[cfg(any(target_family = "wasm", not(feature = "check-recursion-limit")))]
-fn check_recursion_limit(_span: Span) -> Result<(), Error> {
-  Ok(())
-}
-
-#[cfg(all(not(target_family = "wasm"), feature = "check-recursion-limit"))]
-fn check_recursion_limit(span: Span) -> Result<()> {
-  if stacker::remaining_stack()
-    .map(|available| available > MINIMUM_STACK_REQUIRED)
-    .unwrap_or(true)
-  {
+  // On WASM, remaining_stack() will always return None. Stack overflow panics
+  // are converted to exceptions and handled by the host, which means a
+  // `try { ... } catch { ... }` around a call to one of the Hebi compiler
+  // functions would be enough to properly handle this case.
+  #[cfg(any(target_family = "wasm", not(feature = "check-recursion-limit")))]
+  fn check_recursion_limit(&self, _span: Span) -> Result<(), Error> {
     Ok(())
-  } else {
-    Err(Error::new("nesting limit reached", span))
+  }
+
+  #[cfg(all(not(target_family = "wasm"), feature = "check-recursion-limit"))]
+  fn check_recursion_limit(&self, span: Span) -> Result<()> {
+    if stacker::remaining_stack()
+      .map(|available| available > MINIMUM_STACK_REQUIRED)
+      .unwrap_or(true)
+    {
+      Ok(())
+    } else {
+      Err(self.cx.error("nesting limit reached", span))
+    }
   }
 }
 

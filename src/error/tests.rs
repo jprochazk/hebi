@@ -1,9 +1,11 @@
-use super::*;
+use crate::ctx::Context;
 
 macro_rules! check {
-  ($input:literal, $span:expr) => {
-    insta::assert_snapshot!(Error::new("error: test", $span).report($input, true))
-  };
+  ($input:literal, $span:expr) => {{
+    let cx = Context::for_test();
+
+    insta::assert_snapshot!(cx.error("error: test", $span).report($input, true))
+  }};
 }
 
 #[test]

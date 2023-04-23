@@ -19,8 +19,8 @@ impl<'src> Parser<'src> {
   }
 
   pub(super) fn yield_(&mut self) -> Result<Spanned<ast::Yield<'src>>> {
-    if self.ctx.current_func.is_none() {
-      return Err(Error::new("yield outside of function", self.current().span));
+    if self.state.current_func.is_none() {
+      fail!(self.cx, "yield outside of function", self.current().span);
     }
 
     self.expect(Kw_Yield)?;
@@ -29,11 +29,11 @@ impl<'src> Parser<'src> {
     let end = self.previous().span.end;
 
     let current_func = self
-      .ctx
+      .state
       .current_func
       .as_mut()
-      // TODO: improve `ctx` API to make this impossible?
-      .expect("`ctx.current_func` set to `None` by a mysterious force outside of `Parser::func`");
+      // TODO: improve `state` API to make this impossible?
+      .expect("`state.current_func` set to `None` by a mysterious force outside of `Parser::func`");
     current_func.has_yield = true;
 
     Ok(Spanned::new(start..end, ast::Yield { value }))
