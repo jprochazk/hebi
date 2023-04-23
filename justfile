@@ -1,6 +1,6 @@
 set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
-test *ARGS:
+snap *ARGS:
   cargo insta test --review --delete-unreferenced-snapshots --no-ignore {{ARGS}}
 
 miri *ARGS:
