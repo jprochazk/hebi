@@ -42,9 +42,7 @@ jobs:
         run: cargo test --all-features
 
       - name: Run miri tests
-        run: |
-          MIRIFLAGS='-Zmiri-tree-borrows -Zmiri-permissive-provenance' \
-          cargo miri test \
-          --no-default-features -F __miri \
-          -- --skip syntax
+        env:
+          MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-permissive-provenance
+        run: cargo miri test --no-default-features -F __miri -- --skip syntax
 
