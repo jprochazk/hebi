@@ -82,8 +82,20 @@ impl Display for FunctionDescriptor {
   }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Params {
   pub min: u16,
   pub max: u16,
+}
+
+impl Params {
+  pub fn empty() -> Self {
+    Self { min: 0, max: 0 }
+  }
+}
+
+impl Default for Params {
+  fn default() -> Self {
+    Self::empty()
+  }
 }

@@ -44,3 +44,15 @@ pub struct ModuleDescriptor {
   pub root: Ptr<FunctionDescriptor>,
   pub module_vars: IndexSet<Ptr<String>>,
 }
+
+impl Object for ModuleDescriptor {
+  fn type_name(&self) -> &'static str {
+    "Module Descriptor"
+  }
+}
+
+impl Display for ModuleDescriptor {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<module descriptor {}>", self.name)
+  }
+}

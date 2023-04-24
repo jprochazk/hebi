@@ -2,18 +2,20 @@
 #![allow(dead_code)]
 
 mod regalloc;
+mod stmt;
 
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
+use Instruction::*;
 
 use self::regalloc::{RegAlloc, Register};
 use super::Instruction;
 use crate::ctx::Context;
-use crate::error::Result;
 use crate::op;
 use crate::syntax::ast;
 use crate::value::constant::Constant;
 use crate::value::object;
+use crate::value::object::function;
 use crate::value::object::ptr::Ptr;
 
 pub fn emit<'cx, 'src>(
@@ -21,8 +23,20 @@ pub fn emit<'cx, 'src>(
   ast: &'src ast::Module<'src>,
   name: impl Into<Cow<'src, str>>,
   is_root: bool,
-) -> Result<Ptr<object::Module>> {
-  State::new(cx, ast, name, is_root).emit()
+) -> Ptr<object::ModuleDescriptor> {
+  let name = name.into();
+
+  let mut module = State::new(cx, ast, name.clone(), is_root).emit_module();
+
+  let name = cx.alloc(object::String::new(name.to_string().into()));
+  let root = module.functions.pop().unwrap().finish(cx);
+  let module_vars = module.vars;
+
+  cx.alloc(object::ModuleDescriptor {
+    name,
+    root,
+    module_vars,
+  })
 }
 
 struct State<'cx, 'src> {
@@ -44,19 +58,32 @@ impl<'cx, 'src> State<'cx, 'src> {
       module: Module {
         is_root,
         vars: IndexSet::new(),
-        functions: vec![Function::new(name)],
+        functions: vec![Function::new(name, function::Params::default())],
       },
     }
   }
 
-  fn emit(self) -> Result<Ptr<object::Module>> {
-    todo!()
+  fn current_function(&mut self) -> &mut Function<'src> {
+    self.module.functions.last_mut().unwrap()
+  }
+
+  fn emit(&mut self, instruction: Instruction) {
+    self.current_function().instructions.push(instruction)
+  }
+
+  fn emit_module(mut self) -> Module<'src> {
+    for stmt in self.ast.body.iter() {
+      self.emit_stmt(stmt);
+    }
+    self.emit(Return);
+
+    self.module
   }
 }
 
 struct Module<'src> {
   is_root: bool,
-  vars: IndexSet<Ptr<String>>,
+  vars: IndexSet<Ptr<object::String>>,
   functions: Vec<Function<'src>>,
 }
 
@@ -66,6 +93,7 @@ struct Function<'src> {
   constants: IndexSet<Constant>,
   regalloc: RegAlloc,
 
+  params: function::Params,
   locals: IndexMap<(Scope, Cow<'src, str>), Register>,
   upvalues: IndexMap<Cow<'src, str>, Upvalue>,
 
@@ -74,19 +102,36 @@ struct Function<'src> {
 }
 
 impl<'src> Function<'src> {
-  fn new(name: impl Into<Cow<'src, str>>) -> Self {
+  fn new(name: impl Into<Cow<'src, str>>, params: function::Params) -> Self {
     Self {
       name: name.into(),
       instructions: Vec::new(),
       constants: IndexSet::new(),
       regalloc: RegAlloc::new(),
 
+      params,
       locals: IndexMap::new(),
       upvalues: IndexMap::new(),
 
       is_in_opt_expr: false,
       current_loop: None,
     }
+  }
+
+  fn finish<'cx>(mut self, cx: &'cx Context) -> Ptr<object::FunctionDescriptor> {
+    // 1. finalize regalloc
+    // 2. patch instructions with register map
+    // 3. allocate function descriptor
+
+    /* cx.alloc(object::FunctionDescriptor::new(
+      cx.alloc(object::String::new(self.name.to_string().into())),
+      self.params,
+      self.upvalues.len() as u16,
+      frame_size,
+      self.instructions,
+      self.constants.into_iter().collect(),
+    )) */
+    todo!()
   }
 }
 
