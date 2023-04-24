@@ -131,3 +131,8 @@ TODO
   - has to be frozen after
 - module root = regular function call
   - has to be set to initialized after
+
+## Resources
+
+- https://v8.dev/docs/ignition
+- http://www.lua.org/source/5.1/lopcodes.h.html
