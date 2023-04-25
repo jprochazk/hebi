@@ -2,19 +2,21 @@
 
 The language is compiled to instructions encoded as a sequence of bytes. Each instruction begins with a single byte which represents an opcode, followed by zero or more bytes for the instruction operands. The opcode is used as the instruction discriminant, and the operands contain arbitrary values encoded as integers.
 
-For example, the `ldac 0` instruction would be encoded as the following byte sequence:
+For example, the `load_const [0]` instruction would be encoded as the 2-byte sequence `03 00`.
 
-```
-[ 0x01, 0x00 ]
-```
+In some cases, the value of an operand may be larger than 255, which can't be represented as a single byte anymore. In this case, we say the instruction operands "overflow", and the entire instruction is widened. A wide instruction is encoded with a prefix byte placed before the opcode. There are two such prefix bytes: `wide16` (`0x02`), and `wide32` (`0x03`), which represent 16-bit and 32-bit width operands, respectively. Operands are always encoded in little-endian byte order.
 
-Some instructions have "wide" variants (prefixed by `w`), which behave the same way, but use wide operands. Wide operands take up more memory, but in return allow encoding larger values.
+For example, the `wide16.load_const [1000]` instruction would be encoded as the 4-byte sequence `01 03 E8 03`.
 
-## Bytecode format
+This encoding ensures that the instructions take up as little space as possible without giving up a 
+
+## Instruction operands
 
 | name             | operand 0           | operand 0 type        | operand 1   | operand 1 type |
 | ---------------- | ------------------- | --------------------- | ----------- | -------------- |
 | nop              |                     |                       |             |                |
+| wide16           |                     |                       |             |                |
+| wide32           |                     |                       |             |                |
 | load_const       |                     | constant index        |             |                |
 | load_reg         |                     | register              |             |                |
 | store_reg        |                     | register              |             |                |
@@ -22,8 +24,8 @@ Some instructions have "wide" variants (prefixed by `w`), which behave the same 
 | store_upvalue    |                     | upvalue index         |             |                |
 | load_module_var  |                     | module variable index |             |                |
 | store_module_var |                     | module variable index |             |                |
-| load_global      | global nam          | constant index        |             |                |
-| store_global     | global nam          | constant index        |             |                |
+| load_global      | global name         | constant index        |             |                |
+| store_global     | global name         | constant index        |             |                |
 | load_field       | field name          | constant index        |             |                |
 | load_field_opt   | field name          | constant index        |             |                |
 | store_field      | field name          | constant index        |             |                |
@@ -69,6 +71,8 @@ Some instructions have "wide" variants (prefixed by `w`), which behave the same 
 | name             | description                                                                                           |
 | ---------------- | ----------------------------------------------------------------------------------------------------- |
 | nop              | do nothing                                                                                            |
+| wide16           | widen the instruction operands to 16 bits                                                             |
+| wide32           | widen the instruction operands to 32 bits                                                             |
 | load_const       | load a constant into the accumulator                                                                  |
 | load_reg         | load a register into the accumulator                                                                  |
 | store_reg        | store the accumulator in a register                                                                   |
