@@ -9,6 +9,7 @@ mod util;
 pub mod error;
 
 pub mod ctx;
+pub mod emit;
 pub mod op;
 pub mod span;
 pub mod syntax;

@@ -1,5 +1,3 @@
-use crate::op;
-
 #[derive(Default)]
 pub struct RegAlloc {
   preserve: Vec<Option<Register>>,

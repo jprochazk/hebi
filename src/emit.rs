@@ -6,12 +6,12 @@ mod stmt;
 
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
-use Instruction::*;
 
 use self::regalloc::{RegAlloc, Register};
-use super::Instruction;
 use crate::ctx::Context;
 use crate::op;
+use crate::op::Instruction;
+use crate::op::Instruction::*;
 use crate::syntax::ast;
 use crate::value::constant::Constant;
 use crate::value::object;
@@ -118,7 +118,7 @@ impl<'src> Function<'src> {
     }
   }
 
-  fn finish<'cx>(mut self, cx: &'cx Context) -> Ptr<object::FunctionDescriptor> {
+  fn finish(self, _: &Context) -> Ptr<object::FunctionDescriptor> {
     // 1. finalize regalloc
     // 2. patch instructions with register map
     // 3. allocate function descriptor

@@ -1,5 +1,3 @@
-pub mod emit;
-
 // TODO: bytecode stream
 // encode instructions as
 //   [opcode : u8] [operands : ...]

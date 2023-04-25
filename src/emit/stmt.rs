@@ -1,7 +1,5 @@
 use std::ops::Deref;
 
-use Instruction::*;
-
 use super::*;
 
 impl<'cx, 'src> State<'cx, 'src> {
@@ -20,31 +18,31 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>) {
+  fn emit_var_stmt(&mut self, _: &'src ast::Var<'src>) {
     todo!()
   }
 
-  fn emit_if_stmt(&mut self, stmt: &'src ast::If<'src>) {
+  fn emit_if_stmt(&mut self, _: &'src ast::If<'src>) {
     todo!()
   }
 
-  fn emit_loop_stmt(&mut self, stmt: &'src ast::Loop<'src>) {
+  fn emit_loop_stmt(&mut self, _: &'src ast::Loop<'src>) {
     todo!()
   }
 
-  fn emit_ctrl_stmt(&mut self, stmt: &'src ast::Ctrl<'src>) {
+  fn emit_ctrl_stmt(&mut self, _: &'src ast::Ctrl<'src>) {
     todo!()
   }
 
-  fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) {
+  fn emit_func_stmt(&mut self, _: &'src ast::Func<'src>) {
     todo!()
   }
 
-  fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) {
+  fn emit_class_stmt(&mut self, _: &'src ast::Class<'src>) {
     todo!()
   }
 
-  fn emit_expr_stmt(&mut self, stmt: &'src ast::Expr<'src>) {
+  fn emit_expr_stmt(&mut self, _: &'src ast::Expr<'src>) {
     todo!()
   }
 
@@ -52,11 +50,11 @@ impl<'cx, 'src> State<'cx, 'src> {
     todo!()
   }
 
-  fn emit_print_stmt(&mut self, stmt: &'src ast::Print<'src>) {
+  fn emit_print_stmt(&mut self, _: &'src ast::Print<'src>) {
     todo!()
   }
 
-  fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>) {
+  fn emit_import_stmt(&mut self, _: &'src ast::Import<'src>) {
     todo!()
   }
 }
