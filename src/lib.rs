@@ -10,7 +10,7 @@ pub mod error;
 
 pub mod ctx;
 pub mod emit;
-pub mod op;
+pub mod instruction;
 pub mod span;
 pub mod syntax;
 pub mod value;

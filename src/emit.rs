@@ -9,11 +9,9 @@ use indexmap::{IndexMap, IndexSet};
 
 use self::regalloc::{RegAlloc, Register};
 use crate::ctx::Context;
-use crate::op;
-use crate::op::Instruction;
-use crate::op::Instruction::*;
+use crate::instruction::builder::BytecodeBuilder;
+use crate::instruction::opcodes as op;
 use crate::syntax::ast;
-use crate::value::constant::Constant;
 use crate::value::object;
 use crate::value::object::function;
 use crate::value::object::ptr::Ptr;
@@ -67,15 +65,15 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.module.functions.last_mut().unwrap()
   }
 
-  fn emit(&mut self, instruction: Instruction) {
-    self.current_function().instructions.push(instruction)
+  fn builder(&mut self) -> &mut BytecodeBuilder {
+    &mut self.current_function().builder
   }
 
   fn emit_module(mut self) -> Module<'src> {
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
-    self.emit(Return);
+    self.builder().emit(op::Ret);
 
     self.module
   }
@@ -89,8 +87,7 @@ struct Module<'src> {
 
 struct Function<'src> {
   name: Cow<'src, str>,
-  instructions: Vec<Instruction>,
-  constants: IndexSet<Constant>,
+  builder: BytecodeBuilder,
   regalloc: RegAlloc,
 
   params: function::Params,
@@ -105,8 +102,7 @@ impl<'src> Function<'src> {
   fn new(name: impl Into<Cow<'src, str>>, params: function::Params) -> Self {
     Self {
       name: name.into(),
-      instructions: Vec::new(),
-      constants: IndexSet::new(),
+      builder: BytecodeBuilder::new(),
       regalloc: RegAlloc::new(),
 
       params,

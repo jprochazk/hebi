@@ -14,12 +14,15 @@ pub use class::{Class, ClassDescriptor};
 pub use function::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor};
+pub use ptr::Ptr;
 pub use string::String;
 pub use table::Table;
 
 use crate::ctx::Context;
 use crate::error::Result;
 use crate::value::Value;
+
+pub type Any = Ptr<ptr::Any>;
 
 pub trait Object: DynAny + Debug + Display {
   fn type_name(&self) -> &'static str;

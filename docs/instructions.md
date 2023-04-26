@@ -4,7 +4,7 @@ The language is compiled to a register-based instruction set targetting a custom
 
 Each instruction begins with a single byte which represents an opcode, followed by zero or more bytes for the instruction operands. The opcode is used as the instruction discriminant, telling the virtual machine *what* to do. The operands contain arbitrary values encoded as integers, and are used to tweak the exact parameters of the operation the virtual machine is being instructed to perform.
 
-For example, the `load_const [0]` instruction (which loads a value from the constant pool at index 0) would be encoded as the 2-byte sequence `03 00` (in hexadecimal).
+For example, the `load_const [0]` instruction (which loads a value from the constant pool at index 0) would be encoded as the 2-byte sequence `05 00` (in hexadecimal).
 
 In some cases, the value of an operand may be larger than 255, in which case it can't be encoded as a single byte anymore. This is referred to as an "operand overflow", the result of which is a widening of the instruction. A wide instruction is encoded with a prefix byte placed before the opcode, which determines the width of *all* of its operands. There are two such prefix bytes: `wide16` (`0x02`), and `wide32` (`0x03`), which represent 16-bit and 32-bit width operands, respectively. The reason that the operand width is not more granular is that it makes encoding and decoding very easy, and in practice most instructions only have one operand, so this encoding scheme is still very space efficient without sacrificing too much throughput.
 
@@ -108,21 +108,22 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | div                 | rhs                 | register              |             |                |
 | rem                 | rhs                 | register              |             |                |
 | pow                 | rhs                 | register              |             |                |
-| inv                 | rhs                 | register              |             |                |
-| not                 | rhs                 | register              |             |                |
+| inv                 |                     |                       |             |                |
+| not                 |                     |                       |             |                |
 | cmp_eq              | rhs                 | register              |             |                |
 | cmp_ne              | rhs                 | register              |             |                |
 | cmp_gt              | rhs                 | register              |             |                |
 | cmp_ge              | rhs                 | register              |             |                |
 | cmp_lt              | rhs                 | register              |             |                |
 | cmp_le              | rhs                 | register              |             |                |
-| is                  | rhs                 | register              |             |                |
-| in                  | rhs                 | register              |             |                |
+| cmp_type            | rhs                 | register              |             |                |
+| contains            | rhs                 | register              |             |                |
 | print               |                     |                       |             |                |
 | print_n             | start               | register              | count       | integer        |
 | call                | function            | register              | args        | integer        |
+| import              | path                | constant index        | destination | register       |
 | ret                 |                     |                       |             |                |
-| yield               |                     |                       |             |                |
+| suspend             |                     |                       |             |                |
 
 ## Instruction descriptions
 
@@ -176,13 +177,14 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | cmp_ge              | test if the accumulator is greater than or equal to a value stored in a register                      |
 | cmp_lt              | test if the accumulator is less than a value stored in a register                                     |
 | cmp_le              | test if the accumulator is less than or equal to a value stored in a register                         |
-| is                  | test if the accumulator is an instance of a class                                                     |
-| in                  | test if the accumulator is contained in a value stored in a register                                  |
+| cmp_type            | test if the accumulator is an instance of a class                                                     |
+| contains            | test if the accumulator is contained in a value stored in a register                                  |
 | print               | print the accumulator                                                                                 |
 | print_n             | print `count` values starting at `start`                                                              |
 | call                | call a function                                                                                       |
+| import              | load the module at `path` into the `destination` register                                             |
 | ret                 | return from a function call                                                                           |
-| yield               | stop the dispatch loop                                                                                |
+| suspend             | stop the dispatch loop                                                                                |
 
 
 ## Calling convention
@@ -251,7 +253,24 @@ This is the actual call:
   call r0, 2
 ```
 
-The function is loaded first, followed by the arguments `5` and `10`. The registers for the function and arguments are allocated before any of them are emitted. The bytecode emitter ensures these registers are contiguous.
+The function is loaded first
+
+```
+  load_module_var #0 ; sum
+  store r0
+```
+
+Followed by the arguments `5` and `10`
+
+```
+  load_smi 5
+  store r1
+  load_smi 10
+  store r2
+```
+
+The registers for the function and arguments are allocated before any of them are emitted.
+The bytecode emitter ensures these registers are contiguous.
 
 ## Resources
 

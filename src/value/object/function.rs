@@ -4,7 +4,6 @@ use std::ptr::NonNull;
 use super::module::ModuleId;
 use super::ptr::Ptr;
 use super::{List, Object, String};
-use crate::op::Instruction;
 use crate::value::constant::Constant;
 
 #[derive(Debug)]
@@ -32,7 +31,7 @@ pub struct FunctionDescriptor {
   pub params: Params,
   pub num_upvalues: u16,
   pub frame_size: u16,
-  pub instructions: NonNull<[Instruction]>,
+  pub instructions: NonNull<[u8]>,
   pub constants: NonNull<[Constant]>,
   // TODO: spans
 }
@@ -47,7 +46,7 @@ impl FunctionDescriptor {
     params: Params,
     num_upvalues: u16,
     frame_size: u16,
-    instructions: Vec<Instruction>,
+    instructions: Vec<u8>,
     constants: Vec<Constant>,
   ) -> Self {
     let instructions = vec_to_nonnull_ptr(instructions);

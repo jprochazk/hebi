@@ -22,13 +22,13 @@ macro_rules! assert_debug_snapshot {
   };
 }
 
-macro_rules! static_assert_size {
+/* macro_rules! static_assert_size {
   ($T:ty, $S:ty) => {
     const _: fn() = || {
       let _ = ::core::mem::transmute::<$T, $S>;
     };
   };
-}
+} */
 
 pub struct Join<Iter, Sep>(pub Iter, pub Sep);
 
