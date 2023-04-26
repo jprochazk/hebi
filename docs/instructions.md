@@ -41,11 +41,11 @@ Here's what the disassembly for the above program might look like:
 8  |   store r0
 9  |   jump .cond
    | body:
-11 |   load r0
-12 |   print
-13 |   jump .latch
+10 |   load r0
+11 |   print
+12 |   jump .latch
    | end:
-14 |   ret
+13 |   ret
 ```
 
 When a jump instruction (such as the `jump_if_false .end` on line `4`) is encoded, it must be given a value for the jump offset. The job of a jump instruction is to move the VM's instruction pointer, and the offset determines how much the pointer will move. The problem is that we haven't yet encoded the instructions that come after the jump, so we don't know what the offset should be! There could be any number of instructions of any width (including other jumps) between the jump instruction and its destination.
@@ -59,8 +59,8 @@ The method chosen by the Hebi VM is:
 1. Reserve an entry in the constant pool, which yields an *index*.
 1. Encode the jump instruction with the minimum width required to store the *index*.
 1. When the jump label is bound, calculate the real offset, and patch the jump instruction:
-  1. If the offset fits within the same width as the *index*, then store it directly in the jump instruction.
-  1. Otherwise, store the offset in the reserved constant pool entry, and encode the jump instruction as a `jump_const`.
+  * If the offset fits within the same width as the *index*, then store it directly in the jump instruction.
+  * Otherwise, store the offset in the reserved constant pool entry, and encode the jump instruction as a `jump_const`.
 
 In practice, most jump offsets do fit within a byte. In case they don't, they will "lifted" into the constant pool and stored as 64-bit, which is hopefully enough address space for the foreseeable future!
 
@@ -118,9 +118,10 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | cmp_le              | rhs                 | register              |             |                |
 | is                  | rhs                 | register              |             |                |
 | in                  | rhs                 | register              |             |                |
-| print               | start               | register              | count       | integer        |
-| call                |                     |                       |             |                |
-| return              |                     |                       |             |                |
+| print               |                     |                       |             |                |
+| print_n             | start               | register              | count       | integer        |
+| call                | function            | register              | args        | integer        |
+| ret                 |                     |                       |             |                |
 | yield               |                     |                       |             |                |
 
 ## Instruction descriptions
@@ -178,22 +179,79 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | is                  | test if the accumulator is an instance of a class                                                     |
 | in                  | test if the accumulator is contained in a value stored in a register                                  |
 | print               | print the accumulator                                                                                 |
+| print_n             | print `count` values starting at `start`                                                              |
 | call                | call a function                                                                                       |
-| return              | return from a function call                                                                           |
-| yield               | stop the dispatch loop, allowing it to be resumed later                                               |
+| ret                 | return from a function call                                                                           |
+| yield               | stop the dispatch loop                                                                                |
 
 
-## Function calls
+## Calling convention
 
-TODO
-- top of previous stack = call args (no copy)
-  - implies that frames have to be able to overlap
-  - what about coroutines?
-    - is it enough to copy args in this case?
-- class constructor = regular function call
-  - has to be frozen after
-- module root = regular function call
-  - has to be set to initialized after
+Hebi expects the following order of parameters for function calls:
+
+```
+<function>
+arg0
+arg1
+...
+argN
+```
+
+Where `<function>` is the function being called, and `arg` are the actual arguments.
+Call instructions use a register operand to point to the location of the function on the stack, and a second operand to store the number of arguments the function is being called with.
+
+The actual call operation is simple:
+1. Prepare a new call frame
+1. Allocate stack space for registers
+1. Copy arguments to the new stack space
+1. Jump to the function's start
+
+Before the call, the VM checks that the value being called is a function, and that the function is being provided with the correct number of arguments.
+
+For example, consider the following program:
+
+```rust
+fn add(a, b)
+  return a + b
+
+print add(5, 10)
+```
+
+It's a simple function which adds up its two parameters and returns the result. The disassembly for the above code is:
+
+```
+function `main` (registers: 3, length: 21, pool: 1)
+  make_fn [0] ; <function `sum` descriptor>
+  store_module_var #0 ; sum
+  load_module_var #0 ; sum
+  store r0
+  load_smi 5
+  store r1
+  load_smi 10
+  store r2
+  call r0, 2
+  print
+  ret
+
+function `sum` (registers: 3, length: 5, pool: 0)
+  load r1
+  add r2
+  ret
+```
+
+This is the actual call:
+
+```
+  load_module_var #0 ; sum
+  store r0
+  load_smi 5
+  store r1
+  load_smi 10
+  store r2
+  call r0, 2
+```
+
+The function is loaded first, followed by the arguments `5` and `10`. The registers for the function and arguments are allocated before any of them are emitted. The bytecode emitter ensures these registers are contiguous.
 
 ## Resources
 
