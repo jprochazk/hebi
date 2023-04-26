@@ -34,7 +34,7 @@ impl Object for Module {
 
 impl Display for Module {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<module {}>", self.type_name())
+    write!(f, "<module `{}`>", self.type_name())
   }
 }
 
@@ -53,6 +53,6 @@ impl Object for ModuleDescriptor {
 
 impl Display for ModuleDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<module descriptor {}>", self.name)
+    write!(f, "<module `{}` descriptor>", self.name)
   }
 }

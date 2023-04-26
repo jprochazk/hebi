@@ -22,7 +22,7 @@ impl Object for Function {
 
 impl Display for Function {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<function {}>", self.descriptor.name)
+    write!(f, "<function `{}`>", self.descriptor.name)
   }
 }
 
@@ -78,7 +78,7 @@ impl Object for FunctionDescriptor {
 
 impl Display for FunctionDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<function descriptor {}>", self.name)
+    write!(f, "<function `{}` descriptor>", self.name)
   }
 }
 

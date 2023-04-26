@@ -18,7 +18,7 @@ pub struct Instance {
 
 impl Display for Instance {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<instance {}>", self.name)
+    write!(f, "<class `{}` instance>", self.name)
   }
 }
 
@@ -40,7 +40,7 @@ pub struct Class {
 
 impl Display for Class {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<class {}>", self.descriptor.name)
+    write!(f, "<class `{}`>", self.descriptor.name)
   }
 }
 
@@ -67,7 +67,7 @@ pub struct ClassDescriptor {
 
 impl Display for ClassDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<class descriptor {}>", self.name)
+    write!(f, "<class `{}` descriptor>", self.name)
   }
 }
 
