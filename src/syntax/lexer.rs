@@ -89,17 +89,25 @@ impl<'src> Lexer<'src> {
 
       match kind {
         // Filter
-        TokenKind::_Tok_Whitespace | TokenKind::_Tok_Comment => continue,
+        Ok(TokenKind::_Tok_Whitespace | TokenKind::_Tok_Comment) => continue,
         // Measure indentation
-        TokenKind::_Tok_Indent => {
+        Ok(TokenKind::_Tok_Indent) => {
           self.ws = Some(measure_indent(lexeme));
           continue;
         }
         // Return any other token
-        _ => {
+        Ok(kind) => {
           let token = Token {
             ws: take(&mut self.ws),
             kind,
+            span,
+          };
+          return Some(token);
+        }
+        Err(_) => {
+          let token = Token {
+            ws: take(&mut self.ws),
+            kind: TokenKind::Tok_Error,
             span,
           };
           return Some(token);
@@ -275,7 +283,6 @@ pub enum TokenKind {
   #[regex(r"#[^\n]*")]
   _Tok_Comment,
 
-  #[error]
   Tok_Error,
   Tok_Eof,
 }

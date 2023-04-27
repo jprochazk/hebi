@@ -25,7 +25,7 @@ __miri = ["nanbox"]
 [dependencies]
 beef = "0.5.2"
 indexmap = "1.9.3"
-logos = "0.12.1"
+logos = "0.13.0"
 paste = "1.0.12"
 stacker = "0.1.15"
 
