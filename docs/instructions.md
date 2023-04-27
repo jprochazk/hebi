@@ -98,8 +98,8 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | make_class          | class descriptor    | constant index        |             |                |
 | jump                | offset              | jump offset           |             |                |
 | jump_const          | offset              | constant index        |             |                |
-| jump_back           | offset              | jump offset           |             |                |
-| jump_back_const     | offset              | constant index        |             |                |
+| jump_loop           | offset              | jump offset           |             |                |
+| jump_loop_const     | offset              | constant index        |             |                |
 | jump_if_false       | offset              | jump offset           |             |                |
 | jump_if_false_const | offset              | constant index        |             |                |
 | add                 | rhs                 | register              |             |                |
@@ -159,8 +159,8 @@ In practice, most jump offsets do fit within a byte. In case they don't, they wi
 | make_class          | instantiate a class using a class descriptor                                                          |
 | jump                | jump forward by `offset` bytes                                                                        |
 | jump_const          | jump forward by `offset` bytes (stored in constant pool)                                              |
-| jump_back           | jump backward by `offset` bytes                                                                       |
-| jump_back_const     | jump backward by `offset` bytes (stored in constant pool)                                             |
+| jump_loop           | jump backward by `offset` bytes                                                                       |
+| jump_loop_const     | jump backward by `offset` bytes (stored in constant pool)                                             |
 | jump_if_false       | jump forward by `offset` bytes if the value in the accumulator is false                               |
 | jump_if_false_const | jump forward by `offset` bytes (stored in the constant pool) if the value in the accumulator is false |
 | add                 | add a value stored in a register to the accumulator                                                   |
