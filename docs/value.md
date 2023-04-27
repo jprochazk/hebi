@@ -1,6 +1,6 @@
-Mu's core value type.
+## Value
 
-Mu values are 64 bits, and utilize NaN boxing (also known as NaN tagging)
+Hebi values are 64 bits, and utilize NaN boxing (also known as NaN tagging)
 for packing both the type tag bits and value bits into a single 64-bit
 package.
 
@@ -54,7 +54,7 @@ NaN boxing is a technique that takes advantage of this "hole" in the
 possible bit patterns of pointers and quiet NaNs by storing the type of the
 value in the free bits.
 
-Mu values have 5 possible types:
+Hebi values have 5 possible types:
 - Float
 - Int
 - None
@@ -127,3 +127,7 @@ A quiet NaN with the free bit pattern `011` represents an `Object` pointer.
 
 Implementation inspired by <https://github.com/Marwes/nanbox> and <http://craftinginterpreters.com/optimization.html>.
 See the last link for more info.
+
+## Portability
+
+The portability of the above approach isn't great. It assumes that the operating system is 64-bit, that the lowest 16 bits of a pointer are empty, and that floats are represented according to IEEE754. For this reason, nanboxing is behind a feature flag. This feature is enabled by default, but may be disabled to make hebi use a plain enum to represent values. This enum is 128 bits instead of 64 bits, and is therefore very wasteful (64 bits for the tag!). The benefit is that it is far more portable. Disabling nanboxing is the only way to get Hebi to build on WASM, for example.
