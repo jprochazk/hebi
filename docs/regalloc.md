@@ -36,7 +36,7 @@ After tracking, the live intervals are:
  d │             ●━━━━━━━━●
  e │                ●━━●
    ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  0  1  2  3  4  5  6  7  8  9  10
+     0  1  2  3  4  5  6  7  8  9  10
 ```
 
 Given the live intervals above, the scan would proceed step-by-step as
