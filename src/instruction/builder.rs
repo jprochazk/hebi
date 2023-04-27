@@ -197,6 +197,19 @@ impl Eq for PtrHash {}
 pub struct ConstantPoolBuilder {
   // TODO: compact constants on finalization
   // Output a map of <old index -> new index> for patching.
+  //
+  // Allocate a new vec, start moving constants into it.
+  // For each constant moved, leave behind an entry (abuse `Constant::Offset` for this) which holds
+  // the new index. Ignore any holes.
+  // Traverse the bytecode and patch the constant indices using the old constants vec
+  // which now only holds `Offset` entries.
+  // This traversal should be combined with register patching into a single fixup pass.
+  //
+  // Combine it with a slice-based reservation system which wouldn't actually allocate an entry
+  // until it's committed in `patch_jump`. If the entry is unused, it is unreserved and may be
+  // used by a different jump instruction. This way the first 256 entries aren't taken up
+  // too quickly.
+  //
   // It's probably worth it because most jumps will not use their reserved entries.
   constants: Vec<Constant>,
   ptr_map: IndexMap<PtrHash, usize>,
