@@ -4,6 +4,14 @@
 mod regalloc;
 mod stmt;
 
+// TODO:
+// 1. (optimization) constant pool compaction
+// 2. register allocation
+// 3. loop_header + emit_jump_loop
+// 4. (optimization) basic blocks
+// 5. (optimization) elide previous instruction (clobbered read)
+// 6. actually write emit for all AST nodes
+
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
