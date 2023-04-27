@@ -1,6 +1,6 @@
 use std::ops::BitOr;
 
-use super::opcodes::{self, Instruction};
+use super::opcodes::Opcode;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Width {
@@ -10,6 +10,10 @@ pub enum Width {
 }
 
 impl Width {
+  pub fn is_normal(&self) -> bool {
+    matches!(self, Width::Normal)
+  }
+
   #[inline]
   pub fn size(&self) -> usize {
     match self {
@@ -23,8 +27,8 @@ impl Width {
   pub fn encode(&self, buf: &mut Vec<u8>) {
     match self {
       Width::Normal => {}
-      Width::Wide16 => buf.push(opcodes::Wide16::BYTE),
-      Width::Wide32 => buf.push(opcodes::Wide32::BYTE),
+      Width::Wide16 => buf.push(Opcode::Wide16 as u8),
+      Width::Wide32 => buf.push(Opcode::Wide32 as u8),
     }
   }
 }
@@ -46,6 +50,7 @@ pub trait Operand {
   type Decoded: Sized;
 
   fn encode(&self, buf: &mut Vec<u8>, width: Width);
+  fn encode_into(&self, buf: &mut [u8], width: Width);
   fn decode(buf: &[u8], width: Width) -> Self::Decoded;
   fn width(&self) -> Width;
 }
@@ -53,7 +58,7 @@ pub trait Operand {
 #[inline]
 fn read_n<const N: usize>(buf: &[u8]) -> [u8; N] {
   let mut array = [0u8; N];
-  array.copy_from_slice(buf);
+  array.copy_from_slice(&buf[..N]);
   array
 }
 
@@ -69,9 +74,16 @@ macro_rules! encode {
   };
 }
 
+macro_rules! encode_into {
+  ($buf:ident, $value:expr, $to:ty) => {
+    $buf[..::std::mem::size_of::<$to>()].copy_from_slice(&<$to>::to_le_bytes($value as $to)[..])
+  };
+}
+
 impl Operand for i32 {
   type Decoded = i32;
 
+  #[inline]
   fn encode(&self, buf: &mut Vec<u8>, width: Width) {
     match width {
       Width::Normal => encode!(buf, *self, i8),
@@ -80,6 +92,16 @@ impl Operand for i32 {
     }
   }
 
+  #[inline]
+  fn encode_into(&self, buf: &mut [u8], width: Width) {
+    match width {
+      Width::Normal => encode_into!(buf, *self, i8),
+      Width::Wide16 => encode_into!(buf, *self, i16),
+      Width::Wide32 => encode_into!(buf, *self, i32),
+    }
+  }
+
+  #[inline]
   fn decode(buf: &[u8], width: Width) -> Self::Decoded {
     match width {
       Width::Normal => decode!(buf, i8),
@@ -88,6 +110,7 @@ impl Operand for i32 {
     }
   }
 
+  #[inline]
   fn width(&self) -> Width {
     if (i8::MIN as Self::Decoded) <= *self && *self <= (i8::MAX as Self::Decoded) {
       Width::Normal
@@ -108,6 +131,15 @@ impl Operand for u32 {
       Width::Normal => encode!(buf, *self, u8),
       Width::Wide16 => encode!(buf, *self, u16),
       Width::Wide32 => encode!(buf, *self, u32),
+    }
+  }
+
+  #[inline]
+  fn encode_into(&self, buf: &mut [u8], width: Width) {
+    match width {
+      Width::Normal => encode_into!(buf, *self, i8),
+      Width::Wide16 => encode_into!(buf, *self, i16),
+      Width::Wide32 => encode_into!(buf, *self, i32),
     }
   }
 
@@ -141,6 +173,11 @@ impl Operand for () {
   }
 
   #[inline]
+  fn encode_into(&self, buf: &mut [u8], width: Width) {
+    let _ = (buf, width);
+  }
+
+  #[inline]
   fn decode(buf: &[u8], width: Width) -> Self::Decoded {
     let _ = (buf, width);
   }
@@ -166,6 +203,18 @@ macro_rules! impl_for_tuple {
         $(
           ($ty).encode(buf, width);
         )+
+      }
+
+      #[inline]
+      #[allow(non_snake_case)]
+      fn encode_into(&self, buf: &mut [u8], width: Width) {
+        let ($($ty,)+) = self;
+        let mut offset = 0;
+        $(
+          ($ty).encode_into(&mut buf[offset..], width);
+          offset += 1;
+        )+
+        let _ = offset;
       }
 
       #[inline]

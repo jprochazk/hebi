@@ -28,13 +28,8 @@ use super::operands::{Operand, Width};
 //     └┬───┘ └┬────┘ └────────────┬┘
 //      name   operands            extra
 
-operand_type!(Register, u32);
-operand_type!(Constant, u32);
-operand_type!(Upvalue, u32);
-operand_type!(ModuleVar, u32);
-operand_type!(Offset, u32);
-
 instructions! {
+  symbolic, Opcode;
   Nop,
   Wide16,
   Wide32,
@@ -65,8 +60,8 @@ instructions! {
   MakeClass(descriptor: Constant),
   Jump(offset: Offset),
   JumpConst(offset: Constant),
-  JumpBack(offset: Offset),
-  JumpBackConst(offset: Constant),
+  JumpLoop(offset: Offset),
+  JumpLoopConst(offset: Constant),
   JumpIfFalse(offset: Offset),
   JumpIfFalseConst(offset: Constant),
   Add(rhs: Register),
@@ -93,44 +88,47 @@ instructions! {
   Suspend,
 }
 
-jump_instructions! {
-  Jump,
-  JumpBack,
-  JumpIfFalse,
+operand_type!(Register, u32);
+operand_type!(Constant, u32);
+operand_type!(Upvalue, u32);
+operand_type!(ModuleVar, u32);
+operand_type!(Offset, u32);
+
+impl Constant {
+  pub fn index(&self) -> usize {
+    self.0 as usize
+  }
 }
 
-pub trait Operands {
+pub trait Operands: private::Sealed {
   type Operands: Operand + Sized;
 }
 
-pub trait Encode: Operands {
+pub trait Encode: Operands + private::Sealed {
   fn encode(&self, buf: &mut Vec<u8>);
 }
 
-pub trait Decode: Operands {
+pub trait Decode: Operands + private::Sealed {
   fn decode(buf: &[u8], width: Width) -> <Self::Operands as Operand>::Decoded;
 }
 
-pub trait Instruction: Operands + Encode + Decode {
-  const BYTE: u8;
+pub trait Instruction: Operands + Encode + Decode + private::Sealed {
+  const OPCODE: Opcode;
   const NAME: &'static str;
 
   fn is_jump(&self) -> bool {
     matches!(
-      Self::BYTE,
-      Jump::BYTE
-        | JumpConst::BYTE
-        | JumpBack::BYTE
-        | JumpBackConst::BYTE
-        | JumpIfFalse::BYTE
-        | JumpIfFalseConst::BYTE
+      Self::OPCODE,
+      Opcode::Jump
+        | Opcode::JumpConst
+        | Opcode::JumpLoop
+        | Opcode::JumpLoopConst
+        | Opcode::JumpIfFalse
+        | Opcode::JumpIfFalseConst
     )
   }
 }
 
-pub trait JumpInstruction: Instruction {
-  type Const: JumpInstruction + Sized;
-
-  fn update_offset(&mut self, offset: Offset);
-  fn to_const(self) -> Self::Const;
+mod private {
+  pub trait Sealed {}
 }
