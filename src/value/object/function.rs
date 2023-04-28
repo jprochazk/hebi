@@ -29,8 +29,8 @@ impl Display for Function {
 pub struct FunctionDescriptor {
   pub name: Ptr<String>,
   pub params: Params,
-  pub num_upvalues: u16,
-  pub frame_size: u16,
+  pub num_upvalues: usize,
+  pub frame_size: usize,
   pub instructions: NonNull<[u8]>,
   pub constants: NonNull<[Constant]>,
   // TODO: spans
@@ -44,8 +44,8 @@ impl FunctionDescriptor {
   pub fn new(
     name: Ptr<String>,
     params: Params,
-    num_upvalues: u16,
-    frame_size: u16,
+    num_upvalues: usize,
+    frame_size: usize,
     instructions: Vec<u8>,
     constants: Vec<Constant>,
   ) -> Self {

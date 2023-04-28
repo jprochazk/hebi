@@ -3,8 +3,10 @@ use std::hash::{Hash, Hasher};
 
 use indexmap::IndexMap;
 
-use super::opcodes::{self as op, Encode, Instruction, Opcode};
+use super::opcode::symbolic::*;
+use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
+use crate::span::Span;
 use crate::value::constant::{Constant, NonNaNFloat};
 use crate::value::object;
 
@@ -13,6 +15,15 @@ pub struct BytecodeBuilder {
   bytecode: Vec<u8>,
   constant_pool_builder: ConstantPoolBuilder,
   unbound_jumps: usize,
+
+  // TODO: encode spans into a flat buffer
+  // use delta-encoding to make the bytes smaller
+  // NOTE: it's fine to store the data in a flat buffer, because
+  // we iterate over the bytecode array and each time we step
+  // through bytecode,  we can also step the span buffer iterator.
+  // for random access, positions in the buffer may be saved and
+  // restored at a later point.
+  spans: Vec<Span>,
 }
 
 pub struct Label {
@@ -20,10 +31,9 @@ pub struct Label {
   referrer_offset: Cell<Option<usize>>,
 }
 
-/* pub struct LoopHeader {
-  name: &'static str,
+pub struct LoopHeader {
   offset: usize,
-} */
+}
 
 impl BytecodeBuilder {
   pub fn new() -> Self {
@@ -31,16 +41,23 @@ impl BytecodeBuilder {
       bytecode: Vec::new(),
       constant_pool_builder: ConstantPoolBuilder::new(),
       unbound_jumps: 0,
+
+      spans: Vec::new(),
     }
   }
 
+  fn write(&mut self, instruction: impl Instruction, span: Span) {
+    instruction.encode(&mut self.bytecode);
+    self.spans.push(span);
+  }
+
   /// Emit an instruction.
-  pub fn emit(&mut self, instruction: impl Instruction) {
+  pub fn emit(&mut self, instruction: impl Instruction, span: impl Into<Span>) {
     assert!(
       !instruction.is_jump(),
       "use `emit_jump` to emit jump instructions"
     );
-    instruction.encode(&mut self.bytecode);
+    self.write(instruction, span.into());
   }
 
   /// Create an empty label.
@@ -73,7 +90,7 @@ impl BytecodeBuilder {
 
   /// Emit a jump instruction. The instruction will be emitted with a
   /// placeholder offset, and patched later when the `label` is bound.
-  pub fn emit_jump(&mut self, label: &Label) {
+  pub fn emit_jump(&mut self, label: &Label, span: impl Into<Span>) {
     assert!(
       label.referrer_offset.get().is_none(),
       "more than one instruction refers to label {} (referrers: {}, {})",
@@ -86,13 +103,15 @@ impl BytecodeBuilder {
     self.unbound_jumps += 1;
     label.referrer_offset.set(Some(self.bytecode.len()));
     let offset = self.constant_pool_builder().reserve();
-    op::Jump {
-      offset: op::Offset(offset.0),
-    }
-    .encode(&mut self.bytecode);
+    self.write(
+      Jump {
+        offset: op::Offset(offset.0),
+      },
+      span.into(),
+    )
   }
 
-  pub fn emit_jump_if_false(&mut self, label: &Label) {
+  pub fn emit_jump_if_false(&mut self, label: &Label, span: impl Into<Span>) {
     assert!(
       label.referrer_offset.get().is_none(),
       "more than one instruction refers to label {} (referrers: {}, {})",
@@ -105,24 +124,31 @@ impl BytecodeBuilder {
     self.unbound_jumps += 1;
     label.referrer_offset.set(Some(self.bytecode.len()));
     let offset = self.constant_pool_builder().reserve();
-    op::JumpIfFalse {
-      offset: op::Offset(offset.0),
-    }
-    .encode(&mut self.bytecode);
+    self.write(
+      JumpIfFalse {
+        offset: op::Offset(offset.0),
+      },
+      span.into(),
+    )
   }
 
   /// Marks the current offset as a loop header and returns it for use as a
   /// target in `emit_jump_loop`.
-  /* pub fn loop_header(&self, name: &'static str) -> LoopHeader {
+  pub fn loop_header(&self) -> LoopHeader {
     LoopHeader {
-      name,
       offset: self.bytecode.len(),
     }
   }
 
-  pub fn emit_jump_loop(&mut self, _: &LoopHeader) {
-    todo!()
-  } */
+  pub fn emit_jump_loop(&mut self, header: &LoopHeader, span: impl Into<Span>) {
+    let relative_offset = (self.bytecode.len() - header.offset) as u32;
+    self.write(
+      JumpLoop {
+        offset: op::Offset(relative_offset),
+      },
+      span.into(),
+    )
+  }
 
   pub fn constant_pool_builder(&mut self) -> &mut ConstantPoolBuilder {
     &mut self.constant_pool_builder

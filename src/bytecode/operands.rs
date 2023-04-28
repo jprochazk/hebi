@@ -1,8 +1,9 @@
 use std::ops::BitOr;
 
-use super::opcodes::Opcode;
+use super::opcode::Opcode;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum Width {
   Normal,
   Wide16,
@@ -31,6 +32,17 @@ impl Width {
       Width::Wide32 => buf.push(Opcode::Wide32 as u8),
     }
   }
+
+  #[inline]
+  pub fn decode(buf: &[u8]) -> Width {
+    if buf[0] == Opcode::Wide16 as u8 {
+      Width::Wide16
+    } else if buf[0] == Opcode::Wide32 as u8 {
+      Width::Wide32
+    } else {
+      Width::Normal
+    }
+  }
 }
 
 impl BitOr for Width {
@@ -47,7 +59,7 @@ impl BitOr for Width {
 }
 
 pub trait Operand {
-  type Decoded: Sized;
+  type Decoded: Default + Sized;
 
   fn encode(&self, buf: &mut Vec<u8>, width: Width);
   fn encode_into(&self, buf: &mut [u8], width: Width);

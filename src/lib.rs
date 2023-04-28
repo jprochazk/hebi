@@ -8,9 +8,9 @@ mod util;
 #[macro_use]
 pub mod error;
 
+pub mod bytecode;
 pub mod ctx;
 pub mod emit;
-pub mod instruction;
 pub mod span;
 pub mod syntax;
 pub mod value;

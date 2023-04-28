@@ -3,8 +3,7 @@
 #[macro_use]
 mod macros;
 
-use paste::paste;
-
+use super::disasm;
 use super::operands::{Operand, Width};
 
 // TODO: disassembly
@@ -29,7 +28,7 @@ use super::operands::{Operand, Width};
 //      name   operands            extra
 
 instructions! {
-  symbolic, Opcode;
+  patch_registers, symbolic, decode, Opcode;
   Nop,
   Wide16,
   Wide32,
@@ -53,7 +52,7 @@ instructions! {
   LoadNone,
   LoadTrue,
   LoadFalse,
-  LoadSmi(value: i32),
+  LoadSmi(value: Smi),
   MakeFn(descriptor: Constant),
   UpvalueReg(source: Register, destination: Upvalue),
   UpvalueSlot(source: Upvalue, destination: Upvalue),
@@ -61,7 +60,6 @@ instructions! {
   Jump(offset: Offset),
   JumpConst(offset: Constant),
   JumpLoop(offset: Offset),
-  JumpLoopConst(offset: Constant),
   JumpIfFalse(offset: Offset),
   JumpIfFalseConst(offset: Constant),
   Add(rhs: Register),
@@ -81,18 +79,20 @@ instructions! {
   CmpType(rhs: Register),
   Contains(rhs: Register),
   Print,
-  PrintN(start: Register, count: u32),
-  Call(function: Register, args: u32),
+  PrintN(start: Register, count: Count),
+  Call(function: Register, args: Count),
   Import(path: Constant, destination: Register),
   Ret,
   Suspend,
 }
 
-operand_type!(Register, u32);
-operand_type!(Constant, u32);
-operand_type!(Upvalue, u32);
-operand_type!(ModuleVar, u32);
-operand_type!(Offset, u32);
+operand_type!(Register, u32, "r{v}");
+operand_type!(Constant, u32, "[{v}]");
+operand_type!(Upvalue, u32, "^{v}");
+operand_type!(ModuleVar, u32, "{v}");
+operand_type!(Offset, u32, "{v}");
+operand_type!(Smi, i32, "{v}");
+operand_type!(Count, u32, "{v}");
 
 impl Constant {
   pub fn index(&self) -> usize {
@@ -100,35 +100,55 @@ impl Constant {
   }
 }
 
-pub trait Operands: private::Sealed {
+pub trait Operands {
   type Operands: Operand + Sized;
 }
 
-pub trait Encode: Operands + private::Sealed {
+pub trait Instruction: disasm::Disassemble + private::Sealed {
+  fn opcode(&self) -> Opcode;
+
+  /// Encode the instruction into `buf`.
+  ///
+  /// This writes the prefix, opcode, and operands.
+  ///
+  /// Only writes the prefix if the operands overflow.
   fn encode(&self, buf: &mut Vec<u8>);
-}
-
-pub trait Decode: Operands + private::Sealed {
-  fn decode(buf: &[u8], width: Width) -> <Self::Operands as Operand>::Decoded;
-}
-
-pub trait Instruction: Operands + Encode + Decode + private::Sealed {
-  const OPCODE: Opcode;
-  const NAME: &'static str;
 
   fn is_jump(&self) -> bool {
     matches!(
-      Self::OPCODE,
+      self.opcode(),
       Opcode::Jump
         | Opcode::JumpConst
         | Opcode::JumpLoop
-        | Opcode::JumpLoopConst
         | Opcode::JumpIfFalse
         | Opcode::JumpIfFalseConst
     )
   }
 }
 
+fn read_instruction(buf: &[u8]) -> Option<(Width, Opcode, &[u8])> {
+  let width = Width::decode(buf);
+  let (opcode, operands) = match width {
+    Width::Normal => (buf[0], &buf[1..]),
+    Width::Wide16 | Width::Wide32 => (buf[1], &buf[2..]),
+  };
+  let opcode = Opcode::try_from(opcode).ok()?;
+  Some((width, opcode, operands))
+}
+
+fn read_instruction_mut(buf: &mut [u8]) -> Option<(Width, Opcode, &mut [u8])> {
+  let width = Width::decode(buf);
+  let (opcode, operands) = match width {
+    Width::Normal => (buf[0], &mut buf[1..]),
+    Width::Wide16 | Width::Wide32 => (buf[1], &mut buf[2..]),
+  };
+  let opcode = Opcode::try_from(opcode).ok()?;
+  Some((width, opcode, operands))
+}
+
 mod private {
   pub trait Sealed {}
 }
+
+#[cfg(test)]
+mod tests;

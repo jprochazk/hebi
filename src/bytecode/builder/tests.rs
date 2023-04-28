@@ -1,23 +1,22 @@
 use super::*;
-use crate::instruction::opcodes::symbolic::*;
-use crate::instruction::opcodes::{self as op, Opcode};
+use crate::bytecode::disasm::Disassembly;
 
 #[rustfmt::skip]
 #[test]
 fn basic_emit() {
   let mut builder = BytecodeBuilder::new();
 
-  builder.emit(LoadSmi { value: 10 });
+  builder.emit(LoadSmi { value: op::Smi(10) }, 0..0);
   builder.emit(Store {
     register: op::Register(0),
-  });
-  builder.emit(LoadSmi { value: 5 });
+  }, 0..0);
+  builder.emit(LoadSmi { value: op::Smi(5) }, 0..0);
   builder.emit(Add {
     rhs: op::Register(0),
-  });
-  builder.emit(Print);
+  }, 0..0);
+  builder.emit(Print, 0..0);
 
-  let (bytecode, _) = builder.finish();
+  let (bytecode, constants) = builder.finish();
 
   assert_eq!(
     bytecode,
@@ -29,6 +28,8 @@ fn basic_emit() {
       Opcode::Print as u8,
     ],
   );
+
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
 }
 
 #[rustfmt::skip]
@@ -39,11 +40,11 @@ fn emit_constant() {
   let a = builder.constant_pool_builder().insert(NonNaNFloat::from(10.0));
   let b = builder.constant_pool_builder().insert(NonNaNFloat::from(5.0));
   let c = builder.constant_pool_builder().insert(NonNaNFloat::from(10.0));
-  builder.emit(LoadConst { index: a });
-  builder.emit(LoadConst { index: b });
-  builder.emit(LoadConst { index: c });
+  builder.emit(LoadConst { index: a }, 0..0);
+  builder.emit(LoadConst { index: b }, 0..0);
+  builder.emit(LoadConst { index: c }, 0..0);
 
-  let (bytecode, constant) = builder.finish();
+  let (bytecode, constants) = builder.finish();
 
   assert_eq!(
     bytecode,
@@ -54,9 +55,11 @@ fn emit_constant() {
     ],
   );
 
-  assert_eq!(constant.len(), 2);
-  assert_eq!(constant[0].as_float().unwrap().value(), 10.0);
-  assert_eq!(constant[1].as_float().unwrap().value(), 5.0);
+  assert_eq!(constants.len(), 2);
+  assert_eq!(constants[0].as_float().unwrap().value(), 10.0);
+  assert_eq!(constants[1].as_float().unwrap().value(), 5.0);
+  
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
 }
 
 #[rustfmt::skip]
@@ -65,18 +68,18 @@ fn emit_forward_jump_8bit() {
   let mut builder = BytecodeBuilder::new();
 
   let test = builder.label("test");
-  builder.emit(Nop);
-  builder.emit_jump(&test);
-  builder.emit(Nop);
-  builder.emit(Nop);
-  builder.emit(Nop);
-  builder.emit(Nop);
-  builder.emit(Nop);
-  builder.emit(Nop);
+  builder.emit(Nop, 0..0);
+  builder.emit_jump(&test, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
   builder.bind_label(test);
-  builder.emit(Ret);
+  builder.emit(Ret, 0..0);
 
-  let (bytecode, _) = builder.finish();
+  let (bytecode, constants ) = builder.finish();
 
   assert_eq!(
     bytecode,
@@ -92,6 +95,8 @@ fn emit_forward_jump_8bit() {
       Opcode::Ret as u8,
     ],
   );
+  
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
 }
 
 #[test]
@@ -99,12 +104,12 @@ fn emit_forward_jump_8bit_overflow() {
   let mut builder = BytecodeBuilder::new();
 
   let test = builder.label("test");
-  builder.emit_jump(&test);
+  builder.emit_jump(&test, 0..0);
   for _ in 0..(256 - 2) {
-    builder.emit(Nop);
+    builder.emit(Nop, 0..0);
   }
   builder.bind_label(test);
-  builder.emit(Ret);
+  builder.emit(Ret, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
@@ -124,16 +129,16 @@ fn emit_forward_jump_16bit() {
   }
 
   let test = builder.label("test");
-  builder.emit_jump(&test);
+  builder.emit_jump(&test, 0..0);
 
   let jump_len = 4; // jump instruction will use 4 bytes
   let num_nops = 256 - jump_len; // fill the rest of 8bit offset with nops
   for _ in 0..num_nops {
-    builder.emit(Nop);
+    builder.emit(Nop, 0..0);
   }
   let jump_target = builder.bytecode.len() as u16;
   builder.bind_label(test);
-  builder.emit(Ret);
+  builder.emit(Ret, 0..0);
 
   let (bytecode, _) = builder.finish();
 
@@ -163,16 +168,16 @@ fn emit_forward_jump_16bit_overflow() {
   }
 
   let test = builder.label("test");
-  builder.emit_jump(&test);
+  builder.emit_jump(&test, 0..0);
 
   let jump_len = 4; // jump instruction will use 4 bytes
   let num_nops = 65536 - jump_len; // fill the rest of 16bit offset with nops
   for _ in 0..num_nops {
-    builder.emit(Nop);
+    builder.emit(Nop, 0..0);
   }
   let jump_target = builder.bytecode.len() as u32;
   builder.bind_label(test);
-  builder.emit(Ret);
+  builder.emit(Ret, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
@@ -206,16 +211,16 @@ fn emit_forward_jump_32bit() {
   }
 
   let test = builder.label("test");
-  builder.emit_jump(&test);
+  builder.emit_jump(&test, 0..0);
 
   let jump_len = 6; // jump instruction will use 6 bytes
   let num_nops = 65536 - jump_len; // fill the rest of 16bit offset with nops
   for _ in 0..num_nops {
-    builder.emit(Nop);
+    builder.emit(Nop, 0..0);
   }
   let jump_target = builder.bytecode.len() as u32;
   builder.bind_label(test);
-  builder.emit(Ret);
+  builder.emit(Ret, 0..0);
 
   let (bytecode, _) = builder.finish();
 
@@ -235,4 +240,35 @@ fn emit_forward_jump_32bit() {
     .iter()
     .all(|v| *v == Opcode::Nop as u8));
   assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Ret as u8]);
+}
+
+#[test]
+fn emit_jump_loop() {
+  let mut builder = BytecodeBuilder::new();
+
+  builder.emit(Nop, 0..0);
+  let start = builder.loop_header();
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit(Nop, 0..0);
+  builder.emit_jump_loop(&start, 0..0);
+  builder.emit(Ret, 0..0);
+
+  let (bytecode, constants) = builder.finish();
+
+  assert!(constants.is_empty());
+  assert_eq!(
+    bytecode,
+    [
+      Opcode::Nop as u8,
+      Opcode::Nop as u8,
+      Opcode::Nop as u8,
+      Opcode::Nop as u8,
+      Opcode::JumpLoop as u8,
+      /* offset */ (4 - 1),
+      Opcode::Ret as u8,
+    ]
+  );
+
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
 }

@@ -5,20 +5,21 @@ mod regalloc;
 mod stmt;
 
 // TODO:
-// 1. (optimization) constant pool compaction
-// 2. register allocation
-// 3. loop_header + emit_jump_loop
-// 4. (optimization) basic blocks
-// 5. (optimization) elide previous instruction (clobbered read)
-// 6. actually write emit for all AST nodes
+// - (optimization) constant pool compaction
+// - (optimization) basic blocks
+// - (optimization) elide last instruction (clobbered read)
+// - (optimization) peephole with last 2 instructions
+// - register allocation
+// - actually write emit for all AST nodes
 
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use self::regalloc::{RegAlloc, Register};
+use crate::bytecode::builder::BytecodeBuilder;
+use crate::bytecode::opcode::symbolic::*;
+use crate::bytecode::opcode::{self as op};
 use crate::ctx::Context;
-use crate::instruction::builder::BytecodeBuilder;
-use crate::instruction::opcodes as op;
 use crate::syntax::ast;
 use crate::value::object;
 use crate::value::object::function;
@@ -35,7 +36,7 @@ pub fn emit<'cx, 'src>(
   let mut module = State::new(cx, ast, name.clone(), is_root).emit_module();
 
   let name = cx.alloc(object::String::new(name.to_string().into()));
-  let root = module.functions.pop().unwrap().finish(cx);
+  let root = module.functions.pop().unwrap().finish();
   let module_vars = module.vars;
 
   cx.alloc(object::ModuleDescriptor {
@@ -48,7 +49,7 @@ pub fn emit<'cx, 'src>(
 struct State<'cx, 'src> {
   cx: &'cx Context,
   ast: &'src ast::Module<'src>,
-  module: Module<'src>,
+  module: Module<'cx, 'src>,
 }
 
 impl<'cx, 'src> State<'cx, 'src> {
@@ -64,12 +65,12 @@ impl<'cx, 'src> State<'cx, 'src> {
       module: Module {
         is_root,
         vars: IndexSet::new(),
-        functions: vec![Function::new(name, function::Params::default())],
+        functions: vec![Function::new(cx, name, function::Params::default())],
       },
     }
   }
 
-  fn current_function(&mut self) -> &mut Function<'src> {
+  fn current_function(&mut self) -> &mut Function<'cx, 'src> {
     self.module.functions.last_mut().unwrap()
   }
 
@@ -77,23 +78,25 @@ impl<'cx, 'src> State<'cx, 'src> {
     &mut self.current_function().builder
   }
 
-  fn emit_module(mut self) -> Module<'src> {
+  fn emit_module(mut self) -> Module<'cx, 'src> {
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
-    self.builder().emit(op::Ret);
+    self.builder().emit(Ret, 0..0);
 
     self.module
   }
 }
 
-struct Module<'src> {
+struct Module<'cx, 'src> {
   is_root: bool,
   vars: IndexSet<Ptr<object::String>>,
-  functions: Vec<Function<'src>>,
+  functions: Vec<Function<'cx, 'src>>,
 }
 
-struct Function<'src> {
+struct Function<'cx, 'src> {
+  cx: &'cx Context,
+
   name: Cow<'src, str>,
   builder: BytecodeBuilder,
   regalloc: RegAlloc,
@@ -106,9 +109,11 @@ struct Function<'src> {
   current_loop: Option<Loop>,
 }
 
-impl<'src> Function<'src> {
-  fn new(name: impl Into<Cow<'src, str>>, params: function::Params) -> Self {
+impl<'cx, 'src> Function<'cx, 'src> {
+  fn new(cx: &'cx Context, name: impl Into<Cow<'src, str>>, params: function::Params) -> Self {
     Self {
+      cx,
+
       name: name.into(),
       builder: BytecodeBuilder::new(),
       regalloc: RegAlloc::new(),
@@ -122,20 +127,21 @@ impl<'src> Function<'src> {
     }
   }
 
-  fn finish(self, _: &Context) -> Ptr<object::FunctionDescriptor> {
-    // 1. finalize regalloc
-    // 2. patch instructions with register map
-    // 3. allocate function descriptor
+  fn finish(self) -> Ptr<object::FunctionDescriptor> {
+    let (frame_size, register_map) = self.regalloc.finish();
+    let (mut bytecode, constants) = self.builder.finish();
+    op::patch_registers(&mut bytecode, &register_map);
 
-    /* cx.alloc(object::FunctionDescriptor::new(
-      cx.alloc(object::String::new(self.name.to_string().into())),
+    self.cx.alloc(object::FunctionDescriptor::new(
+      self
+        .cx
+        .alloc(object::String::new(self.name.to_string().into())),
       self.params,
-      self.upvalues.len() as u16,
+      self.upvalues.len(),
       frame_size,
-      self.instructions,
-      self.constants.into_iter().collect(),
-    )) */
-    todo!()
+      bytecode,
+      constants,
+    ))
   }
 }
 
@@ -158,3 +164,6 @@ struct Label(usize);
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Scope(usize);
+
+#[cfg(test)]
+mod tests;

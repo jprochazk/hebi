@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use super::object::ptr::Ptr;
 use super::object::{ClassDescriptor, FunctionDescriptor, String};
-use crate::instruction::opcodes as op;
+use crate::bytecode::opcode as op;
 
 #[derive(Debug, Clone)]
 pub enum Constant {

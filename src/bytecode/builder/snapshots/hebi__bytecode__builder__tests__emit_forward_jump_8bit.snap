@@ -1,0 +1,14 @@
+---
+source: src/bytecode/builder/tests.rs
+expression: "Disassembly(&bytecode, &constants).to_string()"
+---
+nop
+jump 8
+nop
+nop
+nop
+nop
+nop
+nop
+ret
+

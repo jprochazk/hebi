@@ -1,0 +1,8 @@
+---
+source: src/bytecode/builder/tests.rs
+expression: "Disassembly(&bytecode, &constants).to_string()"
+---
+load_const [0]; 10
+load_const [1]; 5
+load_const [0]; 10
+
