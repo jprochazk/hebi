@@ -144,7 +144,6 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 | jump                | offset              | jump offset           |             |                |
 | jump_const          | offset              | constant index        |             |                |
 | jump_loop           | offset              | jump offset           |             |                |
-| jump_loop_const     | offset              | constant index        |             |                |
 | jump_if_false       | offset              | jump offset           |             |                |
 | jump_if_false_const | offset              | constant index        |             |                |
 | add                 | rhs                 | register              |             |                |
@@ -205,7 +204,6 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 | jump                | jump forward by `offset` bytes                                                                        |
 | jump_const          | jump forward by `offset` bytes (stored in constant pool)                                              |
 | jump_loop           | jump backward by `offset` bytes                                                                       |
-| jump_loop_const     | jump backward by `offset` bytes (stored in constant pool)                                             |
 | jump_if_false       | jump forward by `offset` bytes if the value in the accumulator is false                               |
 | jump_if_false_const | jump forward by `offset` bytes (stored in the constant pool) if the value in the accumulator is false |
 | add                 | add a value stored in a register to the accumulator                                                   |
