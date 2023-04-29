@@ -272,3 +272,38 @@ fn emit_jump_loop() {
 
   assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
 }
+
+#[rustfmt::skip]
+#[test]
+fn emit_multi_label() {
+  let mut builder = BytecodeBuilder::new();
+
+  let labels = builder.multi_label("test", 4);
+  for _ in 0..4 {
+    builder.emit(Nop, 0..0);
+    builder.emit_jump(labels.get(), 0..0);
+  }
+  builder.emit(Nop, 0..0);
+  builder.bind_multi_label(labels);
+  builder.emit(Ret, 0..0);
+
+  let (bytecode, constants) = builder.finish();
+
+  assert_eq!(
+    bytecode,
+    [
+      Opcode::Nop as u8,
+      Opcode::Jump as u8, /*offset*/ 12,
+      Opcode::Nop as u8,
+      Opcode::Jump as u8, /*offset*/ 9,
+      Opcode::Nop as u8,
+      Opcode::Jump as u8, /*offset*/ 6,
+      Opcode::Nop as u8,
+      Opcode::Jump as u8, /*offset*/ 3,
+      Opcode::Nop as u8,
+      Opcode::Ret as u8,
+    ]
+  );
+
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+}

@@ -7,6 +7,7 @@ use super::opcode::symbolic::*;
 use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
 use crate::span::Span;
+use crate::util::init_vec_with;
 use crate::value::constant::{Constant, NonNaNFloat};
 use crate::value::object;
 
@@ -29,6 +30,19 @@ pub struct BytecodeBuilder {
 pub struct Label {
   name: &'static str,
   referrer_offset: Cell<Option<usize>>,
+}
+
+pub struct MultiLabel {
+  cursor: Cell<usize>,
+  labels: Vec<Label>,
+}
+
+impl MultiLabel {
+  pub fn get(&self) -> &Label {
+    let label = &self.labels[self.cursor.get()];
+    self.cursor.set(self.cursor.get() + 1);
+    label
+  }
 }
 
 pub struct LoopHeader {
@@ -70,6 +84,13 @@ impl BytecodeBuilder {
     }
   }
 
+  pub fn multi_label(&self, name: &'static str, count: usize) -> MultiLabel {
+    MultiLabel {
+      cursor: Cell::new(0),
+      labels: init_vec_with(count, || self.label(name)),
+    }
+  }
+
   pub fn bind_label(&mut self, label: Label) {
     let Some(referrer_offset) = label.referrer_offset.get() else {
       panic!("label {} bound without a referrer", label.name);
@@ -88,6 +109,12 @@ impl BytecodeBuilder {
     self.unbound_jumps -= 1;
   }
 
+  pub fn bind_multi_label(&mut self, multi_label: MultiLabel) {
+    for label in multi_label.labels {
+      self.bind_label(label)
+    }
+  }
+
   /// Emit a jump instruction. The instruction will be emitted with a
   /// placeholder offset, and patched later when the `label` is bound.
   pub fn emit_jump(&mut self, label: &Label, span: impl Into<Span>) {
@@ -99,7 +126,8 @@ impl BytecodeBuilder {
       self.bytecode.len(),
     );
 
-    // see `docs/instructions.md` for an description of how this works.
+    // see [docs/emit.md#jump-instruction-encoding] for a description of how this
+    // works.
     self.unbound_jumps += 1;
     label.referrer_offset.set(Some(self.bytecode.len()));
     let offset = self.constant_pool_builder().reserve();
@@ -120,7 +148,8 @@ impl BytecodeBuilder {
       self.bytecode.len(),
     );
 
-    // see `docs/instructions.md` for an description of how this works.
+    // see [docs/emit.md#jump-instruction-encoding] for a description of how this
+    // works.
     self.unbound_jumps += 1;
     label.referrer_offset.set(Some(self.bytecode.len()));
     let offset = self.constant_pool_builder().reserve();

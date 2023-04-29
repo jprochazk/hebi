@@ -63,3 +63,9 @@ where
     Join(self.clone(), sep)
   }
 }
+
+pub fn init_vec_with<T, F: Fn() -> T>(count: usize, f: F) -> Vec<T> {
+  let mut v = Vec::new();
+  v.resize_with(count, f);
+  v
+}

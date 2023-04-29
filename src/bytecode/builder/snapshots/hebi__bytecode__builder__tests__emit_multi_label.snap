@@ -1,0 +1,15 @@
+---
+source: src/bytecode/builder/tests.rs
+expression: "Disassembly::new(&bytecode, &constants, 0).to_string()"
+---
+nop
+jump 12
+nop
+jump 9
+nop
+jump 6
+nop
+jump 3
+nop
+ret
+

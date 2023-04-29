@@ -6,27 +6,6 @@ mod macros;
 use super::disasm;
 use super::operands::{Operand, Width};
 
-// TODO: disassembly
-//
-// fn disassemble(buf: &[u8]) -> String
-//
-// ^ the above function will be generated in `instructions!`
-//
-// it will match on the byte, if it's a prefix, expand the width, and then read
-// the instruction match on the opcode again, and dispatch to the disassembly
-// impl for the specific instruction that will produce a Disassembly struct
-// which will accept `name: &'static str` and `operands: (A, B, C, ...)`, where
-// each operand will impl another trait, so that the output can be customized
-// (e.g. registers are printed as `r<index>`, constants as `[0]`)
-// on top of that, the entire instruction will be converted back to its symbolic
-// representation and passed to an `extra` method, which can be used to print
-// stuff in the disassembly after after the `;`
-//
-//   example:
-//     import [0], r0 ; <module `kv`>
-//     └┬───┘ └┬────┘ └────────────┬┘
-//      name   operands            extra
-
 instructions! {
   patch_registers, symbolic, decode, Opcode;
   Nop,
