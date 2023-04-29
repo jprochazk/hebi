@@ -1,5 +1,5 @@
 ---
 source: src/error/tests.rs
-expression: "Error::new(\"error: test\", 19..19).report(\"d(                 \", true)"
+expression: "cx.error(\"error: test\", 19..19).report(\"d(                 \", true)"
 ---
 error: test

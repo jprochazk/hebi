@@ -8,16 +8,16 @@ fn simple() {
 
   let a = regalloc.alloc();
   let b = regalloc.alloc();
-  regalloc.access(a);
-  regalloc.access(b);
-  regalloc.access(b);
+  a.access();
+  b.access();
+  b.access();
   let c = regalloc.alloc();
-  regalloc.access(c);
-  regalloc.access(b);
+  c.access();
+  b.access();
 
   let (registers, map) = regalloc.finish();
 
-  assert_snapshot!(DisplayGraph(&regalloc, registers, &map).to_string());
+  assert_snapshot!(DisplayGraph(&*regalloc.0.borrow(), registers, &map).to_string());
 }
 
 #[test]
@@ -26,21 +26,21 @@ fn overlapping() {
 
   let a = regalloc.alloc();
   let b = regalloc.alloc();
-  regalloc.access(a);
+  a.access();
   let c = regalloc.alloc();
   let d = regalloc.alloc();
   let e = regalloc.alloc();
-  regalloc.access(e);
-  regalloc.access(d);
-  regalloc.access(c);
-  regalloc.access(b);
+  e.access();
+  d.access();
+  c.access();
+  b.access();
 
   let (registers, map) = regalloc.finish();
 
-  assert_snapshot!(DisplayGraph(&regalloc, registers, &map).to_string());
+  assert_snapshot!(DisplayGraph(&*regalloc.0.borrow(), registers, &map).to_string());
 }
 
-struct DisplayGraph<'a>(&'a RegAlloc, usize, &'a [usize]);
+struct DisplayGraph<'a>(&'a State, usize, &'a [usize]);
 
 impl<'a> std::fmt::Display for DisplayGraph<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

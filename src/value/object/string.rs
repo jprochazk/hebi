@@ -1,9 +1,10 @@
+use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
 
 use beef::lean::Cow;
 
-use super::Object;
+use super::{Object, Ptr};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct String {
@@ -13,6 +14,10 @@ pub struct String {
 impl String {
   pub fn new(data: Cow<'static, str>) -> Self {
     Self { data }
+  }
+
+  pub fn as_str(&self) -> &str {
+    self.data.as_ref()
   }
 }
 
@@ -39,5 +44,29 @@ impl Deref for String {
 
   fn deref(&self) -> &Self::Target {
     self.data.as_ref()
+  }
+}
+
+impl std::borrow::Borrow<str> for String {
+  fn borrow(&self) -> &str {
+    self.data.borrow()
+  }
+}
+
+impl AsRef<str> for String {
+  fn as_ref(&self) -> &str {
+    self.data.as_ref()
+  }
+}
+
+impl indexmap::Equivalent<str> for Ptr<String> {
+  fn equivalent(&self, key: &str) -> bool {
+    self.as_str() == key
+  }
+}
+
+impl Borrow<str> for Ptr<String> {
+  fn borrow(&self) -> &str {
+    self
   }
 }

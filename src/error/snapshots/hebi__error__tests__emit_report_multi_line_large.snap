@@ -1,6 +1,6 @@
 ---
 source: src/error/tests.rs
-expression: "Error::new(\"error: test\",\n        13..76).report(\"let x: Foo = Bar {\\n  a: 0,\\n  b: 0,\\n  c: 0,\\n  d: 0,\\n  e: 0,\\n  f: 0,\\n  g: 0,\\n};\",\n    true)"
+expression: "cx.error(\"error: test\",\n        13..76).report(\"let x: Foo = Bar {\\n  a: 0,\\n  b: 0,\\n  c: 0,\\n  d: 0,\\n  e: 0,\\n  f: 0,\\n  g: 0,\\n};\",\n    true)"
 ---
 error: test
 | let x: Foo = [4;31mBar {[0m

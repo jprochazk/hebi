@@ -19,7 +19,9 @@ struct Inner {
 }
 
 impl Context {
-  pub fn intern(&self, s: Cow<'static, str>) -> Ptr<String> {
+  pub fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<String> {
+    let s = s.into();
+
     if let Some(s) = self.inner.borrow().string_table.get(&s) {
       return s.clone();
     }

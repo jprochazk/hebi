@@ -1,6 +1,7 @@
 // TEMP
 #![allow(dead_code)]
 
+mod expr;
 mod regalloc;
 mod stmt;
 
@@ -9,17 +10,17 @@ mod stmt;
 // - (optimization) basic blocks
 // - (optimization) elide last instruction (clobbered read)
 // - (optimization) peephole with last 2 instructions
-// - register allocation
 // - actually write emit for all AST nodes
 
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use self::regalloc::{RegAlloc, Register};
-use crate::bytecode::builder::BytecodeBuilder;
+use crate::bytecode::builder::{BytecodeBuilder, InsertConstant, LoopHeader, MultiLabel};
 use crate::bytecode::opcode::symbolic::*;
 use crate::bytecode::opcode::{self as op};
 use crate::ctx::Context;
+use crate::span::Span;
 use crate::syntax::ast;
 use crate::value::object;
 use crate::value::object::function;
@@ -78,6 +79,109 @@ impl<'cx, 'src> State<'cx, 'src> {
     &mut self.current_function().builder
   }
 
+  fn is_global_scope(&self) -> bool {
+    self.module.functions.len() <= 1
+  }
+
+  fn constant_name(&mut self, string: impl ToString) -> op::Constant {
+    let string = self.cx.intern(string.to_string());
+    self.builder().constant_pool_builder().insert(string)
+  }
+
+  fn constant_value(&mut self, value: impl InsertConstant) -> op::Constant {
+    self.builder().constant_pool_builder().insert(value)
+  }
+
+  fn alloc_register(&mut self) -> Register {
+    self.current_function().regalloc.alloc()
+  }
+
+  fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, register: Register) {
+    let function = self.current_function();
+
+    let _ = register.access(); // ensure liveness at time of declaration
+    let name = name.into();
+
+    let key = (function.scope, name);
+    if let Some(var) = function.locals.get_mut(&key) {
+      *var = register;
+    } else {
+      function.locals.insert(key, register);
+    }
+  }
+
+  fn declare_module_var(&mut self, name: impl Into<Cow<'src, str>>) -> op::ModuleVar {
+    let name = self.cx.intern(name.into().to_string());
+    let index = self.module.vars.len() as u32;
+    self.module.vars.insert(name);
+    op::ModuleVar(index)
+  }
+
+  fn resolve_var(&mut self, name: impl Into<Cow<'src, str>>) -> Get {
+    let name = name.into();
+
+    if let Some(reg) = self.current_function().resolve_local(&name) {
+      return Get::Local(reg);
+    }
+
+    if let Some(reg) = self.resolve_upvalue(&name, self.module.functions.len() - 1) {
+      return Get::Upvalue(reg);
+    }
+
+    if let Some(reg) = self.resolve_module_var(&name) {
+      return Get::ModuleVar(reg);
+    }
+
+    Get::Global
+  }
+
+  fn resolve_upvalue(
+    &mut self,
+    name: &Cow<'src, str>,
+    function_index: usize,
+  ) -> Option<op::Upvalue> {
+    if function_index < 2 {
+      return None;
+    }
+
+    if let Some(info) = self.module.functions[function_index].upvalues.get(name) {
+      return Some(info.dst);
+    }
+
+    let local_slot = op::Upvalue(self.module.functions[function_index].upvalues.len() as u32);
+    if let Some(reg) = self.module.functions[function_index - 1].resolve_local(name) {
+      self.module.functions[function_index].upvalues.insert(
+        name.clone(),
+        Upvalue {
+          dst: local_slot,
+          src: UpvalueSource::Register(reg),
+        },
+      );
+      return Some(local_slot);
+    }
+
+    if let Some(parent_slot) = self.resolve_upvalue(name, function_index - 1) {
+      self.module.functions[function_index].upvalues.insert(
+        name.clone(),
+        Upvalue {
+          dst: local_slot,
+          src: UpvalueSource::Upvalue(parent_slot),
+        },
+      );
+      return Some(local_slot);
+    }
+
+    None
+  }
+
+  fn resolve_module_var(&self, name: &Cow<'src, str>) -> Option<op::ModuleVar> {
+    self
+      .module
+      .vars
+      .get_index_of(name.as_ref())
+      .map(|v| op::ModuleVar(v as u32))
+  }
+
   fn emit_module(mut self) -> Module<'cx, 'src> {
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
@@ -104,6 +208,7 @@ struct Function<'cx, 'src> {
   params: function::Params,
   locals: IndexMap<(Scope, Cow<'src, str>), Register>,
   upvalues: IndexMap<Cow<'src, str>, Upvalue>,
+  scope: Scope,
 
   is_in_opt_expr: bool,
   current_loop: Option<Loop>,
@@ -122,9 +227,40 @@ impl<'cx, 'src> Function<'cx, 'src> {
       locals: IndexMap::new(),
       upvalues: IndexMap::new(),
 
+      scope: Scope(0),
+
       is_in_opt_expr: false,
       current_loop: None,
     }
+  }
+
+  fn enter_scope(&mut self) {
+    self.scope.0 += 1;
+  }
+
+  fn leave_scope(&mut self) {
+    self.scope.0 -= 1;
+  }
+
+  fn enter_loop_body(&mut self, start: LoopHeader, end: MultiLabel) -> Option<Loop> {
+    self.current_loop.replace(Loop { start, end })
+  }
+
+  fn leave_loop_body(&mut self, previous: Option<Loop>) -> Loop {
+    let current = self.current_loop.take().unwrap();
+    if let Some(previous) = previous {
+      self.current_loop = Some(previous);
+    }
+    current
+  }
+
+  fn resolve_local(&self, name: &Cow<'src, str>) -> Option<Register> {
+    self
+      .locals
+      .iter()
+      .rev()
+      .find(|((_, var), _)| var == name)
+      .map(|(_, register)| register.clone())
   }
 
   fn finish(self) -> Ptr<object::FunctionDescriptor> {
@@ -145,21 +281,27 @@ impl<'cx, 'src> Function<'cx, 'src> {
   }
 }
 
-enum Upvalue {
-  /// Upvalue a local in the outer scope
-  Parent { src: Register, dst: op::Upvalue },
-  /// Upvalue an upvalue in the outer scope
-  Nested { src: op::Upvalue, dst: op::Upvalue },
+struct Upvalue {
+  dst: op::Upvalue,
+  src: UpvalueSource,
+}
+
+enum UpvalueSource {
+  Register(Register),
+  Upvalue(op::Upvalue),
+}
+
+enum Get {
+  Local(Register),
+  Upvalue(op::Upvalue),
+  ModuleVar(op::ModuleVar),
+  Global,
 }
 
 struct Loop {
-  start: Label,
-  end: Label,
+  start: LoopHeader,
+  end: MultiLabel,
 }
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct Label(usize);
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

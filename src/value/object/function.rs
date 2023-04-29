@@ -4,6 +4,7 @@ use std::ptr::NonNull;
 use super::module::ModuleId;
 use super::ptr::Ptr;
 use super::{List, Object, String};
+use crate::bytecode::disasm;
 use crate::value::constant::Constant;
 
 #[derive(Debug)]
@@ -59,6 +60,34 @@ impl FunctionDescriptor {
       instructions,
       constants,
     }
+  }
+}
+
+impl FunctionDescriptor {
+  pub fn disassemble(&self) -> Disassembly {
+    Disassembly(self)
+  }
+}
+
+pub struct Disassembly<'a>(&'a FunctionDescriptor);
+
+impl<'a> Display for Disassembly<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let function = self.0;
+
+    let (bytecode, constants) =
+      unsafe { (function.instructions.as_ref(), function.constants.as_ref()) };
+
+    writeln!(
+      f,
+      "function `{}` (registers: {}, upvalues: {}, length: {}, constants: {})",
+      function.name,
+      function.frame_size,
+      function.num_upvalues,
+      bytecode.len(),
+      constants.len(),
+    )?;
+    writeln!(f, "{}", disasm::Disassembly::new(bytecode, constants, 2))
   }
 }
 

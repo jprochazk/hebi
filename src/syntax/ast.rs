@@ -290,6 +290,12 @@ pub struct IterRange<'src> {
   pub inclusive: bool,
 }
 
+impl<'src> IterRange<'src> {
+  pub fn span(&self) -> Span {
+    self.start.span.join(self.end.span)
+  }
+}
+
 #[cfg_attr(test, derive(Debug))]
 pub struct While<'src> {
   pub cond: Expr<'src>,
@@ -334,7 +340,7 @@ pub enum Literal<'src> {
   Bool(bool),
   String(Cow<'src, str>),
   List(Vec<Expr<'src>>),
-  Dict(Vec<(Expr<'src>, Expr<'src>)>),
+  Table(Vec<(Expr<'src>, Expr<'src>)>),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -603,8 +609,8 @@ pub fn ident_key(v: Ident) -> Expr {
   )
 }
 
-pub fn expr_dict<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
-  Expr::new(s, ExprKind::Literal(Box::new(Literal::Dict(items))))
+pub fn expr_table<'src>(s: impl Into<Span>, items: Vec<(Expr<'src>, Expr<'src>)>) -> Expr<'src> {
+  Expr::new(s, ExprKind::Literal(Box::new(Literal::Table(items))))
 }
 
 pub fn expr_get_var(name: Ident) -> Expr {

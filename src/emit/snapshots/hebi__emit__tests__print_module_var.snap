@@ -1,0 +1,20 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+v := 0
+print v
+
+
+# Func:
+function `test` (registers: 0, upvalues: 0, length: 8, constants: 0)
+  load_smi 0
+  store_module_var 0
+  load_module_var 0
+  print
+  ret
+
+
+
+

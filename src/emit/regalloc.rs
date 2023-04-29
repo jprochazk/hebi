@@ -1,11 +1,42 @@
+use std::cell::RefCell;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
+use std::rc::Rc;
+
+use super::op;
 
 #[derive(Default)]
-pub struct RegAlloc {
+pub struct RegAlloc(Rc<RefCell<State>>);
+
+#[derive(Default)]
+struct State {
   preserve: Vec<Option<Register>>,
   intervals: Vec<Interval>,
   event: usize,
+}
+
+impl State {
+  fn event(&mut self) -> usize {
+    let event = self.event;
+    self.event += 1;
+    event
+  }
+
+  fn alloc(&mut self) -> usize {
+    let index = self.intervals.len();
+    let event = self.event();
+    self.intervals.push(Interval {
+      index,
+      start: event,
+      end: event,
+    });
+    index
+  }
+
+  fn access(&mut self, index: usize) {
+    let event = self.event();
+    self.intervals[index].end = event;
+  }
 }
 
 #[derive(Clone, Copy)]
@@ -15,43 +46,34 @@ struct Interval {
   end: usize,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Register(usize);
-
 impl RegAlloc {
   pub fn new() -> Self {
-    Self {
-      preserve: Vec::new(),
-      intervals: Vec::new(),
-      event: 0,
-    }
-  }
-
-  fn event(&mut self) -> usize {
-    let event = self.event;
-    self.event += 1;
-    event
-  }
-
-  pub fn access(&mut self, register: Register) -> usize {
-    let index = register.0;
-    self.intervals[index].end = self.event();
-    index
+    Self::default()
   }
 
   pub fn alloc(&mut self) -> Register {
-    let index = self.intervals.len();
-    let event = self.event();
-    self.intervals.push(Interval {
+    let index = self.0.borrow_mut().alloc();
+    Register {
+      state: self.0.clone(),
       index,
-      start: event,
-      end: event,
-    });
-    Register(index)
+    }
   }
 
   pub fn finish(&self) -> (usize, Vec<usize>) {
-    linear_scan(&self.intervals)
+    linear_scan(&self.0.borrow().intervals)
+  }
+}
+
+#[derive(Clone)]
+pub struct Register {
+  state: Rc<RefCell<State>>,
+  index: usize,
+}
+
+impl Register {
+  pub fn access(&self) -> op::Register {
+    self.state.borrow_mut().access(self.index);
+    op::Register(self.index as u32)
   }
 }
 

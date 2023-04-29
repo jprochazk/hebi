@@ -223,15 +223,15 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
       let mut items = vec![];
       if !self.current().is(Brk_CurlyR) {
-        items.push(self.dict_field()?);
+        items.push(self.table_field()?);
         while self.bump_if(Tok_Comma) && !self.current().is(Brk_CurlyR) {
-          items.push(self.dict_field()?);
+          items.push(self.table_field()?);
         }
       }
 
       self.expect(Brk_CurlyR)?;
       let end = self.previous().span.end;
-      return Ok(ast::expr_dict(start..end, items));
+      return Ok(ast::expr_table(start..end, items));
     }
 
     if self.bump_if(Kw_Self) {
@@ -287,14 +287,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Err(self.cx.error("unexpected token", self.current().span))
   }
 
-  fn dict_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
-    let key = self.dict_key()?;
+  fn table_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
+    let key = self.table_key()?;
     self.expect(Tok_Colon)?;
     let value = self.expr()?;
     Ok((key, value))
   }
 
-  fn dict_key(&mut self) -> Result<ast::Expr<'src>> {
+  fn table_key(&mut self) -> Result<ast::Expr<'src>> {
     if self.bump_if(Brk_SquareL) {
       let key = self.expr()?;
       self.expect(Brk_SquareR)?;

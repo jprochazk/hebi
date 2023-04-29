@@ -1,4 +1,4 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
 
 use indexmap::IndexMap;
@@ -7,7 +7,6 @@ use super::opcode::symbolic::*;
 use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
 use crate::span::Span;
-use crate::util::init_vec_with;
 use crate::value::constant::{Constant, NonNaNFloat};
 use crate::value::object;
 
@@ -27,26 +26,77 @@ pub struct BytecodeBuilder {
   spans: Vec<Span>,
 }
 
-pub struct Label {
+pub struct BasicLabel {
   name: &'static str,
   referrer_offset: Cell<Option<usize>>,
 }
 
 pub struct MultiLabel {
-  cursor: Cell<usize>,
-  labels: Vec<Label>,
+  name: &'static str,
+  labels: RefCell<Vec<BasicLabel>>,
 }
 
-impl MultiLabel {
-  pub fn get(&self) -> &Label {
-    let label = &self.labels[self.cursor.get()];
-    self.cursor.set(self.cursor.get() + 1);
-    label
+pub trait Label: private::Sealed {
+  fn name(&self) -> &'static str;
+  fn is_used(&self) -> bool;
+  fn set_referrer(&self, offset: usize);
+  fn bind(self, builder: &mut BytecodeBuilder);
+}
+
+impl private::Sealed for BasicLabel {}
+impl Label for BasicLabel {
+  fn name(&self) -> &'static str {
+    self.name
+  }
+  fn is_used(&self) -> bool {
+    self.referrer_offset.get().is_some()
+  }
+  fn set_referrer(&self, offset: usize) {
+    self.referrer_offset.set(Some(offset))
+  }
+  fn bind(self, builder: &mut BytecodeBuilder) {
+    let Some(referrer_offset) = self.referrer_offset.get() else {
+      panic!("label {} bound without a referrer", self.name);
+    };
+    let current_offset = builder.bytecode.len();
+    assert!(
+      current_offset > referrer_offset,
+      "label {} used for backward jump",
+      self.name
+    );
+
+    builder.patch_jump(
+      referrer_offset,
+      op::Offset((current_offset - referrer_offset) as u32),
+    );
+    builder.unbound_jumps -= 1;
   }
 }
 
+impl private::Sealed for MultiLabel {}
+impl Label for MultiLabel {
+  fn name(&self) -> &'static str {
+    self.name
+  }
+  fn is_used(&self) -> bool {
+    false
+  }
+  fn set_referrer(&self, offset: usize) {
+    self.labels.borrow_mut().push(BasicLabel {
+      name: self.name,
+      referrer_offset: Cell::new(Some(offset)),
+    })
+  }
+  fn bind(self, builder: &mut BytecodeBuilder) {
+    for label in self.labels.take() {
+      label.bind(builder)
+    }
+  }
+}
+
+#[derive(Clone)]
 pub struct LoopHeader {
-  offset: usize,
+  offset: Cell<Option<usize>>,
 }
 
 impl BytecodeBuilder {
@@ -77,59 +127,37 @@ impl BytecodeBuilder {
   /// Create an empty label.
   ///
   /// Used with `emit_jump`
-  pub fn label(&self, name: &'static str) -> Label {
-    Label {
+  pub fn label(&self, name: &'static str) -> BasicLabel {
+    BasicLabel {
       name,
       referrer_offset: Cell::new(None),
     }
   }
 
-  pub fn multi_label(&self, name: &'static str, count: usize) -> MultiLabel {
+  pub fn multi_label(&self, name: &'static str) -> MultiLabel {
     MultiLabel {
-      cursor: Cell::new(0),
-      labels: init_vec_with(count, || self.label(name)),
+      name,
+      labels: RefCell::new(Vec::new()),
     }
   }
 
-  pub fn bind_label(&mut self, label: Label) {
-    let Some(referrer_offset) = label.referrer_offset.get() else {
-      panic!("label {} bound without a referrer", label.name);
-    };
-    let current_offset = self.bytecode.len();
-    assert!(
-      current_offset > referrer_offset,
-      "label {} used for backward jump",
-      label.name
-    );
-
-    self.patch_jump(
-      referrer_offset,
-      op::Offset((current_offset - referrer_offset) as u32),
-    );
-    self.unbound_jumps -= 1;
-  }
-
-  pub fn bind_multi_label(&mut self, multi_label: MultiLabel) {
-    for label in multi_label.labels {
-      self.bind_label(label)
-    }
+  pub fn bind_label(&mut self, label: impl Label) {
+    label.bind(self)
   }
 
   /// Emit a jump instruction. The instruction will be emitted with a
   /// placeholder offset, and patched later when the `label` is bound.
-  pub fn emit_jump(&mut self, label: &Label, span: impl Into<Span>) {
+  pub fn emit_jump(&mut self, label: &impl Label, span: impl Into<Span>) {
     assert!(
-      label.referrer_offset.get().is_none(),
-      "more than one instruction refers to label {} (referrers: {}, {})",
-      label.name,
-      label.referrer_offset.get().unwrap(),
-      self.bytecode.len(),
+      !label.is_used(),
+      "more than one instruction refers to label {}",
+      label.name(),
     );
 
     // see [docs/emit.md#jump-instruction-encoding] for a description of how this
     // works.
     self.unbound_jumps += 1;
-    label.referrer_offset.set(Some(self.bytecode.len()));
+    label.set_referrer(self.bytecode.len());
     let offset = self.constant_pool_builder().reserve();
     self.write(
       Jump {
@@ -139,19 +167,17 @@ impl BytecodeBuilder {
     )
   }
 
-  pub fn emit_jump_if_false(&mut self, label: &Label, span: impl Into<Span>) {
+  pub fn emit_jump_if_false(&mut self, label: &impl Label, span: impl Into<Span>) {
     assert!(
-      label.referrer_offset.get().is_none(),
-      "more than one instruction refers to label {} (referrers: {}, {})",
-      label.name,
-      label.referrer_offset.get().unwrap(),
-      self.bytecode.len(),
+      label.is_used(),
+      "more than one instruction refers to label {}",
+      label.name(),
     );
 
     // see [docs/emit.md#jump-instruction-encoding] for a description of how this
     // works.
     self.unbound_jumps += 1;
-    label.referrer_offset.set(Some(self.bytecode.len()));
+    label.set_referrer(self.bytecode.len());
     let offset = self.constant_pool_builder().reserve();
     self.write(
       JumpIfFalse {
@@ -165,12 +191,18 @@ impl BytecodeBuilder {
   /// target in `emit_jump_loop`.
   pub fn loop_header(&self) -> LoopHeader {
     LoopHeader {
-      offset: self.bytecode.len(),
+      offset: Cell::new(None),
     }
   }
 
-  pub fn emit_jump_loop(&mut self, header: &LoopHeader, span: impl Into<Span>) {
-    let relative_offset = (self.bytecode.len() - header.offset) as u32;
+  pub fn bind_loop_header(&self, loop_header: &LoopHeader) {
+    loop_header.offset.set(Some(self.bytecode.len()))
+  }
+
+  pub fn emit_jump_loop(&mut self, loop_header: &LoopHeader, span: impl Into<Span>) {
+    assert!(loop_header.offset.get().is_some(), "unbound loop header");
+
+    let relative_offset = (self.bytecode.len() - loop_header.offset.get().unwrap()) as u32;
     self.write(
       JumpLoop {
         offset: op::Offset(relative_offset),

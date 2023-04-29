@@ -12,7 +12,7 @@ fn basic_emit() {
   }, 0..0);
   builder.emit(LoadSmi { value: op::Smi(5) }, 0..0);
   builder.emit(Add {
-    rhs: op::Register(0),
+    lhs: op::Register(0),
   }, 0..0);
   builder.emit(Print, 0..0);
 
@@ -24,7 +24,7 @@ fn basic_emit() {
       Opcode::LoadSmi as u8, 10i8.to_le_bytes()[0],
       Opcode::Store as u8, /*register*/ 0,
       Opcode::LoadSmi as u8, 5i8.to_le_bytes()[0],
-      Opcode::Add as u8, /*rhs*/ 0,
+      Opcode::Add as u8, /*lhs*/ 0,
       Opcode::Print as u8,
     ],
   );
@@ -248,6 +248,7 @@ fn emit_jump_loop() {
 
   builder.emit(Nop, 0..0);
   let start = builder.loop_header();
+  builder.bind_loop_header(&start);
   builder.emit(Nop, 0..0);
   builder.emit(Nop, 0..0);
   builder.emit(Nop, 0..0);
@@ -278,13 +279,13 @@ fn emit_jump_loop() {
 fn emit_multi_label() {
   let mut builder = BytecodeBuilder::new();
 
-  let labels = builder.multi_label("test", 4);
+  let labels = builder.multi_label("test");
   for _ in 0..4 {
     builder.emit(Nop, 0..0);
-    builder.emit_jump(labels.get(), 0..0);
+    builder.emit_jump(&labels, 0..0);
   }
   builder.emit(Nop, 0..0);
-  builder.bind_multi_label(labels);
+  builder.bind_label(labels);
   builder.emit(Ret, 0..0);
 
   let (bytecode, constants) = builder.finish();

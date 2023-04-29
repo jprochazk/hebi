@@ -1,0 +1,27 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v.a
+print ?v.a.b.c
+
+
+# Func:
+function `test` (registers: 0, upvalues: 0, length: 18, constants: 4)
+  make_table_empty
+  store_global [0]; v
+  load_global [0]; v
+  load_field_opt [1]; a
+  print
+  load_global [0]; v
+  load_field_opt [1]; a
+  load_field_opt [3]; b
+  load_field_opt [2]; c
+  print
+  ret
+
+
+
+

@@ -6,7 +6,7 @@ Module {
     body: [
         Expr(
             Literal(
-                Dict(
+                Table(
                     [
                         (
                             GetVar(
@@ -62,7 +62,7 @@ Module {
         ),
         Expr(
             Literal(
-                Dict(
+                Table(
                     [
                         (
                             GetVar(
@@ -118,7 +118,7 @@ Module {
         ),
         Expr(
             Literal(
-                Dict(
+                Table(
                     [
                         (
                             GetVar(

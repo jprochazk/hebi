@@ -1,0 +1,35 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+v := {}
+print ?v["a"]
+print ?v["a"]["b"]["c"]
+
+
+# Func:
+function `test` (registers: 3, upvalues: 0, length: 34, constants: 4)
+  make_table_empty
+  store_global [0]; v
+  load_global [0]; v
+  store r0
+  load_const [1]; a
+  load_index_opt r0
+  print
+  load_global [0]; v
+  store r2
+  load_const [1]; a
+  load_index_opt r2
+  store r1
+  load_const [2]; b
+  load_index_opt r1
+  store r0
+  load_const [3]; c
+  load_index_opt r0
+  print
+  ret
+
+
+
+

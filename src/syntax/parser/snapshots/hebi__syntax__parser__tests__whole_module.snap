@@ -122,7 +122,7 @@ Module {
                         ),
                     },
                     value: Literal(
-                        Dict(
+                        Table(
                             [
                                 (
                                     Literal(
@@ -185,7 +185,7 @@ Module {
                         ),
                     },
                     value: Literal(
-                        Dict(
+                        Table(
                             [
                                 (
                                     Literal(
@@ -248,7 +248,7 @@ Module {
                         ),
                     },
                     value: Literal(
-                        Dict(
+                        Table(
                             [
                                 (
                                     Literal(

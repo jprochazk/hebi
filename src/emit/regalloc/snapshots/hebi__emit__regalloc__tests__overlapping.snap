@@ -1,6 +1,6 @@
 ---
 source: src/emit/regalloc/tests.rs
-expression: "DisplayGraph(&regalloc, registers, &map).to_string()"
+expression: "DisplayGraph(&*regalloc.0.borrow(), registers, &map).to_string()"
 ---
 registers = 4
 r0 │ 0━━━━━━━●

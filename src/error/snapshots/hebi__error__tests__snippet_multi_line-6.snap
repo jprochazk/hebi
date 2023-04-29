@@ -1,6 +1,6 @@
 ---
 source: src/error/tests.rs
-expression: "Error::new(\"error: test\", 0..2).report(\"x \", true)"
+expression: "cx.error(\"error: test\", 0..2).report(\"x \", true)"
 ---
 error: test
 | [4;31mx [0m

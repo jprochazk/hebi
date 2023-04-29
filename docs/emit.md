@@ -111,6 +111,8 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 
 ## Instruction operands
 
+TODO: update this once the instructions stop changing
+
 | name                | operand 0           | operand 0 type        | operand 1   | operand 1 type |
 | ------------------- | ------------------- | --------------------- | ----------- | -------------- |
 | nop                 |                     |                       |             |                |
@@ -138,33 +140,34 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 | load_false          |                     |                       |             |                |
 | load_smi            | value               | integer               |             |                |
 | make_fn             | function descriptor | constant index        |             |                |
-| upvalue_reg         | source              | register              | destination | upvalue index  |
-| upvalue_slot        | source              | upvalue index         | destination | upvalue index  |
 | make_class          | class descriptor    | constant index        |             |                |
+| make_list           | start               | register              | count       | integer        |
+| make_table          | start               | register              | count       | integer        |
 | jump                | offset              | jump offset           |             |                |
 | jump_const          | offset              | constant index        |             |                |
 | jump_loop           | offset              | jump offset           |             |                |
 | jump_if_false       | offset              | jump offset           |             |                |
 | jump_if_false_const | offset              | constant index        |             |                |
-| add                 | rhs                 | register              |             |                |
-| sub                 | rhs                 | register              |             |                |
-| mul                 | rhs                 | register              |             |                |
-| div                 | rhs                 | register              |             |                |
-| rem                 | rhs                 | register              |             |                |
-| pow                 | rhs                 | register              |             |                |
+| add                 | lhs                 | register              |             |                |
+| sub                 | lhs                 | register              |             |                |
+| mul                 | lhs                 | register              |             |                |
+| div                 | lhs                 | register              |             |                |
+| rem                 | lhs                 | register              |             |                |
+| pow                 | lhs                 | register              |             |                |
 | inv                 |                     |                       |             |                |
 | not                 |                     |                       |             |                |
-| cmp_eq              | rhs                 | register              |             |                |
-| cmp_ne              | rhs                 | register              |             |                |
-| cmp_gt              | rhs                 | register              |             |                |
-| cmp_ge              | rhs                 | register              |             |                |
-| cmp_lt              | rhs                 | register              |             |                |
-| cmp_le              | rhs                 | register              |             |                |
-| cmp_type            | rhs                 | register              |             |                |
-| contains            | rhs                 | register              |             |                |
+| cmp_eq              | lhs                 | register              |             |                |
+| cmp_ne              | lhs                 | register              |             |                |
+| cmp_gt              | lhs                 | register              |             |                |
+| cmp_ge              | lhs                 | register              |             |                |
+| cmp_lt              | lhs                 | register              |             |                |
+| cmp_le              | lhs                 | register              |             |                |
+| cmp_type            | lhs                 | register              |             |                |
+| contains            | lhs                 | register              |             |                |
 | print               |                     |                       |             |                |
 | print_n             | start               | register              | count       | integer        |
 | call                | function            | register              | args        | integer        |
+| call0               |                     |                       |             |                |
 | import              | path                | constant index        | destination | register       |
 | ret                 |                     |                       |             |                |
 | suspend             |                     |                       |             |                |
@@ -198,9 +201,9 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 | load_false          | load boolean `false` into the accumulator                                                             |
 | load_smi            | load an integer value into the accumulator                                                            |
 | make_fn             | instantiate a function using a function descriptor                                                    |
-| upvalue_reg         | capture a register into an upvalue in the function stored in the accumulator                          |
-| upvalue_slot        | capture an upvalue from the parent function into an upvalue in the function stored in the accumulator |
 | make_class          | instantiate a class using a class descriptor                                                          |
+| make_list           | instantiate a list from a range of values                                                             |
+| make_table          | instantiate a table from a range of key-value pairs                                                   |
 | jump                | jump forward by `offset` bytes                                                                        |
 | jump_const          | jump forward by `offset` bytes (stored in constant pool)                                              |
 | jump_loop           | jump backward by `offset` bytes                                                                       |
@@ -225,6 +228,7 @@ Loop headers may be targetted by any number of *backward* jump instructions. The
 | print               | print the accumulator                                                                                 |
 | print_n             | print `count` values starting at `start`                                                              |
 | call                | call a function                                                                                       |
+| call0               | call a function with 0 arguments                                                                      |
 | import              | load the module at `path` into the `destination` register                                             |
 | ret                 | return from a function call                                                                           |
 | suspend             | stop the dispatch loop                                                                                |
@@ -314,6 +318,10 @@ Followed by the arguments `5` and `10`
 
 The registers for the function and arguments are allocated before any of them are emitted.
 The bytecode emitter ensures these registers are contiguous.
+
+TODO: upvalues
+TODO: variable resolution
+TODO: modules/module variables
 
 ## Resources
 

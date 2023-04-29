@@ -1,0 +1,30 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+v := { a: 0 }
+print v.a
+v.a = 1
+
+
+# Func:
+function `test` (registers: 2, upvalues: 0, length: 28, constants: 2)
+  load_const [0]; a
+  store r0
+  load_smi 0
+  store r1
+  make_table r0 1
+  store_global [1]; v
+  load_global [1]; v
+  load_field [0]; a
+  print
+  load_global [1]; v
+  store r0
+  load_smi 1
+  store_field r0 [0]; a
+  ret
+
+
+
+

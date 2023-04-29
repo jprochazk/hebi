@@ -9,7 +9,7 @@ v = 0.1 # number
 v = true # bool
 v = "\tas\\df\x2800\n" # string
 v = [none, 0.1, true, "\tas\\df\x2800\n"] # list
-v = {a=none, b=0.1, c=true, d="\tas\\df\x2800\n"} # dict
+v = {a=none, b=0.1, c=true, d="\tas\\df\x2800\n"} # table
 v = {["a"]=none, ["b"]=0.1, ["c"]=true, ["d"]="\tas\\df\x2800\n"}
 v = {[0]=none, [1]=0.1, [2]=true, [3]="\tas\\df\x2800\n"}
 

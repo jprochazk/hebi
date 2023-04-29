@@ -172,6 +172,18 @@ impl<T: Hash> Hash for Ptr<T> {
   }
 }
 
+impl<T> std::borrow::Borrow<T> for Ptr<T> {
+  fn borrow(&self) -> &T {
+    self
+  }
+}
+
+impl<T> AsRef<T> for Ptr<T> {
+  fn as_ref(&self) -> &T {
+    self
+  }
+}
+
 impl Context {
   pub fn alloc<T: Object + 'static>(&self, v: T) -> Ptr<T> {
     let object = Box::new(Repr {
