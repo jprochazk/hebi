@@ -29,7 +29,7 @@ fn basic_emit() {
     ],
   );
 
-  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0, true).to_string());
 }
 
 #[rustfmt::skip]
@@ -59,7 +59,7 @@ fn emit_constant() {
   assert_eq!(constants[0].as_float().unwrap().value(), 10.0);
   assert_eq!(constants[1].as_float().unwrap().value(), 5.0);
   
-  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0, true).to_string());
 }
 
 #[rustfmt::skip]
@@ -96,7 +96,7 @@ fn emit_forward_jump_8bit() {
     ],
   );
   
-  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0, true).to_string());
 }
 
 #[test]
@@ -271,7 +271,7 @@ fn emit_jump_loop() {
     ]
   );
 
-  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0, true).to_string());
 }
 
 #[rustfmt::skip]
@@ -306,5 +306,5 @@ fn emit_multi_label() {
     ]
   );
 
-  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0).to_string());
+  assert_snapshot!(Disassembly::new(&bytecode, &constants, 0, true).to_string());
 }

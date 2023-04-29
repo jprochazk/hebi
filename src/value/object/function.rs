@@ -87,7 +87,11 @@ impl<'a> Display for Disassembly<'a> {
       bytecode.len(),
       constants.len(),
     )?;
-    writeln!(f, "{}", disasm::Disassembly::new(bytecode, constants, 2))
+    writeln!(
+      f,
+      "{}",
+      disasm::Disassembly::new(bytecode, constants, 2, true)
+    )
   }
 }
 
