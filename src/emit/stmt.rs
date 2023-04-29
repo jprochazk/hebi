@@ -53,7 +53,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     for branch in stmt.branches.iter() {
       let next = self.builder().label("next");
       self.emit_expr(&branch.cond);
-      self.builder().emit_jump_if_false(&end, span);
+      self.builder().emit_jump_if_false(&next, span);
       self.current_function().enter_scope();
       for stmt in branch.body.iter() {
         self.emit_stmt(stmt);
@@ -196,8 +196,8 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.current_function().enter_scope();
     self.builder().bind_loop_header(&start);
 
+    let (start, end) = self.emit_loop_body((start, end), &stmt.body);
     self.builder().emit_jump_loop(&start, span);
-    let (_, end) = self.emit_loop_body((start, end), &stmt.body);
 
     self.builder().bind_label(end);
     self.current_function().leave_scope();
