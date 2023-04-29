@@ -50,14 +50,14 @@ impl RegAlloc {
     Register(index)
   }
 
-  pub fn finish(self) -> (usize, Vec<usize>) {
+  pub fn finish(&self) -> (usize, Vec<usize>) {
     linear_scan(&self.intervals)
   }
 }
 
 fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
-  let mut mapping = Vec::with_capacity(intervals.len());
-  mapping.fill(0usize);
+  let mut mapping = Vec::new();
+  mapping.resize(intervals.len(), 0usize);
 
   let mut free = BinaryHeap::new();
   let mut active = Active::new();
@@ -141,3 +141,6 @@ fn expire_old_intervals(i: &Interval, free: &mut BinaryHeap<Reverse<usize>>, act
     free.push(Reverse(register));
   }
 }
+
+#[cfg(test)]
+mod tests;
