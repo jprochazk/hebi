@@ -1,0 +1,30 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+for i in 0..=10:
+  continue
+
+
+# Func:
+function `test` (registers: 2, upvalues: 0, length: 29, constants: 2)
+  0  | load_smi 0
+  2  | store r0
+  4  | load_smi 10
+  6  | store r1
+  8  | load r1
+  10 | cmp_le r0
+  12 | jump_if_false 16
+  14 | jump 10
+  16 | load_smi 1
+  18 | add r0
+  20 | store r0
+  22 | jump_loop 14
+  24 | jump_loop 8
+  26 | jump_loop 10
+  28 | ret
+
+
+
+

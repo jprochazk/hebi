@@ -10,25 +10,25 @@ print ?v["a"]["b"]["c"]
 
 # Func:
 function `test` (registers: 3, upvalues: 0, length: 34, constants: 4)
-  make_table_empty
-  store_global [0]; v
-  load_global [0]; v
-  store r0
-  load_const [1]; a
-  load_index_opt r0
-  print
-  load_global [0]; v
-  store r2
-  load_const [1]; a
-  load_index_opt r2
-  store r1
-  load_const [2]; b
-  load_index_opt r1
-  store r0
-  load_const [3]; c
-  load_index_opt r0
-  print
-  ret
+  0  | make_table_empty
+  1  | store_global [0]; v
+  3  | load_global [0]; v
+  5  | store r0
+  7  | load_const [1]; a
+  9  | load_index_opt r0
+  11 | print
+  12 | load_global [0]; v
+  14 | store r2
+  16 | load_const [1]; a
+  18 | load_index_opt r2
+  20 | store r1
+  22 | load_const [2]; b
+  24 | load_index_opt r1
+  26 | store r0
+  28 | load_const [3]; c
+  30 | load_index_opt r0
+  32 | print
+  33 | ret
 
 
 

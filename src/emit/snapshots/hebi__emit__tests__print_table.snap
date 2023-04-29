@@ -1,0 +1,28 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+print { a: 0, b: 1, c: 2 }
+
+# Func:
+function `test` (registers: 6, upvalues: 0, length: 29, constants: 3)
+  0  | load_const [0]; a
+  2  | store r0
+  4  | load_smi 0
+  6  | store r1
+  8  | load_const [1]; b
+  10 | store r2
+  12 | load_smi 1
+  14 | store r3
+  16 | load_const [2]; c
+  18 | store r4
+  20 | load_smi 2
+  22 | store r5
+  24 | make_table r0 3
+  27 | print
+  28 | ret
+
+
+
+

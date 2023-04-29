@@ -10,17 +10,17 @@ print ?v.a.b.c
 
 # Func:
 function `test` (registers: 0, upvalues: 0, length: 18, constants: 4)
-  make_table_empty
-  store_global [0]; v
-  load_global [0]; v
-  load_field_opt [1]; a
-  print
-  load_global [0]; v
-  load_field_opt [1]; a
-  load_field_opt [3]; b
-  load_field_opt [2]; c
-  print
-  ret
+  0  | make_table_empty
+  1  | store_global [0]; v
+  3  | load_global [0]; v
+  5  | load_field_opt [1]; a
+  7  | print
+  8  | load_global [0]; v
+  10 | load_field_opt [1]; a
+  12 | load_field_opt [3]; b
+  14 | load_field_opt [2]; c
+  16 | print
+  17 | ret
 
 
 

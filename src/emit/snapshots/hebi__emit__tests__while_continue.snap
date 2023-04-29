@@ -3,16 +3,16 @@ source: src/emit/tests.rs
 expression: snapshot
 ---
 # Input:
-v := 0
-print v
+while true:
+  continue
 
 
 # Func:
 function `test` (registers: 0, upvalues: 0, length: 8, constants: 1)
-  0 | load_smi 0
-  2 | store_global [0]; v
-  4 | load_global [0]; v
-  6 | print
+  0 | load_true
+  1 | jump_if_false 6
+  3 | jump_loop 3
+  5 | jump_loop 5
   7 | ret
 
 

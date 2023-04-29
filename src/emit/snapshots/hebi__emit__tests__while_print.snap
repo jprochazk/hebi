@@ -1,0 +1,21 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+while true:
+  print "test"
+
+
+# Func:
+function `test` (registers: 0, upvalues: 0, length: 9, constants: 2)
+  0 | load_true
+  1 | jump_if_false 7
+  3 | load_const [1]; test
+  5 | print
+  6 | jump_loop 6
+  8 | ret
+
+
+
+

@@ -1,0 +1,22 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+loop:
+  loop:
+    continue
+  continue
+
+
+# Func:
+function `test` (registers: 0, upvalues: 0, length: 9, constants: 0)
+  0 | jump_loop 0
+  2 | jump_loop 2
+  4 | jump_loop 4
+  6 | jump_loop 6
+  8 | ret
+
+
+
+

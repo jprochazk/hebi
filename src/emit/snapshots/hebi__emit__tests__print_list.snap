@@ -1,0 +1,22 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+print [0, 1, 2]
+
+# Func:
+function `test` (registers: 3, upvalues: 0, length: 17, constants: 0)
+  0  | load_smi 0
+  2  | store r0
+  4  | load_smi 1
+  6  | store r1
+  8  | load_smi 2
+  10 | store r2
+  12 | make_list r0 3
+  15 | print
+  16 | ret
+
+
+
+

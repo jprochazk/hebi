@@ -10,24 +10,24 @@ v["a"] = 1
 
 # Func:
 function `test` (registers: 2, upvalues: 0, length: 36, constants: 2)
-  load_const [0]; a
-  store r0
-  load_smi 0
-  store r1
-  make_table r0 1
-  store_global [1]; v
-  load_global [1]; v
-  store r0
-  load_const [0]; a
-  load_index r0
-  print
-  load_global [1]; v
-  store r0
-  load_const [0]; a
-  store r1
-  load_smi 1
-  store_index r0 r1
-  ret
+  0  | load_const [0]; a
+  2  | store r0
+  4  | load_smi 0
+  6  | store r1
+  8  | make_table r0 1
+  11 | store_global [1]; v
+  13 | load_global [1]; v
+  15 | store r0
+  17 | load_const [0]; a
+  19 | load_index r0
+  21 | print
+  22 | load_global [1]; v
+  24 | store r0
+  26 | load_const [0]; a
+  28 | store r1
+  30 | load_smi 1
+  32 | store_index r0 r1
+  35 | ret
 
 
 

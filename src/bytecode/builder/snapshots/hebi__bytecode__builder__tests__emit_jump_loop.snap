@@ -1,11 +1,11 @@
 ---
 source: src/bytecode/builder/tests.rs
-expression: "Disassembly::new(&bytecode, &constants, 0).to_string()"
+expression: "Disassembly::new(&bytecode, &constants, 0, true).to_string()"
 ---
-nop
-nop
-nop
-nop
-jump_loop 3
-ret
+0 | nop
+1 | nop
+2 | nop
+3 | nop
+4 | jump_loop 3
+6 | ret
 

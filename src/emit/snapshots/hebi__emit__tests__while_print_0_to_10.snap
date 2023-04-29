@@ -1,0 +1,39 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+v := 0
+while v < 10:
+  print "less than 10:", v
+  v += 1
+print "now it's 10"
+
+
+# Func:
+function `test` (registers: 2, upvalues: 0, length: 41, constants: 4)
+  0  | load_smi 0
+  2  | store_global [0]; v
+  4  | load_global [0]; v
+  6  | store r0
+  8  | load_smi 10
+  10 | cmp_lt r0
+  12 | jump_if_false 25
+  14 | load_const [2]; less than 10:
+  16 | store r0
+  18 | load_global [0]; v
+  20 | store r1
+  22 | print_n r0 2
+  25 | load_global [0]; v
+  27 | store r0
+  29 | load_smi 1
+  31 | add r0
+  33 | store_global [0]; v
+  35 | jump_loop 31
+  37 | load_const [3]; now it's 10
+  39 | print
+  40 | ret
+
+
+
+

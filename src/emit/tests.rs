@@ -30,13 +30,16 @@ macro_rules! check {
   };
 }
 
-/*
 check!(print_int, r#"print 0"#);
+
 check!(print_float, r#"print 2.5"#);
+
 check!(print_string, r#"print "test""#);
+
 check!(print_list, r#"print [0, 1, 2]"#);
+
 check!(print_table, r#"print { a: 0, b: 1, c: 2 }"#);
-*/
+
 check! {
   print_global,
   r#"
@@ -44,6 +47,7 @@ check! {
     print v
   "#
 }
+
 check! {
   print_module_var,
   as_module=true,
@@ -61,6 +65,7 @@ check! {
       v.a = 1
     "#
 }
+
 check! {
   print_index,
   r#"
@@ -69,6 +74,7 @@ check! {
       v["a"] = 1
     "#
 }
+
 check! {
   print_field_opt,
   r#"
@@ -77,6 +83,7 @@ check! {
       print ?v.a.b.c
     "#
 }
+
 check! {
   print_index_opt,
   r#"
@@ -85,6 +92,7 @@ check! {
       print ?v["a"]["b"]["c"]
     "#
 }
+
 /*
 #[test]
 fn call() {
@@ -183,201 +191,225 @@ fn closure() {
     "#
   }
 }
+*/
+/*
+check! {
+  r#"
+    fn f0(a, b):
+      a && b
+      a || b
+      a ?? b
 
-#[test]
-fn logical_expr() {
-  check! {
-    r#"
-      fn f0(a, b):
-        a && b
-        a || b
-        a ?? b
 
+    fn f1_a(a, b, c, d):
+      (a && b) || (c && d)
+    fn f1_b(a, b, c, d):
+        a && b  ||  c && d
 
-      fn f1_a(a, b, c, d):
-        (a && b) || (c && d)
-      fn f1_b(a, b, c, d):
-         a && b  ||  c && d
+    fn f2_a(a, b, c, d):
+      (a || (b && c)) || d
+    fn f2_b(a, b, c, d):
+      a ||  b && c  || d
 
-      fn f2_a(a, b, c, d):
-        (a || (b && c)) || d
-      fn f2_b(a, b, c, d):
-        a ||  b && c  || d
+    fn f3(a, b, c, d):
+      a ?? b ?? c
+  "#
+}
+*/
 
-      fn f3(a, b, c, d):
-        a ?? b ?? c
-    "#
-  }
+check! {
+  if_stmt,
+  r#"
+    if true:
+      print a
+    elif true:
+      print b
+    else:
+      print c
+  "#
 }
 
-#[test]
-fn if_stmt() {
-  check! {
-    r#"
-      if true:
-        print a
-      elif true:
-        print b
-      else:
-        print c
-    "#
-  }
-
-  check! {
-    r#"
-      if a:
-        b := a
-        print b
-      else:
-        print b
-    "#
-  }
+check! {
+  if_stmt_var_resolution,
+  r#"
+    if a:
+      b := a
+      print b
+    else:
+      print b
+  "#
 }
 
-#[test]
-fn loop_stmt() {
-  check! {
-    r#"
-      loop:
-        print "test"
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        continue
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        break
-    "#
-  }
-
-  check! {
-    r#"
-      while true:
-        print "test"
-    "#
-  }
-  check! {
-    r#"
-      while true:
-        continue
-    "#
-  }
-  check! {
-    r#"
-      while true:
-        break
-    "#
-  }
-  check! {
-    r#"
-      v := 0
-      while v < 10:
-        print "less than 10:", v
-        v += 1
-      print "now it's 10"
-    "#
-  }
-
-  check! {
-    r#"
-      while true:
-        while true:
-          break
-        break
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        loop:
-          break
-        break
-    "#
-  }
-  check! {
-    r#"
-      while true:
-        loop:
-          break
-        break
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        while true:
-          break
-        break
-    "#
-  }
-
-  check! {
-    r#"
-      while true:
-        while true:
-          continue
-        continue
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        loop:
-          continue
-        continue
-    "#
-  }
-  check! {
-    r#"
-      while true:
-        loop:
-          continue
-        continue
-    "#
-  }
-  check! {
-    r#"
-      loop:
-        while true:
-          continue
-        continue
-    "#
-  }
+check! {
+  loop_print,
+  r#"
+    loop:
+      print "test"
+  "#
 }
 
-#[test]
-fn for_loop_stmt() {
-  check! {
-    r#"
-      for i in 0..10:
-        print i
-    "#
-  }
-  check! {
-    r#"
-      for i in 0..=10:
-        print i
-    "#
-  }
-  check! {
-    r#"
-      for i in 0..=10:
-        break
-    "#
-  }
-  check! {
-    r#"
-      for i in 0..=10:
-        continue
-    "#
-  }
+check! {
+  loop_continue,
+  r#"
+    loop:
+      continue
+  "#
+}
+check! {
+  loop_break,
+  r#"
+    loop:
+      break
+  "#
 }
 
+check! {
+  while_print,
+  r#"
+    while true:
+      print "test"
+  "#
+}
+check! {
+  while_continue,
+  r#"
+    while true:
+      continue
+  "#
+}
+
+check! {
+  while_break,
+  r#"
+    while true:
+      break
+  "#
+}
+
+check! {
+  while_print_0_to_10,
+  r#"
+    v := 0
+    while v < 10:
+      print "less than 10:", v
+      v += 1
+    print "now it's 10"
+  "#
+}
+
+check! {
+  while_nested_while_break,
+  r#"
+    while true:
+      while true:
+        break
+      break
+  "#
+}
+
+check! {
+  loop_nested_loop_break,
+  r#"
+    loop:
+      loop:
+        break
+      break
+  "#
+}
+
+check! {
+  while_nested_loop_break,
+  r#"
+    while true:
+      loop:
+        break
+      break
+  "#
+}
+
+check! {
+  loop_nested_while_break,
+  r#"
+    loop:
+      while true:
+        break
+      break
+  "#
+}
+
+check! {
+  while_nested_while,
+  r#"
+    while true:
+      while true:
+        continue
+      continue
+  "#
+}
+
+check! {
+  loop_nested_loop,
+  r#"
+    loop:
+      loop:
+        continue
+      continue
+  "#
+}
+
+check! {
+  while_nested_loop,
+  r#"
+    while true:
+      loop:
+        continue
+      continue
+  "#
+}
+
+check! {
+  loop_nested_while,
+  r#"
+    loop:
+      while true:
+        continue
+      continue
+  "#
+}
+
+check! {
+  for_iter_0_to_10_print,
+  r#"
+    for i in 0..10:
+      print i
+  "#
+}
+
+check! {
+  for_iter_0_to_10_inclusive_print,
+  r#"
+    for i in 0..=10:
+      print i
+  "#
+}
+
+check! {
+  for_iter_0_to_10_inclusive_break,
+  r#"
+    for i in 0..=10:
+      break
+  "#
+}
+
+check! {
+  for_iter_0_to_10_inclusive_continue,
+  r#"
+    for i in 0..=10:
+      continue
+  "#
+}
+
+/*
 #[test]
 fn method_call() {
   check!(r#"o.f()"#);

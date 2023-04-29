@@ -10,20 +10,20 @@ v.a = 1
 
 # Func:
 function `test` (registers: 2, upvalues: 0, length: 28, constants: 2)
-  load_const [0]; a
-  store r0
-  load_smi 0
-  store r1
-  make_table r0 1
-  store_global [1]; v
-  load_global [1]; v
-  load_field [0]; a
-  print
-  load_global [1]; v
-  store r0
-  load_smi 1
-  store_field r0 [0]; a
-  ret
+  0  | load_const [0]; a
+  2  | store r0
+  4  | load_smi 0
+  6  | store r1
+  8  | make_table r0 1
+  11 | store_global [1]; v
+  13 | load_global [1]; v
+  15 | load_field [0]; a
+  17 | print
+  18 | load_global [1]; v
+  20 | store r0
+  22 | load_smi 1
+  24 | store_field r0 [0]; a
+  27 | ret
 
 
 

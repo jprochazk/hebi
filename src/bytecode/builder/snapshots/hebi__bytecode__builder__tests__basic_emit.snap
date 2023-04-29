@@ -1,10 +1,10 @@
 ---
 source: src/bytecode/builder/tests.rs
-expression: "Disassembly(&bytecode, &constants).to_string()"
+expression: "Disassembly::new(&bytecode, &constants, 0, true).to_string()"
 ---
-load_smi 10
-store r0
-load_smi 5
-add r0
-print
+0 | load_smi 10
+2 | store r0
+4 | load_smi 5
+6 | add r0
+8 | print
 
