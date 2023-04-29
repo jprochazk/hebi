@@ -169,7 +169,7 @@ impl BytecodeBuilder {
 
   pub fn emit_jump_if_false(&mut self, label: &impl Label, span: impl Into<Span>) {
     assert!(
-      label.is_used(),
+      !label.is_used(),
       "more than one instruction refers to label {}",
       label.name(),
     );
