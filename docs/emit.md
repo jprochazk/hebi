@@ -64,6 +64,51 @@ The method chosen by the Hebi VM is:
 
 In practice, most jump offsets do fit within a byte. In case they don't, they will "lifted" into the constant pool and stored as 64-bit, which is hopefully enough address space for the foreseeable future!
 
+## Jump labels
+
+A jump label is used to tell a jump instruction where it should jump. For example, take a look at the following disassembly:
+
+```
+  nop
+  jump .end
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+end:
+  ret
+```
+
+The jump instruction is using the `end` label as its target. The bytecode emitter has to "bind" the label once it gets to the `ret` instruction at the end. Binding the label will cause the jump instruction to be patched with its real offset (as explained in [the previous section](#jump-instruction-encoding)). The final disassembly will look like:
+
+```
+  nop
+  jump 8
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  ret
+```
+
+The instruction was patched with `8` as its real offset. Notice that now the instruction stream is completely "flat" with no labels.
+
+There are a few different kind of labels:
+
+- Basic labels
+- Multi labels
+- Loop headers
+
+Basic labels may not be targetted by more than one *forward* jump instruction. They are used when emitting a simple branch, such as the `&&` operator.
+
+Multi labels are just like basic labels, but they support being targetted by more than one jump instruction. This has a cost, which is why the distinction between basic and multi labels exists. Multi labels are used when emitting control flow with any number of branches, such as the `if` statement.
+
+Loop headers may be targetted by any number of *backward* jump instructions. The distinction is important, because a backward jump does not need to be patched. All of the instructions between it and its target have already been emitted. Loop headers are used when emitting loops.
+
 ## Instruction operands
 
 | name                | operand 0           | operand 0 type        | operand 1   | operand 1 type |
