@@ -1,6 +1,7 @@
 use std::cmp;
 
 use super::*;
+use crate::util::num_digits;
 
 #[test]
 fn simple() {
@@ -17,7 +18,7 @@ fn simple() {
 
   let (registers, map) = regalloc.finish();
 
-  assert_snapshot!(DisplayGraph(&*regalloc.0.borrow(), registers, &map).to_string());
+  assert_snapshot!(DisplayGraph(&regalloc.0.borrow(), registers, &map).to_string());
 }
 
 #[test]
@@ -37,7 +38,7 @@ fn overlapping() {
 
   let (registers, map) = regalloc.finish();
 
-  assert_snapshot!(DisplayGraph(&*regalloc.0.borrow(), registers, &map).to_string());
+  assert_snapshot!(DisplayGraph(&regalloc.0.borrow(), registers, &map).to_string());
 }
 
 struct DisplayGraph<'a>(&'a State, usize, &'a [usize]);
@@ -94,10 +95,4 @@ impl<'a> std::fmt::Display for DisplayGraph<'a> {
 
     Ok(())
   }
-}
-
-fn num_digits(v: usize) -> usize {
-  use std::iter::successors;
-
-  successors(Some(v), |&n| (n >= 10).then_some(n / 10)).count()
 }

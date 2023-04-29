@@ -63,3 +63,9 @@ where
     Join(self.clone(), sep)
   }
 }
+
+pub fn num_digits(v: usize) -> usize {
+  use std::iter::successors;
+
+  successors(Some(v), |&n| (n >= 10).then_some(n / 10)).count()
+}
