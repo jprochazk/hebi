@@ -20,6 +20,26 @@ fn simple() {
   assert_snapshot!(DisplayGraph(&regalloc, registers, &map).to_string());
 }
 
+#[test]
+fn overlapping() {
+  let mut regalloc = RegAlloc::new();
+
+  let a = regalloc.alloc();
+  let b = regalloc.alloc();
+  regalloc.access(a);
+  let c = regalloc.alloc();
+  let d = regalloc.alloc();
+  let e = regalloc.alloc();
+  regalloc.access(e);
+  regalloc.access(d);
+  regalloc.access(c);
+  regalloc.access(b);
+
+  let (registers, map) = regalloc.finish();
+
+  assert_snapshot!(DisplayGraph(&regalloc, registers, &map).to_string());
+}
+
 struct DisplayGraph<'a>(&'a RegAlloc, usize, &'a [usize]);
 
 impl<'a> std::fmt::Display for DisplayGraph<'a> {
@@ -69,7 +89,7 @@ impl<'a> std::fmt::Display for DisplayGraph<'a> {
     )?;
     write!(f, "  {0:w$}   ", "", w = index_align)?;
     for i in 0..=steps {
-      write!(f, "{i:0>width$}  ", width = step_align)?;
+      write!(f, "{i: <width$}  ", width = step_align)?;
     }
 
     Ok(())
