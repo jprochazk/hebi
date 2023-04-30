@@ -27,7 +27,7 @@ impl<'cx, 'src> State<'cx, 'src> {
         // float is 4 bits so cannot be stored inline,
         // but it is interned
         let num = self.constant_value(NonNaNFloat::try_from(*v).unwrap());
-        self.builder().emit(LoadConst { index: num }, span);
+        self.builder().emit(LoadConst { idx: num }, span);
       }
       ast::Literal::Bool(v) => match v {
         true => self.builder().emit(LoadTrue, span),
@@ -36,7 +36,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       ast::Literal::String(v) => {
         // `const_` interns the string
         let str = self.constant_name(v);
-        self.builder().emit(LoadConst { index: str }, span);
+        self.builder().emit(LoadConst { idx: str }, span);
       }
       ast::Literal::List(list) => {
         if list.is_empty() {
@@ -51,7 +51,7 @@ impl<'cx, 'src> State<'cx, 'src> {
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              register: register.access(),
+              reg: register.access(),
             },
             value.span,
           );
@@ -81,14 +81,14 @@ impl<'cx, 'src> State<'cx, 'src> {
           self.emit_expr(key);
           self.builder().emit(
             Store {
-              register: key_register.access(),
+              reg: key_register.access(),
             },
             key.span,
           );
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              register: value_register.access(),
+              reg: value_register.access(),
             },
             value.span,
           );
@@ -121,12 +121,9 @@ impl<'cx, 'src> State<'cx, 'src> {
 
     let lhs = self.alloc_register();
     self.emit_expr(&expr.left);
-    self.builder().emit(
-      Store {
-        register: lhs.access(),
-      },
-      expr.left.span,
-    );
+    self
+      .builder()
+      .emit(Store { reg: lhs.access() }, expr.left.span);
     self.emit_expr(&expr.right);
 
     let lhs = lhs.access();
@@ -189,23 +186,15 @@ impl<'cx, 'src> State<'cx, 'src> {
         let end = self.builder().label("end");
         let lhs = self.alloc_register();
         self.emit_expr(&expr.left);
-        self.builder().emit(
-          Store {
-            register: lhs.access(),
-          },
-          expr.left.span,
-        );
+        self
+          .builder()
+          .emit(Store { reg: lhs.access() }, expr.left.span);
         self.builder().emit(IsNone, span);
         self.builder().emit_jump_if_false(&use_lhs, span);
         self.emit_expr(&expr.right);
         self.builder().emit_jump(&end, span);
         self.builder().bind_label(use_lhs);
-        self.builder().emit(
-          Load {
-            register: lhs.access(),
-          },
-          span,
-        );
+        self.builder().emit(Load { reg: lhs.access() }, span);
         self.builder().bind_label(end);
       }
       _ => unreachable!("not a logical expr: {:?}", expr.op),
@@ -241,14 +230,9 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_get_var_expr(&mut self, expr: &'src ast::GetVar<'src>, span: Span) {
     match self.resolve_var(expr.name.lexeme()) {
-      Get::Local(reg) => self.builder().emit(
-        Load {
-          register: reg.access(),
-        },
-        span,
-      ),
-      Get::Upvalue(index) => self.builder().emit(LoadUpvalue { index }, span),
-      Get::ModuleVar(index) => self.builder().emit(LoadModuleVar { index }, span),
+      Get::Local(reg) => self.builder().emit(Load { reg: reg.access() }, span),
+      Get::Upvalue(idx) => self.builder().emit(LoadUpvalue { idx }, span),
+      Get::ModuleVar(idx) => self.builder().emit(LoadModuleVar { idx }, span),
       Get::Global => {
         let name = self.constant_name(&expr.name);
         self.builder().emit(LoadGlobal { name }, span)
@@ -259,14 +243,9 @@ impl<'cx, 'src> State<'cx, 'src> {
   fn emit_set_var_expr(&mut self, expr: &'src ast::SetVar<'src>, span: Span) {
     self.emit_expr(&expr.value);
     match self.resolve_var(expr.target.name.lexeme()) {
-      Get::Local(reg) => self.builder().emit(
-        Store {
-          register: reg.access(),
-        },
-        span,
-      ),
-      Get::Upvalue(index) => self.builder().emit(StoreUpvalue { index }, span),
-      Get::ModuleVar(index) => self.builder().emit(StoreModuleVar { index }, span),
+      Get::Local(reg) => self.builder().emit(Store { reg: reg.access() }, span),
+      Get::Upvalue(idx) => self.builder().emit(StoreUpvalue { idx }, span),
+      Get::ModuleVar(idx) => self.builder().emit(StoreModuleVar { idx }, span),
       Get::Global => {
         let name = self.constant_name(&expr.target.name);
         self.builder().emit(StoreGlobal { name }, span);
@@ -285,19 +264,16 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_set_field_expr(&mut self, expr: &'src ast::SetField<'src>, span: Span) {
-    let object = self.alloc_register();
+    let obj = self.alloc_register();
     let name = self.constant_name(&expr.target.name);
     self.emit_expr(&expr.target.target);
-    self.builder().emit(
-      Store {
-        register: object.access(),
-      },
-      expr.target.target.span,
-    );
+    self
+      .builder()
+      .emit(Store { reg: obj.access() }, expr.target.target.span);
     self.emit_expr(&expr.value);
     self.builder().emit(
       StoreField {
-        object: object.access(),
+        obj: obj.access(),
         name,
       },
       span,
@@ -305,53 +281,36 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_get_index_expr(&mut self, expr: &'src ast::GetIndex<'src>, span: Span) {
-    let object = self.alloc_register();
+    let obj = self.alloc_register();
     self.emit_expr(&expr.target);
-    self.builder().emit(
-      Store {
-        register: object.access(),
-      },
-      expr.target.span,
-    );
+    self
+      .builder()
+      .emit(Store { reg: obj.access() }, expr.target.span);
     self.emit_expr(&expr.key);
     if self.current_function().is_in_opt_expr {
-      self.builder().emit(
-        LoadIndexOpt {
-          object: object.access(),
-        },
-        span,
-      );
+      self
+        .builder()
+        .emit(LoadIndexOpt { obj: obj.access() }, span);
     } else {
-      self.builder().emit(
-        LoadIndex {
-          object: object.access(),
-        },
-        span,
-      );
+      self.builder().emit(LoadIndex { obj: obj.access() }, span);
     }
   }
 
   fn emit_set_index_expr(&mut self, expr: &'src ast::SetIndex<'src>, span: Span) {
-    let object = self.alloc_register();
+    let obj = self.alloc_register();
     let key = self.alloc_register();
     self.emit_expr(&expr.target.target);
-    self.builder().emit(
-      Store {
-        register: object.access(),
-      },
-      expr.target.target.span,
-    );
+    self
+      .builder()
+      .emit(Store { reg: obj.access() }, expr.target.target.span);
     self.emit_expr(&expr.target.key);
-    self.builder().emit(
-      Store {
-        register: key.access(),
-      },
-      expr.target.key.span,
-    );
+    self
+      .builder()
+      .emit(Store { reg: key.access() }, expr.target.key.span);
     self.emit_expr(&expr.value);
     self.builder().emit(
       StoreIndex {
-        object: object.access(),
+        obj: obj.access(),
         key: key.access(),
       },
       span,
@@ -374,7 +333,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     } else {
       self.builder().emit(
         Store {
-          register: callee.access(),
+          reg: callee.access(),
         },
         expr.target.span,
       );
@@ -382,7 +341,7 @@ impl<'cx, 'src> State<'cx, 'src> {
         self.emit_expr(value);
         self.builder().emit(
           Store {
-            register: register.access(),
+            reg: register.access(),
           },
           value.span,
         );
@@ -392,7 +351,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       }
       self.builder().emit(
         Call {
-          function: callee.access(),
+          callee: callee.access(),
           args: op::Count(args.len() as u32),
         },
         span,

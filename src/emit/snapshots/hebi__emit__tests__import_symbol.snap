@@ -1,0 +1,22 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+from test import symbol
+print symbol
+
+
+# Func:
+function `test` (registers: 1, upvalues: 0, length: 13, constants: 2)
+  0  | import [0] r0; test
+  3  | load r0
+  5  | load_field [1]; symbol
+  7  | store r0
+  9  | load r0
+  11 | print
+  12 | ret
+
+
+
+

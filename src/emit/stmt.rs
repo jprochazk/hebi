@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use super::*;
+use crate::util::JoinIter;
 
 impl<'cx, 'src> State<'cx, 'src> {
   pub(super) fn emit_stmt(&mut self, stmt: &'src ast::Stmt<'src>) {
@@ -31,14 +32,14 @@ impl<'cx, 'src> State<'cx, 'src> {
         let name = self.constant_name(stmt.name.lexeme());
         self.builder().emit(StoreGlobal { name }, span);
       } else {
-        let index = self.declare_module_var(stmt.name.lexeme());
-        self.builder().emit(StoreModuleVar { index }, span);
+        let idx = self.declare_module_var(stmt.name.lexeme());
+        self.builder().emit(StoreModuleVar { idx }, span);
       }
     } else {
       let register = self.alloc_register();
       self.builder().emit(
         Store {
-          register: register.access(),
+          reg: register.access(),
         },
         span,
       );
@@ -100,7 +101,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.emit_expr(&range.start);
     self.builder().emit(
       Store {
-        register: item_value.access(),
+        reg: item_value.access(),
       },
       stmt.item.span,
     );
@@ -108,7 +109,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.emit_expr(&range.end);
     self.builder().emit(
       Store {
-        register: end_value.access(),
+        reg: end_value.access(),
       },
       range.span(),
     );
@@ -116,7 +117,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.builder().bind_loop_header(&cond);
     self.builder().emit(
       Load {
-        register: end_value.access(),
+        reg: end_value.access(),
       },
       range.span(),
     );
@@ -150,7 +151,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     );
     self.builder().emit(
       Store {
-        register: item_value.access(),
+        reg: item_value.access(),
       },
       range.span(),
     );
@@ -266,24 +267,28 @@ impl<'cx, 'src> State<'cx, 'src> {
         self.builder().emit(Print, span);
       }
       values => {
-        let registers = (0..values.len())
+        let args = (0..values.len())
           .map(|_| self.alloc_register())
           .collect::<Vec<_>>();
 
-        for (value, register) in values.iter().zip(registers.iter()) {
+        for (value, register) in values.iter().zip(args.iter()) {
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              register: register.access(),
+              reg: register.access(),
             },
             span,
           );
         }
 
+        for arg in args.iter().skip(1).rev() {
+          arg.access();
+        }
+
         self.builder().emit(
           PrintN {
-            start: registers[0].access(),
-            count: op::Count(registers.len() as u32),
+            start: args[0].access(),
+            count: op::Count(args.len() as u32),
           },
           span,
         );
@@ -291,7 +296,46 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  fn emit_import_stmt(&mut self, _: &'src ast::Import<'src>, _: Span) {
-    todo!()
+  fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>, span: Span) {
+    match stmt {
+      ast::Import::Module { path, alias } => {
+        let name = alias.as_ref().unwrap_or(path.last().unwrap());
+        let path = path.iter().map(|p| p.as_ref()).join(".");
+        let path = self.constant_name(path);
+        let dst = self.alloc_register();
+        self.declare_local(name.lexeme(), dst.clone());
+        self.builder().emit(
+          Import {
+            path,
+            dst: dst.access(),
+          },
+          span,
+        );
+      }
+      ast::Import::Symbols { path, symbols } => {
+        let path = path.iter().map(|p| p.as_ref()).join(".");
+        let path = self.constant_name(path);
+        let temp = self.alloc_register();
+        self.builder().emit(
+          Import {
+            path,
+            dst: temp.access(),
+          },
+          span,
+        );
+
+        for symbol in symbols {
+          let name = symbol.alias.as_ref().unwrap_or(&symbol.name);
+          let name_idx = self.constant_name(name);
+
+          self.builder().emit(Load { reg: temp.access() }, span);
+          self.builder().emit(LoadField { name: name_idx }, span);
+
+          let dst = self.alloc_register();
+          self.declare_local(name.lexeme(), dst.clone());
+          self.builder().emit(Store { reg: dst.access() }, span);
+        }
+      }
+    }
   }
 }

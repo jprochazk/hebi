@@ -1,0 +1,20 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+import test
+print test.symbol
+
+
+# Func:
+function `test` (registers: 1, upvalues: 0, length: 9, constants: 2)
+  0 | import [0] r0; test
+  3 | load r0
+  5 | load_field [1]; symbol
+  7 | print
+  8 | ret
+
+
+
+

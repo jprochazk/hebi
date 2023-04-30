@@ -8,7 +8,7 @@ fn basic_emit() {
 
   builder.emit(LoadSmi { value: op::Smi(10) }, 0..0);
   builder.emit(Store {
-    register: op::Register(0),
+    reg: op::Register(0) 
   }, 0..0);
   builder.emit(LoadSmi { value: op::Smi(5) }, 0..0);
   builder.emit(Add {
@@ -40,9 +40,9 @@ fn emit_constant() {
   let a = builder.constant_pool_builder().insert(NonNaNFloat::from(10.0));
   let b = builder.constant_pool_builder().insert(NonNaNFloat::from(5.0));
   let c = builder.constant_pool_builder().insert(NonNaNFloat::from(10.0));
-  builder.emit(LoadConst { index: a }, 0..0);
-  builder.emit(LoadConst { index: b }, 0..0);
-  builder.emit(LoadConst { index: c }, 0..0);
+  builder.emit(LoadConst { idx: a }, 0..0);
+  builder.emit(LoadConst { idx: b }, 0..0);
+  builder.emit(LoadConst { idx: c }, 0..0);
 
   let (bytecode, constants) = builder.finish();
 

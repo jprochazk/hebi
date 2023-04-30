@@ -8,32 +8,32 @@ fn register_patching() {
   let mut builder = BytecodeBuilder::new();
 
   builder.emit(Load {
-    register: Register(0),
+    reg: Register(0) 
   }, 0..0);
   builder.emit(Load {
-    register: Register(1),
+    reg: Register(1) 
   }, 0..0);
   builder.emit(Load {
-    register: Register(256),
+    reg: Register(256) 
   }, 0..0);
   builder.emit(Load {
-    register: Register(65536),
+    reg: Register(65536) 
   }, 0..0);
   builder.emit(Import {
     path: Constant(0),
-    destination: Register(0),
+    dst: Register(0),
   }, 0..0);
   builder.emit(Import {
     path: Constant(0),
-    destination: Register(1),
+    dst: Register(1),
   }, 0..0);
   builder.emit(Import {
     path: Constant(0),
-    destination: Register(256),
+    dst: Register(256),
   }, 0..0);
   builder.emit(Import {
     path: Constant(0),
-    destination: Register(65536),
+    dst: Register(65536),
   }, 0..0);
 
   let map = vec![127usize; 65537];

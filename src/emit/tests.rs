@@ -535,52 +535,43 @@ fn class_instance() {
     "#
   }
 }
+*/
 
-#[test]
-fn imports() {
-  check! {
-    r#"
-      fn main():
-        import test
-
-        print test.symbol
-    "#
-  }
-  check! {
-    r#"
-      fn main():
-        from test import symbol
-
-        print symbol
-    "#
-  }
-  check! {
-    r#"
-      fn main():
-        from test import a, b
-
-        print a, b
-    "#
-  }
-  check! {
-    r#"
-      fn main():
-        from test.a0 import a1, a2
-        from test.b0 import b1, b2
-
-        print a1, a2
-        print b1, b2
-    "#
-  }
-  check! {
-    r#"
-      import test
-
-      print test.value
-    "#
-  }
+check! {
+  import_whole,
+  r#"
+    import test
+    print test.symbol
+  "#
 }
 
+check! {
+  import_symbol,
+  r#"
+    from test import symbol
+    print symbol
+  "#
+}
+
+check! {
+  import_symbol_multi,
+  r#"
+    from test import a, b
+    print a, b
+  "#
+}
+
+check! {
+  import_multi,
+  r#"
+    from test.a0 import a1, a2
+    from test.b0 import b1, b2
+    print a1, a2
+    print b1, b2
+  "#
+}
+
+/*
 #[test]
 fn fn_in_module() {
   check! {

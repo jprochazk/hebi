@@ -1,0 +1,42 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+from test.a0 import a1, a2
+from test.b0 import b1, b2
+print a1, a2
+print b1, b2
+
+
+# Func:
+function `test` (registers: 6, upvalues: 0, length: 53, constants: 6)
+  0  | import [0] r0; test.a0
+  3  | load r0
+  5  | load_field [1]; a1
+  7  | store r1
+  9  | load r0
+  11 | load_field [2]; a2
+  13 | store r0
+  15 | import [3] r2; test.b0
+  18 | load r2
+  20 | load_field [4]; b1
+  22 | store r3
+  24 | load r2
+  26 | load_field [5]; b2
+  28 | store r2
+  30 | load r1
+  32 | store r4
+  34 | load r0
+  36 | store r5
+  38 | print_n r4 2
+  41 | load r3
+  43 | store r0
+  45 | load r2
+  47 | store r1
+  49 | print_n r0 2
+  52 | ret
+
+
+
+
