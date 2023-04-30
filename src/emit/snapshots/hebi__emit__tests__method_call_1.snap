@@ -1,0 +1,20 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+o.f(0)
+
+# Func:
+function `test` (registers: 2, upvalues: 0, length: 14, constants: 2)
+  0  | load_global [1]; o
+  2  | load_field [0]; f
+  4  | store r0
+  6  | load_smi 0
+  8  | store r1
+  10 | call r0 1
+  13 | ret
+
+
+
+

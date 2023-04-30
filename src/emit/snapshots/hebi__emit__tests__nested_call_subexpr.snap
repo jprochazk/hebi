@@ -1,0 +1,46 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+0 + a(1 + b(2 + c(3 + 4, 5), 6), 7)
+
+
+# Func:
+function `test` (registers: 13, upvalues: 0, length: 66, constants: 3)
+  0  | load_smi 0
+  2  | store r0
+  4  | load_global [0]; a
+  6  | store r1
+  8  | load_smi 1
+  10 | store r4
+  12 | load_global [1]; b
+  14 | store r5
+  16 | load_smi 2
+  18 | store r8
+  20 | load_global [2]; c
+  22 | store r9
+  24 | load_smi 3
+  26 | store r12
+  28 | load_smi 4
+  30 | add r12
+  32 | store r10
+  34 | load_smi 5
+  36 | store r11
+  38 | call r9 2
+  41 | add r8
+  43 | store r6
+  45 | load_smi 6
+  47 | store r7
+  49 | call r5 2
+  52 | add r4
+  54 | store r2
+  56 | load_smi 7
+  58 | store r3
+  60 | call r1 2
+  63 | add r0
+  65 | ret
+
+
+
+

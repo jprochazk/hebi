@@ -52,7 +52,7 @@ fn slice() {
 } */
 
 #[test]
-fn contiguous_registers() {
+fn try_find_contiguous() {
   {
     // index: 0 1 2 3 4         5
     // reg:   9 8 7 6 5 4 3 2 1 0
@@ -90,6 +90,25 @@ fn contiguous_registers() {
 }
 
 #[test]
+fn alloc_register_slice() {
+  let mut regalloc = RegAlloc::new();
+
+  let a = regalloc.alloc();
+  let slice = regalloc.alloc_slice(4);
+  for _ in 0..2 {
+    assert_eq!(slice.access(0).0, 1);
+    assert_eq!(slice.access(1).0, 2);
+    assert_eq!(slice.access(2).0, 3);
+    assert_eq!(slice.access(3).0, 4);
+    assert_eq!(a.access().0, 0);
+  }
+
+  let (registers, map) = regalloc.finish();
+
+  assert_snapshot!(DisplayGraph(&regalloc.0.borrow(), registers, &map).to_string());
+}
+
+#[test]
 fn sorted_vec_insert() {
   let mut vec = SortedVec::new();
   for i in 0..10 {
@@ -124,11 +143,37 @@ impl<'a> std::fmt::Display for DisplayGraph<'a> {
 
     writeln!(f, "registers = {registers}")?;
 
-    let index_align = num_digits(this.intervals.len()) - 1;
+    struct BasicInterval {
+      start: usize,
+      end: usize,
+      index: usize,
+    }
+
+    let mut intervals = vec![];
+    for interval in this.intervals.iter() {
+      match &interval.entry {
+        Entry::Register(index) => intervals.push(BasicInterval {
+          start: interval.start,
+          end: interval.end,
+          index: *index,
+        }),
+        Entry::Slice(slice) => {
+          for index in slice.clone() {
+            intervals.push(BasicInterval {
+              start: interval.start,
+              end: interval.end,
+              index,
+            });
+          }
+        }
+      }
+    }
+
+    let index_align = num_digits(intervals.len()) - 1;
     let step_align = num_digits(this.event);
 
     let mut steps = 0;
-    for (index, interval) in this.intervals.iter().enumerate() {
+    for (index, interval) in intervals.iter().enumerate() {
       write!(f, "r{index}{:w$} │ ", "", w = index_align)?;
       for _ in 0..interval.start {
         write!(f, "{: <w$}", "", w = (2 + step_align))?;

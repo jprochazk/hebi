@@ -60,52 +60,57 @@ check! {
 check! {
   print_field,
   r#"
-      v := { a: 0 }
-      print v.a
-      v.a = 1
-    "#
+    v := { a: 0 }
+    print v.a
+    v.a = 1
+  "#
 }
 
 check! {
   print_index,
   r#"
-      v := { a: 0 }
-      print v["a"]
-      v["a"] = 1
-    "#
+    v := { a: 0 }
+    print v["a"]
+    v["a"] = 1
+  "#
 }
 
 check! {
   print_field_opt,
   r#"
-      v := {}
-      print ?v.a
-      print ?v.a.b.c
-    "#
+    v := {}
+    print ?v.a
+    print ?v.a.b.c
+  "#
 }
 
 check! {
   print_index_opt,
   r#"
-      v := {}
-      print ?v["a"]
-      print ?v["a"]["b"]["c"]
-    "#
+    v := {}
+    print ?v["a"]
+    print ?v["a"]["b"]["c"]
+  "#
 }
+
+check!(call_0, r#"f()"#);
+
+check!(call_1, r#"f(0)"#);
+
+check!(call_n, r#"f(0, 1, 2)"#);
+
+check!(nested_call_0, r#"a(b(c()))"#);
+
+check! {
+  nested_call_subexpr,
+  r#"
+    0 + a(1 + b(2 + c(3 + 4, 5), 6), 7)
+  "#
+}
+
+check!(call_arg_subexpr, r#"f(a+b)"#);
 
 /*
-#[test]
-fn call() {
-  check!(r#"f()"#);
-  check!(r#"f(0)"#);
-  check!(r#"f(0, 1, 2)"#);
-  check!(r#"f(a=0)"#);
-  check!(r#"f(a=0, b=1, c=2)"#);
-  check!(r#"f(a, b, c=2)"#);
-  check!(r#"a(b(c()))"#);
-  check!(r#"f(a+b, c=a+b)"#);
-}
-
 #[test]
 fn func() {
   check! {
@@ -409,15 +414,13 @@ check! {
   "#
 }
 
-/*
-#[test]
-fn method_call() {
-  check!(r#"o.f()"#);
-  check!(r#"o.f(0)"#);
-  check!(r#"o.f(1,2,3)"#);
-  check!(r#"o.f(1,2,c=3)"#);
-}
+check!(method_call_0, r#"o.f()"#);
 
+check!(method_call_1, r#"o.f(0)"#);
+
+check!(method_call_n, r#"o.f(1,2,3)"#);
+
+/*
 #[test]
 fn class_def() {
   check! {

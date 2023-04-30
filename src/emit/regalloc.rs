@@ -23,6 +23,7 @@ struct State {
   preserve: Vec<Option<Register>>,
   intervals: Vec<Interval>,
   event: usize,
+  register: usize,
 }
 
 impl State {
@@ -32,15 +33,38 @@ impl State {
     event
   }
 
-  fn alloc(&mut self) -> usize {
+  fn registers(&mut self, n: usize) -> Range<usize> {
+    let start = self.register;
+    self.register += n;
+    start..start + n
+  }
+
+  fn alloc(&mut self) -> (usize, usize) {
     let index = self.intervals.len();
+    let register = self.registers(1).start;
     let event = self.event();
+
     self.intervals.push(Interval {
-      index,
       start: event,
       end: event,
+      entry: Entry::Register(register),
     });
-    index
+
+    (index, register)
+  }
+
+  fn alloc_slice(&mut self, n: usize) -> (usize, Range<usize>) {
+    let index = self.intervals.len();
+    let slice = self.registers(n);
+    let event = self.event();
+
+    self.intervals.push(Interval {
+      start: event,
+      end: event,
+      entry: Entry::Slice(slice.clone()),
+    });
+
+    (index, slice)
   }
 
   fn access(&mut self, index: usize) {
@@ -49,11 +73,17 @@ impl State {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Interval {
-  index: usize,
   start: usize,
   end: usize,
+  entry: Entry,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+enum Entry {
+  Register(usize),
+  Slice(Range<usize>),
 }
 
 impl RegAlloc {
@@ -62,18 +92,21 @@ impl RegAlloc {
   }
 
   pub fn alloc(&mut self) -> Register {
-    let index = self.0.borrow_mut().alloc();
+    let (index, register) = self.0.borrow_mut().alloc();
     Register {
       state: self.0.clone(),
+      register,
       index,
     }
   }
 
-  pub fn alloc_many<const N: usize>(&mut self) -> [Register; N] {
-    init_array_with(|_| Register {
+  pub fn alloc_slice(&mut self, n: usize) -> Slice {
+    let (index, slice) = self.0.borrow_mut().alloc_slice(n);
+    Slice {
       state: self.0.clone(),
-      index: self.0.borrow_mut().alloc(),
-    })
+      slice,
+      index,
+    }
   }
 
   pub fn finish(&self) -> (usize, Vec<usize>) {
@@ -84,19 +117,43 @@ impl RegAlloc {
 #[derive(Clone)]
 pub struct Register {
   state: Rc<RefCell<State>>,
+  register: usize,
   index: usize,
 }
 
 impl Register {
   pub fn access(&self) -> op::Register {
     self.state.borrow_mut().access(self.index);
-    op::Register(self.index as u32)
+    op::Register(self.register as u32)
   }
 }
 
-type Free = SortedVec<Reverse<usize>>;
+pub struct Slice {
+  state: Rc<RefCell<State>>,
+  slice: Range<usize>,
+  index: usize,
+}
 
-// TODO: discard this work.
+impl Slice {
+  pub fn access(&self, n: usize) -> op::Register {
+    self.state.borrow_mut().access(self.index);
+    assert!(self.slice.start + n < self.slice.end);
+    op::Register((self.slice.start + n) as u32)
+  }
+
+  pub fn len(&self) -> usize {
+    self.slice.len()
+  }
+}
+
+#[derive(Clone)]
+enum Allocation {
+  Register(usize),
+  Slice(Range<usize>),
+}
+
+type Free = SortedVec<Reverse<usize>>;
+type Active = HashMap<Entry, (Interval, Allocation)>;
 
 fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
   let mut mapping = Vec::new();
@@ -108,32 +165,29 @@ fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
 
   for interval in intervals {
     expire_old_intervals(interval, &mut free, &mut active);
-    let register = allocate(&mut free, &mut registers);
-    active.map.insert(interval.index, (*interval, register));
-    mapping.insert(interval.index, register);
-  }
-
-  (registers, mapping)
-}
-
-struct Active {
-  map: HashMap<usize, (Interval, usize)>,
-  scratch: Vec<Interval>,
-}
-
-impl Active {
-  pub fn new() -> Self {
-    Self {
-      map: HashMap::new(),
-      scratch: Vec::new(),
+    match &interval.entry {
+      Entry::Register(index) => {
+        let register = allocate(&mut free, &mut registers);
+        active.insert(
+          interval.entry.clone(),
+          (interval.clone(), Allocation::Register(register)),
+        );
+        mapping.insert(*index, register);
+      }
+      Entry::Slice(indices) => {
+        let slice = allocate_slice(indices.len(), &mut free, &mut registers);
+        active.insert(
+          interval.entry.clone(),
+          (interval.clone(), Allocation::Slice(slice.clone())),
+        );
+        for (index, register) in indices.clone().zip(slice) {
+          mapping.insert(index, register);
+        }
+      }
     }
   }
 
-  pub fn sort_by_end(&mut self) {
-    self.scratch.clear();
-    self.scratch.extend(self.map.values().map(|v| v.0));
-    self.scratch.sort_unstable_by(|a, b| a.end.cmp(&b.end));
-  }
+  (registers, mapping)
 }
 
 fn allocate(free: &mut Free, registers: &mut usize) -> usize {
@@ -191,15 +245,22 @@ fn find_contiguous_registers(n: usize, free: &Free) -> Option<Range<usize>> {
 }
 
 fn expire_old_intervals(i: &Interval, free: &mut Free, active: &mut Active) {
-  active.sort_by_end();
-  for j in active.scratch.iter() {
-    if j.end >= i.start {
-      return;
+  active.retain(|_, (j, allocation)| {
+    if j.end < i.start {
+      match allocation {
+        Allocation::Register(register) => free.insert(Reverse(*register)),
+        Allocation::Slice(slice) => {
+          // TODO: bulk insert
+          for register in slice.clone() {
+            free.insert(Reverse(register));
+          }
+        }
+      }
+      false
+    } else {
+      true
     }
-
-    let (_, register) = active.map.remove(&j.index).unwrap();
-    free.insert(Reverse(register));
-  }
+  });
 }
 
 #[derive(Default)]
@@ -221,7 +282,7 @@ impl<T: Ord> SortedVec<T> {
   /// This attemps to insert the element to the top of the container,
   /// and falls back to binary search + insert if it fails.
   ///
-  /// The complexity is best case O(1), and worst case O(N+log(N)).
+  /// The time complexity is best case O(1), and worst case O(N+log(N)).
   fn insert(&mut self, element: T) {
     // If `inner` is empty or `element >= last`, push `element` onto the end
     if let None | Some(Ordering::Equal | Ordering::Greater) =

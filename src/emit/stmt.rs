@@ -267,27 +267,21 @@ impl<'cx, 'src> State<'cx, 'src> {
         self.builder().emit(Print, span);
       }
       values => {
-        let args = (0..values.len())
-          .map(|_| self.alloc_register())
-          .collect::<Vec<_>>();
+        let args = self.alloc_register_slice(values.len());
 
-        for (value, register) in values.iter().zip(args.iter()) {
+        for (i, value) in values.iter().enumerate() {
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              reg: register.access(),
+              reg: args.access(i),
             },
             span,
           );
         }
 
-        for arg in args.iter().skip(1).rev() {
-          arg.access();
-        }
-
         self.builder().emit(
           PrintN {
-            start: args[0].access(),
+            start: args.access(0),
             count: op::Count(args.len() as u32),
           },
           span,

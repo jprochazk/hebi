@@ -15,7 +15,7 @@ mod stmt;
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
-use self::regalloc::{RegAlloc, Register};
+use self::regalloc::{RegAlloc, Register, Slice};
 use crate::bytecode::builder::{BytecodeBuilder, InsertConstant, LoopHeader, MultiLabel};
 use crate::bytecode::opcode::symbolic::*;
 use crate::bytecode::opcode::{self as op};
@@ -94,6 +94,10 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn alloc_register(&mut self) -> Register {
     self.current_function().regalloc.alloc()
+  }
+
+  fn alloc_register_slice(&mut self, n: usize) -> Slice {
+    self.current_function().regalloc.alloc_slice(n)
   }
 
   fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, register: Register) {

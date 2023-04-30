@@ -1,0 +1,22 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+f(a+b)
+
+# Func:
+function `test` (registers: 3, upvalues: 0, length: 18, constants: 3)
+  0  | load_global [0]; f
+  2  | store r0
+  4  | load_global [1]; a
+  6  | store r2
+  8  | load_global [2]; b
+  10 | add r2
+  12 | store r1
+  14 | call r0 1
+  17 | ret
+
+
+
+

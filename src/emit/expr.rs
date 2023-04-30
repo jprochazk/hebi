@@ -44,28 +44,27 @@ impl<'cx, 'src> State<'cx, 'src> {
           return;
         }
 
-        let registers = (0..list.len())
-          .map(|_| self.alloc_register())
-          .collect::<Vec<_>>();
-        for (value, register) in list.iter().zip(registers.iter()) {
+        let items = self.alloc_register_slice(list.len());
+
+        for (i, value) in list.iter().enumerate() {
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              reg: register.access(),
+              reg: items.access(i),
             },
             value.span,
           );
         }
         self.builder().emit(
           MakeList {
-            start: registers[0].access(),
+            start: items.access(0),
             count: op::Count(list.len() as u32),
           },
           span,
         );
-        for register in registers.iter().rev() {
+        /* for register in registers.iter().rev() {
           register.access();
-        }
+        } */
       }
       ast::Literal::Table(table) => {
         if table.is_empty() {
@@ -74,36 +73,35 @@ impl<'cx, 'src> State<'cx, 'src> {
         }
 
         // TODO: from descriptor
-        let registers = (0..table.len())
-          .map(|_| (self.alloc_register(), self.alloc_register()))
-          .collect::<Vec<_>>();
-        for ((key, value), (key_register, value_register)) in table.iter().zip(registers.iter()) {
+        let pairs = self.alloc_register_slice(table.len() * 2);
+
+        for (i, (key, value)) in table.iter().enumerate() {
           self.emit_expr(key);
           self.builder().emit(
             Store {
-              reg: key_register.access(),
+              reg: pairs.access(i * 2),
             },
             key.span,
           );
           self.emit_expr(value);
           self.builder().emit(
             Store {
-              reg: value_register.access(),
+              reg: pairs.access(i * 2 + 1),
             },
             value.span,
           );
         }
         self.builder().emit(
           MakeTable {
-            start: registers[0].0.access(),
+            start: pairs.access(0),
             count: op::Count(table.len() as u32),
           },
           span,
         );
-        for (key, value) in registers.iter().rev() {
+        /* for (key, value) in registers.iter().rev() {
           value.access();
           key.access();
-        }
+        } */
       }
     }
   }
@@ -318,41 +316,32 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_call_expr(&mut self, expr: &'src ast::Call<'src>, span: Span) {
-    // emit callee
-    // emit args
-    // emit op
-
-    let callee = self.alloc_register();
-    let args = (0..expr.args.len())
-      .map(|_| self.alloc_register())
-      .collect::<Vec<_>>();
-
     self.emit_expr(&expr.target);
-    if args.is_empty() {
+    if expr.args.is_empty() {
       self.builder().emit(Call0, span);
     } else {
+      let args = self.alloc_register_slice(1 + expr.args.len());
+
       self.builder().emit(
         Store {
-          reg: callee.access(),
+          reg: args.access(0),
         },
         expr.target.span,
       );
-      for (value, register) in expr.args.iter().zip(args.iter()) {
+      for (i, value) in expr.args.iter().enumerate() {
         self.emit_expr(value);
         self.builder().emit(
           Store {
-            reg: register.access(),
+            reg: args.access(1 + i),
           },
           value.span,
         );
       }
-      for arg in args.iter().rev() {
-        arg.access();
-      }
+
       self.builder().emit(
         Call {
-          callee: callee.access(),
-          args: op::Count(args.len() as u32),
+          callee: args.access(0),
+          args: op::Count(expr.args.len() as u32),
         },
         span,
       );
