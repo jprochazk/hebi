@@ -1,9 +1,19 @@
 use std::cell::RefCell;
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::cmp::{Ordering, Reverse};
+use std::collections::HashMap;
+use std::ops::{Range, RangeBounds};
 use std::rc::Rc;
 
 use super::op;
+
+// TODO: look into how V8 does register allocation
+// this clearly isn't sustainable, because there is no way to
+// allocate a range of *contiguous* registers. this is a problem,
+// because a lot of instructions actually depend on registers
+// being contiguous (call, print, make_*). V8 also uses contiguous
+// register ranges (such as in calls), and they somehow make it work.
+// they also do register allocation on the fly, which would also be
+// beneficial here.
 
 #[derive(Default)]
 pub struct RegAlloc(Rc<RefCell<State>>);
@@ -59,6 +69,13 @@ impl RegAlloc {
     }
   }
 
+  pub fn alloc_many<const N: usize>(&mut self) -> [Register; N] {
+    init_array_with(|_| Register {
+      state: self.0.clone(),
+      index: self.0.borrow_mut().alloc(),
+    })
+  }
+
   pub fn finish(&self) -> (usize, Vec<usize>) {
     linear_scan(&self.0.borrow().intervals)
   }
@@ -77,34 +94,23 @@ impl Register {
   }
 }
 
+type Free = SortedVec<Reverse<usize>>;
+
+// TODO: discard this work.
+
 fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
   let mut mapping = Vec::new();
   mapping.resize(intervals.len(), 0usize);
 
-  let mut free = BinaryHeap::new();
+  let mut free = Free::new();
   let mut active = Active::new();
   let mut registers = 0usize;
 
-  // TODO: aren't they already sorted by increasing start point?
-  // intervals sorted in order of increasing start point
-  let mut intervals_by_start = intervals.to_vec();
-  intervals_by_start.sort_unstable_by(|a, b| a.start.cmp(&b.start));
-
-  // foreach live interval i, in order of increasing start point
-  for i in intervals_by_start.iter() {
-    // expire old intervals
-    expire_old_intervals(i, &mut free, &mut active);
-    // Note: we never spill
-    // register[i] ← a register removed from pool of free registers
-    // Note: in our case, we either remove from the pool, or allocate a new one
+  for interval in intervals {
+    expire_old_intervals(interval, &mut free, &mut active);
     let register = allocate(&mut free, &mut registers);
-    // add i to active, sorted by increasing end point
-    // Note: we only do this to keep track of which registers are in use,
-    //       because we do not need to perform spills
-    active.map.insert(i.index, (*i, register));
-    // in our case, we construct a mapping from intervals to final registers
-    // this is later used to patch the bytecode
-    mapping.insert(i.index, register);
+    active.map.insert(interval.index, (*interval, register));
+    mapping.insert(interval.index, register);
   }
 
   (registers, mapping)
@@ -130,7 +136,7 @@ impl Active {
   }
 }
 
-fn allocate(free: &mut BinaryHeap<Reverse<usize>>, registers: &mut usize) -> usize {
+fn allocate(free: &mut Free, registers: &mut usize) -> usize {
   // attempt to acquire a free register, and fall back to allocating a new one
   if let Some(Reverse(reg)) = free.pop() {
     reg
@@ -141,26 +147,126 @@ fn allocate(free: &mut BinaryHeap<Reverse<usize>>, registers: &mut usize) -> usi
   }
 }
 
-fn expire_old_intervals(i: &Interval, free: &mut BinaryHeap<Reverse<usize>>, active: &mut Active) {
-  // TODO: is the sorting here actually necessary? if yes, use `binary_search`
-  // into `Vec::insert` instead of keeping an extra hashmap.
-  // Currently `sort_by_end` is `O(n + n * log(n))`, but the binary search
-  // and insert would be `O(n + log(n))`, and would decrease space
-  // complexity here by a full `n` required to store the hashmap.
+fn allocate_slice(n: usize, free: &mut Free, registers: &mut usize) -> Range<usize> {
+  assert!(n > 0);
 
-  // foreach interval j in active, in order of increasing end point
+  if n == 1 {
+    let reg = allocate(free, registers);
+    reg..reg + 1
+  } else {
+    match find_contiguous_registers(n, free) {
+      Some(slice) => slice,
+      None => {
+        let start = *registers;
+        *registers += n;
+        start..*registers
+      }
+    }
+  }
+}
+
+fn find_contiguous_registers(n: usize, free: &Free) -> Option<Range<usize>> {
+  assert!(n >= 2);
+
+  if free.len() < n {
+    return None;
+  }
+
+  let mut start = 0;
+  let mut count = 1;
+  for i in 0..free.len() - 1 {
+    let (a, b) = (free[i].0, free[i + 1].0);
+    if a == b + 1 {
+      count += 1;
+      if count == n {
+        return Some(start..start + count);
+      }
+    } else {
+      start += count;
+      count = 1;
+    }
+  }
+
+  None
+}
+
+fn expire_old_intervals(i: &Interval, free: &mut Free, active: &mut Active) {
   active.sort_by_end();
   for j in active.scratch.iter() {
-    // if endpoint[j] ≥ startpoint[i] then
     if j.end >= i.start {
-      // return
       return;
     }
 
-    // remove j from active
-    let register = active.map.remove(&j.index).unwrap().1;
-    // add register[j] to pool of free registers
-    free.push(Reverse(register));
+    let (_, register) = active.map.remove(&j.index).unwrap();
+    free.insert(Reverse(register));
+  }
+}
+
+#[derive(Default)]
+struct SortedVec<T> {
+  inner: Vec<T>,
+}
+
+impl<T: Ord> SortedVec<T> {
+  fn new() -> Self {
+    SortedVec { inner: vec![] }
+  }
+
+  fn len(&self) -> usize {
+    self.inner.len()
+  }
+
+  /// Insert the element into the sorted vec.
+  ///
+  /// This attemps to insert the element to the top of the container,
+  /// and falls back to binary search + insert if it fails.
+  ///
+  /// The complexity is best case O(1), and worst case O(N+log(N)).
+  fn insert(&mut self, element: T) {
+    // If `inner` is empty or `element >= last`, push `element` onto the end
+    if let None | Some(Ordering::Equal | Ordering::Greater) =
+      self.inner.last().map(|v| element.cmp(v))
+    {
+      self.inner.push(element);
+      return;
+    }
+
+    // `inner` is not empty and `element < last`, find insertion point and insert
+    let index = match self.inner.binary_search(&element) {
+      Ok(index) | Err(index) => index,
+    };
+
+    self.inner.insert(index, element);
+  }
+
+  fn pop(&mut self) -> Option<T> {
+    self.inner.pop()
+  }
+
+  fn drain<R: RangeBounds<usize>>(&mut self, range: R) -> std::vec::Drain<'_, T> {
+    self.inner.drain(range)
+  }
+
+  fn as_slice(&self) -> &[T] {
+    self.inner.as_slice()
+  }
+}
+
+fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [T; N] {
+  let mut array: [_; N] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+  for (i, value) in array.iter_mut().enumerate() {
+    *value = std::mem::MaybeUninit::new(f(i));
+  }
+  let out = unsafe { std::ptr::read(&mut array as *mut _ as *mut [T; N]) };
+  std::mem::forget(array);
+  out
+}
+
+impl<T> std::ops::Index<usize> for SortedVec<T> {
+  type Output = T;
+
+  fn index(&self, index: usize) -> &Self::Output {
+    self.inner.index(index)
   }
 }
 

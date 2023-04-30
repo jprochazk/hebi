@@ -33,5 +33,11 @@ stacker = "0.1.15"
 indoc = "2.0.1"
 insta = "1.29.0"
 
-[profile.dev.package.insta]
-opt-level = 3
+[profile.dev.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+
+[profile.test.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+

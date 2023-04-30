@@ -41,6 +41,76 @@ fn overlapping() {
   assert_snapshot!(DisplayGraph(&regalloc.0.borrow(), registers, &map).to_string());
 }
 
+/* #[test]
+fn slice() {
+  let mut regalloc = RegAlloc::new();
+
+  let a = regalloc.alloc();
+  let b = regalloc.alloc();
+  let c = regalloc.alloc();
+  let d = regalloc.alloc();
+} */
+
+#[test]
+fn contiguous_registers() {
+  {
+    // index: 0 1 2 3 4         5
+    // reg:   9 8 7 6 5 4 3 2 1 0
+    // free:  + + + + + x x x x +
+
+    let mut free = Free::new();
+    for i in (0..10).rev() {
+      free.insert(Reverse(i));
+    }
+    let _ = free.drain(5..9);
+
+    assert_eq!(Some(0..2), find_contiguous_registers(2, &free));
+    assert_eq!(Some(0..4), find_contiguous_registers(4, &free));
+    assert_eq!(Some(0..5), find_contiguous_registers(5, &free));
+    assert_eq!(None, find_contiguous_registers(6, &free));
+  }
+  {
+    // index: 0   1 2   3 4 5   6 7 8 9
+    // reg:   C B A 9 8 7 6 5 4 3 2 1 0
+    // free:  + x + + x + + + x + + + +
+
+    let mut free = Free::new();
+    for i in (0..13).rev() {
+      free.insert(Reverse(i));
+    }
+    let _ = free.drain(8..9);
+    let _ = free.drain(4..5);
+    let _ = free.drain(1..2);
+
+    assert_eq!(Some(1..3), find_contiguous_registers(2, &free));
+    assert_eq!(Some(3..6), find_contiguous_registers(3, &free));
+    assert_eq!(Some(6..10), find_contiguous_registers(4, &free));
+    assert_eq!(None, find_contiguous_registers(5, &free));
+  }
+}
+
+#[test]
+fn sorted_vec_insert() {
+  let mut vec = SortedVec::new();
+  for i in 0..10 {
+    vec.insert(i);
+  }
+  let _ = vec.drain(2..8);
+  assert_eq!(vec.inner, [0, 1, 8, 9]);
+  vec.insert(5);
+  assert_eq!(vec.inner, [0, 1, 5, 8, 9]);
+  vec.insert(4);
+  assert_eq!(vec.inner, [0, 1, 4, 5, 8, 9]);
+  vec.insert(6);
+  assert_eq!(vec.inner, [0, 1, 4, 5, 6, 8, 9]);
+  vec.insert(3);
+  assert_eq!(vec.inner, [0, 1, 3, 4, 5, 6, 8, 9]);
+  vec.insert(7);
+  assert_eq!(vec.inner, [0, 1, 3, 4, 5, 6, 7, 8, 9]);
+  vec.insert(2);
+  assert_eq!(vec.inner, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+}
+
 struct DisplayGraph<'a>(&'a State, usize, &'a [usize]);
 
 impl<'a> std::fmt::Display for DisplayGraph<'a> {
