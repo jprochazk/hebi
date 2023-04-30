@@ -6,15 +6,6 @@ use std::rc::Rc;
 
 use super::op;
 
-// TODO: look into how V8 does register allocation
-// this clearly isn't sustainable, because there is no way to
-// allocate a range of *contiguous* registers. this is a problem,
-// because a lot of instructions actually depend on registers
-// being contiguous (call, print, make_*). V8 also uses contiguous
-// register ranges (such as in calls), and they somehow make it work.
-// they also do register allocation on the fly, which would also be
-// beneficial here.
-
 #[derive(Default)]
 pub struct RegAlloc(Rc<RefCell<State>>);
 
