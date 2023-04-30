@@ -244,11 +244,11 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>, span: Span) {
+  fn emit_func_stmt(&mut self, _: &'src ast::Func<'src>, _: Span) {
     todo!()
   }
 
-  fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>, span: Span) {
+  fn emit_class_stmt(&mut self, _: &'src ast::Class<'src>, _: Span) {
     todo!()
   }
 
@@ -291,7 +291,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  fn emit_import_stmt(&mut self, stmt: &'src ast::Import<'src>, span: Span) {
+  fn emit_import_stmt(&mut self, _: &'src ast::Import<'src>, _: Span) {
     todo!()
   }
 }
