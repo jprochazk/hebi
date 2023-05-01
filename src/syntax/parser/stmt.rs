@@ -319,18 +319,11 @@ impl<'cx, 'src> Parser<'cx, 'src> {
         names.insert(name.clone());
       }
 
-      if self.current().is(Op_Equal) {
-        self.no_indent()?; // op_equal must be unindented
-        self.bump(); // bump op_equal
-        self.no_indent()?;
-        let default = Some(self.expr()?);
-        members.fields.push(ast::Field { name, default });
-      } else {
-        members.fields.push(ast::Field {
-          name,
-          default: None,
-        });
-      }
+      self.no_indent()?; // op_equal must be unindented
+      self.expect(Op_Equal)?;
+      self.no_indent()?;
+      let default = self.expr()?;
+      members.fields.push(ast::Field { name, default });
     }
 
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
@@ -353,9 +346,6 @@ impl<'cx, 'src> Parser<'cx, 'src> {
             format!("duplicate meta method `{}`", f.name),
             name.span,
           );
-        }
-        if !f.params.has_self {
-          fail!(self.cx, "meta methods must take `self`", f.name.span);
         }
         self.check_meta_params(&which, &f.params, f.name.span)?;
 
@@ -516,22 +506,35 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   }
 
   fn check_meta_params(&self, meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
+    let name = meta.as_str();
     let arity = meta.arity();
 
-    if !params.has_self || params.pos.len() != meta.arity() {
-      let msg = if arity > 1 {
-        format!(
-          "meta method `{}` expects `self` and {} params",
-          meta.as_str(),
-          meta.arity()
-        )
-      } else {
-        format!(
-          "meta method `{}` expects `self` and no other params",
-          meta.as_str()
-        )
-      };
-      fail!(self.cx, msg, span);
+    if !params.has_self {
+      fail!(
+        self.cx,
+        format!("meta method `{name}` expects a `self` parameter"),
+        span
+      );
+    }
+
+    if let Some(arity) = arity {
+      if params.pos.len() != arity {
+        if arity > 1 {
+          let arity = arity + 1;
+          let params = meta.param_names().join(", ");
+          fail!(
+            self.cx,
+            format!("meta method `{name}` expects {arity} parameters: self, {params}"),
+            span
+          );
+        } else {
+          fail!(
+            self.cx,
+            format!("meta method `{name}` expects only a `self` parameter"),
+            span
+          );
+        }
+      }
     }
 
     Ok(())

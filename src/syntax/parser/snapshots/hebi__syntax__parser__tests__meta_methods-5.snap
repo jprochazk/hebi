@@ -2,7 +2,7 @@
 source: src/syntax/parser/tests.rs
 expression: errors
 ---
-meta methods must take `self`
+meta method `str` expects a `self` parameter
 | fn [4;31m@str[0m(): pass
 
 

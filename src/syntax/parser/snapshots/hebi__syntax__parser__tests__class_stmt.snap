@@ -76,14 +76,12 @@ Module {
                             name: Ident(
                                 "a",
                             ),
-                            default: Some(
-                                GetVar(
-                                    GetVar {
-                                        name: Ident(
-                                            "b",
-                                        ),
-                                    },
-                                ),
+                            default: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
                             ),
                         },
                     ],
@@ -163,14 +161,12 @@ Module {
                             name: Ident(
                                 "a",
                             ),
-                            default: Some(
-                                GetVar(
-                                    GetVar {
-                                        name: Ident(
-                                            "b",
-                                        ),
-                                    },
-                                ),
+                            default: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
                             ),
                         },
                     ],
@@ -195,14 +191,12 @@ Module {
                             name: Ident(
                                 "a",
                             ),
-                            default: Some(
-                                GetVar(
-                                    GetVar {
-                                        name: Ident(
-                                            "b",
-                                        ),
-                                    },
-                                ),
+                            default: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
                             ),
                         },
                     ],
@@ -248,14 +242,12 @@ Module {
                             name: Ident(
                                 "a",
                             ),
-                            default: Some(
-                                GetVar(
-                                    GetVar {
-                                        name: Ident(
-                                            "b",
-                                        ),
-                                    },
-                                ),
+                            default: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
                             ),
                         },
                     ],
@@ -281,50 +273,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
-                },
-            },
-        ),
-        Class(
-            Class {
-                name: Ident(
-                    "T",
-                ),
-                parent: None,
-                members: ClassMembers {
-                    fields: [
-                        Field {
-                            name: Ident(
-                                "a",
-                            ),
-                            default: None,
-                        },
-                    ],
-                    methods: [],
-                    meta: [],
-                },
-            },
-        ),
-        Class(
-            Class {
-                name: Ident(
-                    "T",
-                ),
-                parent: Some(
-                    Ident(
-                        "U",
-                    ),
-                ),
-                members: ClassMembers {
-                    fields: [
-                        Field {
-                            name: Ident(
-                                "a",
-                            ),
-                            default: None,
-                        },
-                    ],
-                    methods: [],
                     meta: [],
                 },
             },

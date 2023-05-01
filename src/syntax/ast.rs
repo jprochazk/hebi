@@ -191,12 +191,14 @@ impl<'src> ClassMembers<'src> {
 #[cfg_attr(test, derive(Debug))]
 pub struct Field<'src> {
   pub name: Ident<'src>,
-  pub default: Option<Expr<'src>>,
+  pub default: Expr<'src>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Meta {
   Str,
+
+  Init,
 
   Add,
   Sub,
@@ -221,6 +223,7 @@ impl Meta {
   pub fn parse(s: &str) -> Option<Self> {
     let v = match s {
       "str" => Self::Str,
+      "init" => Self::Init,
       "add" => Self::Add,
       "sub" => Self::Sub,
       "mul" => Self::Mul,
@@ -239,28 +242,37 @@ impl Meta {
     Some(v)
   }
 
-  pub fn arity(&self) -> usize {
+  pub fn arity(&self) -> Option<usize> {
     match self {
-      Meta::Str => 0,
-      Meta::Add => 1,
-      Meta::Sub => 1,
-      Meta::Mul => 1,
-      Meta::Div => 1,
-      Meta::Rem => 1,
-      Meta::Pow => 1,
-      Meta::Cmp => 1,
-      Meta::Index => 1,
-      Meta::Iter => 0,
-      Meta::Next => 0,
-      Meta::Done => 0,
-      Meta::Enter => 1,
-      Meta::Leave => 1,
+      Meta::Init => None,
+      Meta::Add
+      | Meta::Sub
+      | Meta::Mul
+      | Meta::Div
+      | Meta::Rem
+      | Meta::Pow
+      | Meta::Cmp
+      | Meta::Index => Some(1),
+      Meta::Str | Meta::Iter | Meta::Next | Meta::Done | Meta::Enter | Meta::Leave => Some(0),
+    }
+  }
+
+  pub fn param_names(&self) -> &'static [&'static str] {
+    match self {
+      Meta::Add | Meta::Sub | Meta::Mul | Meta::Div | Meta::Rem | Meta::Pow | Meta::Cmp => {
+        &["other"]
+      }
+      Meta::Index => &["key"],
+      Meta::Str | Meta::Init | Meta::Iter | Meta::Next | Meta::Done | Meta::Enter | Meta::Leave => {
+        &[]
+      }
     }
   }
 
   pub fn as_str(&self) -> &'static str {
     match self {
       Self::Str => "str",
+      Self::Init => "init",
       Self::Add => "add",
       Self::Sub => "sub",
       Self::Mul => "mul",
