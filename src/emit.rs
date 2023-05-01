@@ -100,6 +100,28 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.current_function().regalloc.alloc_slice(n)
   }
 
+  fn emit_var(&mut self, name: impl Into<Cow<'src, str>>, span: Span) {
+    let name = name.into();
+    if self.is_global_scope() {
+      if self.module.is_root {
+        let name = self.constant_name(name);
+        self.builder().emit(StoreGlobal { name }, span);
+      } else {
+        let idx = self.declare_module_var(name);
+        self.builder().emit(StoreModuleVar { idx }, span);
+      }
+    } else {
+      let register = self.alloc_register();
+      self.builder().emit(
+        Store {
+          reg: register.access(),
+        },
+        span,
+      );
+      self.declare_local(name, register);
+    }
+  }
+
   fn declare_local(&mut self, name: impl Into<Cow<'src, str>>, register: Register) {
     let function = self.current_function();
 
@@ -178,12 +200,79 @@ impl<'cx, 'src> State<'cx, 'src> {
     None
   }
 
-  fn resolve_module_var(&self, name: &Cow<'src, str>) -> Option<op::ModuleVar> {
+  fn resolve_module_var(&self, name: impl AsRef<str>) -> Option<op::ModuleVar> {
     self
       .module
       .vars
       .get_index_of(name.as_ref())
       .map(|v| op::ModuleVar(v as u32))
+  }
+
+  fn emit_function(
+    &mut self,
+    name: impl Into<Cow<'src, str>>,
+    has_self: bool,
+    params: &'src [ast::Param<'src>],
+    body: &'src [ast::Stmt<'src>],
+  ) -> Ptr<object::FunctionDescriptor> {
+    let name = name.into();
+
+    self.module.functions.push(Function::new(
+      self.cx,
+      name.clone(),
+      function::Params::from_ast(has_self, params),
+    ));
+
+    // allocate registers
+    let param_slice = self.alloc_register_slice(1 + params.len());
+    let (func, receiver, positional) = match has_self {
+      true => (None, Some(param_slice.get(0)), param_slice.offset(1)),
+      false => (Some(param_slice.get(0)), None, param_slice.offset(1)),
+    };
+
+    if let Some(func) = &func {
+      self.declare_local(name.clone(), func.clone());
+    }
+    if let Some(receiver) = &receiver {
+      self.declare_local("self", receiver.clone());
+    }
+
+    // emit defaults
+    for (i, param) in params.iter().enumerate() {
+      if let Some(default) = &param.default {
+        let next = self.builder().label("next");
+        self.builder().emit(
+          Load {
+            reg: positional.access(i),
+          },
+          param.span(),
+        );
+        self.builder().emit(IsNone, param.span());
+        self.builder().emit_jump_if_false(&next, param.span());
+        self.emit_expr(default);
+        self.builder().emit(
+          Store {
+            reg: positional.access(i),
+          },
+          param.span(),
+        );
+        self.builder().bind_label(next);
+      }
+
+      self.declare_local(param.name.lexeme(), positional.get(i));
+    }
+
+    // emit body
+    for stmt in body.iter() {
+      self.emit_stmt(stmt);
+    }
+
+    // TODO: only emit this if `exit_seen` is false
+    let end_span = body.last().map(|stmt| stmt.span).unwrap_or((0..0).into());
+    self.builder().emit(LoadNone, end_span);
+    self.builder().emit(Ret, end_span);
+
+    self.module.functions.pop().unwrap().finish()
   }
 
   fn emit_module(mut self) -> Module<'cx, 'src> {
@@ -193,6 +282,21 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.builder().emit(Ret, 0..0);
 
     self.module
+  }
+}
+
+impl function::Params {
+  pub fn from_ast(has_self: bool, params: &[ast::Param]) -> Self {
+    let mut min = 0;
+    let mut max = 0;
+    for param in params {
+      if param.default.is_none() {
+        min += 1;
+      }
+      max += 1;
+    }
+
+    Self { has_self, min, max }
   }
 }
 

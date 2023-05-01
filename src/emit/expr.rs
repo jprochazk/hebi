@@ -321,10 +321,11 @@ impl<'cx, 'src> State<'cx, 'src> {
       self.builder().emit(Call0, span);
     } else {
       let args = self.alloc_register_slice(1 + expr.args.len());
+      let callee = args.get(0);
 
       self.builder().emit(
         Store {
-          reg: args.access(0),
+          reg: callee.access(),
         },
         expr.target.span,
       );
@@ -340,7 +341,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
       self.builder().emit(
         Call {
-          callee: args.access(0),
+          callee: callee.access(),
           args: op::Count(expr.args.len() as u32),
         },
         span,

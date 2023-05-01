@@ -20,7 +20,7 @@ macro_rules! check {
           panic!("Failed to parse source, see errors above.")
         }
       };
-      let module = emit(&cx, &module, "test", !as_module);
+      let module = emit(&cx, &module, "main", !as_module);
       let snapshot = format!(
         "# Input:\n{input}\n\n# Func:\n{}\n\n",
         module.root.disassemble(),
@@ -110,67 +110,38 @@ check! {
 
 check!(call_arg_subexpr, r#"f(a+b)"#);
 
-/*
-#[test]
-fn func() {
-  check! {
-    r#"
-      fn test():
-        pass
+check! {
+  function_no_params,
+  r#"
+    fn test():
+      pass
 
-      test()
-    "#
-  }
-
-  check! {
-    r#"
-      fn test(a):
-        print a
-
-      test(0)
-    "#
-  }
-
-  check! {
-    r#"
-      fn test(a, b=10):
-        print a, b
-
-      test(1)
-      test(1, 2)
-    "#
-  }
-
-  check! {
-    r#"
-      fn test(a, *, b):
-        print a, b
-
-      test(1, b=2)
-    "#
-  }
-
-  check! {
-    r#"
-      fn test(a, *, b=10):
-        print a, b
-
-      test(1)
-      test(1, b=2)
-    "#
-  }
-
-  check! {
-    r#"
-      fn test(a, *v, b=10, **kw):
-        print a, v, b, kw
-
-      test(1, 2)
-      test(1, 2, b=3, c=4)
-    "#
-  }
+    test()
+  "#
 }
 
+check! {
+  function_with_param,
+  r#"
+    fn test(a):
+      print a
+
+    test(0)
+  "#
+}
+
+check! {
+  function_with_default_param,
+  r#"
+    fn test(a, b=10):
+      print a, b
+
+    test(1)
+    test(1, 2)
+  "#
+}
+
+/*
 #[test]
 fn closure() {
   check! {

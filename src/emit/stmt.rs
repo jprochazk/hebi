@@ -10,7 +10,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       ast::StmtKind::If(v) => self.emit_if_stmt(v, stmt.span),
       ast::StmtKind::Loop(v) => self.emit_loop_stmt(v, stmt.span),
       ast::StmtKind::Ctrl(v) => self.emit_ctrl_stmt(v, stmt.span),
-      ast::StmtKind::Func(v) => self.emit_func_stmt(v, stmt.span),
+      ast::StmtKind::Func(v) => self.emit_func_stmt(v),
       ast::StmtKind::Class(v) => self.emit_class_stmt(v, stmt.span),
       ast::StmtKind::Expr(v) => self.emit_expr_stmt(v),
       ast::StmtKind::Pass => self.emit_pass_stmt(),
@@ -27,24 +27,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_var_stmt(&mut self, stmt: &'src ast::Var<'src>, span: Span) {
     self.emit_expr(&stmt.value);
-    if self.is_global_scope() {
-      if self.module.is_root {
-        let name = self.constant_name(stmt.name.lexeme());
-        self.builder().emit(StoreGlobal { name }, span);
-      } else {
-        let idx = self.declare_module_var(stmt.name.lexeme());
-        self.builder().emit(StoreModuleVar { idx }, span);
-      }
-    } else {
-      let register = self.alloc_register();
-      self.builder().emit(
-        Store {
-          reg: register.access(),
-        },
-        span,
-      );
-      self.declare_local(stmt.name.lexeme(), register);
-    }
+    self.emit_var(stmt.name.lexeme(), span)
   }
 
   fn emit_if_stmt(&mut self, stmt: &'src ast::If<'src>, span: Span) {
@@ -164,7 +147,6 @@ impl<'cx, 'src> State<'cx, 'src> {
     end_value.access();
     item_value.access();
 
-    // @end:
     self.builder().bind_label(end);
     self.current_function().leave_scope();
   }
@@ -245,8 +227,14 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  fn emit_func_stmt(&mut self, _: &'src ast::Func<'src>, _: Span) {
-    todo!()
+  fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) {
+    let name = stmt.name.lexeme();
+
+    let function = self.emit_function(name, stmt.params.has_self, &stmt.params.pos, &stmt.body);
+
+    let desc = self.constant_value(function);
+    self.builder().emit(MakeFn { desc }, stmt.name.span);
+    self.emit_var(stmt.name.lexeme(), stmt.name.span);
   }
 
   fn emit_class_stmt(&mut self, _: &'src ast::Class<'src>, _: Span) {
