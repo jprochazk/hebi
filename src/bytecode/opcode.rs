@@ -68,8 +68,8 @@ instructions! {
   Call(callee: Register, args: Count),
   Call0,
   Import(path: Constant, dst: Register),
-  Ret,
-  Suspend,
+  Return,
+  Yield,
 }
 
 operand_type!(Register, u32, "r{v}");
