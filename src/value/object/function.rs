@@ -1,10 +1,11 @@
+use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::ptr::NonNull;
 
 use super::module::ModuleId;
 use super::ptr::Ptr;
 use super::{List, Object, String};
-use crate::bytecode::disasm;
+use crate::bytecode::{disasm, opcode as op};
 use crate::value::constant::Constant;
 
 #[derive(Debug)]
@@ -50,11 +51,17 @@ pub struct FunctionDescriptor {
   pub name: Ptr<String>,
   pub is_generator: bool,
   pub params: Params,
-  pub num_upvalues: usize,
+  pub upvalues: RefCell<Vec<Upvalue>>,
   pub frame_size: usize,
   pub instructions: NonNull<[u8]>,
   pub constants: NonNull<[Constant]>,
   // TODO: spans
+}
+
+#[derive(Debug)]
+pub enum Upvalue {
+  Register(op::Register),
+  Upvalue(op::Upvalue),
 }
 
 fn vec_to_nonnull_ptr<T>(v: Vec<T>) -> NonNull<[T]> {
@@ -66,7 +73,7 @@ impl FunctionDescriptor {
     name: Ptr<String>,
     is_generator: bool,
     params: Params,
-    num_upvalues: usize,
+    upvalues: Vec<Upvalue>,
     frame_size: usize,
     instructions: Vec<u8>,
     constants: Vec<Constant>,
@@ -77,7 +84,7 @@ impl FunctionDescriptor {
       name,
       is_generator,
       params,
-      num_upvalues,
+      upvalues: RefCell::new(upvalues),
       frame_size,
       instructions,
       constants,
@@ -87,34 +94,96 @@ impl FunctionDescriptor {
 
 impl FunctionDescriptor {
   pub fn disassemble(&self) -> Disassembly {
-    Disassembly(self)
+    self.disassemble_inner(None, false)
+  }
+
+  pub fn disassemble_as_method(
+    &self,
+    class_name: Ptr<String>,
+    is_meta_method: bool,
+  ) -> Disassembly {
+    self.disassemble_inner(Some(class_name), is_meta_method)
+  }
+
+  fn disassemble_inner(
+    &self,
+    class_name: Option<Ptr<String>>,
+    is_meta_method: bool,
+  ) -> Disassembly {
+    Disassembly {
+      function: self,
+      class_name,
+      is_meta_method,
+    }
   }
 }
 
-pub struct Disassembly<'a>(&'a FunctionDescriptor);
+pub struct Disassembly<'a> {
+  function: &'a FunctionDescriptor,
+  class_name: Option<Ptr<String>>,
+  is_meta_method: bool,
+}
 
 impl<'a> Display for Disassembly<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let function = self.0;
+    let function = self.function;
 
     let (bytecode, constants) =
       unsafe { (function.instructions.as_ref(), function.constants.as_ref()) };
 
     for constant in constants {
-      if let Constant::Function(function) = constant {
-        writeln!(f, "{}\n", function.disassemble())?;
+      match constant {
+        Constant::Function(function) => {
+          writeln!(f, "{}\n", function.disassemble())?;
+        }
+        Constant::Class(class) => {
+          writeln!(
+            f,
+            "{}\n",
+            class.init.disassemble_as_method(class.name.clone(), true)
+          )?;
+          for method in class.meta_methods.values() {
+            writeln!(
+              f,
+              "{}\n",
+              method.disassemble_as_method(class.name.clone(), true)
+            )?;
+          }
+          for method in class.methods.values() {
+            writeln!(
+              f,
+              "{}\n",
+              method.disassemble_as_method(class.name.clone(), false)
+            )?;
+          }
+        }
+        _ => {}
       }
     }
 
+    let class_name = match &self.class_name {
+      Some(class_name) => format!("{class_name}."),
+      None => std::string::String::new(),
+    };
+    let symbol = if self.is_meta_method { "@" } else { "" };
     writeln!(
       f,
-      "function `{}` (registers: {}, upvalues: {}, length: {}, constants: {})",
+      "function `{class_name}{symbol}{}` (registers: {}, length: {}, constants: {})",
       function.name,
       function.frame_size,
-      function.num_upvalues,
       bytecode.len(),
       constants.len(),
     )?;
+    if !function.upvalues.borrow().is_empty() {
+      writeln!(f, ".upvalues")?;
+      for (index, upvalue) in function.upvalues.borrow().iter().enumerate() {
+        match upvalue {
+          Upvalue::Register(r) => writeln!(f, "  {index} <- {r}",)?,
+          Upvalue::Upvalue(u) => writeln!(f, "  {index} <- {u}",)?,
+        }
+      }
+    }
+    writeln!(f, ".code")?;
     writeln!(
       f,
       "{}",

@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 
 use super::function::Params;
 use super::ptr::Ptr;
-use super::{Function, Object, String, Table};
+use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate::syntax::ast;
 
 #[derive(Debug)]
@@ -60,9 +60,9 @@ pub struct ClassDescriptor {
   pub name: Ptr<String>,
   pub params: Params,
   pub is_derived: bool,
-  pub meta: IndexSet<ast::Meta>,
-  pub methods: IndexSet<Ptr<String>>,
-  pub fields: IndexSet<Ptr<String>>,
+  pub init: Ptr<FunctionDescriptor>,
+  pub meta_methods: IndexMap<ast::Meta, Ptr<FunctionDescriptor>>,
+  pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
 }
 
 impl Display for ClassDescriptor {
