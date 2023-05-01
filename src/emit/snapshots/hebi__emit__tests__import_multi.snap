@@ -10,7 +10,7 @@ print b1, b2
 
 
 # Func:
-function `test` (registers: 6, upvalues: 0, length: 53, constants: 6)
+function `main` (registers: 6, upvalues: 0, length: 53, constants: 6)
   0  | import [0] r0; test.a0
   3  | load r0
   5  | load_field [1]; a1
@@ -31,10 +31,10 @@ function `test` (registers: 6, upvalues: 0, length: 53, constants: 6)
   36 | store r5
   38 | print_n r4 2
   41 | load r3
-  43 | store r0
+  43 | store r4
   45 | load r2
-  47 | store r1
-  49 | print_n r0 2
+  47 | store r5
+  49 | print_n r4 2
   52 | ret
 
 

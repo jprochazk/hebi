@@ -84,11 +84,11 @@ impl RegAlloc {
 
   pub fn alloc(&mut self) -> Register {
     let (index, register) = self.0.borrow_mut().alloc();
-    Register {
+    Register(RegisterKind::Direct {
       state: self.0.clone(),
-      register,
       index,
-    }
+      register,
+    })
   }
 
   pub fn alloc_slice(&mut self, n: usize) -> Slice {
@@ -106,19 +106,37 @@ impl RegAlloc {
 }
 
 #[derive(Clone)]
-pub struct Register {
-  state: Rc<RefCell<State>>,
-  register: usize,
-  index: usize,
+pub struct Register(RegisterKind);
+
+#[derive(Clone)]
+enum RegisterKind {
+  Direct {
+    state: Rc<RefCell<State>>,
+    index: usize,
+    register: usize,
+  },
+  Ref {
+    item: SliceItem,
+  },
 }
 
 impl Register {
   pub fn access(&self) -> op::Register {
-    self.state.borrow_mut().access(self.index);
-    op::Register(self.register as u32)
+    match &self.0 {
+      RegisterKind::Direct {
+        state,
+        index,
+        register,
+      } => {
+        state.borrow_mut().access(*index);
+        op::Register(*register as u32)
+      }
+      RegisterKind::Ref { item } => item.access(),
+    }
   }
 }
 
+#[derive(Clone)]
 pub struct Slice {
   state: Rc<RefCell<State>>,
   slice: Range<usize>,
@@ -132,8 +150,51 @@ impl Slice {
     op::Register((self.slice.start + n) as u32)
   }
 
+  pub fn get(&self, n: usize) -> Register {
+    Register(RegisterKind::Ref {
+      item: SliceItem {
+        slice: self.clone(),
+        n,
+      },
+    })
+  }
+
+  pub fn offset(&self, offset: usize) -> SliceRef {
+    SliceRef {
+      slice: self.clone(),
+      offset,
+    }
+  }
+
   pub fn len(&self) -> usize {
     self.slice.len()
+  }
+}
+
+pub struct SliceRef {
+  slice: Slice,
+  offset: usize,
+}
+
+impl SliceRef {
+  pub fn access(&self, n: usize) -> op::Register {
+    self.slice.access(self.offset + n)
+  }
+
+  pub fn get(&self, n: usize) -> Register {
+    self.slice.get(self.offset + n)
+  }
+}
+
+#[derive(Clone)]
+struct SliceItem {
+  slice: Slice,
+  n: usize,
+}
+
+impl SliceItem {
+  pub fn access(&self) -> op::Register {
+    self.slice.access(self.n)
   }
 }
 
@@ -199,17 +260,71 @@ fn allocate_slice(n: usize, free: &mut Free, registers: &mut usize) -> Range<usi
     let reg = allocate(free, registers);
     reg..reg + 1
   } else {
-    match find_contiguous_registers(n, free) {
-      Some(slice) => slice,
-      None => {
-        let start = *registers;
-        *registers += n;
-        start..*registers
-      }
+    // fast path: no free registers OR no registers allocated yet
+    if free.is_empty() || *registers == 0 {
+      let start = *registers;
+      *registers += n;
+      return start..*registers;
     }
+
+    // TODO: combine `find_contiguous_registers` loop and the partial alloc loop
+    // into one
+    //
+    // if `free[range.start] == *registers - 1`
+    // and `range.len() != N` then return it as a partial range
+    // which will be filled in with fresh registers.
+    //
+    // then benchmark it against current setup, because it's not clear which will be
+    // faster. current setup could be faster, because we are way more likely to
+    // find a contiguous range at the top of the register file. new setup could
+    // be faster, because it would have better theoretical time complexity,
+    // because we would only iterate once, but we'd have to iterate from the bottom
+    // of the register file instead of from the top, which means we may be far
+    // less likely to actually hit a valid contiguous range.
+
+    // slow path: find contiguous register range
+    if let Some(range) = find_contiguous_registers(n, free) {
+      let slice = &free[range.clone()];
+      let end = slice.first().unwrap().0 + 1;
+      let start = slice.last().unwrap().0;
+      let _ = free.drain(range);
+      return start..end;
+    }
+
+    // slower path: find at least 1 and at most N-1 top-most free registers
+    // and fill the rest of N with fresh registers
+    if free[0].0 == *registers - 1 {
+      let mut count = 1;
+      for i in 1..free.len() {
+        let (a, b) = (free[i - 1].0, free[i].0);
+        if a != b + 1 {
+          break;
+        }
+        count += 1;
+      }
+
+      let slice = &free[0..count];
+      let mut end = slice.first().unwrap().0 + 1;
+      let start = slice.last().unwrap().0;
+      let _ = free.drain(0..count);
+
+      while end < n {
+        end += 1;
+        *registers += 1;
+      }
+
+      return start..end;
+    }
+
+    // slowest path: allocate entire slice using fresh registers
+    let start = *registers;
+    *registers += n;
+    start..*registers
   }
 }
 
+/// Returns a range which can be used to slice `free`
+/// to get a slice of contiguous registers.
 fn find_contiguous_registers(n: usize, free: &Free) -> Option<Range<usize>> {
   assert!(n >= 2);
 
@@ -268,6 +383,10 @@ impl<T: Ord> SortedVec<T> {
     self.inner.len()
   }
 
+  fn is_empty(&self) -> bool {
+    self.inner.is_empty()
+  }
+
   /// Insert the element into the sorted vec.
   ///
   /// This attemps to insert the element to the top of the container,
@@ -304,7 +423,7 @@ impl<T: Ord> SortedVec<T> {
   }
 }
 
-fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [T; N] {
+/* fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [T; N] {
   let mut array: [_; N] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
   for (i, value) in array.iter_mut().enumerate() {
     *value = std::mem::MaybeUninit::new(f(i));
@@ -312,13 +431,14 @@ fn init_array_with<T: Sized, const N: usize>(mut f: impl FnMut(usize) -> T) -> [
   let out = unsafe { std::ptr::read(&mut array as *mut _ as *mut [T; N]) };
   std::mem::forget(array);
   out
-}
+} */
 
-impl<T> std::ops::Index<usize> for SortedVec<T> {
-  type Output = T;
+impl<T, I: std::slice::SliceIndex<[T]>> std::ops::Index<I> for SortedVec<T> {
+  type Output = I::Output;
 
-  fn index(&self, index: usize) -> &Self::Output {
-    self.inner.index(index)
+  #[inline]
+  fn index(&self, index: I) -> &Self::Output {
+    std::ops::Index::index(&self.inner, index)
   }
 }
 

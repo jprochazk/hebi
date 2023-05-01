@@ -109,6 +109,43 @@ fn alloc_register_slice() {
 }
 
 #[test]
+fn allocate_slice_duplicate() {
+  // registers: [x0, +1, +2]
+  let mut registers = 3;
+  let mut free = Free::new();
+
+  free.insert(Reverse(1));
+  free.insert(Reverse(2));
+
+  assert_eq!(1..3, allocate_slice(2, &mut free, &mut registers));
+  assert!(free.is_empty());
+  assert_eq!(registers, 3);
+
+  assert_eq!(3..5, allocate_slice(2, &mut free, &mut registers));
+  assert!(free.is_empty());
+  assert_eq!(registers, 5);
+
+  for i in 1..5 {
+    free.insert(Reverse(i));
+  }
+
+  assert_eq!(1..5, allocate_slice(4, &mut free, &mut registers));
+  assert!(free.is_empty());
+  assert_eq!(registers, 5);
+}
+
+#[test]
+fn allocate_slice_partial_with_fresh() {
+  let mut registers = 1;
+  let mut free = Free::new();
+  free.insert(Reverse(0));
+
+  assert_eq!(0..4, allocate_slice(4, &mut free, &mut registers));
+  assert!(free.is_empty());
+  assert_eq!(registers, 4);
+}
+
+#[test]
 fn sorted_vec_insert() {
   let mut vec = SortedVec::new();
   for i in 0..10 {
