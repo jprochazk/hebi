@@ -227,15 +227,7 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_get_var_expr(&mut self, expr: &'src ast::GetVar<'src>, span: Span) {
-    match self.resolve_var(expr.name.lexeme()) {
-      Get::Local(reg) => self.builder().emit(Load { reg: reg.access() }, span),
-      Get::Upvalue(idx) => self.builder().emit(LoadUpvalue { idx }, span),
-      Get::ModuleVar(idx) => self.builder().emit(LoadModuleVar { idx }, span),
-      Get::Global => {
-        let name = self.constant_name(&expr.name);
-        self.builder().emit(LoadGlobal { name }, span)
-      }
-    }
+    self.emit_get(expr.name.lexeme(), span);
   }
 
   fn emit_set_var_expr(&mut self, expr: &'src ast::SetVar<'src>, span: Span) {

@@ -36,6 +36,7 @@ instructions! {
   LoadSmi(value: Smi),
   MakeFn(desc: Constant),
   MakeClass(desc: Constant),
+  MakeClassDerived(desc: Constant),
   // TODO: MakeListConst / MakeTableConst for statically known values
   MakeList(start: Register, count: Count),
   MakeListEmpty,

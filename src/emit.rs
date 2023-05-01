@@ -208,11 +208,36 @@ impl<'cx, 'src> State<'cx, 'src> {
       .map(|v| op::ModuleVar(v as u32))
   }
 
+  fn emit_get(&mut self, name: impl Into<Cow<'src, str>>, span: Span) {
+    let name = name.into();
+    match self.resolve_var(name.clone()) {
+      Get::Local(reg) => self.builder().emit(Load { reg: reg.access() }, span),
+      Get::Upvalue(idx) => self.builder().emit(LoadUpvalue { idx }, span),
+      Get::ModuleVar(idx) => self.builder().emit(LoadModuleVar { idx }, span),
+      Get::Global => {
+        let name = self.constant_name(name);
+        self.builder().emit(LoadGlobal { name }, span)
+      }
+    }
+  }
+
+  // TODO: refactor this to not be so hacky
+  // the class initializer needs to be prefixed by a bit of code to initialize
+  // fields
+
   fn emit_function(&mut self, func: &'src ast::Func<'src>) -> Ptr<object::FunctionDescriptor> {
+    self.emit_function_with_prelude(func, |_, _| {})
+  }
+
+  fn emit_function_with_prelude<F: FnOnce(&mut Self, Register)>(
+    &mut self,
+    func: &'src ast::Func<'src>,
+    prelude: F,
+  ) -> Ptr<object::FunctionDescriptor> {
     self.module.functions.push(Function::new(
       self.cx,
       func.name.lexeme(),
-      function::Params::from_ast(func.params.has_self, &func.params.pos),
+      function::Params::from_ast_func(func),
       func.has_yield,
     ));
 
@@ -222,6 +247,10 @@ impl<'cx, 'src> State<'cx, 'src> {
       true => (None, Some(param_slice.get(0)), param_slice.offset(1)),
       false => (Some(param_slice.get(0)), None, param_slice.offset(1)),
     };
+
+    if let Some(receiver) = &receiver {
+      prelude(self, receiver.clone());
+    }
 
     // declare function and receiver
     // the function param only exists for plain functions,
@@ -282,7 +311,14 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.builder().emit(LoadNone, end_span);
     self.builder().emit(Return, end_span);
 
-    self.module.functions.pop().unwrap().finish()
+    let function = self.module.functions.pop().unwrap().finish();
+
+    self
+      .current_function()
+      .inner_functions
+      .push(function.clone());
+
+    function
   }
 
   fn emit_module(mut self) -> Module<'cx, 'src> {
@@ -296,17 +332,33 @@ impl<'cx, 'src> State<'cx, 'src> {
 }
 
 impl function::Params {
-  pub fn from_ast(has_self: bool, params: &[ast::Param]) -> Self {
+  pub fn from_ast_func(func: &ast::Func) -> Self {
     let mut min = 0;
     let mut max = 0;
-    for param in params {
+    for param in func.params.pos.iter() {
       if param.default.is_none() {
         min += 1;
       }
       max += 1;
     }
 
-    Self { has_self, min, max }
+    Self {
+      has_self: func.params.has_self,
+      min,
+      max,
+    }
+  }
+
+  pub fn from_ast_class(class: &ast::Class) -> Self {
+    if let Some((_, init)) = class.members.meta.iter().find(|m| m.0 == ast::Meta::Init) {
+      Self::from_ast_func(init)
+    } else {
+      Self {
+        has_self: false,
+        min: 0,
+        max: 0,
+      }
+    }
   }
 }
 
@@ -332,6 +384,8 @@ struct Function<'cx, 'src> {
 
   is_in_opt_expr: bool,
   current_loop: Option<Loop>,
+
+  inner_functions: Vec<Ptr<object::FunctionDescriptor>>,
 }
 
 impl<'cx, 'src> Function<'cx, 'src> {
@@ -358,6 +412,8 @@ impl<'cx, 'src> Function<'cx, 'src> {
 
       is_in_opt_expr: false,
       current_loop: None,
+
+      inner_functions: Vec::new(),
     }
   }
 
@@ -393,7 +449,21 @@ impl<'cx, 'src> Function<'cx, 'src> {
   fn finish(self) -> Ptr<object::FunctionDescriptor> {
     let (frame_size, register_map) = self.regalloc.finish();
     let (mut bytecode, constants) = self.builder.finish();
+
+    // patch registers in bytecode
     op::patch_registers(&mut bytecode, &register_map);
+
+    // patch registers in inner functions
+    for function in self.inner_functions.iter() {
+      for upvalue in function.upvalues.borrow_mut().iter_mut() {
+        match upvalue {
+          function::Upvalue::Register(register) => {
+            *register = op::Register(register_map[register.0 as usize] as u32)
+          }
+          function::Upvalue::Upvalue(_) => {}
+        }
+      }
+    }
 
     self.cx.alloc(object::FunctionDescriptor::new(
       self
@@ -401,7 +471,14 @@ impl<'cx, 'src> Function<'cx, 'src> {
         .alloc(object::String::new(self.name.to_string().into())),
       self.is_generator,
       self.params,
-      self.upvalues.len(),
+      self
+        .upvalues
+        .values()
+        .map(|v| match &v.src {
+          UpvalueSource::Register(register) => function::Upvalue::Register(register.access()),
+          UpvalueSource::Upvalue(index) => function::Upvalue::Upvalue(*index),
+        })
+        .collect(),
       frame_size,
       bytecode,
       constants,
