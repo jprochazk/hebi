@@ -6,7 +6,7 @@ expression: snapshot
 a(b(c()))
 
 # Func:
-function `test` (registers: 4, upvalues: 0, length: 22, constants: 3)
+function `main` (registers: 4, upvalues: 0, length: 22, constants: 3)
   0  | load_global [0]; a
   2  | store r0
   4  | load_global [1]; b

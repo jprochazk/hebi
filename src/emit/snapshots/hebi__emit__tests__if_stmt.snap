@@ -12,7 +12,7 @@ else:
 
 
 # Func:
-function `test` (registers: 0, upvalues: 0, length: 20, constants: 7)
+function `main` (registers: 0, upvalues: 0, length: 20, constants: 7)
   0  | load_true
   1  | jump_if_false 7
   3  | load_global [1]; a

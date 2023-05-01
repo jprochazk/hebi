@@ -10,7 +10,7 @@ loop:
 
 
 # Func:
-function `test` (registers: 0, upvalues: 0, length: 12, constants: 3)
+function `main` (registers: 0, upvalues: 0, length: 12, constants: 3)
   0  | load_true
   1  | jump_if_false 6
   3  | jump 4

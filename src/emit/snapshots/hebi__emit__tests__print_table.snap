@@ -6,7 +6,7 @@ expression: snapshot
 print { a: 0, b: 1, c: 2 }
 
 # Func:
-function `test` (registers: 6, upvalues: 0, length: 29, constants: 3)
+function `main` (registers: 6, upvalues: 0, length: 29, constants: 3)
   0  | load_const [0]; a
   2  | store r0
   4  | load_smi 0

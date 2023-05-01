@@ -11,7 +11,7 @@ else:
 
 
 # Func:
-function `test` (registers: 0, upvalues: 0, length: 17, constants: 4)
+function `main` (registers: 0, upvalues: 0, length: 17, constants: 4)
   0  | load_global [0]; a
   2  | jump_if_false 11
   4  | load_global [0]; a
