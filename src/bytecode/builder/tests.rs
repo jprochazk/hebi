@@ -77,7 +77,7 @@ fn emit_forward_jump_8bit() {
   builder.emit(Nop, 0..0);
   builder.emit(Nop, 0..0);
   builder.bind_label(test);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, constants ) = builder.finish();
 
@@ -92,7 +92,7 @@ fn emit_forward_jump_8bit() {
       Opcode::Nop as u8,
       Opcode::Nop as u8,
       Opcode::Nop as u8,
-      Opcode::Ret as u8,
+      Opcode::Return as u8,
     ],
   );
   
@@ -109,13 +109,13 @@ fn emit_forward_jump_8bit_overflow() {
     builder.emit(Nop, 0..0);
   }
   builder.bind_label(test);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
   assert_eq!(bytecode[..2], [Opcode::JumpConst as u8, /* index */ 0],);
   assert!(bytecode[2..256].iter().all(|v| *v == Opcode::Nop as u8));
-  assert_eq!(bytecode[256..], [Opcode::Ret as u8]);
+  assert_eq!(bytecode[256..], [Opcode::Return as u8]);
   assert_eq!(constants.last().unwrap().as_offset().unwrap().0, 256);
 }
 
@@ -138,7 +138,7 @@ fn emit_forward_jump_16bit() {
   }
   let jump_target = builder.bytecode.len() as u16;
   builder.bind_label(test);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, _) = builder.finish();
 
@@ -155,7 +155,7 @@ fn emit_forward_jump_16bit() {
   assert!(bytecode[jump_len..jump_len + num_nops]
     .iter()
     .all(|v| *v == Opcode::Nop as u8));
-  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Ret as u8]);
+  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Return as u8]);
 }
 
 #[test]
@@ -177,7 +177,7 @@ fn emit_forward_jump_16bit_overflow() {
   }
   let jump_target = builder.bytecode.len() as u32;
   builder.bind_label(test);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
@@ -194,7 +194,7 @@ fn emit_forward_jump_16bit_overflow() {
   assert!(bytecode[jump_len..jump_len + num_nops]
     .iter()
     .all(|v| *v == Opcode::Nop as u8));
-  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Ret as u8]);
+  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Return as u8]);
   assert_eq!(
     constants.last().unwrap().as_offset().unwrap().0,
     jump_target
@@ -220,7 +220,7 @@ fn emit_forward_jump_32bit() {
   }
   let jump_target = builder.bytecode.len() as u32;
   builder.bind_label(test);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, _) = builder.finish();
 
@@ -239,7 +239,7 @@ fn emit_forward_jump_32bit() {
   assert!(bytecode[jump_len..jump_len + num_nops]
     .iter()
     .all(|v| *v == Opcode::Nop as u8));
-  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Ret as u8]);
+  assert_eq!(bytecode[jump_len + num_nops..], [Opcode::Return as u8]);
 }
 
 #[test]
@@ -253,7 +253,7 @@ fn emit_jump_loop() {
   builder.emit(Nop, 0..0);
   builder.emit(Nop, 0..0);
   builder.emit_jump_loop(&start, 0..0);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
@@ -267,7 +267,7 @@ fn emit_jump_loop() {
       Opcode::Nop as u8,
       Opcode::JumpLoop as u8,
       /* offset */ (4 - 1),
-      Opcode::Ret as u8,
+      Opcode::Return as u8,
     ]
   );
 
@@ -286,7 +286,7 @@ fn emit_multi_label() {
   }
   builder.emit(Nop, 0..0);
   builder.bind_label(labels);
-  builder.emit(Ret, 0..0);
+  builder.emit(Return, 0..0);
 
   let (bytecode, constants) = builder.finish();
 
@@ -302,7 +302,7 @@ fn emit_multi_label() {
       Opcode::Nop as u8,
       Opcode::Jump as u8, /*offset*/ 3,
       Opcode::Nop as u8,
-      Opcode::Ret as u8,
+      Opcode::Return as u8,
     ]
   );
 

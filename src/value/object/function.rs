@@ -27,8 +27,28 @@ impl Display for Function {
 }
 
 #[derive(Debug)]
+pub struct Generator {
+  pub descriptor: Ptr<FunctionDescriptor>,
+  pub upvalues: Ptr<List>,
+  pub module: ModuleId,
+}
+
+impl Object for Generator {
+  fn type_name(&self) -> &'static str {
+    "Generator"
+  }
+}
+
+impl Display for Generator {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<generator `{}`>", self.descriptor.name)
+  }
+}
+
+#[derive(Debug)]
 pub struct FunctionDescriptor {
   pub name: Ptr<String>,
+  pub is_generator: bool,
   pub params: Params,
   pub num_upvalues: usize,
   pub frame_size: usize,
@@ -44,6 +64,7 @@ fn vec_to_nonnull_ptr<T>(v: Vec<T>) -> NonNull<[T]> {
 impl FunctionDescriptor {
   pub fn new(
     name: Ptr<String>,
+    is_generator: bool,
     params: Params,
     num_upvalues: usize,
     frame_size: usize,
@@ -54,6 +75,7 @@ impl FunctionDescriptor {
     let constants = vec_to_nonnull_ptr(constants);
     Self {
       name,
+      is_generator,
       params,
       num_upvalues,
       frame_size,

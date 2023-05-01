@@ -66,7 +66,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       module: Module {
         is_root,
         vars: IndexSet::new(),
-        functions: vec![Function::new(cx, name, function::Params::default())],
+        functions: vec![Function::new(cx, name, function::Params::default(), false)],
       },
     }
   }
@@ -208,24 +208,17 @@ impl<'cx, 'src> State<'cx, 'src> {
       .map(|v| op::ModuleVar(v as u32))
   }
 
-  fn emit_function(
-    &mut self,
-    name: impl Into<Cow<'src, str>>,
-    has_self: bool,
-    params: &'src [ast::Param<'src>],
-    body: &'src [ast::Stmt<'src>],
-  ) -> Ptr<object::FunctionDescriptor> {
-    let name = name.into();
-
+  fn emit_function(&mut self, func: &'src ast::Func<'src>) -> Ptr<object::FunctionDescriptor> {
     self.module.functions.push(Function::new(
       self.cx,
-      name.clone(),
-      function::Params::from_ast(has_self, params),
+      func.name.lexeme(),
+      function::Params::from_ast(func.params.has_self, &func.params.pos),
+      func.has_yield,
     ));
 
     // allocate registers
-    let param_slice = self.alloc_register_slice(1 + params.len());
-    let (func, receiver, positional) = match has_self {
+    let param_slice = self.alloc_register_slice(1 + func.params.pos.len());
+    let (callee, receiver, positional) = match func.params.has_self {
       true => (None, Some(param_slice.get(0)), param_slice.offset(1)),
       false => (Some(param_slice.get(0)), None, param_slice.offset(1)),
     };
@@ -237,15 +230,15 @@ impl<'cx, 'src> State<'cx, 'src> {
     // the point of this is to give access to:
     // - `self` in methods.
     // - the function being called in recursive functions.
-    if let Some(func) = &func {
-      self.declare_local(name.clone(), func.clone());
+    if let Some(callee) = &callee {
+      self.declare_local(func.name.lexeme(), callee.clone());
     }
     if let Some(receiver) = &receiver {
       self.declare_local("self", receiver.clone());
     }
 
     // emit default values
-    for (i, param) in params.iter().enumerate() {
+    for (i, param) in func.params.pos.iter().enumerate() {
       if let Some(default) = &param.default {
         let next = self.builder().label("next");
         self.builder().emit(
@@ -270,20 +263,24 @@ impl<'cx, 'src> State<'cx, 'src> {
     // declare parameters
     // this happens *after* emitting the defaults, because the
     // defaults should not be able to access the parameters
-    for (i, param) in params.iter().enumerate() {
+    for (i, param) in func.params.pos.iter().enumerate() {
       self.declare_local(param.name.lexeme(), positional.get(i));
     }
 
     // emit body
-    for stmt in body.iter() {
+    for stmt in func.body.iter() {
       self.emit_stmt(stmt);
     }
 
     // all functions return `none` by default
     // TODO: only emit this if `exit_seen` is false
-    let end_span = body.last().map(|stmt| stmt.span).unwrap_or((0..0).into());
+    let end_span = func
+      .body
+      .last()
+      .map(|stmt| stmt.span)
+      .unwrap_or((0..0).into());
     self.builder().emit(LoadNone, end_span);
-    self.builder().emit(Ret, end_span);
+    self.builder().emit(Return, end_span);
 
     self.module.functions.pop().unwrap().finish()
   }
@@ -292,7 +289,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
-    self.builder().emit(Ret, 0..0);
+    self.builder().emit(Return, 0..0);
 
     self.module
   }
@@ -322,6 +319,8 @@ struct Module<'cx, 'src> {
 struct Function<'cx, 'src> {
   cx: &'cx Context,
 
+  is_generator: bool,
+
   name: Cow<'src, str>,
   builder: BytecodeBuilder,
   regalloc: RegAlloc,
@@ -336,9 +335,16 @@ struct Function<'cx, 'src> {
 }
 
 impl<'cx, 'src> Function<'cx, 'src> {
-  fn new(cx: &'cx Context, name: impl Into<Cow<'src, str>>, params: function::Params) -> Self {
+  fn new(
+    cx: &'cx Context,
+    name: impl Into<Cow<'src, str>>,
+    params: function::Params,
+    is_generator: bool,
+  ) -> Self {
     Self {
       cx,
+
+      is_generator,
 
       name: name.into(),
       builder: BytecodeBuilder::new(),
@@ -393,6 +399,7 @@ impl<'cx, 'src> Function<'cx, 'src> {
       self
         .cx
         .alloc(object::String::new(self.name.to_string().into())),
+      self.is_generator,
       self.params,
       self.upvalues.len(),
       frame_size,

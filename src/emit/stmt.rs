@@ -199,15 +199,22 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_ctrl_stmt(&mut self, stmt: &'src ast::Ctrl<'src>, span: Span) {
     match stmt {
-      ast::Ctrl::Return(v) => {
-        if let Some(value) = v.value.as_ref() {
+      ast::Ctrl::Return(stmt) => {
+        if let Some(value) = stmt.value.as_ref() {
           self.emit_expr(value);
         } else {
           self.builder().emit(LoadNone, span);
         }
-        self.builder().emit(Ret, span);
+        self.builder().emit(Return, span);
       }
-      ast::Ctrl::Yield(_) => todo!(),
+      ast::Ctrl::Yield(stmt) => {
+        if let Some(value) = stmt.value.as_ref() {
+          self.emit_expr(value);
+        } else {
+          self.builder().emit(LoadNone, span);
+        }
+        self.builder().emit(Yield, span);
+      }
       ast::Ctrl::Continue => {
         let function = self.current_function();
         let loop_ = function
@@ -228,10 +235,7 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) {
-    let name = stmt.name.lexeme();
-
-    let function = self.emit_function(name, stmt.params.has_self, &stmt.params.pos, &stmt.body);
-
+    let function = self.emit_function(stmt);
     let desc = self.constant_value(function);
     self.builder().emit(MakeFn { desc }, stmt.name.span);
     self.emit_var(stmt.name.lexeme(), stmt.name.span);
