@@ -141,6 +141,39 @@ check! {
   "#
 }
 
+check! {
+  generator_no_params,
+  r#"
+    fn test():
+      yield "a"
+      return "b"
+    
+    test()
+  "#
+}
+
+check! {
+  generator_with_param,
+  r#"
+    fn test(a):
+      yield a
+      return a
+    
+    test()
+  "#
+}
+
+check! {
+  generator_with_default_param,
+  r#"
+    fn test(a, b=10):
+      yield a
+      return b
+    
+    test()
+  "#
+}
+
 /*
 #[test]
 fn closure() {

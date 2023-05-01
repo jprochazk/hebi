@@ -11,7 +11,6 @@ pub struct RegAlloc(Rc<RefCell<State>>);
 
 #[derive(Default)]
 struct State {
-  preserve: Vec<Option<Register>>,
   intervals: Vec<Interval>,
   event: usize,
   register: usize,
