@@ -9,7 +9,8 @@ v["a"] = 1
 
 
 # Func:
-function `main` (registers: 2, upvalues: 0, length: 36, constants: 2)
+function `main` (registers: 2, length: 36, constants: 2)
+.code
   0  | load_const [0]; a
   2  | store r0
   4  | load_smi 0

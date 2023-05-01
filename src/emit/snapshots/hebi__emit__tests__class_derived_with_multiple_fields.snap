@@ -1,0 +1,32 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+class T(U):
+  a = 0
+  b = 1
+
+
+# Func:
+function `T.@init` (registers: 1, length: 12, constants: 2)
+.code
+  0  | load_smi 0
+  2  | store_field r0 [0]; a
+  5  | load_smi 1
+  7  | store_field r0 [1]; b
+  10 | load_none
+  11 | return
+
+
+
+function `main` (registers: 0, length: 7, constants: 3)
+.code
+  0 | load_global [1]; U
+  2 | make_class_derived [0]; <class `T` descriptor>
+  4 | store_global [2]; T
+  6 | return
+
+
+
+

@@ -8,7 +8,8 @@ print v
 
 
 # Func:
-function `main` (registers: 0, upvalues: 0, length: 8, constants: 1)
+function `main` (registers: 0, length: 8, constants: 1)
+.code
   0 | load_smi 0
   2 | store_global [0]; v
   4 | load_global [0]; v

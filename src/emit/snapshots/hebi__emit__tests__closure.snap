@@ -1,0 +1,67 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+fn a():
+  v := 0
+  fn b():
+    fn c():
+      fn d():
+        print v
+
+
+# Func:
+function `d` (registers: 1, length: 5, constants: 0)
+.upvalues
+  0 <- ^0
+.code
+  0 | load_upvalue ^0
+  2 | print
+  3 | load_none
+  4 | return
+
+
+
+function `c` (registers: 1, length: 6, constants: 1)
+.upvalues
+  0 <- ^0
+.code
+  0 | make_fn [0]; <function `d` descriptor>
+  2 | store r0
+  4 | load_none
+  5 | return
+
+
+
+function `b` (registers: 1, length: 6, constants: 1)
+.upvalues
+  0 <- r0
+.code
+  0 | make_fn [0]; <function `c` descriptor>
+  2 | store r0
+  4 | load_none
+  5 | return
+
+
+
+function `a` (registers: 1, length: 10, constants: 1)
+.code
+  0  | load_smi 0
+  2  | store r0
+  4  | make_fn [0]; <function `b` descriptor>
+  6  | store r0
+  8  | load_none
+  9  | return
+
+
+
+function `main` (registers: 0, length: 5, constants: 2)
+.code
+  0 | make_fn [0]; <function `a` descriptor>
+  2 | store_global [1]; a
+  4 | return
+
+
+
+

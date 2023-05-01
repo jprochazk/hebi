@@ -10,7 +10,8 @@ while true:
 
 
 # Func:
-function `main` (registers: 0, upvalues: 0, length: 15, constants: 2)
+function `main` (registers: 0, length: 15, constants: 2)
+.code
   0  | load_true
   1  | jump_if_false 13
   3  | load_true

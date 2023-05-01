@@ -8,7 +8,8 @@ for i in 0..=10:
 
 
 # Func:
-function `main` (registers: 2, upvalues: 0, length: 30, constants: 2)
+function `main` (registers: 2, length: 30, constants: 2)
+.code
   0  | load_smi 0
   2  | store r0
   4  | load_smi 10

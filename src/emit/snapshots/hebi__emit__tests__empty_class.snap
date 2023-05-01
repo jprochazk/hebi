@@ -1,0 +1,25 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+class T: pass
+
+
+# Func:
+function `T.@init` (registers: 1, length: 2, constants: 0)
+.code
+  0 | load_none
+  1 | return
+
+
+
+function `main` (registers: 0, length: 5, constants: 2)
+.code
+  0 | make_class [0]; <class `T` descriptor>
+  2 | store_global [1]; T
+  4 | return
+
+
+
+

@@ -174,57 +174,64 @@ check! {
   "#
 }
 
-/*
-#[test]
-fn closure() {
-  check! {
-    r#"
-      fn a():
-        v := 0
-        fn b():
-          print v
-        return b
-
-      a()()
-    "#
-  }
-
-  check! {
-    r#"
-      fn a():
-        v := 0
-        fn b():
-          fn c():
-            fn d():
-              print v
-    "#
-  }
-}
-*/
-/*
 check! {
+  closure_call,
   r#"
-    fn f0(a, b):
+    fn a():
+      v := 0
+      fn b():
+        print v
+      return b
+
+    a()()
+  "#
+}
+
+check! {
+  closure,
+  r#"
+    fn a():
+      v := 0
+      fn b():
+        fn c():
+          fn d():
+            print v
+  "#
+}
+
+check! {
+  conditional_exprs,
+  r#"
+    fn test0(a, b):
       a && b
+    fn test1(a, b):
       a || b
+    fn test2(a, b):
       a ?? b
+  "#
+}
 
-
-    fn f1_a(a, b, c, d):
+check! {
+  conditional_exprs_precedence,
+  r#"
+    fn test0(a, b, c, d):
       (a && b) || (c && d)
-    fn f1_b(a, b, c, d):
-        a && b  ||  c && d
-
-    fn f2_a(a, b, c, d):
+    fn test1(a, b, c, d):
+      a && b || c && d
+    fn test3(a, b, c, d):
       (a || (b && c)) || d
-    fn f2_b(a, b, c, d):
-      a ||  b && c  || d
+    fn test4(a, b, c, d):
+      a || b && c || d
+  "#
+}
 
+check! {
+  opt_chaining,
+  r#"
     fn f3(a, b, c, d):
       a ?? b ?? c
   "#
 }
-*/
 
 check! {
   if_stmt,
@@ -424,125 +431,125 @@ check!(method_call_1, r#"o.f(0)"#);
 
 check!(method_call_n, r#"o.f(1,2,3)"#);
 
-/*
-#[test]
-fn class_def() {
-  check! {
-    r#"
-      class T: pass
-    "#
-  }
-  check! {
-    r#"
-      class T:
-        v
-    "#
-  }
-  check! {
-    r#"
-      class T:
-        v = 0
-    "#
-  }
-  check! {
-    r#"
-      class T:
-        a = 0
-        b = 1
-    "#
-  }
-  check! {
-    r#"
-      class T:
-        v = 0
-        fn test(self):
-          print self.v
-    "#
-  }
-  check! {
-    r#"
+check! {
+  empty_class,
+  r#"
+    class T: pass
+  "#
+}
+
+check! {
+  class_with_field,
+  r#"
+    class T:
+      v = 0
+  "#
+}
+
+check! {
+  class_with_multiple_fields,
+  r#"
+    class T:
+      a = 0
+      b = 1
+  "#
+}
+
+check! {
+  class_with_field_and_method,
+  r#"
+    class T:
+      v = 0
+      fn test(self):
+        print self.v
+  "#
+}
+
+check! {
+  class_with_field_and_closure_method,
+  r#"
+    u := 0
+    class T:
+      v = 0
+      fn test(self):
+        print self.v, u
+  "#
+}
+
+check! {
+  class_in_nested_scope_with_closure_method,
+  r#"
+    fn test():
       u := 0
       class T:
         v = 0
         fn test(self):
           print self.v, u
-    "#
-  }
-  check! {
-    r#"
-      fn test():
-        u := 0
-        class T:
-          v = 0
-          fn test(self):
-            print self.v, u
-    "#
-  }
+  "#
+}
 
-  check! {
-    r#"
-      class T(U): pass
-    "#
-  }
-  check! {
-    r#"
-      class T(U):
-        v
-    "#
-  }
-  check! {
-    r#"
-      class T(U):
-        v = 0
-    "#
-  }
-  check! {
-    r#"
-      class T(U):
-        a = 0
-        b = 1
-    "#
-  }
-  check! {
-    r#"
-      class T(U):
-        v = 0
-        fn test(self):
-          print self.v
-    "#
-  }
-  check! {
-    r#"
+check! {
+  empty_class_derived,
+  r#"
+    class T(U): pass
+  "#
+}
+
+check! {
+  class_derived_with_field,
+  r#"
+    class T(U):
+      v = 0
+  "#
+}
+
+check! {
+  class_derived_with_multiple_fields,
+  r#"
+    class T(U):
+      a = 0
+      b = 1
+  "#
+}
+check! {
+  class_derived_with_field_and_method,
+  r#"
+    class T(U):
+      v = 0
+      fn test(self):
+        print self.v
+  "#
+}
+check! {
+  class_derived_with_field_and_closure_method,
+  r#"
+    u := 0
+    class T(U):
+      v = 0
+      fn test(self):
+        print self.v, u
+  "#
+}
+check! {
+  class_derived_in_nested_scope_with_closure_method,
+  r#"
+    fn test():
       u := 0
       class T(U):
         v = 0
         fn test(self):
           print self.v, u
-    "#
-  }
-  check! {
-    r#"
-      fn test():
-        u := 0
-        class T(U):
-          v = 0
-          fn test(self):
-            print self.v, u
-    "#
-  }
+  "#
 }
 
-#[test]
-fn class_instance() {
-  check! {
-    r#"
-      class T: pass
+check! {
+  class_instance,
+  r#"
+    class T: pass
 
-      T()
-    "#
-  }
+    T()
+  "#
 }
-*/
 
 check! {
   import_whole,
@@ -578,30 +585,25 @@ check! {
   "#
 }
 
-/*
-#[test]
-fn fn_in_module() {
-  check! {
-    as_module=true,
-    r#"
-      value := 100
-      fn set(v):
-        value = v
-      fn get():
-        return value
-    "#
-  }
+check! {
+  fn_in_module,
+  as_module=true,
+  r#"
+    value := 100
+    fn set(v):
+      value = v
+    fn get():
+      return value
+  "#
 }
 
-#[test]
-fn meta_methods() {
-  check! {
-    r#"
-      class U: pass
-      class T(U):
-        value = 0
-        fn @add(self, other): pass
-        fn add(self, other): pass
-    "#
-  }
-} */
+check! {
+  meta_methods,
+  r#"
+    class U: pass
+    class T(U):
+      value = 0
+      fn @add(self, other): pass
+      fn add(self, other): pass
+  "#
+}

@@ -11,7 +11,8 @@ test()
 
 
 # Func:
-function `test` (registers: 2, upvalues: 0, length: 8, constants: 0)
+function `test` (registers: 2, length: 8, constants: 0)
+.code
   0 | load r1
   2 | yield
   3 | load r1
@@ -21,7 +22,8 @@ function `test` (registers: 2, upvalues: 0, length: 8, constants: 0)
 
 
 
-function `main` (registers: 0, upvalues: 0, length: 8, constants: 2)
+function `main` (registers: 0, length: 8, constants: 2)
+.code
   0 | make_fn [0]; <function `test` descriptor>
   2 | store_global [1]; test
   4 | load_global [1]; test

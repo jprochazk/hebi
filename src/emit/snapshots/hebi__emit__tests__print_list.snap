@@ -6,7 +6,8 @@ expression: snapshot
 print [0, 1, 2]
 
 # Func:
-function `main` (registers: 3, upvalues: 0, length: 17, constants: 0)
+function `main` (registers: 3, length: 17, constants: 0)
+.code
   0  | load_smi 0
   2  | store r0
   4  | load_smi 1

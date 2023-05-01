@@ -1,0 +1,39 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+fn f3(a, b, c, d):
+  a ?? b ?? c
+
+
+# Func:
+function `f3` (registers: 7, length: 26, constants: 4)
+.code
+  0  | load r1
+  2  | store r6
+  4  | is_none
+  5  | jump_if_false 6
+  7  | load r2
+  9  | jump 4
+  11 | load r6
+  13 | store r5
+  15 | is_none
+  16 | jump_if_false 6
+  18 | load r3
+  20 | jump 4
+  22 | load r5
+  24 | load_none
+  25 | return
+
+
+
+function `main` (registers: 0, length: 5, constants: 2)
+.code
+  0 | make_fn [0]; <function `f3` descriptor>
+  2 | store_global [1]; f3
+  4 | return
+
+
+
+

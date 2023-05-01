@@ -1,0 +1,55 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+class U: pass
+class T(U):
+  value = 0
+  fn @add(self, other): pass
+  fn add(self, other): pass
+
+
+# Func:
+function `U.@init` (registers: 1, length: 2, constants: 0)
+.code
+  0 | load_none
+  1 | return
+
+
+
+function `T.@init` (registers: 1, length: 7, constants: 1)
+.code
+  0 | load_smi 0
+  2 | store_field r0 [0]; value
+  5 | load_none
+  6 | return
+
+
+
+function `T.@add` (registers: 2, length: 2, constants: 0)
+.code
+  0 | load_none
+  1 | return
+
+
+
+function `T.add` (registers: 2, length: 2, constants: 0)
+.code
+  0 | load_none
+  1 | return
+
+
+
+function `main` (registers: 0, length: 11, constants: 4)
+.code
+  0  | make_class [0]; <class `U` descriptor>
+  2  | store_global [1]; U
+  4  | load_global [1]; U
+  6  | make_class_derived [2]; <class `T` descriptor>
+  8  | store_global [3]; T
+  10 | return
+
+
+
+

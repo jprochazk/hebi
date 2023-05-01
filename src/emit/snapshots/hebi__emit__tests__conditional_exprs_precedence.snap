@@ -1,0 +1,93 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+fn test0(a, b, c, d):
+  (a && b) || (c && d)
+fn test1(a, b, c, d):
+  a && b || c && d
+fn test3(a, b, c, d):
+  (a || (b && c)) || d
+fn test4(a, b, c, d):
+  a || b && c || d
+
+
+# Func:
+function `test0` (registers: 5, length: 18, constants: 4)
+.code
+  0  | load r1
+  2  | jump_if_false 4
+  4  | load r2
+  6  | jump_if_false 4
+  8  | jump 8
+  10 | load r3
+  12 | jump_if_false 4
+  14 | load r4
+  16 | load_none
+  17 | return
+
+
+
+function `test1` (registers: 5, length: 18, constants: 4)
+.code
+  0  | load r1
+  2  | jump_if_false 4
+  4  | load r2
+  6  | jump_if_false 4
+  8  | jump 8
+  10 | load r3
+  12 | jump_if_false 4
+  14 | load r4
+  16 | load_none
+  17 | return
+
+
+
+function `test3` (registers: 5, length: 20, constants: 5)
+.code
+  0  | load r1
+  2  | jump_if_false 4
+  4  | jump 8
+  6  | load r2
+  8  | jump_if_false 4
+  10 | load r3
+  12 | jump_if_false 4
+  14 | jump 4
+  16 | load r4
+  18 | load_none
+  19 | return
+
+
+
+function `test4` (registers: 5, length: 20, constants: 5)
+.code
+  0  | load r1
+  2  | jump_if_false 4
+  4  | jump 8
+  6  | load r2
+  8  | jump_if_false 4
+  10 | load r3
+  12 | jump_if_false 4
+  14 | jump 4
+  16 | load r4
+  18 | load_none
+  19 | return
+
+
+
+function `main` (registers: 0, length: 17, constants: 8)
+.code
+  0  | make_fn [0]; <function `test0` descriptor>
+  2  | store_global [1]; test0
+  4  | make_fn [2]; <function `test1` descriptor>
+  6  | store_global [3]; test1
+  8  | make_fn [4]; <function `test3` descriptor>
+  10 | store_global [5]; test3
+  12 | make_fn [6]; <function `test4` descriptor>
+  14 | store_global [7]; test4
+  16 | return
+
+
+
+

@@ -10,7 +10,8 @@ test(0)
 
 
 # Func:
-function `test` (registers: 2, upvalues: 0, length: 5, constants: 0)
+function `test` (registers: 2, length: 5, constants: 0)
+.code
   0 | load r1
   2 | print
   3 | load_none
@@ -18,7 +19,8 @@ function `test` (registers: 2, upvalues: 0, length: 5, constants: 0)
 
 
 
-function `main` (registers: 2, upvalues: 0, length: 16, constants: 2)
+function `main` (registers: 2, length: 16, constants: 2)
+.code
   0  | make_fn [0]; <function `test` descriptor>
   2  | store_global [1]; test
   4  | load_global [1]; test
