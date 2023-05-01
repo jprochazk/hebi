@@ -1,0 +1,49 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+fn test(a, b=10):
+  print a, b
+
+test(1)
+test(1, 2)
+
+
+# Func:
+function `test` (registers: 5, upvalues: 0, length: 22, constants: 1)
+  0  | load r2
+  2  | is_none
+  3  | jump_if_false 6
+  5  | load_smi 10
+  7  | store r2
+  9  | load r1
+  11 | store r3
+  13 | load r2
+  15 | store r4
+  17 | print_n r3 2
+  20 | load_none
+  21 | ret
+
+
+
+function `main` (registers: 3, upvalues: 0, length: 31, constants: 2)
+  0  | make_fn [0]; <function `test` descriptor>
+  2  | store_global [1]; test
+  4  | load_global [1]; test
+  6  | store r0
+  8  | load_smi 1
+  10 | store r1
+  12 | call r0 1
+  15 | load_global [1]; test
+  17 | store r0
+  19 | load_smi 1
+  21 | store r1
+  23 | load_smi 2
+  25 | store r2
+  27 | call r0 2
+  30 | ret
+
+
+
+
