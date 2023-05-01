@@ -23,7 +23,7 @@ function `main` (registers: 2, upvalues: 0, length: 29, constants: 2)
   22 | jump_loop 14
   24 | jump_loop 8
   26 | jump_loop 10
-  28 | ret
+  28 | return
 
 
 

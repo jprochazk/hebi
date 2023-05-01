@@ -17,7 +17,7 @@ function `main` (registers: 4, upvalues: 0, length: 22, constants: 2)
   14 | load_smi 3
   16 | store r3
   18 | call r0 3
-  21 | ret
+  21 | return
 
 
 

@@ -10,7 +10,7 @@ function `main` (registers: 0, upvalues: 0, length: 6, constants: 2)
   0 | load_global [1]; o
   2 | load_field [0]; f
   4 | call0
-  5 | ret
+  5 | return
 
 
 

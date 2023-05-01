@@ -15,7 +15,7 @@ function `main` (registers: 3, upvalues: 0, length: 18, constants: 3)
   10 | add r2
   12 | store r1
   14 | call r0 1
-  17 | ret
+  17 | return
 
 
 

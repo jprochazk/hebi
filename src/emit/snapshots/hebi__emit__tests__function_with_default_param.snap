@@ -23,7 +23,7 @@ function `test` (registers: 5, upvalues: 0, length: 22, constants: 1)
   15 | store r4
   17 | print_n r3 2
   20 | load_none
-  21 | ret
+  21 | return
 
 
 
@@ -42,7 +42,7 @@ function `main` (registers: 3, upvalues: 0, length: 31, constants: 2)
   23 | load_smi 2
   25 | store r2
   27 | call r0 2
-  30 | ret
+  30 | return
 
 
 

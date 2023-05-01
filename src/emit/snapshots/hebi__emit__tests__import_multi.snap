@@ -35,7 +35,7 @@ function `main` (registers: 6, upvalues: 0, length: 53, constants: 6)
   45 | load r2
   47 | store r5
   49 | print_n r4 2
-  52 | ret
+  52 | return
 
 
 

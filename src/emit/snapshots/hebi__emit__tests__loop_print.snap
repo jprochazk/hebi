@@ -12,7 +12,7 @@ function `main` (registers: 0, upvalues: 0, length: 6, constants: 1)
   0 | load_const [0]; test
   2 | print
   3 | jump_loop 3
-  5 | ret
+  5 | return
 
 
 

@@ -25,7 +25,7 @@ function `main` (registers: 0, upvalues: 0, length: 20, constants: 7)
   14 | jump 5
   16 | load_global [6]; c
   18 | print
-  19 | ret
+  19 | return
 
 
 

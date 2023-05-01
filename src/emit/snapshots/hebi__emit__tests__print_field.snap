@@ -23,7 +23,7 @@ function `main` (registers: 2, upvalues: 0, length: 28, constants: 2)
   20 | store r0
   22 | load_smi 1
   24 | store_field r0 [0]; a
-  27 | ret
+  27 | return
 
 
 

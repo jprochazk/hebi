@@ -17,7 +17,7 @@ function `main` (registers: 0, upvalues: 0, length: 12, constants: 1)
   5  | jump_loop 5
   7  | jump_loop 7
   9  | jump_loop 9
-  11 | ret
+  11 | return
 
 
 

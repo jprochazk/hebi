@@ -21,7 +21,7 @@ function `main` (registers: 4, upvalues: 0, length: 27, constants: 3)
   19 | load r0
   21 | store r3
   23 | print_n r2 2
-  26 | ret
+  26 | return
 
 
 

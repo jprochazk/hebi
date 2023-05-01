@@ -20,7 +20,7 @@ function `main` (registers: 0, upvalues: 0, length: 18, constants: 4)
   12 | load_field_opt [3]; b
   14 | load_field_opt [2]; c
   16 | print
-  17 | ret
+  17 | return
 
 
 

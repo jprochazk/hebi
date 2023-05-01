@@ -9,7 +9,7 @@ f()
 function `main` (registers: 0, upvalues: 0, length: 4, constants: 1)
   0 | load_global [0]; f
   2 | call0
-  3 | ret
+  3 | return
 
 
 

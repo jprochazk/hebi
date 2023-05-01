@@ -19,7 +19,7 @@ function `main` (registers: 0, upvalues: 0, length: 15, constants: 4)
   8  | jump_loop 5
   10 | jump 4
   12 | jump_loop 12
-  14 | ret
+  14 | return
 
 
 

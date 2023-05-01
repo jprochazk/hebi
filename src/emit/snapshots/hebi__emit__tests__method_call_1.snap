@@ -13,7 +13,7 @@ function `main` (registers: 2, upvalues: 0, length: 14, constants: 2)
   6  | load_smi 0
   8  | store r1
   10 | call r0 1
-  13 | ret
+  13 | return
 
 
 

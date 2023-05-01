@@ -9,7 +9,7 @@ print 0
 function `main` (registers: 0, upvalues: 0, length: 4, constants: 0)
   0 | load_smi 0
   2 | print
-  3 | ret
+  3 | return
 
 
 

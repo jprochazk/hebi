@@ -11,5 +11,5 @@ expression: "Disassembly::new(&bytecode, &constants, 0, true).to_string()"
 9  | nop
 10 | jump 3
 12 | nop
-13 | ret
+13 | return
 

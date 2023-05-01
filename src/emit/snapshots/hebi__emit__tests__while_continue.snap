@@ -13,7 +13,7 @@ function `main` (registers: 0, upvalues: 0, length: 8, constants: 1)
   1 | jump_if_false 6
   3 | jump_loop 3
   5 | jump_loop 5
-  7 | ret
+  7 | return
 
 
 

@@ -32,7 +32,7 @@ function `main` (registers: 2, upvalues: 0, length: 41, constants: 4)
   35 | jump_loop 31
   37 | load_const [3]; now it's 10
   39 | print
-  40 | ret
+  40 | return
 
 
 

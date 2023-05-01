@@ -39,7 +39,7 @@ function `main` (registers: 13, upvalues: 0, length: 66, constants: 3)
   58 | store r3
   60 | call r1 2
   63 | add r0
-  65 | ret
+  65 | return
 
 
 

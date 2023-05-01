@@ -24,7 +24,7 @@ function `main` (registers: 2, upvalues: 0, length: 30, constants: 2)
   24 | load r0
   26 | print
   27 | jump_loop 11
-  29 | ret
+  29 | return
 
 
 

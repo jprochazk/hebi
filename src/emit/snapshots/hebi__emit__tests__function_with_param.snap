@@ -14,7 +14,7 @@ function `test` (registers: 2, upvalues: 0, length: 5, constants: 0)
   0 | load r1
   2 | print
   3 | load_none
-  4 | ret
+  4 | return
 
 
 
@@ -26,7 +26,7 @@ function `main` (registers: 2, upvalues: 0, length: 16, constants: 2)
   8  | load_smi 0
   10 | store r1
   12 | call r0 1
-  15 | ret
+  15 | return
 
 
 

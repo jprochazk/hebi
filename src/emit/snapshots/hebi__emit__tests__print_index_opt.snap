@@ -28,7 +28,7 @@ function `main` (registers: 3, upvalues: 0, length: 34, constants: 4)
   28 | load_const [3]; c
   30 | load_index_opt r0
   32 | print
-  33 | ret
+  33 | return
 
 
 

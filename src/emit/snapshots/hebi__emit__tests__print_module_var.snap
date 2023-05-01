@@ -13,7 +13,7 @@ function `main` (registers: 0, upvalues: 0, length: 8, constants: 0)
   2 | store_module_var 0
   4 | load_module_var 0
   6 | print
-  7 | ret
+  7 | return
 
 
 

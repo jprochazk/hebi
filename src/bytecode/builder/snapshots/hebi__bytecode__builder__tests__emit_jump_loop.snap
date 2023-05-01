@@ -7,5 +7,5 @@ expression: "Disassembly::new(&bytecode, &constants, 0, true).to_string()"
 2 | nop
 3 | nop
 4 | jump_loop 3
-6 | ret
+6 | return
 

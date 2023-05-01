@@ -14,7 +14,7 @@ function `main` (registers: 0, upvalues: 0, length: 9, constants: 2)
   3 | load_const [1]; test
   5 | print
   6 | jump_loop 6
-  8 | ret
+  8 | return
 
 
 
