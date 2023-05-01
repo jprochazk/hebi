@@ -78,6 +78,12 @@ impl<'a> Display for Disassembly<'a> {
     let (bytecode, constants) =
       unsafe { (function.instructions.as_ref(), function.constants.as_ref()) };
 
+    for constant in constants {
+      if let Constant::Function(function) = constant {
+        writeln!(f, "{}\n", function.disassemble())?;
+      }
+    }
+
     writeln!(
       f,
       "function `{}` (registers: {}, upvalues: {}, length: {}, constants: {})",
@@ -116,13 +122,18 @@ impl Display for FunctionDescriptor {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Params {
+  pub has_self: bool,
   pub min: u16,
   pub max: u16,
 }
 
 impl Params {
   pub fn empty() -> Self {
-    Self { min: 0, max: 0 }
+    Self {
+      has_self: false,
+      min: 0,
+      max: 0,
+    }
   }
 }
 
