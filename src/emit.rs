@@ -230,6 +230,13 @@ impl<'cx, 'src> State<'cx, 'src> {
       false => (Some(param_slice.get(0)), None, param_slice.offset(1)),
     };
 
+    // declare function and receiver
+    // the function param only exists for plain functions,
+    // and the receiver only exists for methods.
+    //
+    // the point of this is to give access to:
+    // - `self` in methods.
+    // - the function being called in recursive functions.
     if let Some(func) = &func {
       self.declare_local(name.clone(), func.clone());
     }
@@ -237,7 +244,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       self.declare_local("self", receiver.clone());
     }
 
-    // emit defaults
+    // emit default values
     for (i, param) in params.iter().enumerate() {
       if let Some(default) = &param.default {
         let next = self.builder().label("next");
@@ -258,7 +265,12 @@ impl<'cx, 'src> State<'cx, 'src> {
         );
         self.builder().bind_label(next);
       }
+    }
 
+    // declare parameters
+    // this happens *after* emitting the defaults, because the
+    // defaults should not be able to access the parameters
+    for (i, param) in params.iter().enumerate() {
       self.declare_local(param.name.lexeme(), positional.get(i));
     }
 
@@ -267,6 +279,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       self.emit_stmt(stmt);
     }
 
+    // all functions return `none` by default
     // TODO: only emit this if `exit_seen` is false
     let end_span = body.last().map(|stmt| stmt.span).unwrap_or((0..0).into());
     self.builder().emit(LoadNone, end_span);
