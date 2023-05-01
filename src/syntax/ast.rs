@@ -139,12 +139,27 @@ pub struct Func<'src> {
 #[derive(Default)]
 pub struct Params<'src> {
   pub has_self: bool,
-  pub pos: Vec<(Ident<'src>, Option<Expr<'src>>)>,
+  pub pos: Vec<Param<'src>>,
 }
 
 impl<'src> Params<'src> {
   pub fn contains(&self, param: &Ident<'src>) -> bool {
-    self.pos.iter().any(|v| v.0.as_ref() == param.as_ref())
+    self.pos.iter().any(|v| v.name.as_ref() == param.as_ref())
+  }
+}
+
+#[cfg_attr(test, derive(Debug))]
+pub struct Param<'src> {
+  pub name: Ident<'src>,
+  pub default: Option<Expr<'src>>,
+}
+
+impl<'src> Param<'src> {
+  pub fn span(&self) -> Span {
+    match &self.default {
+      Some(default) => self.name.span.join(default.span),
+      None => self.name.span,
+    }
   }
 }
 

@@ -246,9 +246,9 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     if params.contains(&name) {
       fail!(self.cx, format!("duplicate argument `{name}`"), name.span,);
     }
-    let param = if self.bump_if(Op_Equal) {
+    let default = if self.bump_if(Op_Equal) {
       *state = ParamState::Default;
-      (name, Some(self.expr()?))
+      Some(self.expr()?)
     } else {
       if *state == ParamState::Default {
         fail!(
@@ -258,10 +258,10 @@ impl<'cx, 'src> Parser<'cx, 'src> {
         );
       }
 
-      (name, None)
+      None
     };
 
-    params.pos.push(param);
+    params.pos.push(ast::Param { name, default });
 
     Ok(())
   }

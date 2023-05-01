@@ -46,12 +46,12 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "v",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [
@@ -95,12 +95,12 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "v",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [
@@ -214,12 +214,12 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "v",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [
@@ -267,12 +267,12 @@ Module {
                             params: Params {
                                 has_self: false,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "v",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [

@@ -1014,18 +1014,18 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "a",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "b",
                             ),
-                            None,
-                        ),
+                            default: None,
+                        },
                     ],
                 },
                 body: [
@@ -1102,12 +1102,12 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "n",
                             ),
-                            None,
-                        ),
+                            default: None,
+                        },
                     ],
                 },
                 body: [
@@ -1219,12 +1219,12 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "n",
                             ),
-                            None,
-                        ),
+                            default: None,
+                        },
                     ],
                 },
                 body: [
@@ -1305,24 +1305,24 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "start",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "step",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "end",
                             ),
-                            None,
-                        ),
+                            default: None,
+                        },
                     ],
                 },
                 body: [
@@ -1779,12 +1779,12 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "n",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [
@@ -2766,12 +2766,12 @@ Module {
                             params: Params {
                                 has_self: true,
                                 pos: [
-                                    (
-                                        Ident(
+                                    Param {
+                                        name: Ident(
                                             "v",
                                         ),
-                                        None,
-                                    ),
+                                        default: None,
+                                    },
                                 ],
                             },
                             body: [

@@ -39,12 +39,12 @@ Module {
                                 params: Params {
                                     has_self: true,
                                     pos: [
-                                        (
-                                            Ident(
+                                        Param {
+                                            name: Ident(
                                                 "other",
                                             ),
-                                            None,
-                                        ),
+                                            default: None,
+                                        },
                                     ],
                                 },
                                 body: [

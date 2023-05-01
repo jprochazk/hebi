@@ -12,24 +12,24 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "a",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "b",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "c",
                             ),
-                            None,
-                        ),
+                            default: None,
+                        },
                     ],
                 },
                 body: [
@@ -46,23 +46,23 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "a",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "b",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "c",
                             ),
-                            Some(
+                            default: Some(
                                 GetVar(
                                     GetVar {
                                         name: Ident(
@@ -71,7 +71,7 @@ Module {
                                     },
                                 ),
                             ),
-                        ),
+                        },
                     ],
                 },
                 body: [
@@ -88,17 +88,17 @@ Module {
                 params: Params {
                     has_self: false,
                     pos: [
-                        (
-                            Ident(
+                        Param {
+                            name: Ident(
                                 "a",
                             ),
-                            None,
-                        ),
-                        (
-                            Ident(
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
                                 "b",
                             ),
-                            Some(
+                            default: Some(
                                 GetVar(
                                     GetVar {
                                         name: Ident(
@@ -107,12 +107,12 @@ Module {
                                     },
                                 ),
                             ),
-                        ),
-                        (
-                            Ident(
+                        },
+                        Param {
+                            name: Ident(
                                 "d",
                             ),
-                            Some(
+                            default: Some(
                                 GetVar(
                                     GetVar {
                                         name: Ident(
@@ -121,7 +121,7 @@ Module {
                                     },
                                 ),
                             ),
-                        ),
+                        },
                     ],
                 },
                 body: [
