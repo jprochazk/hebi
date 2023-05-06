@@ -25,6 +25,8 @@ constructing an index mapping each register to its final slot.
 This mapping is done on a first-fit basis. The final slot is the first
 free register at the time when the register was allocated.
 
+TODO: register slices
+
 ### Example
 
 After tracking, the live intervals are:
@@ -59,3 +61,4 @@ final register. This information is then used to patch the bytecode.
 
 The maximum register index at any point was `3`, meaning this function will
 need 4 registers.
+
