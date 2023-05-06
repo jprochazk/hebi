@@ -137,11 +137,13 @@ impl<'a> Display for Disassembly<'a> {
           writeln!(f, "{}\n", function.disassemble())?;
         }
         Constant::Class(class) => {
-          writeln!(
-            f,
-            "{}\n",
-            class.init.disassemble_as_method(class.name.clone(), true)
-          )?;
+          if let Some(init) = class.init.as_ref() {
+            writeln!(
+              f,
+              "{}\n",
+              init.disassemble_as_method(class.name.clone(), true)
+            )?;
+          }
           for method in class.meta_methods.values() {
             writeln!(
               f,

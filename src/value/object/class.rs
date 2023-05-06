@@ -59,10 +59,11 @@ pub struct Meta {
 pub struct ClassDescriptor {
   pub name: Ptr<String>,
   pub params: Params,
-  pub is_derived: bool,
-  pub init: Ptr<FunctionDescriptor>,
+  pub init: Option<Ptr<FunctionDescriptor>>,
   pub meta_methods: IndexMap<ast::Meta, Ptr<FunctionDescriptor>>,
   pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
+  pub fields: Table,
+  pub is_derived: bool,
 }
 
 impl Display for ClassDescriptor {
