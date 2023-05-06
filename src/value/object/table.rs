@@ -11,6 +11,14 @@ pub struct Table {
   data: IndexMap<Ptr<String>, Value>,
 }
 
+impl Table {
+  pub fn with_capacity(n: usize) -> Self {
+    Self {
+      data: IndexMap::with_capacity(n),
+    }
+  }
+}
+
 impl Display for Table {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<table>")
