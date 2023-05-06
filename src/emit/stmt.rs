@@ -2,6 +2,8 @@ use std::ops::Deref;
 
 use super::*;
 use crate::util::JoinIter;
+use crate::value::object::Table;
+use crate::value::Value;
 
 impl<'cx, 'src> State<'cx, 'src> {
   pub(super) fn emit_stmt(&mut self, stmt: &'src ast::Stmt<'src>) {
@@ -236,108 +238,117 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) {
     let function = self.emit_function(stmt);
-    let desc = self.constant_value(function);
+    let desc = self.constant_value(function.ptr);
     self.builder().emit(MakeFn { desc }, stmt.name.span);
+    function.upvalues.finish();
     self.emit_var(stmt.name.lexeme(), stmt.name.span);
   }
 
-  fn emit_class_initializer(
-    class: &'src ast::Class<'src>,
-  ) -> impl FnOnce(&mut State<'cx, 'src>, Register) {
-    |this, receiver| this.emit_class_fields(receiver, &class.members.fields, class.name.span)
-  }
-
-  // TODO: call parent initializer
-  // child class initializer should inherit parent class initializer params
-
-  fn emit_class_fake_initializer(
-    &mut self,
-    class: &'src ast::Class<'src>,
-  ) -> Ptr<object::FunctionDescriptor> {
-    let span = class.name.span;
-
-    self.module.functions.push(Function::new(
-      self.cx,
-      "init",
-      function::Params {
-        has_self: true,
-        min: 0,
-        max: 0,
-      },
-      false,
-    ));
-
-    let receiver = self.alloc_register();
-    self.emit_class_fields(receiver, &class.members.fields, span);
-
-    self.builder().emit(LoadNone, span);
-    self.builder().emit(Return, span);
-
-    let function = self.module.functions.pop().unwrap().finish();
-
-    self
-      .current_function()
-      .inner_functions
-      .push(function.clone());
-
-    function
-  }
-
-  fn emit_class_fields(
-    &mut self,
-    receiver: Register,
-    fields: &'src [ast::Field<'src>],
-    span: Span,
-  ) {
-    for field in fields.iter() {
-      let name = self.constant_name(&field.name);
-      self.emit_expr(&field.default);
-      let obj = receiver.access();
-      self.builder().emit(StoreField { obj, name }, span);
-    }
-  }
-
   fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) {
+    let mut preserve = Vec::new();
+
     let mut init = None;
     let mut meta_methods = IndexMap::with_capacity(stmt.members.meta.len());
-    for (key, func) in stmt.members.meta.iter() {
+    for (key, function) in stmt.members.meta.iter() {
+      let function = self.emit_function(function);
+      preserve.push(function.upvalues);
+      let function = function.ptr;
       if *key == ast::Meta::Init {
-        let func = self.emit_function_with_prelude(func, Self::emit_class_initializer(stmt));
-        init = Some(func);
+        init = Some(function);
       } else {
-        let func = self.emit_function(func);
-        meta_methods.insert(*key, func);
+        meta_methods.insert(*key, function);
       }
     }
 
-    let init = match init {
-      Some(init) => init,
-      None => self.emit_class_fake_initializer(stmt),
-    };
-
     let mut methods = IndexMap::with_capacity(stmt.members.methods.len());
-    for func in stmt.members.methods.iter() {
-      let func = self.emit_function(func);
-      methods.insert(func.name.clone(), func);
+    for function in stmt.members.methods.iter() {
+      let function = self.emit_function(function);
+      preserve.push(function.upvalues);
+      let function = function.ptr;
+      methods.insert(function.name.clone(), function);
+    }
+
+    let mut fields = Table::with_capacity(stmt.members.fields.len());
+    for field in stmt.members.fields.iter() {
+      fields.insert(self.cx.intern(field.name.to_string()), Value::none());
     }
 
     let class = self.cx.alloc(object::ClassDescriptor {
       name: self.cx.intern(stmt.name.to_string()),
       params: function::Params::from_ast_class(stmt),
-      is_derived: stmt.parent.is_some(),
       init,
       meta_methods,
       methods,
+      fields,
+      is_derived: stmt.parent.is_some(),
     });
     let desc = self.constant_value(class);
 
-    if let Some(parent) = &stmt.parent {
-      self.emit_get(parent.lexeme(), parent.span);
-      self
-        .builder()
-        .emit(MakeClassDerived { desc }, stmt.name.span);
-    } else {
-      self.builder().emit(MakeClass { desc }, stmt.name.span);
+    match stmt.parent.as_ref() {
+      Some(parent) => {
+        if stmt.members.fields.is_empty() {
+          // class empty derived
+          self.emit_get(parent.lexeme(), parent.span);
+          self
+            .builder()
+            .emit(MakeClassEmptyDerived { desc }, stmt.name.span);
+        } else {
+          // class derived
+          let parts = self.alloc_register_slice(1 + stmt.members.fields.len());
+          self.emit_get(parent.lexeme(), parent.span);
+          self.builder().emit(
+            Store {
+              reg: parts.access(0),
+            },
+            parent.span,
+          );
+          for (i, field) in stmt.members.fields.iter().enumerate() {
+            self.emit_expr(&field.default);
+            self.builder().emit(
+              Store {
+                reg: parts.access(1 + i),
+              },
+              field.span(),
+            );
+          }
+          self.builder().emit(
+            MakeClassDerived {
+              desc,
+              parts: parts.access(0),
+            },
+            stmt.name.span,
+          );
+        }
+      }
+      None => {
+        if stmt.members.fields.is_empty() {
+          // class empty
+          self.builder().emit(MakeClassEmpty { desc }, stmt.name.span);
+        } else {
+          // class
+          let parts = self.alloc_register_slice(stmt.members.fields.len());
+          for (i, field) in stmt.members.fields.iter().enumerate() {
+            self.emit_expr(&field.default);
+            self.builder().emit(
+              Store {
+                reg: parts.access(i),
+              },
+              field.span(),
+            );
+          }
+          self.builder().emit(
+            MakeClass {
+              desc,
+              parts: parts.access(0),
+            },
+            stmt.name.span,
+          );
+        }
+      }
+    }
+
+    for upvalues in preserve.iter().rev() {
+      upvalues.finish();
     }
 
     self.emit_var(stmt.name.lexeme(), stmt.name.span);

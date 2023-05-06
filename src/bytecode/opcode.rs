@@ -35,8 +35,10 @@ instructions! {
   LoadFalse,
   LoadSmi(value: Smi),
   MakeFn(desc: Constant),
-  MakeClass(desc: Constant),
-  MakeClassDerived(desc: Constant),
+  MakeClassEmpty(desc: Constant),
+  MakeClassEmptyDerived(desc: Constant),
+  MakeClass(desc: Constant, parts: Register),
+  MakeClassDerived(desc: Constant, parts: Register),
   // TODO: MakeListConst / MakeTableConst for statically known values
   MakeList(start: Register, count: Count),
   MakeListEmpty,
