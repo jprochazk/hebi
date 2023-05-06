@@ -12,6 +12,10 @@ mod stmt;
 // - (optimization) peephole with last 2 instructions
 // - actually write emit for all AST nodes
 
+// TODO: emit_store/emit_load helpers
+// should accept Register, use with `.get()`
+// TODO: put comma between disassembly operands
+
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
@@ -37,7 +41,9 @@ pub fn emit<'cx, 'src>(
   let mut module = State::new(cx, ast, name.clone(), is_root).emit_module();
 
   let name = cx.alloc(object::String::new(name.to_string().into()));
-  let root = module.functions.pop().unwrap().finish();
+  // NOTE: no need to handle `.upvalues` here,
+  // because the module root never has any upvalues
+  let root = module.functions.pop().unwrap().finish().ptr;
   let module_vars = module.vars;
 
   cx.alloc(object::ModuleDescriptor {
@@ -221,19 +227,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
-  // TODO: refactor this to not be so hacky
-  // the class initializer needs to be prefixed by a bit of code to initialize
-  // fields
-
-  fn emit_function(&mut self, func: &'src ast::Func<'src>) -> Ptr<object::FunctionDescriptor> {
-    self.emit_function_with_prelude(func, |_, _| {})
-  }
-
-  fn emit_function_with_prelude<F: FnOnce(&mut Self, Register)>(
-    &mut self,
-    func: &'src ast::Func<'src>,
-    prelude: F,
-  ) -> Ptr<object::FunctionDescriptor> {
+  fn emit_function(&mut self, func: &'src ast::Func<'src>) -> EmittedFunction<'src> {
     self.module.functions.push(Function::new(
       self.cx,
       func.name.lexeme(),
@@ -247,10 +241,6 @@ impl<'cx, 'src> State<'cx, 'src> {
       true => (None, Some(param_slice.get(0)), param_slice.offset(1)),
       false => (Some(param_slice.get(0)), None, param_slice.offset(1)),
     };
-
-    if let Some(receiver) = &receiver {
-      prelude(self, receiver.clone());
-    }
 
     // declare function and receiver
     // the function param only exists for plain functions,
@@ -316,7 +306,7 @@ impl<'cx, 'src> State<'cx, 'src> {
     self
       .current_function()
       .inner_functions
-      .push(function.clone());
+      .push(function.ptr.clone());
 
     function
   }
@@ -366,6 +356,11 @@ struct Module<'cx, 'src> {
   is_root: bool,
   vars: IndexSet<Ptr<object::String>>,
   functions: Vec<Function<'cx, 'src>>,
+}
+
+struct EmittedFunction<'src> {
+  ptr: Ptr<object::FunctionDescriptor>,
+  upvalues: Upvalues<'src>,
 }
 
 struct Function<'cx, 'src> {
@@ -446,7 +441,7 @@ impl<'cx, 'src> Function<'cx, 'src> {
       .map(|(_, register)| register.clone())
   }
 
-  fn finish(self) -> Ptr<object::FunctionDescriptor> {
+  fn finish(self) -> EmittedFunction<'src> {
     let (frame_size, register_map) = self.regalloc.finish();
     let (mut bytecode, constants) = self.builder.finish();
 
@@ -465,7 +460,7 @@ impl<'cx, 'src> Function<'cx, 'src> {
       }
     }
 
-    self.cx.alloc(object::FunctionDescriptor::new(
+    let ptr = self.cx.alloc(object::FunctionDescriptor::new(
       self
         .cx
         .alloc(object::String::new(self.name.to_string().into())),
@@ -482,7 +477,22 @@ impl<'cx, 'src> Function<'cx, 'src> {
       frame_size,
       bytecode,
       constants,
-    ))
+    ));
+    let upvalues = Upvalues(self.upvalues);
+
+    EmittedFunction { ptr, upvalues }
+  }
+}
+
+struct Upvalues<'src>(IndexMap<Cow<'src, str>, Upvalue>);
+
+impl<'src> Upvalues<'src> {
+  fn finish(&self) {
+    for upvalue in self.0.values() {
+      if let UpvalueSource::Register(register) = &upvalue.src {
+        register.access();
+      }
+    }
   }
 }
 
