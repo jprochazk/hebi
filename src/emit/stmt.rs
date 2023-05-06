@@ -264,51 +264,44 @@ impl<'cx, 'src> State<'cx, 'src> {
     });
     let desc = self.constant_value(class);
 
-    match stmt.parent.as_ref() {
-      Some(parent) => {
-        if stmt.members.fields.is_empty() {
-          // class empty derived
-          self.emit_get(parent.lexeme(), parent.span);
-          self
-            .builder()
-            .emit(MakeClassEmptyDerived { desc }, stmt.name.span);
-        } else {
-          // class derived
+    if stmt.members.fields.is_empty() {
+      if let Some(parent) = stmt.parent.as_ref() {
+        self.emit_get(parent.lexeme(), parent.span);
+        self
+          .builder()
+          .emit(MakeClassEmptyDerived { desc }, stmt.name.span);
+      } else {
+        self.builder().emit(MakeClassEmpty { desc }, stmt.name.span);
+      }
+    } else {
+      let (parts, offset) = match stmt.parent.as_ref() {
+        Some(parent) => {
           let parts = self.alloc_register_slice(1 + stmt.members.fields.len());
           self.emit_get(parent.lexeme(), parent.span);
           self.emit_store(parts.get(0), parent.span);
-          for (i, field) in stmt.members.fields.iter().enumerate() {
-            self.emit_expr(&field.default);
-            self.emit_store(parts.get(1 + i), field.span());
-          }
-          self.builder().emit(
-            MakeClassDerived {
-              desc,
-              parts: parts.access(0),
-            },
-            stmt.name.span,
-          );
+          (parts, 1)
         }
+        None => (self.alloc_register_slice(stmt.members.fields.len()), 0),
+      };
+      for (i, field) in stmt.members.fields.iter().enumerate() {
+        self.emit_expr(&field.default);
+        self.emit_store(parts.get(offset + i), field.span());
       }
-      None => {
-        if stmt.members.fields.is_empty() {
-          // class empty
-          self.builder().emit(MakeClassEmpty { desc }, stmt.name.span);
-        } else {
-          // class
-          let parts = self.alloc_register_slice(stmt.members.fields.len());
-          for (i, field) in stmt.members.fields.iter().enumerate() {
-            self.emit_expr(&field.default);
-            self.emit_store(parts.get(i), field.span());
-          }
-          self.builder().emit(
-            MakeClass {
-              desc,
-              parts: parts.access(0),
-            },
-            stmt.name.span,
-          );
-        }
+      match stmt.parent.as_ref() {
+        Some(_) => self.builder().emit(
+          MakeClassDerived {
+            desc,
+            parts: parts.access(0),
+          },
+          stmt.name.span,
+        ),
+        None => self.builder().emit(
+          MakeClass {
+            desc,
+            parts: parts.access(0),
+          },
+          stmt.name.span,
+        ),
       }
     }
 
