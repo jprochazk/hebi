@@ -194,6 +194,12 @@ pub struct Field<'src> {
   pub default: Expr<'src>,
 }
 
+impl<'src> Field<'src> {
+  pub fn span(&self) -> Span {
+    self.name.span.join(self.default.span)
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Meta {
   Str,
