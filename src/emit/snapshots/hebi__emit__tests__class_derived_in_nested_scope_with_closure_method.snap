@@ -12,15 +12,6 @@ fn test():
 
 
 # Func:
-function `T.@init` (registers: 1, length: 7, constants: 1)
-.code
-  0 | load_smi 0
-  2 | store_field r0 [0]; v
-  5 | load_none
-  6 | return
-
-
-
 function `T.test` (registers: 2, length: 14, constants: 1)
 .upvalues
   0 <- r0
@@ -36,15 +27,18 @@ function `T.test` (registers: 2, length: 14, constants: 1)
 
 
 
-function `test` (registers: 1, length: 12, constants: 2)
+function `test` (registers: 3, length: 19, constants: 2)
 .code
   0  | load_smi 0
   2  | store r0
   4  | load_global [1]; U
-  6  | make_class_derived [0]; <class `T` descriptor>
-  8  | store r0
-  10 | load_none
-  11 | return
+  6  | store r1
+  8  | load_smi 0
+  10 | store r2
+  12 | make_class_derived [0] r1; <class `T` descriptor>
+  15 | store r0
+  17 | load_none
+  18 | return
 
 
 

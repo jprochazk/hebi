@@ -11,15 +11,6 @@ class T:
 
 
 # Func:
-function `T.@init` (registers: 1, length: 7, constants: 1)
-.code
-  0 | load_smi 0
-  2 | store_field r0 [0]; v
-  5 | load_none
-  6 | return
-
-
-
 function `T.test` (registers: 2, length: 14, constants: 2)
 .code
   0  | load_self
@@ -33,13 +24,15 @@ function `T.test` (registers: 2, length: 14, constants: 2)
 
 
 
-function `main` (registers: 0, length: 9, constants: 3)
+function `main` (registers: 1, length: 14, constants: 3)
 .code
-  0 | load_smi 0
-  2 | store_global [0]; u
-  4 | make_class [1]; <class `T` descriptor>
-  6 | store_global [2]; T
-  8 | return
+  0  | load_smi 0
+  2  | store_global [0]; u
+  4  | load_smi 0
+  6  | store r0
+  8  | make_class [1] r0; <class `T` descriptor>
+  11 | store_global [2]; T
+  13 | return
 
 
 

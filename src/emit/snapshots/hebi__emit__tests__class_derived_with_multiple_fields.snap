@@ -9,23 +9,17 @@ class T(U):
 
 
 # Func:
-function `T.@init` (registers: 1, length: 12, constants: 2)
+function `main` (registers: 3, length: 18, constants: 3)
 .code
-  0  | load_smi 0
-  2  | store_field r0 [0]; a
-  5  | load_smi 1
-  7  | store_field r0 [1]; b
-  10 | load_none
-  11 | return
-
-
-
-function `main` (registers: 0, length: 7, constants: 3)
-.code
-  0 | load_global [1]; U
-  2 | make_class_derived [0]; <class `T` descriptor>
-  4 | store_global [2]; T
-  6 | return
+  0  | load_global [1]; U
+  2  | store r0
+  4  | load_smi 0
+  6  | store r1
+  8  | load_smi 1
+  10 | store r2
+  12 | make_class_derived [0] r0; <class `T` descriptor>
+  15 | store_global [2]; T
+  17 | return
 
 
 
