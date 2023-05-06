@@ -48,12 +48,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
         for (i, value) in list.iter().enumerate() {
           self.emit_expr(value);
-          self.builder().emit(
-            Store {
-              reg: items.access(i),
-            },
-            value.span,
-          );
+          self.emit_store(items.get(i), value.span);
         }
         self.builder().emit(
           MakeList {
@@ -77,19 +72,9 @@ impl<'cx, 'src> State<'cx, 'src> {
 
         for (i, (key, value)) in table.iter().enumerate() {
           self.emit_expr(key);
-          self.builder().emit(
-            Store {
-              reg: pairs.access(i * 2),
-            },
-            key.span,
-          );
+          self.emit_store(pairs.get(i * 2), key.span);
           self.emit_expr(value);
-          self.builder().emit(
-            Store {
-              reg: pairs.access(i * 2 + 1),
-            },
-            value.span,
-          );
+          self.emit_store(pairs.get(i * 2 + 1), value.span);
         }
         self.builder().emit(
           MakeTable {
@@ -119,9 +104,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
     let lhs = self.alloc_register();
     self.emit_expr(&expr.left);
-    self
-      .builder()
-      .emit(Store { reg: lhs.access() }, expr.left.span);
+    self.emit_store(lhs.clone(), expr.left.span);
     self.emit_expr(&expr.right);
 
     let lhs = lhs.access();
@@ -184,15 +167,13 @@ impl<'cx, 'src> State<'cx, 'src> {
         let end = self.builder().label("end");
         let lhs = self.alloc_register();
         self.emit_expr(&expr.left);
-        self
-          .builder()
-          .emit(Store { reg: lhs.access() }, expr.left.span);
+        self.emit_store(lhs.clone(), expr.left.span);
         self.builder().emit(IsNone, span);
         self.builder().emit_jump_if_false(&use_lhs, span);
         self.emit_expr(&expr.right);
         self.builder().emit_jump(&end, span);
         self.builder().bind_label(use_lhs);
-        self.builder().emit(Load { reg: lhs.access() }, span);
+        self.emit_load(lhs, span);
         self.builder().bind_label(end);
       }
       _ => unreachable!("not a logical expr: {:?}", expr.op),
@@ -255,11 +236,10 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_set_field_expr(&mut self, expr: &'src ast::SetField<'src>, span: Span) {
     let obj = self.alloc_register();
-    let name = self.constant_name(&expr.target.name);
-    self.emit_expr(&expr.target.target);
-    self
-      .builder()
-      .emit(Store { reg: obj.access() }, expr.target.target.span);
+    let get = &expr.target;
+    let name = self.constant_name(&get.name);
+    self.emit_expr(&get.target);
+    self.emit_store(obj.clone(), get.target.span);
     self.emit_expr(&expr.value);
     self.builder().emit(
       StoreField {
@@ -273,9 +253,7 @@ impl<'cx, 'src> State<'cx, 'src> {
   fn emit_get_index_expr(&mut self, expr: &'src ast::GetIndex<'src>, span: Span) {
     let obj = self.alloc_register();
     self.emit_expr(&expr.target);
-    self
-      .builder()
-      .emit(Store { reg: obj.access() }, expr.target.span);
+    self.emit_store(obj.clone(), expr.target.span);
     self.emit_expr(&expr.key);
     if self.current_function().is_in_opt_expr {
       self
@@ -287,16 +265,13 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn emit_set_index_expr(&mut self, expr: &'src ast::SetIndex<'src>, span: Span) {
+    let get = &expr.target;
     let obj = self.alloc_register();
     let key = self.alloc_register();
-    self.emit_expr(&expr.target.target);
-    self
-      .builder()
-      .emit(Store { reg: obj.access() }, expr.target.target.span);
-    self.emit_expr(&expr.target.key);
-    self
-      .builder()
-      .emit(Store { reg: key.access() }, expr.target.key.span);
+    self.emit_expr(&get.target);
+    self.emit_store(obj.clone(), get.target.span);
+    self.emit_expr(&get.key);
+    self.emit_store(key.clone(), get.key.span);
     self.emit_expr(&expr.value);
     self.builder().emit(
       StoreIndex {
@@ -314,21 +289,10 @@ impl<'cx, 'src> State<'cx, 'src> {
     } else {
       let args = self.alloc_register_slice(1 + expr.args.len());
       let callee = args.get(0);
-
-      self.builder().emit(
-        Store {
-          reg: callee.access(),
-        },
-        expr.target.span,
-      );
+      self.emit_store(callee.clone(), expr.target.span);
       for (i, value) in expr.args.iter().enumerate() {
         self.emit_expr(value);
-        self.builder().emit(
-          Store {
-            reg: args.access(1 + i),
-          },
-          value.span,
-        );
+        self.emit_store(args.get(1 + i), value.span);
       }
 
       self.builder().emit(

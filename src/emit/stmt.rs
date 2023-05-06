@@ -79,44 +79,29 @@ impl<'cx, 'src> State<'cx, 'src> {
 
     self.current_function().enter_scope();
 
-    let item_value = self.alloc_register();
-    let end_value = self.alloc_register();
+    let item_register = self.alloc_register();
+    let end_register = self.alloc_register();
 
-    self.declare_local(stmt.item.lexeme(), item_value.clone());
+    self.declare_local(stmt.item.lexeme(), item_register.clone());
     self.emit_expr(&range.start);
-    self.builder().emit(
-      Store {
-        reg: item_value.access(),
-      },
-      stmt.item.span,
-    );
+    self.emit_store(item_register.clone(), stmt.item.span);
 
     self.emit_expr(&range.end);
-    self.builder().emit(
-      Store {
-        reg: end_value.access(),
-      },
-      range.span(),
-    );
+    self.emit_store(end_register.clone(), range.span());
 
     self.builder().bind_loop_header(&cond);
-    self.builder().emit(
-      Load {
-        reg: end_value.access(),
-      },
-      range.span(),
-    );
+    self.emit_load(end_register.clone(), range.span());
     if range.inclusive {
       self.builder().emit(
         CmpLe {
-          lhs: item_value.access(),
+          lhs: item_register.access(),
         },
         range.span(),
       );
     } else {
       self.builder().emit(
         CmpLt {
-          lhs: item_value.access(),
+          lhs: item_register.access(),
         },
         range.span(),
       );
@@ -130,24 +115,19 @@ impl<'cx, 'src> State<'cx, 'src> {
       .emit(LoadSmi { value: op::Smi(1) }, range.span());
     self.builder().emit(
       Add {
-        lhs: item_value.access(),
+        lhs: item_register.access(),
       },
       range.span(),
     );
-    self.builder().emit(
-      Store {
-        reg: item_value.access(),
-      },
-      range.span(),
-    );
+    self.emit_store(item_register.clone(), range.span());
     self.builder().emit_jump_loop(&cond, range.span());
 
     self.builder().bind_label(body);
     let (latch, end) = self.emit_loop_body((latch, end), &stmt.body);
     self.builder().emit_jump_loop(&latch, range.span());
 
-    end_value.access();
-    item_value.access();
+    end_register.access();
+    item_register.access();
 
     self.builder().bind_label(end);
     self.current_function().leave_scope();
@@ -296,20 +276,10 @@ impl<'cx, 'src> State<'cx, 'src> {
           // class derived
           let parts = self.alloc_register_slice(1 + stmt.members.fields.len());
           self.emit_get(parent.lexeme(), parent.span);
-          self.builder().emit(
-            Store {
-              reg: parts.access(0),
-            },
-            parent.span,
-          );
+          self.emit_store(parts.get(0), parent.span);
           for (i, field) in stmt.members.fields.iter().enumerate() {
             self.emit_expr(&field.default);
-            self.builder().emit(
-              Store {
-                reg: parts.access(1 + i),
-              },
-              field.span(),
-            );
+            self.emit_store(parts.get(1 + i), field.span());
           }
           self.builder().emit(
             MakeClassDerived {
@@ -329,12 +299,7 @@ impl<'cx, 'src> State<'cx, 'src> {
           let parts = self.alloc_register_slice(stmt.members.fields.len());
           for (i, field) in stmt.members.fields.iter().enumerate() {
             self.emit_expr(&field.default);
-            self.builder().emit(
-              Store {
-                reg: parts.access(i),
-              },
-              field.span(),
-            );
+            self.emit_store(parts.get(i), field.span());
           }
           self.builder().emit(
             MakeClass {
@@ -372,12 +337,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
         for (i, value) in values.iter().enumerate() {
           self.emit_expr(value);
-          self.builder().emit(
-            Store {
-              reg: args.access(i),
-            },
-            span,
-          );
+          self.emit_store(args.get(i), span);
         }
 
         self.builder().emit(
@@ -423,12 +383,12 @@ impl<'cx, 'src> State<'cx, 'src> {
           let name = symbol.alias.as_ref().unwrap_or(&symbol.name);
           let name_idx = self.constant_name(name);
 
-          self.builder().emit(Load { reg: temp.access() }, span);
+          self.emit_load(temp.clone(), span);
           self.builder().emit(LoadField { name: name_idx }, span);
 
           let dst = self.alloc_register();
           self.declare_local(name.lexeme(), dst.clone());
-          self.builder().emit(Store { reg: dst.access() }, span);
+          self.emit_store(dst.clone(), span);
         }
       }
     }

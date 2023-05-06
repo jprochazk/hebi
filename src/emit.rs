@@ -118,12 +118,7 @@ impl<'cx, 'src> State<'cx, 'src> {
       }
     } else {
       let register = self.alloc_register();
-      self.builder().emit(
-        Store {
-          reg: register.access(),
-        },
-        span,
-      );
+      self.emit_store(register.clone(), span);
       self.declare_local(name, register);
     }
   }
@@ -227,6 +222,26 @@ impl<'cx, 'src> State<'cx, 'src> {
     }
   }
 
+  #[inline]
+  fn emit_store(&mut self, register: Register, span: Span) {
+    self.builder().emit(
+      Store {
+        reg: register.access(),
+      },
+      span,
+    )
+  }
+
+  #[inline]
+  fn emit_load(&mut self, register: Register, span: Span) {
+    self.builder().emit(
+      Load {
+        reg: register.access(),
+      },
+      span,
+    );
+  }
+
   fn emit_function(&mut self, func: &'src ast::Func<'src>) -> EmittedFunction<'src> {
     self.module.functions.push(Function::new(
       self.cx,
@@ -260,21 +275,11 @@ impl<'cx, 'src> State<'cx, 'src> {
     for (i, param) in func.params.pos.iter().enumerate() {
       if let Some(default) = &param.default {
         let next = self.builder().label("next");
-        self.builder().emit(
-          Load {
-            reg: positional.access(i),
-          },
-          param.span(),
-        );
+        self.emit_load(positional.get(i), param.span());
         self.builder().emit(IsNone, param.span());
         self.builder().emit_jump_if_false(&next, param.span());
         self.emit_expr(default);
-        self.builder().emit(
-          Store {
-            reg: positional.access(i),
-          },
-          param.span(),
-        );
+        self.emit_store(positional.get(i), param.span());
         self.builder().bind_label(next);
       }
     }
