@@ -19,6 +19,16 @@ impl<'src> Ident<'src> {
   pub fn lexeme(&self) -> Cow<'src, str> {
     self.0.deref().clone()
   }
+
+  pub fn as_str(&self) -> &str {
+    self.0.deref().as_ref()
+  }
+}
+
+impl<'a, 'src> PartialEq<&'a str> for Ident<'src> {
+  fn eq(&self, other: &&'a str) -> bool {
+    self.as_str() == *other
+  }
 }
 
 impl<'src> Deref for Ident<'src> {
@@ -174,7 +184,6 @@ pub struct Class<'src> {
 pub struct ClassMembers<'src> {
   pub fields: Vec<Field<'src>>,
   pub methods: Vec<Func<'src>>,
-  pub meta: Vec<(Meta, Func<'src>)>,
 }
 
 impl<'src> ClassMembers<'src> {
@@ -183,7 +192,6 @@ impl<'src> ClassMembers<'src> {
     Self {
       fields: vec![],
       methods: vec![],
-      meta: vec![],
     }
   }
 }
@@ -201,6 +209,7 @@ impl<'src> Field<'src> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u8)]
 pub enum Meta {
   Str,
 

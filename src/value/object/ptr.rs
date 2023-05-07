@@ -15,6 +15,8 @@ use crate::value::Value;
 
 type VTable = <dyn Object as Pointee>::Metadata;
 
+// TODO: identity eq specialization similar to `std::rc::Rc`
+
 #[repr(C)]
 struct Repr<T> {
   // TODO: can we get rid of layout here?

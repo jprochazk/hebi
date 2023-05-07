@@ -33,7 +33,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
                 },
             },
         ),
@@ -71,7 +70,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
                 },
             },
         ),
@@ -87,48 +85,44 @@ Module {
                 ),
                 members: ClassMembers {
                     fields: [],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [],
-                                },
-                                body: [
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
-                                                    name: Ident(
-                                                        "v",
-                                                    ),
-                                                },
-                                                value: Call(
-                                                    Call {
-                                                        target: GetField(
-                                                            GetField {
-                                                                target: GetSuper,
-                                                                name: Ident(
-                                                                    "f",
-                                                                ),
-                                                            },
-                                                        ),
-                                                        args: [],
-                                                    },
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "v",
                                                 ),
                                             },
-                                        ),
+                                            value: Call(
+                                                Call {
+                                                    target: GetField(
+                                                        GetField {
+                                                            target: GetSuper,
+                                                            name: Ident(
+                                                                "f",
+                                                            ),
+                                                        },
+                                                    ),
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
                                     ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },

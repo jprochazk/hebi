@@ -10,14 +10,6 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     ))
   }
 
-  pub(super) fn symbol(&mut self) -> Result<ast::Symbol<'src>> {
-    self.expect(Lit_Symbol)?;
-    Ok(ast::Symbol::new(
-      self.previous().span,
-      Cow::from(self.lex.lexeme(self.previous())),
-    ))
-  }
-
   pub(super) fn yield_(&mut self) -> Result<Spanned<ast::Yield<'src>>> {
     if self.state.current_func.is_none() {
       fail!(self.cx, "yield outside of function", self.current().span);

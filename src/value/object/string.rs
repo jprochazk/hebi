@@ -70,3 +70,9 @@ impl Borrow<str> for Ptr<String> {
     self
   }
 }
+
+impl<'a> PartialEq<&'a str> for Ptr<String> {
+  fn eq(&self, other: &&'a str) -> bool {
+    self.as_str() == *other
+  }
+}

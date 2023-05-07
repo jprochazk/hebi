@@ -766,7 +766,7 @@ fn class_self_and_super() {
           print self, super
 
       class T(U):
-        fn @init(self):
+        fn init(self):
           self.v = super.f()
     "#
   }
@@ -877,66 +877,6 @@ fn duplicate_fields() {
 }
 
 #[test]
-fn meta_methods() {
-  check_module! {
-    r#"
-      class T:
-        fn @str(self): pass
-        fn @add(self, other): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      fn @test(): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @unknown(self): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @str(self): pass
-        fn @str(self): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @str(): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @str(self, other): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @str(self, *other): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T:
-        fn @str(self, **other): pass
-    "#
-  }
-}
-
-#[test]
 fn whole_module() {
   check_module! {
     r#"
@@ -1041,7 +981,7 @@ fn whole_module() {
         print("very large")
 
       class Test:
-        fn @init(self, n):
+        fn init(self, n):
           self.n = n
 
         fn get_n(self):
@@ -1074,7 +1014,7 @@ fn whole_module() {
       # data class, implicit initializer
       class A:
         a = 100
-        # fn @init(self, a = 100):
+        # fn init(self, a = 100):
         #   self.a = a
 
       print(A().a)   # 100
@@ -1082,7 +1022,7 @@ fn whole_module() {
 
       class B:
         a = 100
-        fn @init(self): # override the implicit initializer
+        fn init(self): # override the implicit initializer
           pass
 
       print(B().a) # 100
@@ -1093,7 +1033,7 @@ fn whole_module() {
         # and may be added in the initializer
         # after `init` is called, the class is frozen
         # no fields/methods may be added or removed
-        fn @init(self):
+        fn init(self):
           self.a = 10
 
       print(C().a) # 10
@@ -1123,15 +1063,15 @@ fn whole_module() {
                       # test 2
 
       class X:
-       fn @init(self):
+       fn init(self):
           self.v = 10
 
       class Y(X):
-        fn @init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
+        fn init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
           self.v = 10
 
       class Z(X):
-        fn @init(self, v):
+        fn init(self, v):
           super.init()
           self.v += v
 

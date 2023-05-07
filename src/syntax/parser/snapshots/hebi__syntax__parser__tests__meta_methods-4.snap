@@ -1,8 +1,0 @@
----
-source: src/syntax/parser/tests.rs
-expression: errors
----
-duplicate meta method `str`
-| fn [4;31m@str[0m(self): pass
-
-

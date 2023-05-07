@@ -345,7 +345,7 @@ impl function::Params {
   }
 
   pub fn from_ast_class(class: &ast::Class) -> Self {
-    if let Some((_, init)) = class.members.meta.iter().find(|m| m.0 == ast::Meta::Init) {
+    if let Some(init) = class.members.methods.iter().find(|m| m.name == "init") {
       Self::from_ast_func(init)
     } else {
       Self {

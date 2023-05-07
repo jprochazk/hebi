@@ -228,24 +228,16 @@ impl<'cx, 'src> State<'cx, 'src> {
     let mut preserve = Vec::new();
 
     let mut init = None;
-    let mut meta_methods = IndexMap::with_capacity(stmt.members.meta.len());
-    for (key, function) in stmt.members.meta.iter() {
-      let function = self.emit_function(function);
-      preserve.push(function.upvalues);
-      let function = function.ptr;
-      if *key == ast::Meta::Init {
-        init = Some(function);
-      } else {
-        meta_methods.insert(*key, function);
-      }
-    }
-
     let mut methods = IndexMap::with_capacity(stmt.members.methods.len());
     for function in stmt.members.methods.iter() {
       let function = self.emit_function(function);
       preserve.push(function.upvalues);
       let function = function.ptr;
-      methods.insert(function.name.clone(), function);
+      methods.insert(function.name.clone(), function.clone());
+      if function.name == "init" {
+        assert!(init.is_none());
+        init = Some(function);
+      }
     }
 
     let mut fields = Table::with_capacity(stmt.members.fields.len());
@@ -257,7 +249,6 @@ impl<'cx, 'src> State<'cx, 'src> {
       name: self.cx.intern(stmt.name.to_string()),
       params: function::Params::from_ast_class(stmt),
       init,
-      meta_methods,
       methods,
       fields,
       is_derived: stmt.parent.is_some(),

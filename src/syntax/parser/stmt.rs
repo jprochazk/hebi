@@ -329,40 +329,17 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
       self.expect(Kw_Fn)?;
 
-      if self.current().is(Lit_Symbol) {
-        let name = self.symbol()?;
-        let ident = name.ident();
-        self.no_indent()?;
-        let f = self.func(ident)?;
-
-        let which = name.which().ok_or_else(|| {
-          self
-            .cx
-            .error(format!("unknown meta method `{}`", f.name), name.span)
-        })?;
-        if members.meta.iter().any(|(k, _)| *k == which) {
-          fail!(
-            self.cx,
-            format!("duplicate meta method `{}`", f.name),
-            name.span,
-          );
-        }
-        self.check_meta_params(&which, &f.params, f.name.span)?;
-
-        members.meta.push((which, f));
+      let name = self.ident()?;
+      if names.contains(&name) {
+        self
+          .errors
+          .push(self.cx.error(format!("duplicate field {name}"), name.span));
       } else {
-        let name = self.ident()?;
-        if names.contains(&name) {
-          self
-            .errors
-            .push(self.cx.error(format!("duplicate field {name}"), name.span));
-        } else {
-          names.insert(name.clone());
-        }
-        self.no_indent()?; // func's opening paren must be unindented
-        let f = self.func(name)?;
-        members.methods.push(f);
+        names.insert(name.clone());
       }
+      self.no_indent()?; // func's opening paren must be unindented
+      let f = self.func(name)?;
+      members.methods.push(f);
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {

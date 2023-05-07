@@ -1774,6 +1774,44 @@ Module {
                     methods: [
                         Func {
                             name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    Param {
+                                        name: Ident(
+                                            "n",
+                                        ),
+                                        default: None,
+                                    },
+                                ],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "n",
+                                                ),
+                                            },
+                                            value: GetVar(
+                                                GetVar {
+                                                    name: Ident(
+                                                        "n",
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
                                 "get_n",
                             ),
                             params: Params {
@@ -1854,49 +1892,6 @@ Module {
                             ],
                             has_yield: false,
                         },
-                    ],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [
-                                        Param {
-                                            name: Ident(
-                                                "n",
-                                            ),
-                                            default: None,
-                                        },
-                                    ],
-                                },
-                                body: [
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
-                                                    name: Ident(
-                                                        "n",
-                                                    ),
-                                                },
-                                                value: GetVar(
-                                                    GetVar {
-                                                        name: Ident(
-                                                            "n",
-                                                        ),
-                                                    },
-                                                ),
-                                            },
-                                        ),
-                                    ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
                     ],
                 },
             },
@@ -2151,7 +2146,6 @@ Module {
                         },
                     ],
                     methods: [],
-                    meta: [],
                 },
             },
         ),
@@ -2230,24 +2224,20 @@ Module {
                             ),
                         },
                     ],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [],
-                                },
-                                body: [
-                                    Pass,
-                                ],
-                                has_yield: false,
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
                             },
-                        ),
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },
@@ -2316,40 +2306,36 @@ Module {
                 parent: None,
                 members: ClassMembers {
                     fields: [],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [],
-                                },
-                                body: [
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
-                                                    name: Ident(
-                                                        "a",
-                                                    ),
-                                                },
-                                                value: Literal(
-                                                    Int(
-                                                        10,
-                                                    ),
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "a",
                                                 ),
                                             },
-                                        ),
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
+                                            ),
+                                        },
                                     ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },
@@ -2440,7 +2426,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
                 },
             },
         ),
@@ -2457,7 +2442,6 @@ Module {
                 members: ClassMembers {
                     fields: [],
                     methods: [],
-                    meta: [],
                 },
             },
         ),
@@ -2550,7 +2534,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
                 },
             },
         ),
@@ -2632,7 +2615,6 @@ Module {
                             has_yield: false,
                         },
                     ],
-                    meta: [],
                 },
             },
         ),
@@ -2670,40 +2652,36 @@ Module {
                 parent: None,
                 members: ClassMembers {
                     fields: [],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [],
-                                },
-                                body: [
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
-                                                    name: Ident(
-                                                        "v",
-                                                    ),
-                                                },
-                                                value: Literal(
-                                                    Int(
-                                                        10,
-                                                    ),
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "v",
                                                 ),
                                             },
-                                        ),
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
+                                            ),
+                                        },
                                     ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },
@@ -2720,40 +2698,36 @@ Module {
                 ),
                 members: ClassMembers {
                     fields: [],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [],
-                                },
-                                body: [
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
-                                                    name: Ident(
-                                                        "v",
-                                                    ),
-                                                },
-                                                value: Literal(
-                                                    Int(
-                                                        10,
-                                                    ),
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "v",
                                                 ),
                                             },
-                                        ),
+                                            value: Literal(
+                                                Int(
+                                                    10,
+                                                ),
+                                            ),
+                                        },
                                     ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },
@@ -2770,77 +2744,73 @@ Module {
                 ),
                 members: ClassMembers {
                     fields: [],
-                    methods: [],
-                    meta: [
-                        (
-                            Init,
-                            Func {
-                                name: Ident(
-                                    "init",
-                                ),
-                                params: Params {
-                                    has_self: true,
-                                    pos: [
-                                        Param {
-                                            name: Ident(
-                                                "v",
-                                            ),
-                                            default: None,
-                                        },
-                                    ],
-                                },
-                                body: [
-                                    Expr(
-                                        Call(
-                                            Call {
-                                                target: GetField(
-                                                    GetField {
-                                                        target: GetSuper,
-                                                        name: Ident(
-                                                            "init",
-                                                        ),
-                                                    },
-                                                ),
-                                                args: [],
-                                            },
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    Param {
+                                        name: Ident(
+                                            "v",
                                         ),
-                                    ),
-                                    Expr(
-                                        SetField(
-                                            SetField {
-                                                target: GetField {
-                                                    target: GetSelf,
+                                        default: None,
+                                    },
+                                ],
+                            },
+                            body: [
+                                Expr(
+                                    Call(
+                                        Call {
+                                            target: GetField(
+                                                GetField {
+                                                    target: GetSuper,
                                                     name: Ident(
-                                                        "v",
+                                                        "init",
                                                     ),
                                                 },
-                                                value: Binary(
-                                                    Binary {
-                                                        op: Add,
-                                                        left: GetField(
-                                                            GetField {
-                                                                target: GetSelf,
-                                                                name: Ident(
-                                                                    "v",
-                                                                ),
-                                                            },
-                                                        ),
-                                                        right: GetVar(
-                                                            GetVar {
-                                                                name: Ident(
-                                                                    "v",
-                                                                ),
-                                                            },
-                                                        ),
-                                                    },
+                                            ),
+                                            args: [],
+                                        },
+                                    ),
+                                ),
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "v",
                                                 ),
                                             },
-                                        ),
+                                            value: Binary(
+                                                Binary {
+                                                    op: Add,
+                                                    left: GetField(
+                                                        GetField {
+                                                            target: GetSelf,
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
+                                                        },
+                                                    ),
+                                                    right: GetVar(
+                                                        GetVar {
+                                                            name: Ident(
+                                                                "v",
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
                                     ),
-                                ],
-                                has_yield: false,
-                            },
-                        ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
                     ],
                 },
             },

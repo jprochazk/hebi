@@ -596,14 +596,3 @@ check! {
       return value
   "#
 }
-
-check! {
-  meta_methods,
-  r#"
-    class U: pass
-    class T(U):
-      value = 0
-      fn @add(self, other): pass
-      fn add(self, other): pass
-  "#
-}

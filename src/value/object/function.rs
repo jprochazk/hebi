@@ -94,26 +94,17 @@ impl FunctionDescriptor {
 
 impl FunctionDescriptor {
   pub fn disassemble(&self) -> Disassembly {
-    self.disassemble_inner(None, false)
+    self.disassemble_inner(None)
   }
 
-  pub fn disassemble_as_method(
-    &self,
-    class_name: Ptr<String>,
-    is_meta_method: bool,
-  ) -> Disassembly {
-    self.disassemble_inner(Some(class_name), is_meta_method)
+  pub fn disassemble_as_method(&self, class_name: Ptr<String>) -> Disassembly {
+    self.disassemble_inner(Some(class_name))
   }
 
-  fn disassemble_inner(
-    &self,
-    class_name: Option<Ptr<String>>,
-    is_meta_method: bool,
-  ) -> Disassembly {
+  fn disassemble_inner(&self, class_name: Option<Ptr<String>>) -> Disassembly {
     Disassembly {
       function: self,
       class_name,
-      is_meta_method,
     }
   }
 }
@@ -121,7 +112,6 @@ impl FunctionDescriptor {
 pub struct Disassembly<'a> {
   function: &'a FunctionDescriptor,
   class_name: Option<Ptr<String>>,
-  is_meta_method: bool,
 }
 
 impl<'a> Display for Disassembly<'a> {
@@ -137,26 +127,8 @@ impl<'a> Display for Disassembly<'a> {
           writeln!(f, "{}\n", function.disassemble())?;
         }
         Constant::Class(class) => {
-          if let Some(init) = class.init.as_ref() {
-            writeln!(
-              f,
-              "{}\n",
-              init.disassemble_as_method(class.name.clone(), true)
-            )?;
-          }
-          for method in class.meta_methods.values() {
-            writeln!(
-              f,
-              "{}\n",
-              method.disassemble_as_method(class.name.clone(), true)
-            )?;
-          }
           for method in class.methods.values() {
-            writeln!(
-              f,
-              "{}\n",
-              method.disassemble_as_method(class.name.clone(), false)
-            )?;
+            writeln!(f, "{}\n", method.disassemble_as_method(class.name.clone()))?;
           }
         }
         _ => {}
@@ -167,10 +139,9 @@ impl<'a> Display for Disassembly<'a> {
       Some(class_name) => format!("{class_name}."),
       None => std::string::String::new(),
     };
-    let symbol = if self.is_meta_method { "@" } else { "" };
     writeln!(
       f,
-      "function `{class_name}{symbol}{}` (registers: {}, length: {}, constants: {})",
+      "function `{class_name}{}` (registers: {}, length: {}, constants: {})",
       function.name,
       function.frame_size,
       bytecode.len(),

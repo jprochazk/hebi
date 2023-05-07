@@ -60,7 +60,6 @@ pub struct ClassDescriptor {
   pub name: Ptr<String>,
   pub params: Params,
   pub init: Option<Ptr<FunctionDescriptor>>,
-  pub meta_methods: IndexMap<ast::Meta, Ptr<FunctionDescriptor>>,
   pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
   pub fields: Table,
   pub is_derived: bool,
