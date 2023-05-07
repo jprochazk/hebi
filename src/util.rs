@@ -69,3 +69,34 @@ pub fn num_digits(v: usize) -> usize {
 
   successors(Some(v), |&n| (n >= 10).then_some(n / 10)).count()
 }
+
+pub trait TupleLength {
+  const LENGTH: usize;
+}
+
+macro_rules! __count {
+  () => (0);
+  ($head:ident $($tail:ident)*) => ((1 + __count!($($tail)*)));
+}
+
+macro_rules! impl_tuple_len_for {
+  ($($ty:ident),+) => {
+    impl<$($ty,)+> TupleLength for ($($ty,)+) {
+      const LENGTH: usize = __count!($($ty)*);
+    }
+  }
+}
+
+impl TupleLength for () {
+  const LENGTH: usize = 0;
+}
+
+impl_tuple_len_for!(A);
+impl_tuple_len_for!(A, B);
+impl_tuple_len_for!(A, B, C);
+impl_tuple_len_for!(A, B, C, D);
+impl_tuple_len_for!(A, B, C, D, E);
+impl_tuple_len_for!(A, B, C, D, E, F);
+impl_tuple_len_for!(A, B, C, D, E, F, G);
+impl_tuple_len_for!(A, B, C, D, E, F, G, H);
+impl_tuple_len_for!(A, B, C, D, E, F, G, H, I);

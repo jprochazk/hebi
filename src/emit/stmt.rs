@@ -1,8 +1,8 @@
 use std::ops::Deref;
 
 use super::*;
+use crate::object::Table;
 use crate::util::JoinIter;
-use crate::value::object::Table;
 use crate::value::Value;
 
 impl<'cx, 'src> State<'cx, 'src> {
@@ -300,10 +300,11 @@ impl<'cx, 'src> State<'cx, 'src> {
       }
     }
 
-    let mut fields = Table::with_capacity(stmt.members.fields.len());
+    let fields = Table::with_capacity(stmt.members.fields.len());
     for field in stmt.members.fields.iter() {
       fields.insert(self.cx.intern(field.name.to_string()), Value::none());
     }
+    let fields = self.cx.alloc(fields);
 
     let class = self.cx.alloc(object::ClassDescriptor {
       name: self.cx.intern(stmt.name.to_string()),

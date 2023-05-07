@@ -4,8 +4,8 @@ use std::rc::Rc;
 use beef::lean::Cow;
 use indexmap::IndexMap;
 
-use crate::value::object::ptr::Ptr;
-use crate::value::object::String;
+use crate::object::ptr::Ptr;
+use crate::object::String;
 
 #[derive(Default, Clone)]
 pub struct Context {

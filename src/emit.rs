@@ -24,11 +24,11 @@ use crate::bytecode::builder::{BytecodeBuilder, InsertConstant, LoopHeader, Mult
 use crate::bytecode::opcode::symbolic::*;
 use crate::bytecode::opcode::{self as op};
 use crate::ctx::Context;
+use crate::object;
+use crate::object::function;
+use crate::object::ptr::Ptr;
 use crate::span::Span;
 use crate::syntax::ast;
-use crate::value::object;
-use crate::value::object::function;
-use crate::value::object::ptr::Ptr;
 
 pub fn emit<'cx, 'src>(
   cx: &'cx Context,

@@ -10,7 +10,7 @@ use std::{alloc, mem};
 
 use crate::ctx::Context;
 use crate::error::Result;
-use crate::value::object::Object;
+use crate::object::Object;
 use crate::value::Value;
 
 type VTable = <dyn Object as Pointee>::Metadata;

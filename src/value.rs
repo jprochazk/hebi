@@ -9,12 +9,11 @@ mod portable;
 pub use portable::Value;
 
 pub mod constant;
-pub mod object;
 
 use std::fmt::{Debug, Display};
 
-pub use object::ptr::Ref;
-use object::Object;
+pub use crate::object::ptr::Ref;
+use crate::object::Object;
 
 impl Default for Value {
   fn default() -> Self {
@@ -67,8 +66,8 @@ impl Debug for Value {
 mod tests {
   use super::*;
   use crate::ctx::Context;
+  use crate::object::Object;
   use crate::util::JoinIter;
-  use crate::value::object::Object;
 
   struct Bar {
     value: u64,

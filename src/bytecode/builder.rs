@@ -6,9 +6,9 @@ use indexmap::IndexMap;
 use super::opcode::symbolic::*;
 use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
+use crate::object;
 use crate::span::Span;
 use crate::value::constant::{Constant, NonNaNFloat};
-use crate::value::object;
 
 #[derive(Default)]
 pub struct BytecodeBuilder {

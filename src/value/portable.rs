@@ -1,5 +1,5 @@
-use crate::value::object::ptr::{Any, Ptr};
-use crate::value::object::Object;
+use crate::object::ptr::{Any, Ptr};
+use crate::object::Object;
 
 pub enum Value {
   Float(f64),

@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 use std::mem;
 
-use crate::value::object::ptr::{Any, Ptr};
-use crate::value::object::Object;
+use crate::object::ptr::{Any, Ptr};
+use crate::object::Object;
 
 mod mask {
   //! Generic mask bits

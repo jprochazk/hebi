@@ -11,7 +11,7 @@ use crate::syntax::ast;
 pub struct Instance {
   pub name: Ptr<String>,
   pub meta: Ptr<Meta>,
-  pub fields: Table,
+  pub fields: Ptr<Table>,
   pub parent: Option<Ptr<Class>>,
   pub is_frozen: bool,
 }
@@ -33,8 +33,8 @@ pub struct Class {
   pub descriptor: Ptr<ClassDescriptor>,
   pub meta: Ptr<Meta>,
   pub init: Option<Ptr<Function>>,
-  pub methods: Table,
-  pub fields: Table,
+  pub methods: Ptr<Table>,
+  pub fields: Ptr<Table>,
   pub parent: Option<Ptr<Class>>,
 }
 
@@ -61,7 +61,7 @@ pub struct ClassDescriptor {
   pub params: Params,
   pub init: Option<Ptr<FunctionDescriptor>>,
   pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
-  pub fields: Table,
+  pub fields: Ptr<Table>,
   pub is_derived: bool,
 }
 

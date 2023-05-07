@@ -4,9 +4,11 @@
 mod macros;
 
 use super::disasm;
-use super::operands::{Operand, Width};
+use super::operands::Operand;
+pub use super::operands::Width;
 
 // TODO: update `docs/emit.md` instruction list once this stops changing
+// TODO: decoding should return strongly typed operands
 
 instructions! {
   patch_registers, symbolic, decode, Opcode;
@@ -85,6 +87,12 @@ operand_type!(Count, u32, "{v}");
 
 impl Constant {
   pub fn index(&self) -> usize {
+    self.0 as usize
+  }
+}
+
+impl Offset {
+  pub fn value(&self) -> usize {
     self.0 as usize
   }
 }

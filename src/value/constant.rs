@@ -2,9 +2,9 @@ use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-use super::object::ptr::Ptr;
-use super::object::{ClassDescriptor, FunctionDescriptor, String};
 use crate::bytecode::opcode as op;
+use crate::object::ptr::Ptr;
+use crate::object::{ClassDescriptor, FunctionDescriptor, String};
 
 #[derive(Debug, Clone)]
 pub enum Constant {

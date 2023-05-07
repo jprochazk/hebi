@@ -11,6 +11,7 @@ pub mod error;
 pub mod bytecode;
 pub mod ctx;
 pub mod emit;
+pub mod object;
 pub mod span;
 pub mod syntax;
 pub mod value;

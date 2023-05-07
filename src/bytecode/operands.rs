@@ -2,7 +2,7 @@ use std::ops::BitOr;
 
 use super::opcode::Opcode;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Width {
   Normal,
