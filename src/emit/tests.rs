@@ -394,7 +394,7 @@ check! {
 }
 
 check! {
-  for_iter_0_to_10_print,
+  for_range_0_to_10_print,
   r#"
     for i in 0..10:
       print i
@@ -402,7 +402,7 @@ check! {
 }
 
 check! {
-  for_iter_0_to_10_inclusive_print,
+  for_range_0_to_10_inclusive_print,
   r#"
     for i in 0..=10:
       print i
@@ -410,7 +410,7 @@ check! {
 }
 
 check! {
-  for_iter_0_to_10_inclusive_break,
+  for_range_0_to_10_inclusive_break,
   r#"
     for i in 0..=10:
       break
@@ -418,10 +418,19 @@ check! {
 }
 
 check! {
-  for_iter_0_to_10_inclusive_continue,
+  for_range_0_to_10_inclusive_continue,
   r#"
     for i in 0..=10:
       continue
+  "#
+}
+
+check! {
+  for_iter_array,
+  r#"
+    a := [0, 1, 2]
+    for v in a:
+      print v
   "#
 }
 
