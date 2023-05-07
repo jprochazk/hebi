@@ -133,8 +133,68 @@ impl<'cx, 'src> State<'cx, 'src> {
     self.current_function().leave_scope();
   }
 
-  fn emit_for_iter_loop(&mut self, _: &'src ast::For<'src>, _: &'src ast::Expr<'src>) {
-    todo!()
+  fn emit_for_iter_loop(&mut self, stmt: &'src ast::For<'src>, iter: &'src ast::Expr<'src>) {
+    let iter_register = self.alloc_register();
+    let item_register = self.alloc_register();
+
+    let iter_const = self.constant_name("iter");
+    let next_const = self.constant_name("next");
+    let done_const = self.constant_name("done");
+
+    let cond = self.builder().loop_header();
+    let latch = self.builder().loop_header();
+    let body = self.builder().label("body");
+    let end = self.builder().multi_label("end");
+
+    self.current_function().enter_scope();
+
+    // iterator
+    self.emit_expr(iter);
+    self
+      .builder()
+      .emit(LoadField { name: iter_const }, iter.span);
+    self.builder().emit(Call0, iter.span);
+    self.emit_store(iter_register.clone(), iter.span);
+
+    // first call to `next`
+    self.emit_load(iter_register.clone(), iter.span);
+    self
+      .builder()
+      .emit(LoadField { name: next_const }, iter.span);
+    self.builder().emit(Call0, iter.span);
+    self.emit_store(item_register.clone(), iter.span);
+    self.declare_local(stmt.item.lexeme(), item_register.clone());
+
+    // condition
+    self.builder().bind_loop_header(&cond);
+    self.emit_load(iter_register.clone(), iter.span);
+    self
+      .builder()
+      .emit(LoadField { name: done_const }, iter.span);
+    self.builder().emit(Call0, iter.span);
+    self.builder().emit(Not, iter.span);
+    self.builder().emit_jump_if_false(&end, iter.span);
+    self.builder().emit_jump(&body, iter.span);
+
+    // latch
+    self.builder().bind_loop_header(&latch);
+    self.emit_load(iter_register.clone(), iter.span);
+    self
+      .builder()
+      .emit(LoadField { name: next_const }, iter.span);
+    self.builder().emit(Call0, iter.span);
+    self.emit_store(item_register.clone(), iter.span);
+    self.builder().emit_jump_loop(&cond, iter.span);
+
+    self.builder().bind_label(body);
+    let (latch, end) = self.emit_loop_body((latch, end), &stmt.body);
+    self.builder().emit_jump_loop(&latch, iter.span);
+
+    iter_register.access();
+    item_register.access();
+
+    self.builder().bind_label(end);
+    self.current_function().leave_scope();
   }
 
   fn emit_while_loop(&mut self, stmt: &'src ast::While<'src>, span: Span) {
