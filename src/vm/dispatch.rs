@@ -2,491 +2,360 @@
 mod macros;
 
 use std::error::Error as StdError;
+use std::fmt::Display;
+use std::ptr::NonNull;
 
+use crate::bytecode::opcode as op;
 use crate::bytecode::opcode::Opcode;
 use crate::bytecode::operands::Width;
 
 pub fn dispatch<T: Handler>(
-  handler: &T,
-  bytecode: &[u8],
+  handler: &mut T,
+  bytecode: NonNull<[u8]>,
   pc: usize,
 ) -> Result<ControlFlow, Error<T::Error>> {
-  let mut pc = pc;
+  let ip = bytecode.as_ptr() as *mut u8;
+  if pc >= bytecode.len() {
+    return Err(Error::UnexpectedEnd);
+  }
+  let end = unsafe { ip.add(bytecode.len()) };
+  let mut ip = unsafe { ip.add(pc) };
   let mut width = Width::Normal;
 
   loop {
-    let opcode = bytecode
-      .get(pc)
-      .copied()
-      .ok_or_else(|| Error::UnexpectedEnd)?;
-    let opcode = Opcode::try_from(opcode).map_err(|_| Error::IllegalInstruction)?;
-    match opcode {
-      Opcode::Nop => {
-        pc += 1;
-        width = Width::Normal;
-      }
+    let start = ip;
+    match read_opcode!(ip, end) {
+      Opcode::Nop => continue,
       Opcode::Wide16 => {
-        pc += 1;
         width = Width::Wide16;
+        continue;
       }
       Opcode::Wide32 => {
-        pc += 1;
         width = Width::Wide32;
+        continue;
       }
       Opcode::Load => {
-        let (reg,) = operands!(Load, bytecode, pc, width);
-        handler.op_load(reg as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Load);
-        width = Width::Normal;
+        let (reg,) = read_operands!(Load, ip, end, width);
+        handler.op_load(reg).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Store => {
-        let (reg,) = operands!(Store, bytecode, pc, width);
-        handler.op_store(reg as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Store);
-        width = Width::Normal;
+        let (reg,) = read_operands!(Store, ip, end, width);
+        handler.op_store(reg).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadConst => {
-        let (idx,) = operands!(LoadConst, bytecode, pc, width);
-        handler
-          .op_load_const(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadConst);
-        width = Width::Normal;
+        let (idx,) = read_operands!(LoadConst, ip, end, width);
+        handler.op_load_const(idx).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadUpvalue => {
-        let (idx,) = operands!(LoadUpvalue, bytecode, pc, width);
-        handler
-          .op_load_upvalue(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadUpvalue);
-        width = Width::Normal;
+        let (idx,) = read_operands!(LoadUpvalue, ip, end, width);
+        handler.op_load_upvalue(idx).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::StoreUpvalue => {
-        let (idx,) = operands!(StoreUpvalue, bytecode, pc, width);
-        handler
-          .op_store_upvalue(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(StoreUpvalue);
-        width = Width::Normal;
+        let (idx,) = read_operands!(StoreUpvalue, ip, end, width);
+        handler.op_store_upvalue(idx).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadModuleVar => {
-        let (idx,) = operands!(LoadModuleVar, bytecode, pc, width);
-        handler
-          .op_load_module_var(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadModuleVar);
-        width = Width::Normal;
+        let (idx,) = read_operands!(LoadModuleVar, ip, end, width);
+        handler.op_load_module_var(idx).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::StoreModuleVar => {
-        let (idx,) = operands!(StoreModuleVar, bytecode, pc, width);
-        handler
-          .op_store_module_var(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(StoreModuleVar);
-        width = Width::Normal;
+        let (idx,) = read_operands!(StoreModuleVar, ip, end, width);
+        handler.op_store_module_var(idx).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadGlobal => {
-        let (name,) = operands!(LoadGlobal, bytecode, pc, width);
-        handler
-          .op_load_global(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadGlobal);
-        width = Width::Normal;
+        let (name,) = read_operands!(LoadGlobal, ip, end, width);
+        handler.op_load_global(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::StoreGlobal => {
-        let (name,) = operands!(StoreGlobal, bytecode, pc, width);
-        handler
-          .op_store_global(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(StoreGlobal);
-        width = Width::Normal;
+        let (name,) = read_operands!(StoreGlobal, ip, end, width);
+        handler.op_store_global(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadField => {
-        let (name,) = operands!(LoadField, bytecode, pc, width);
-        handler
-          .op_load_field(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadField);
-        width = Width::Normal;
+        let (name,) = read_operands!(LoadField, ip, end, width);
+        handler.op_load_field(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadFieldOpt => {
-        let (name,) = operands!(LoadFieldOpt, bytecode, pc, width);
-        handler
-          .op_load_field_opt(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadFieldOpt);
-        width = Width::Normal;
+        let (name,) = read_operands!(LoadFieldOpt, ip, end, width);
+        handler.op_load_field_opt(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::StoreField => {
-        let (obj, name) = operands!(StoreField, bytecode, pc, width);
-        handler
-          .op_store_field(obj as usize, name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(StoreField);
-        width = Width::Normal;
+        let (obj, name) = read_operands!(StoreField, ip, end, width);
+        handler.op_store_field(obj, name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadIndex => {
-        let (name,) = operands!(LoadIndex, bytecode, pc, width);
-        handler
-          .op_load_index(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadIndex);
-        width = Width::Normal;
+        let (name,) = read_operands!(LoadIndex, ip, end, width);
+        handler.op_load_index(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadIndexOpt => {
-        let (name,) = operands!(LoadIndexOpt, bytecode, pc, width);
-        handler
-          .op_load_index_opt(name as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadIndexOpt);
-        width = Width::Normal;
+        let (name,) = read_operands!(LoadIndexOpt, ip, end, width);
+        handler.op_load_index_opt(name).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::StoreIndex => {
-        let (obj, key) = operands!(StoreIndex, bytecode, pc, width);
-        handler
-          .op_store_index(obj as usize, key as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(StoreIndex);
-        width = Width::Normal;
+        let (obj, key) = read_operands!(StoreIndex, ip, end, width);
+        handler.op_store_index(obj, key).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::LoadSelf => {
+        let () = read_operands!(LoadSelf, ip, end, width);
         handler.op_load_self().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::LoadSuper => {
+        let () = read_operands!(LoadSuper, ip, end, width);
         handler.op_load_super().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::LoadNone => {
+        let () = read_operands!(LoadNone, ip, end, width);
         handler.op_load_none().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::LoadTrue => {
+        let () = read_operands!(LoadTrue, ip, end, width);
         handler.op_load_true().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::LoadFalse => {
+        let () = read_operands!(LoadFalse, ip, end, width);
         handler.op_load_false().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::LoadSmi => {
-        let (value,) = operands!(LoadSmi, bytecode, pc, width);
-        handler.op_load_smi(value).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(LoadSmi);
-        width = Width::Normal;
+        let (smi,) = read_operands!(LoadSmi, ip, end, width);
+        handler.op_load_smi(smi).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::MakeFn => {
-        let (desc,) = operands!(MakeFn, bytecode, pc, width);
-        handler.op_make_fn(desc as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeFn);
-        width = Width::Normal;
+        let (desc,) = read_operands!(MakeFn, ip, end, width);
+        handler.op_make_fn(desc).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::MakeClassEmpty => {
-        let (desc,) = operands!(MakeClassEmpty, bytecode, pc, width);
-        handler
-          .op_make_class_empty(desc as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeClassEmpty);
-        width = Width::Normal;
+        let (desc,) = read_operands!(MakeClassEmpty, ip, end, width);
+        handler.op_make_class_empty(desc).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::MakeClassEmptyDerived => {
-        let (desc,) = operands!(MakeClassEmptyDerived, bytecode, pc, width);
+        let (desc,) = read_operands!(MakeClassEmptyDerived, ip, end, width);
         handler
-          .op_make_class_empty_derived(desc as usize)
+          .op_make_class_empty_derived(desc)
           .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeClassEmptyDerived);
-        width = Width::Normal;
+        continue;
       }
       Opcode::MakeClass => {
-        let (desc, parts) = operands!(MakeClass, bytecode, pc, width);
-        handler
-          .op_make_class(desc as usize, parts as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeClass);
-        width = Width::Normal;
+        let (desc, parts) = read_operands!(MakeClass, ip, end, width);
+        handler.op_make_class(desc, parts).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::MakeClassDerived => {
-        let (desc, parts) = operands!(MakeClassDerived, bytecode, pc, width);
+        let (desc, parts) = read_operands!(MakeClassDerived, ip, end, width);
         handler
-          .op_make_class_derived(desc as usize, parts as usize)
+          .op_make_class_derived(desc, parts)
           .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeClassDerived);
-        width = Width::Normal;
+        continue;
       }
       Opcode::MakeList => {
-        let (start, count) = operands!(MakeList, bytecode, pc, width);
-        handler
-          .op_make_list(start as usize, count as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeList);
-        width = Width::Normal;
+        let (start, count) = read_operands!(MakeList, ip, end, width);
+        handler.op_make_list(start, count).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::MakeListEmpty => {
+        let () = read_operands!(MakeListEmpty, ip, end, width);
         handler.op_make_list_empty().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::MakeTable => {
-        let (start, count) = operands!(MakeTable, bytecode, pc, width);
+        let (start, count) = read_operands!(MakeTable, ip, end, width);
         handler
-          .op_make_table(start as usize, count as usize)
+          .op_make_table(start, count)
           .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(MakeTable);
-        width = Width::Normal;
+        continue;
       }
       Opcode::MakeTableEmpty => {
+        let () = read_operands!(MakeTableEmpty, ip, end, width);
         handler.op_make_table_empty().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::Jump => {
-        let (offset,) = operands!(Jump, bytecode, pc, width);
-        let offset = handler.op_jump(offset as usize).map_err(Error::Handler)?;
-
-        pc += offset;
-        width = Width::Normal;
+        #[allow(unused_assignments)] // ip is overwritten by start+offset
+        let (offset,) = read_operands!(Jump, ip, end, width);
+        let offset = handler.op_jump(offset).map_err(Error::Handler)?;
+        unsafe { ip = start.add(offset.value()) };
+        continue;
       }
       Opcode::JumpConst => {
-        let (idx,) = operands!(JumpConst, bytecode, pc, width);
-        let offset = handler
-          .op_jump_const(idx as usize)
-          .map_err(Error::Handler)?;
-
-        pc += offset;
-        width = Width::Normal;
+        #[allow(unused_assignments)] // ip is overwritten by start+offset
+        let (idx,) = read_operands!(JumpConst, ip, end, width);
+        let offset = handler.op_jump_const(idx).map_err(Error::Handler)?;
+        unsafe { ip = start.add(offset.value()) };
+        continue;
       }
       Opcode::JumpLoop => {
-        let (offset,) = operands!(JumpLoop, bytecode, pc, width);
-        let offset = handler
-          .op_jump_loop(offset as usize)
-          .map_err(Error::Handler)?;
-
-        pc -= offset;
-        width = Width::Normal;
+        #[allow(unused_assignments)] // ip is overwritten by start-offset
+        let (offset,) = read_operands!(JumpLoop, ip, end, width);
+        let offset = handler.op_jump_loop(offset).map_err(Error::Handler)?;
+        unsafe { ip = start.sub(offset.value()) }
+        continue;
       }
       Opcode::JumpIfFalse => {
-        let (offset,) = operands!(JumpIfFalse, bytecode, pc, width);
-        let offset = handler
-          .op_jump_if_false(offset as usize)
-          .map_err(Error::Handler)?;
-
+        let (offset,) = read_operands!(JumpIfFalse, ip, end, width);
+        let offset = handler.op_jump_if_false(offset).map_err(Error::Handler)?;
         match offset {
-          Jump::Move(offset) => pc += offset,
-          Jump::Skip => pc += 1 + size_of_operands!(JumpIfFalse),
+          Jump::Move(offset) => unsafe { ip = start.add(offset.value()) },
+          Jump::Skip => {}
         }
-        width = Width::Normal;
+        continue;
       }
       Opcode::JumpIfFalseConst => {
-        let (idx,) = operands!(JumpIfFalseConst, bytecode, pc, width);
+        let (idx,) = read_operands!(JumpIfFalseConst, ip, end, width);
         let offset = handler
-          .op_jump_if_false_const(idx as usize)
+          .op_jump_if_false_const(idx)
           .map_err(Error::Handler)?;
-
         match offset {
-          Jump::Move(offset) => pc += offset,
-          Jump::Skip => pc += 1 + size_of_operands!(JumpIfFalseConst),
+          Jump::Move(offset) => unsafe { ip = start.add(offset.value()) },
+          Jump::Skip => {}
         }
-        width = Width::Normal;
+        continue;
       }
       Opcode::Add => {
-        let (lhs,) = operands!(Add, bytecode, pc, width);
-        handler.op_add(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Add);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Add, ip, end, width);
+        handler.op_add(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Sub => {
-        let (lhs,) = operands!(Sub, bytecode, pc, width);
-        handler.op_sub(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Sub);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Sub, ip, end, width);
+        handler.op_sub(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Mul => {
-        let (lhs,) = operands!(Mul, bytecode, pc, width);
-        handler.op_mul(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Mul);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Mul, ip, end, width);
+        handler.op_mul(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Div => {
-        let (lhs,) = operands!(Div, bytecode, pc, width);
-        handler.op_div(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Div);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Div, ip, end, width);
+        handler.op_div(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Rem => {
-        let (lhs,) = operands!(Rem, bytecode, pc, width);
-        handler.op_rem(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Rem);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Rem, ip, end, width);
+        handler.op_rem(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Pow => {
-        let (lhs,) = operands!(Pow, bytecode, pc, width);
-        handler.op_pow(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Pow);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Pow, ip, end, width);
+        handler.op_pow(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Inv => {
+        let () = read_operands!(Inv, ip, end, width);
         handler.op_inv().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::Not => {
+        let () = read_operands!(Not, ip, end, width);
         handler.op_not().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::CmpEq => {
-        let (lhs,) = operands!(CmpEq, bytecode, pc, width);
-        handler.op_cmp_eq(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpEq);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpEq, ip, end, width);
+        handler.op_cmp_eq(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpNe => {
-        let (lhs,) = operands!(CmpNe, bytecode, pc, width);
-        handler.op_cmp_ne(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpNe);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpNe, ip, end, width);
+        handler.op_cmp_ne(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpGt => {
-        let (lhs,) = operands!(CmpGt, bytecode, pc, width);
-        handler.op_cmp_gt(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpGt);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpGt, ip, end, width);
+        handler.op_cmp_gt(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpGe => {
-        let (lhs,) = operands!(CmpGe, bytecode, pc, width);
-        handler.op_cmp_ge(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpGe);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpGe, ip, end, width);
+        handler.op_cmp_ge(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpLt => {
-        let (lhs,) = operands!(CmpLt, bytecode, pc, width);
-        handler.op_cmp_lt(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpLt);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpLt, ip, end, width);
+        handler.op_cmp_lt(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpLe => {
-        let (lhs,) = operands!(CmpLe, bytecode, pc, width);
-        handler.op_cmp_le(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpLe);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpLe, ip, end, width);
+        handler.op_cmp_le(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::CmpType => {
-        let (lhs,) = operands!(CmpType, bytecode, pc, width);
-        handler.op_cmp_type(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(CmpType);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(CmpType, ip, end, width);
+        handler.op_cmp_type(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Contains => {
-        let (lhs,) = operands!(Contains, bytecode, pc, width);
-        handler.op_contains(lhs as usize).map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Contains);
-        width = Width::Normal;
+        let (lhs,) = read_operands!(Contains, ip, end, width);
+        handler.op_contains(lhs).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::IsNone => {
+        let () = read_operands!(IsNone, ip, end, width);
         handler.op_is_none().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::Print => {
+        let () = read_operands!(Print, ip, end, width);
         handler.op_print().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::PrintN => {
-        let (start, count) = operands!(PrintN, bytecode, pc, width);
-        handler
-          .op_print_n(start as usize, count as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(PrintN);
-        width = Width::Normal;
+        let (start, count) = read_operands!(PrintN, ip, end, width);
+        handler.op_print_n(start, count).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Call => {
-        let (callee, args) = operands!(Call, bytecode, pc, width);
-        handler
-          .op_print_n(callee as usize, args as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Call);
-        width = Width::Normal;
+        let (callee, args) = read_operands!(Call, ip, end, width);
+        handler.op_print_n(callee, args).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Call0 => {
+        let () = read_operands!(Call0, ip, end, width);
         handler.op_call0().map_err(Error::Handler)?;
-
-        pc += 1;
-        width = Width::Normal;
+        continue;
       }
       Opcode::Import => {
-        let (path, dst) = operands!(Import, bytecode, pc, width);
-        handler
-          .op_import(path as usize, dst as usize)
-          .map_err(Error::Handler)?;
-
-        pc += 1 + size_of_operands!(Import);
-        width = Width::Normal;
+        let (path, dst) = read_operands!(Import, ip, end, width);
+        handler.op_import(path, dst).map_err(Error::Handler)?;
+        continue;
       }
       Opcode::Return => {
+        #[allow(unused_assignments)] // ip is overwritten by start+offset
+        let () = read_operands!(Return, ip, end, width);
         handler.op_return().map_err(Error::Handler)?;
 
         return Ok(ControlFlow::Return);
       }
       Opcode::Yield => {
+        #[allow(unused_assignments)] // ip is overwritten by start+offset
+        let () = read_operands!(Yield, ip, end, width);
         handler.op_yield().map_err(Error::Handler)?;
 
-        return Ok(ControlFlow::Yield(pc));
+        return Ok(ControlFlow::Yield(
+          (ip as usize) - (bytecode.as_ptr() as *mut u8 as usize),
+        ));
       }
     }
   }
@@ -499,75 +368,92 @@ pub enum ControlFlow {
 
 pub enum Jump {
   Skip,
-  Move(usize),
+  Move(op::Offset),
 }
 
-pub enum Error<E: StdError> {
+#[derive(Debug)]
+pub enum Error<Inner: StdError> {
   IllegalInstruction,
   UnexpectedEnd,
-  Handler(E),
+  Handler(Inner),
 }
+
+impl<Inner: StdError> Display for Error<Inner> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Error::IllegalInstruction => write!(f, "illegal instruction"),
+      Error::UnexpectedEnd => write!(f, "unexpected end of bytecode stream"),
+      Error::Handler(e) => write!(f, "{e}"),
+    }
+  }
+}
+
+impl<Inner: StdError> StdError for Error<Inner> {}
 
 pub trait Handler {
   type Error: StdError;
 
-  fn op_load(&self, reg: usize) -> Result<(), Self::Error>;
-  fn op_store(&self, reg: usize) -> Result<(), Self::Error>;
-  fn op_load_const(&self, idx: usize) -> Result<(), Self::Error>;
-  fn op_load_upvalue(&self, idx: usize) -> Result<(), Self::Error>;
-  fn op_store_upvalue(&self, idx: usize) -> Result<(), Self::Error>;
-  fn op_load_module_var(&self, idx: usize) -> Result<(), Self::Error>;
-  fn op_store_module_var(&self, idx: usize) -> Result<(), Self::Error>;
-  fn op_load_global(&self, name: usize) -> Result<(), Self::Error>;
-  fn op_store_global(&self, name: usize) -> Result<(), Self::Error>;
-  fn op_load_field(&self, name: usize) -> Result<(), Self::Error>;
-  fn op_load_field_opt(&self, name: usize) -> Result<(), Self::Error>;
-  fn op_store_field(&self, obj: usize, name: usize) -> Result<(), Self::Error>;
-  fn op_load_index(&self, obj: usize) -> Result<(), Self::Error>;
-  fn op_load_index_opt(&self, obj: usize) -> Result<(), Self::Error>;
-  fn op_store_index(&self, obj: usize, key: usize) -> Result<(), Self::Error>;
-  fn op_load_self(&self) -> Result<(), Self::Error>;
-  fn op_load_super(&self) -> Result<(), Self::Error>;
-  fn op_load_none(&self) -> Result<(), Self::Error>;
-  fn op_load_true(&self) -> Result<(), Self::Error>;
-  fn op_load_false(&self) -> Result<(), Self::Error>;
-  fn op_load_smi(&self, value: i32) -> Result<(), Self::Error>;
-  fn op_make_fn(&self, desc: usize) -> Result<(), Self::Error>;
-  fn op_make_class_empty(&self, desc: usize) -> Result<(), Self::Error>;
-  fn op_make_class_empty_derived(&self, desc: usize) -> Result<(), Self::Error>;
-  fn op_make_class(&self, desc: usize, parts: usize) -> Result<(), Self::Error>;
-  fn op_make_class_derived(&self, desc: usize, parts: usize) -> Result<(), Self::Error>;
-  fn op_make_list(&self, start: usize, count: usize) -> Result<(), Self::Error>;
-  fn op_make_list_empty(&self) -> Result<(), Self::Error>;
-  fn op_make_table(&self, start: usize, count: usize) -> Result<(), Self::Error>;
-  fn op_make_table_empty(&self) -> Result<(), Self::Error>;
-  fn op_jump(&self, offset: usize) -> Result<usize, Self::Error>;
-  fn op_jump_const(&self, idx: usize) -> Result<usize, Self::Error>;
-  fn op_jump_loop(&self, offset: usize) -> Result<usize, Self::Error>;
-  fn op_jump_if_false(&self, offset: usize) -> Result<Jump, Self::Error>;
-  fn op_jump_if_false_const(&self, idx: usize) -> Result<Jump, Self::Error>;
-  fn op_add(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_sub(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_mul(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_div(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_rem(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_pow(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_inv(&self) -> Result<(), Self::Error>;
-  fn op_not(&self) -> Result<(), Self::Error>;
-  fn op_cmp_eq(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_ne(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_gt(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_ge(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_lt(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_le(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_cmp_type(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_contains(&self, lhs: usize) -> Result<(), Self::Error>;
-  fn op_is_none(&self) -> Result<(), Self::Error>;
-  fn op_print(&self) -> Result<(), Self::Error>;
-  fn op_print_n(&self, start: usize, count: usize) -> Result<(), Self::Error>;
-  fn op_call(&self, callee: usize, args: usize) -> Result<(), Self::Error>;
-  fn op_call0(&self) -> Result<(), Self::Error>;
-  fn op_import(&self, path: usize, dst: usize) -> Result<(), Self::Error>;
-  fn op_return(&self) -> Result<(), Self::Error>;
-  fn op_yield(&self) -> Result<(), Self::Error>;
+  fn op_load(&mut self, reg: op::Register) -> Result<(), Self::Error>;
+  fn op_store(&mut self, reg: op::Register) -> Result<(), Self::Error>;
+  fn op_load_const(&mut self, idx: op::Constant) -> Result<(), Self::Error>;
+  fn op_load_upvalue(&mut self, idx: op::Upvalue) -> Result<(), Self::Error>;
+  fn op_store_upvalue(&mut self, idx: op::Upvalue) -> Result<(), Self::Error>;
+  fn op_load_module_var(&mut self, idx: op::ModuleVar) -> Result<(), Self::Error>;
+  fn op_store_module_var(&mut self, idx: op::ModuleVar) -> Result<(), Self::Error>;
+  fn op_load_global(&mut self, name: op::Constant) -> Result<(), Self::Error>;
+  fn op_store_global(&mut self, name: op::Constant) -> Result<(), Self::Error>;
+  fn op_load_field(&mut self, name: op::Constant) -> Result<(), Self::Error>;
+  fn op_load_field_opt(&mut self, name: op::Constant) -> Result<(), Self::Error>;
+  fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> Result<(), Self::Error>;
+  fn op_load_index(&mut self, obj: op::Register) -> Result<(), Self::Error>;
+  fn op_load_index_opt(&mut self, obj: op::Register) -> Result<(), Self::Error>;
+  fn op_store_index(&mut self, obj: op::Register, key: op::Register) -> Result<(), Self::Error>;
+  fn op_load_self(&mut self) -> Result<(), Self::Error>;
+  fn op_load_super(&mut self) -> Result<(), Self::Error>;
+  fn op_load_none(&mut self) -> Result<(), Self::Error>;
+  fn op_load_true(&mut self) -> Result<(), Self::Error>;
+  fn op_load_false(&mut self) -> Result<(), Self::Error>;
+  fn op_load_smi(&mut self, smi: op::Smi) -> Result<(), Self::Error>;
+  fn op_make_fn(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
+  fn op_make_class_empty(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
+  fn op_make_class_empty_derived(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
+  fn op_make_class(&mut self, desc: op::Constant, parts: op::Register) -> Result<(), Self::Error>;
+  fn op_make_class_derived(
+    &mut self,
+    desc: op::Constant,
+    parts: op::Register,
+  ) -> Result<(), Self::Error>;
+  fn op_make_list(&mut self, start: op::Register, count: op::Count) -> Result<(), Self::Error>;
+  fn op_make_list_empty(&mut self) -> Result<(), Self::Error>;
+  fn op_make_table(&mut self, start: op::Register, count: op::Count) -> Result<(), Self::Error>;
+  fn op_make_table_empty(&mut self) -> Result<(), Self::Error>;
+  fn op_jump(&mut self, offset: op::Offset) -> Result<op::Offset, Self::Error>;
+  fn op_jump_const(&mut self, idx: op::Constant) -> Result<op::Offset, Self::Error>;
+  fn op_jump_loop(&mut self, offset: op::Offset) -> Result<op::Offset, Self::Error>;
+  fn op_jump_if_false(&mut self, offset: op::Offset) -> Result<Jump, Self::Error>;
+  fn op_jump_if_false_const(&mut self, idx: op::Constant) -> Result<Jump, Self::Error>;
+  fn op_add(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_sub(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_mul(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_div(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_rem(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_pow(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_inv(&mut self) -> Result<(), Self::Error>;
+  fn op_not(&mut self) -> Result<(), Self::Error>;
+  fn op_cmp_eq(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_ne(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_gt(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_ge(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_lt(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_le(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_cmp_type(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_contains(&mut self, lhs: op::Register) -> Result<(), Self::Error>;
+  fn op_is_none(&mut self) -> Result<(), Self::Error>;
+  fn op_print(&mut self) -> Result<(), Self::Error>;
+  fn op_print_n(&mut self, start: op::Register, count: op::Count) -> Result<(), Self::Error>;
+  fn op_call(&mut self, callee: op::Register, args: op::Count) -> Result<(), Self::Error>;
+  fn op_call0(&mut self) -> Result<(), Self::Error>;
+  fn op_import(&mut self, path: op::Constant, dst: op::Register) -> Result<(), Self::Error>;
+  fn op_return(&mut self) -> Result<(), Self::Error>;
+  fn op_yield(&mut self) -> Result<(), Self::Error>;
 }

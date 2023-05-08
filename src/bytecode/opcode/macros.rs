@@ -38,7 +38,7 @@ macro_rules! __get_constant {
 macro_rules! __patch_register {
   ($width:ident, $map:ident, $buf:expr, Register) => {
     let value = Register::decode(&*$buf, $width);
-    let value = $map[value as usize] as u32;
+    let value = $map[value.0 as usize] as u32;
     value.encode_into($buf, $width);
   };
   ($width:ident, $map:ident, $buf:expr, $ty:ident) => {};
@@ -128,7 +128,7 @@ macro_rules! instructions {
           $(
             $Opcode::$name => {
               let ($($($operand,)+)?) = <<$name as Operands>::Operands>::decode(operands, width);
-              let instruction = Box::new($name { $($($operand: <$ty>::new($operand),)+)? });
+              let instruction = Box::new($name { $($($operand: <$ty>::new($operand.0),)+)? });
               let remainder = &operands[__count!($($($operand)+)?) * width.size()..];
               return Some((instruction, remainder));
             }
@@ -175,8 +175,6 @@ macro_rules! operand_type {
     }
 
     impl Operand for $name {
-      type Decoded = $inner;
-
       #[inline]
       fn encode(&self, buf: &mut Vec<u8>, width: Width) {
         self.0.encode(buf, width)
@@ -188,8 +186,8 @@ macro_rules! operand_type {
       }
 
       #[inline]
-      fn decode(buf: &[u8], width: Width) -> Self::Decoded {
-        <$inner as Operand>::decode(buf, width)
+      fn decode(buf: &[u8], width: Width) -> Self {
+        Self(<$inner as Operand>::decode(buf, width))
       }
 
       #[inline]

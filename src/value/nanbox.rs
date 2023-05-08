@@ -168,14 +168,28 @@ impl Value {
     if !self.is_float() {
       return None;
     }
-    Some(f64::from_bits(self.bits))
+    Some(unsafe { self.to_float_unchecked() })
+  }
+
+  /// # Safety
+  /// - `self.is_float()` must be `true`
+  pub unsafe fn to_float_unchecked(self) -> f64 {
+    debug_assert!(self.is_float(), "value is not a float");
+    f64::from_bits(self.bits)
   }
 
   pub fn to_int(self) -> Option<i32> {
     if !self.is_int() {
       return None;
     }
-    Some(self.value() as u32 as i32)
+    Some(unsafe { self.to_int_unchecked() })
+  }
+
+  /// # Safety
+  /// - `self.is_int()` must be `true`
+  pub unsafe fn to_int_unchecked(self) -> i32 {
+    debug_assert!(self.is_int(), "value is not an int");
+    self.value() as u32 as i32
   }
 
   pub fn to_bool(self) -> Option<bool> {
@@ -185,6 +199,13 @@ impl Value {
     Some(self.value() == 1)
   }
 
+  /// # Safety
+  /// - `self.is_bool()` must be `true`
+  pub unsafe fn to_bool_unchecked(self) -> bool {
+    debug_assert!(self.is_bool(), "value is not a bool");
+    self.value() != 0
+  }
+
   pub fn to_none(self) -> Option<()> {
     if !self.is_none() {
       return None;
@@ -192,12 +213,27 @@ impl Value {
     Some(())
   }
 
+  /// # Safety
+  /// - `self.is_none()` must be `true`
+  #[allow(clippy::unused_unit)]
+  pub unsafe fn to_none_unchecked(self) -> () {
+    debug_assert!(self.is_none(), "value is not none");
+    ()
+  }
+
   pub fn to_object(self) -> Option<Ptr<Any>> {
     if !self.is_object() {
       return None;
     }
+    Some(unsafe { self.to_object_unchecked() })
+  }
+
+  /// # Safety
+  /// - `self.is_object()` must be `true`
+  pub unsafe fn to_object_unchecked(self) -> Ptr<Any> {
+    debug_assert!(self.is_object(), "value is not an object");
     let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
     mem::forget(self);
-    Some(ptr)
+    ptr
   }
 }

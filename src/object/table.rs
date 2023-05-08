@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
+use std::hash::Hash;
 
-use indexmap::IndexMap;
+use indexmap::{Equivalent, IndexMap};
 
 use super::ptr::Ptr;
 use super::{Object, String};
@@ -18,8 +19,12 @@ impl Table {
     }
   }
 
-  pub(crate) fn insert(&self, key: Ptr<String>, value: Value) {
+  pub fn insert(&self, key: Ptr<String>, value: Value) {
     self.data.borrow_mut().insert(key, value);
+  }
+
+  pub fn get<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K) -> Option<Value> {
+    self.data.borrow().get(key).cloned()
   }
 }
 

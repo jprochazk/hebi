@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
+use super::Value;
 use crate::bytecode::opcode as op;
 use crate::object::ptr::Ptr;
 use crate::object::{ClassDescriptor, FunctionDescriptor, String};
@@ -14,6 +15,21 @@ pub enum Constant {
   Class(Ptr<ClassDescriptor>),
   Offset(op::Offset),
   Float(NonNaNFloat),
+}
+
+impl Constant {
+  pub fn into_value(self) -> Value {
+    match self {
+      Constant::Reserved => {
+        unreachable!("cannot access reserved constant pool slot")
+      }
+      Constant::String(v) => Value::object(v),
+      Constant::Function(v) => Value::object(v),
+      Constant::Class(v) => Value::object(v),
+      Constant::Offset(_) => panic!("cannot convert constant jump offset to value"),
+      Constant::Float(v) => Value::float(v.value()),
+    }
+  }
 }
 
 impl Constant {

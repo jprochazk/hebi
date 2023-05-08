@@ -45,8 +45,8 @@ impl Context {
 }
 
 macro_rules! fail {
-  ($cx:expr, $message:expr, $span:expr $(,)?) => {
-    return Err($cx.error($message, $span))
+  ($cx:expr, $span:expr, $($arg:tt)*) => {
+    return Err($cx.error(format!($($arg)*), $span))
   };
 }
 

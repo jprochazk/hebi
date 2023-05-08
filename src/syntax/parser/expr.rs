@@ -198,7 +198,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let token = self.previous();
       match ast::lit::str(token.span, self.lex.lexeme(token)) {
         Some(str) => return Ok(str),
-        None => fail!(self.cx, "invalid escape sequence", token.span),
+        None => fail!(self.cx, token.span, "invalid escape sequence"),
       }
     }
 
@@ -240,8 +240,8 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       {
         fail!(
           self.cx,
-          "cannot access `self` outside of class method",
           self.previous().span,
+          "cannot access `self` outside of class method",
         );
       }
       return Ok(ast::expr_get_self(self.previous().span));
@@ -252,22 +252,22 @@ impl<'cx, 'src> Parser<'cx, 'src> {
         if !c.has_super {
           fail!(
             self.cx,
-            "cannot access `super` in a class with no parent class",
             self.previous().span,
+            "cannot access `super` in a class with no parent class",
           );
         }
         if !self.state.current_func.map(|f| f.has_self).unwrap_or(false) {
           fail!(
             self.cx,
-            "cannot access `super` outside of a class method that takes `self`",
             self.previous().span,
+            "cannot access `super` outside of a class method that takes `self`",
           );
         }
       } else {
         fail!(
           self.cx,
-          "cannot access `super` outside of class method",
           self.previous().span,
+          "cannot access `super` outside of class method",
         )
       }
       return Ok(ast::expr_get_super(self.previous().span));

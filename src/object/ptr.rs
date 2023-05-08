@@ -293,11 +293,26 @@ impl<T: Object> Ptr<T> {
 }
 
 impl Ptr<Any> {
+  pub fn is<T: Object>(&self) -> bool {
+    self.inner().type_id == TypeId::of::<T>()
+  }
+
   pub fn cast<T: Object>(self) -> Result<Ptr<T>, Ptr<Any>> {
-    match self.inner().type_id == TypeId::of::<T>() {
-      true => Ok(unsafe { mem::transmute::<Ptr<Any>, Ptr<T>>(self) }),
+    match self.is::<T>() {
+      true => Ok(unsafe { self.cast_unchecked() }),
       false => Err(self),
     }
+  }
+
+  /// # Safety
+  /// - `self.is::<T>()` must be `true`
+  pub unsafe fn cast_unchecked<T: Object>(self) -> Ptr<T> {
+    debug_assert!(
+      self.is::<T>(),
+      "object is not an instance of {}",
+      std::any::type_name::<T>()
+    );
+    mem::transmute::<Ptr<Any>, Ptr<T>>(self)
   }
 }
 

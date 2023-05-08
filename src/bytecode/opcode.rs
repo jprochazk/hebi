@@ -85,6 +85,12 @@ operand_type!(Offset, u32, "{v}");
 operand_type!(Smi, i32, "{v}");
 operand_type!(Count, u32, "{v}");
 
+impl Register {
+  pub fn index(&self) -> usize {
+    self.0 as usize
+  }
+}
+
 impl Constant {
   pub fn index(&self) -> usize {
     self.0 as usize
@@ -92,6 +98,24 @@ impl Constant {
 }
 
 impl Offset {
+  pub fn value(&self) -> usize {
+    self.0 as usize
+  }
+}
+
+impl Upvalue {
+  pub fn index(&self) -> usize {
+    self.0 as usize
+  }
+}
+
+impl Smi {
+  pub fn value(&self) -> i32 {
+    self.0
+  }
+}
+
+impl Count {
   pub fn value(&self) -> usize {
     self.0 as usize
   }

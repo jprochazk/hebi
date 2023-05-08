@@ -5,9 +5,9 @@ use super::opcode::Opcode;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Width {
-  Normal,
-  Wide16,
-  Wide32,
+  Normal = 1,
+  Wide16 = 2,
+  Wide32 = 4,
 }
 
 impl Width {
@@ -16,12 +16,8 @@ impl Width {
   }
 
   #[inline]
-  pub fn size(&self) -> usize {
-    match self {
-      Width::Normal => 1,
-      Width::Wide16 => 2,
-      Width::Wide32 => 4,
-    }
+  pub const fn size(&self) -> usize {
+    *self as usize
   }
 
   #[inline]
@@ -58,12 +54,10 @@ impl BitOr for Width {
   }
 }
 
-pub trait Operand {
-  type Decoded: Default + Sized;
-
+pub trait Operand: Sized {
   fn encode(&self, buf: &mut Vec<u8>, width: Width);
   fn encode_into(&self, buf: &mut [u8], width: Width);
-  fn decode(buf: &[u8], width: Width) -> Self::Decoded;
+  fn decode(buf: &[u8], width: Width) -> Self;
   fn width(&self) -> Width;
 }
 
@@ -93,8 +87,6 @@ macro_rules! encode_into {
 }
 
 impl Operand for i32 {
-  type Decoded = i32;
-
   #[inline]
   fn encode(&self, buf: &mut Vec<u8>, width: Width) {
     match width {
@@ -114,7 +106,7 @@ impl Operand for i32 {
   }
 
   #[inline]
-  fn decode(buf: &[u8], width: Width) -> Self::Decoded {
+  fn decode(buf: &[u8], width: Width) -> Self {
     match width {
       Width::Normal => decode!(buf, i8),
       Width::Wide16 => decode!(buf, i16),
@@ -124,9 +116,9 @@ impl Operand for i32 {
 
   #[inline]
   fn width(&self) -> Width {
-    if (i8::MIN as Self::Decoded) <= *self && *self <= (i8::MAX as Self::Decoded) {
+    if (i8::MIN as Self) <= *self && *self <= (i8::MAX as Self) {
       Width::Normal
-    } else if (i16::MIN as Self::Decoded) <= *self && *self <= (i16::MAX as Self::Decoded) {
+    } else if (i16::MIN as Self) <= *self && *self <= (i16::MAX as Self) {
       Width::Wide16
     } else {
       Width::Wide32
@@ -135,8 +127,6 @@ impl Operand for i32 {
 }
 
 impl Operand for u32 {
-  type Decoded = u32;
-
   #[inline]
   fn encode(&self, buf: &mut Vec<u8>, width: Width) {
     match width {
@@ -156,7 +146,7 @@ impl Operand for u32 {
   }
 
   #[inline]
-  fn decode(buf: &[u8], width: Width) -> Self::Decoded {
+  fn decode(buf: &[u8], width: Width) -> Self {
     match width {
       Width::Normal => decode!(buf, u8),
       Width::Wide16 => decode!(buf, u16),
@@ -166,9 +156,9 @@ impl Operand for u32 {
 
   #[inline]
   fn width(&self) -> Width {
-    if *self <= (u8::MAX as Self::Decoded) {
+    if *self <= (u8::MAX as Self) {
       Width::Normal
-    } else if *self <= (u16::MAX as Self::Decoded) {
+    } else if *self <= (u16::MAX as Self) {
       Width::Wide16
     } else {
       Width::Wide32
@@ -177,8 +167,6 @@ impl Operand for u32 {
 }
 
 impl Operand for () {
-  type Decoded = ();
-
   #[inline]
   fn encode(&self, buf: &mut Vec<u8>, width: Width) {
     let _ = (buf, width);
@@ -190,7 +178,7 @@ impl Operand for () {
   }
 
   #[inline]
-  fn decode(buf: &[u8], width: Width) -> Self::Decoded {
+  fn decode(buf: &[u8], width: Width) -> Self {
     let _ = (buf, width);
   }
 
@@ -206,8 +194,6 @@ macro_rules! impl_for_tuple {
     where
       $($ty : Operand,)+
     {
-      type Decoded = ($(<$ty as Operand>::Decoded,)+);
-
       #[inline]
       #[allow(non_snake_case)]
       fn encode(&self, buf: &mut Vec<u8>, width: Width) {
@@ -231,7 +217,7 @@ macro_rules! impl_for_tuple {
 
       #[inline]
       #[allow(non_snake_case)]
-      fn decode(buf: &[u8], width: Width) -> Self::Decoded {
+      fn decode(buf: &[u8], width: Width) -> Self {
         let mut offset = 0;
         $(
           let $ty = <$ty as Operand>::decode(&buf[offset..], width);
