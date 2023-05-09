@@ -7,7 +7,9 @@ use super::global::Global;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
 use crate::error::{Error, Result};
-use crate::object::{List, Object, Ptr, String};
+use crate::object::function::Params;
+use crate::object::{Function, List, Object, Ptr, String};
+use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
 
@@ -16,11 +18,9 @@ pub struct Thread {
   global: Global,
 
   call_frames: Vec<Frame>,
-  // TODO: share stack when possible
-  stack: Ptr<List>,
+  stack: Vec<Value>,
   stack_base: usize,
   acc: Value,
-  width: op::Width,
   pc: usize,
 }
 
@@ -30,23 +30,117 @@ impl super::Hebi {
   }
 }
 
+macro_rules! match_type {
+  (
+    match $binding:ident {
+      $($ty:ident => $body:expr,)*
+
+      $(_ => $default:expr,)?
+    }
+  ) => {{
+    $(
+      #[allow(unused_variables)]
+      let $binding = match $binding.cast::<$ty>() {
+        Ok($binding) => $body,
+        Err(v) => v,
+      };
+    )*
+    $({ $default })?
+  }};
+}
+
+fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
+  debug_assert!(
+    index < std::ptr::metadata(ptr),
+    "index out of bounds {index}"
+  );
+  let value = unsafe { std::mem::ManuallyDrop::new(std::ptr::read((ptr as *mut T).add(index))) };
+  std::mem::ManuallyDrop::into_inner(value.clone())
+}
+
+macro_rules! current_call_frame {
+  ($self:ident) => {{
+    debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
+    unsafe { $self.call_frames.last().unwrap_unchecked() }
+  }};
+}
+
+macro_rules! current_call_frame_mut {
+  ($self:ident) => {{
+    debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
+    unsafe { $self.call_frames.last_mut().unwrap_unchecked() }
+  }};
+}
+
+fn check_args(cx: &Context, span: Span, params: &Params, n: usize) -> Result<()> {
+  if !params.matches(n) {
+    fail!(
+      cx,
+      span,
+      "expected {}..{} params, got {}",
+      params.min,
+      params.max,
+      n,
+    );
+  }
+  Ok(())
+}
+
 impl Thread {
   pub fn new(cx: Context, global: Global) -> Self {
     Thread {
-      cx: cx.clone(),
+      cx,
       global,
 
       call_frames: Vec::new(),
-      stack: cx.alloc(List::with_capacity(0)),
+      stack: Vec::with_capacity(128),
       stack_base: 0,
       acc: Value::none(),
-      width: op::Width::Normal,
       pc: 0,
     }
   }
 
-  pub fn call(&mut self, f: Value) -> Result<Value> {
-    todo!()
+  pub fn call(&mut self, f: Value, args: &[Value]) -> Result<Value> {
+    if !f.is_object() {
+      fail!(self.cx, 0..0, "cannot call value `{f}`");
+    }
+    let f = unsafe { f.to_object_unchecked() };
+
+    if f.is::<Function>() {
+      let f = unsafe { f.cast_unchecked::<Function>() };
+
+      check_args(&self.cx, (0..0).into(), &f.descriptor.params, args.len())?;
+
+      // put args on the stack
+      let stack_base = self.stack.len();
+      self.stack.extend_from_slice(args);
+
+      // save pc
+      if let Some(current_frame) = self.call_frames.last_mut() {
+        current_frame.pc = self.pc;
+      }
+      self.pc = 0;
+
+      // prepare stack
+      self.stack_base = stack_base;
+      let new_len = stack_base + f.descriptor.frame_size;
+      self.stack.resize_with(new_len, Value::none);
+
+      // push frame
+      self.call_frames.push(Frame {
+        instructions: f.descriptor.instructions,
+        constants: f.descriptor.constants,
+        upvalues: f.upvalues.clone(),
+        frame_size: f.descriptor.frame_size,
+        num_args: args.len(),
+        pc: 0,
+      });
+    } else {
+      fail!(self.cx, 0..0, "cannot call object `{f}`")
+    }
+
+    self.run()?;
+    Ok(take(&mut self.acc))
   }
 
   fn run(&mut self) -> Result<()> {
@@ -81,7 +175,6 @@ impl Debug for Thread {
     f.debug_struct("Thread")
       .field("stack", &self.stack)
       .field("acc", &self.acc)
-      .field("width", &self.width)
       .field("pc", &self.pc)
       .finish()
   }
@@ -98,22 +191,8 @@ struct Frame {
   constants: NonNull<[Constant]>,
   upvalues: Ptr<List>,
   frame_size: usize,
-}
-
-fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
-  debug_assert!(
-    index < std::ptr::metadata(ptr),
-    "index out of bounds {index}"
-  );
-  let value = unsafe { std::mem::ManuallyDrop::new(std::ptr::read((ptr as *mut T).add(index))) };
-  std::mem::ManuallyDrop::into_inner(value.clone())
-}
-
-macro_rules! current_call_frame {
-  ($self:ident) => {{
-    debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
-    unsafe { $self.call_frames.last().unwrap_unchecked() }
-  }};
+  num_args: usize,
+  pc: usize,
 }
 
 impl Thread {
@@ -126,19 +205,17 @@ impl Thread {
       self.stack_base + reg.index() < self.stack.len(),
       "register out of bounds {reg:?}"
     );
-    unsafe { self.stack.get_unchecked(self.stack_base + reg.index()) }
+    let value = unsafe { self.stack.get_unchecked(self.stack_base + reg.index()) };
+    value.clone()
   }
 
-  fn set_register(&self, reg: op::Register, value: Value) {
+  fn set_register(&mut self, reg: op::Register, value: Value) {
     debug_assert!(
       self.stack_base + reg.index() < self.stack.len(),
       "register out of bounds {reg:?}"
     );
-    unsafe {
-      self
-        .stack
-        .set_unchecked(self.stack_base + reg.index(), value);
-    }
+    let slot = unsafe { self.stack.get_unchecked_mut(self.stack_base + reg.index()) };
+    *slot = value;
   }
 }
 
@@ -526,7 +603,19 @@ impl Handler for Thread {
   }
 
   fn op_return(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+    // pop frame
+    let frame = self.call_frames.pop().unwrap();
+
+    // truncate stack
+    self.stack.truncate(self.stack.len() - frame.frame_size);
+
+    // restore pc
+    match self.call_frames.last() {
+      Some(current_frame) => self.pc = current_frame.pc,
+      None => self.pc = 0,
+    };
+
+    Ok(())
   }
 
   fn op_yield(&mut self) -> std::result::Result<(), Self::Error> {
