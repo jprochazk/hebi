@@ -165,7 +165,7 @@ macro_rules! instructions {
 
 macro_rules! operand_type {
   ($name:ident, $inner:ty, $fmt:literal) => {
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Default, Debug, Clone, Copy)]
     pub struct $name(pub $inner);
 
     impl $name {

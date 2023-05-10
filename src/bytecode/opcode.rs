@@ -122,7 +122,7 @@ impl Count {
 }
 
 pub trait Operands {
-  type Operands: Operand + Sized;
+  type Operands: Operand + Sized + Default;
 }
 
 pub trait Instruction: disasm::Disassemble + private::Sealed {

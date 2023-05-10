@@ -222,10 +222,14 @@ impl Value {
   }
 
   pub fn to_object(self) -> Option<Ptr<Any>> {
+    self.try_to_object().ok()
+  }
+
+  pub fn try_to_object(self) -> Result<Ptr<Any>, Value> {
     if !self.is_object() {
-      return None;
+      return Err(self);
     }
-    Some(unsafe { self.to_object_unchecked() })
+    Ok(unsafe { self.to_object_unchecked() })
   }
 
   /// # Safety

@@ -2,10 +2,10 @@ macro_rules! read_opcode {
   ($ip:ident, $end:ident) => {
     unsafe {
       let opcode = $ip.read();
-      $ip = $ip.add(1);
       if $ip >= $end {
         return Err($crate::vm::dispatch::Error::UnexpectedEnd);
       }
+      $ip = $ip.add(1);
       match $crate::bytecode::opcode::Opcode::try_from(opcode) {
         Ok(opcode) => opcode,
         Err(()) => return Err($crate::vm::dispatch::Error::IllegalInstruction),
@@ -29,14 +29,24 @@ macro_rules! read_operands {
     type Operands =
       <$crate::bytecode::opcode::symbolic::$T as $crate::bytecode::opcode::Operands>::Operands;
     const LENGTH: usize = <Operands as $crate::util::TupleLength>::LENGTH;
-    unsafe {
-      if $ip.add(LENGTH) >= $end {
-        return Err($crate::vm::dispatch::Error::UnexpectedEnd);
+    if LENGTH > 0 {
+      unsafe {
+        if $ip >= $end {
+          return Err($crate::vm::dispatch::Error::UnexpectedEnd);
+        }
+        let operands = $crate::vm::dispatch::macros::__read_tuple::<LENGTH, Operands>($ip, $width);
+        $ip = $ip.add(LENGTH * ($width as usize));
+        $width = Width::Normal;
+        operands
       }
-      let operands = $crate::vm::dispatch::macros::__read_tuple::<LENGTH, Operands>($ip, $width);
-      $ip = $ip.add(LENGTH * ($width as usize));
-      $width = Width::Normal;
-      operands
+    } else {
+      Operands::default()
     }
   }};
+}
+
+macro_rules! get_pc {
+  ($ip:ident, $bc:ident) => {
+    ($ip as usize) - ($bc.as_ptr() as *mut u8 as usize)
+  };
 }

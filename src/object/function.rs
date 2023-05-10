@@ -6,13 +6,29 @@ use super::module::ModuleId;
 use super::ptr::Ptr;
 use super::{List, Object, String};
 use crate::bytecode::{disasm, opcode as op};
+use crate::ctx::Context;
 use crate::value::constant::Constant;
 
 #[derive(Debug)]
 pub struct Function {
   pub descriptor: Ptr<FunctionDescriptor>,
   pub upvalues: Ptr<List>,
-  pub module: ModuleId,
+  pub module_id: ModuleId,
+}
+
+impl Function {
+  pub fn new(
+    cx: &Context,
+    descriptor: Ptr<FunctionDescriptor>,
+    upvalues: Ptr<List>,
+    module_id: ModuleId,
+  ) -> Self {
+    Self {
+      descriptor,
+      upvalues,
+      module_id,
+    }
+  }
 }
 
 impl Object for Function {
@@ -46,7 +62,6 @@ impl Display for Generator {
   }
 }
 
-#[derive(Debug)]
 pub struct FunctionDescriptor {
   pub name: Ptr<String>,
   pub is_generator: bool,
@@ -181,6 +196,19 @@ impl Object for FunctionDescriptor {
 impl Display for FunctionDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<function `{}` descriptor>", self.name)
+  }
+}
+
+impl Debug for FunctionDescriptor {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("FunctionDescriptor")
+      .field("name", &self.name)
+      .field("params", &self.params)
+      .field("upvalues", &self.upvalues)
+      .field("frame_size", &self.frame_size)
+      .field("instructions", &unsafe { self.instructions.as_ref() }.len())
+      .field("constants", &unsafe { self.constants.as_ref() }.len())
+      .finish()
   }
 }
 

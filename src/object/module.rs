@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Display};
+use std::num::NonZeroU64;
 
 use indexmap::{IndexMap, IndexSet};
 
@@ -11,7 +12,17 @@ pub trait Loader {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ModuleId(u64);
+pub struct ModuleId(Option<NonZeroU64>);
+
+impl ModuleId {
+  pub fn null() -> Self {
+    Self(None)
+  }
+
+  pub fn is_null(&self) -> bool {
+    self.0.is_none()
+  }
+}
 
 pub struct Registry {
   pub next_module_id: u64,

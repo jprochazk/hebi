@@ -5,14 +5,27 @@ use std::vec::Vec;
 use super::Object;
 use crate::value::Value;
 
+#[derive(Default)]
 pub struct List {
   data: RefCell<Vec<Value>>,
 }
 
 impl List {
+  pub fn new() -> Self {
+    Self::with_capacity(0)
+  }
+
   pub fn with_capacity(n: usize) -> Self {
     Self {
       data: RefCell::new(Vec::with_capacity(n)),
+    }
+  }
+
+  pub fn with_len(n: usize) -> Self {
+    let mut values = Vec::new();
+    values.resize_with(n, Value::none);
+    Self {
+      data: RefCell::new(values),
     }
   }
 
@@ -48,6 +61,14 @@ impl List {
   pub unsafe fn set_unchecked(&self, index: usize, value: Value) {
     debug_assert!(index < self.len(), "index {index} out of bounds");
     *self.data.borrow_mut().get_mut(index).unwrap_unchecked() = value;
+  }
+}
+
+impl From<Vec<Value>> for List {
+  fn from(values: Vec<Value>) -> Self {
+    Self {
+      data: RefCell::new(values),
+    }
   }
 }
 

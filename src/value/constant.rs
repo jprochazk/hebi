@@ -21,7 +21,7 @@ impl Constant {
   pub fn into_value(self) -> Value {
     match self {
       Constant::Reserved => {
-        unreachable!("cannot access reserved constant pool slot")
+        panic!("cannot access reserved constant pool slot")
       }
       Constant::String(v) => Value::object(v),
       Constant::Function(v) => Value::object(v),

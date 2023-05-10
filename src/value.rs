@@ -54,8 +54,7 @@ impl Debug for Value {
     } else if v.is_none() {
       f.debug_tuple("None").finish()
     } else if let Some(v) = v.to_object() {
-      // TODO: maybe also include inner object repr in the debug output
-      f.debug_tuple("Object").field(&v.type_name()).finish()
+      f.debug_tuple("Object").field(&v).finish()
     } else {
       unreachable!("invalid type");
     }

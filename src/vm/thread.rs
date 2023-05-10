@@ -1,14 +1,22 @@
+#[macro_use]
+mod macros;
+
+mod util;
+
 use std::fmt::{Debug, Display};
 use std::mem::take;
 use std::ptr::NonNull;
 
+use self::util::*;
+use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
 use crate::error::{Error, Result};
 use crate::object::function::Params;
-use crate::object::{Function, List, Object, Ptr, String};
+use crate::object::module::ModuleId;
+use crate::object::{Function, FunctionDescriptor, List, Object, Ptr, String};
 use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
@@ -22,68 +30,6 @@ pub struct Thread {
   stack_base: usize,
   acc: Value,
   pc: usize,
-}
-
-impl super::Hebi {
-  pub fn new_thread(&self) -> Thread {
-    Thread::new(self.cx.clone(), self.global.clone())
-  }
-}
-
-macro_rules! match_type {
-  (
-    match $binding:ident {
-      $($ty:ident => $body:expr,)*
-
-      $(_ => $default:expr,)?
-    }
-  ) => {{
-    $(
-      #[allow(unused_variables)]
-      let $binding = match $binding.cast::<$ty>() {
-        Ok($binding) => $body,
-        Err(v) => v,
-      };
-    )*
-    $({ $default })?
-  }};
-}
-
-fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
-  debug_assert!(
-    index < std::ptr::metadata(ptr),
-    "index out of bounds {index}"
-  );
-  let value = unsafe { std::mem::ManuallyDrop::new(std::ptr::read((ptr as *mut T).add(index))) };
-  std::mem::ManuallyDrop::into_inner(value.clone())
-}
-
-macro_rules! current_call_frame {
-  ($self:ident) => {{
-    debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
-    unsafe { $self.call_frames.last().unwrap_unchecked() }
-  }};
-}
-
-macro_rules! current_call_frame_mut {
-  ($self:ident) => {{
-    debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
-    unsafe { $self.call_frames.last_mut().unwrap_unchecked() }
-  }};
-}
-
-fn check_args(cx: &Context, span: Span, params: &Params, n: usize) -> Result<()> {
-  if !params.matches(n) {
-    fail!(
-      cx,
-      span,
-      "expected {}..{} params, got {}",
-      params.min,
-      params.max,
-      n,
-    );
-  }
-  Ok(())
 }
 
 impl Thread {
@@ -101,44 +47,9 @@ impl Thread {
   }
 
   pub fn call(&mut self, f: Value, args: &[Value]) -> Result<Value> {
-    if !f.is_object() {
-      fail!(self.cx, 0..0, "cannot call value `{f}`");
-    }
-    let f = unsafe { f.to_object_unchecked() };
+    let (stack_base, num_args) = push_args!(self, args);
 
-    if f.is::<Function>() {
-      let f = unsafe { f.cast_unchecked::<Function>() };
-
-      check_args(&self.cx, (0..0).into(), &f.descriptor.params, args.len())?;
-
-      // put args on the stack
-      let stack_base = self.stack.len();
-      self.stack.extend_from_slice(args);
-
-      // save pc
-      if let Some(current_frame) = self.call_frames.last_mut() {
-        current_frame.pc = self.pc;
-      }
-      self.pc = 0;
-
-      // prepare stack
-      self.stack_base = stack_base;
-      let new_len = stack_base + f.descriptor.frame_size;
-      self.stack.resize_with(new_len, Value::none);
-
-      // push frame
-      self.call_frames.push(Frame {
-        instructions: f.descriptor.instructions,
-        constants: f.descriptor.constants,
-        upvalues: f.upvalues.clone(),
-        frame_size: f.descriptor.frame_size,
-        num_args: args.len(),
-        pc: 0,
-      });
-    } else {
-      fail!(self.cx, 0..0, "cannot call object `{f}`")
-    }
-
+    self.prepare_call(f, stack_base, num_args, self.pc)?;
     self.run()?;
     Ok(take(&mut self.acc))
   }
@@ -157,10 +68,63 @@ impl Thread {
         Ok(())
       }
       Err(e) => match e {
-        super::dispatch::Error::Handler(e) => Err(e),
-        e => panic!("{e}"),
+        dispatch::Error::Handler(e) => Err(e),
+        e @ dispatch::Error::IllegalInstruction => panic!("{e}"),
+        e @ dispatch::Error::UnexpectedEnd => panic!("{e}"),
       },
     }
+  }
+
+  fn prepare_call(
+    &mut self,
+    f: Value,
+    stack_base: usize,
+    num_args: usize,
+    return_addr: usize,
+  ) -> Result<()> {
+    let f = match f.try_to_object() {
+      Ok(f) => f,
+      Err(f) => fail!(self.cx, 0..0, "cannot call value `{f}`"),
+    };
+
+    if f.is::<Function>() {
+      let f = unsafe { f.cast_unchecked::<Function>() };
+      self.prepare_call_function(f, stack_base, num_args, return_addr)?;
+    } else {
+      fail!(self.cx, 0..0, "cannot call object `{f}`");
+    }
+
+    Ok(())
+  }
+
+  fn prepare_call_function(
+    &mut self,
+    f: Ptr<Function>,
+    stack_base: usize,
+    num_args: usize,
+    return_addr: usize,
+  ) -> Result<()> {
+    check_args(&self.cx, (0..0).into(), &f.descriptor.params, num_args)?;
+
+    // reset pc
+    self.pc = 0;
+
+    // prepare stack
+    self.stack_base = stack_base;
+    let new_len = stack_base + f.descriptor.frame_size;
+    self.stack.resize_with(new_len, Value::none);
+
+    // push frame
+    self.call_frames.push(Frame {
+      instructions: f.descriptor.instructions,
+      constants: f.descriptor.constants,
+      upvalues: f.upvalues.clone(),
+      frame_size: f.descriptor.frame_size,
+      num_args,
+      return_addr,
+    });
+
+    Ok(())
   }
 }
 
@@ -192,7 +156,7 @@ struct Frame {
   upvalues: Ptr<List>,
   frame_size: usize,
   num_args: usize,
-  pc: usize,
+  return_addr: usize,
 }
 
 impl Thread {
@@ -219,45 +183,12 @@ impl Thread {
   }
 }
 
-macro_rules! debug_assert_object_type {
-  ($value:ident, $ty:ty) => {{
-    let value = match $value.clone().to_object() {
-      Some(value) => value,
-      None => panic!("{} is not an object", stringify!($value)),
-    };
-    if let Err(e) = value.cast::<$ty>() {
-      panic!("{e}");
-    }
-  }};
-}
-
-fn is_truthy(value: Value) -> bool {
-  if value.is_bool() {
-    return unsafe { value.to_bool_unchecked() };
-  }
-
-  if value.is_float() {
-    let value = unsafe { value.to_float_unchecked() };
-    return !value.is_nan() && value != 0.0;
-  }
-
-  if value.is_int() {
-    let value = unsafe { value.to_int_unchecked() };
-    return value != 0;
-  }
-
-  if value.is_none() {
-    return false;
-  }
-
-  true
-}
-
 impl Handler for Thread {
   type Error = Error;
 
   fn op_load(&mut self, reg: op::Register) -> std::result::Result<(), Self::Error> {
     self.acc = self.get_register(reg);
+    println!("load {reg} {}", self.acc);
 
     Ok(())
   }
@@ -396,7 +327,42 @@ impl Handler for Thread {
   }
 
   fn op_make_fn(&mut self, desc: op::Constant) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let desc = self.get_constant(desc).into_value();
+    debug_assert_object_type!(desc, FunctionDescriptor);
+    let desc = unsafe {
+      desc
+        .to_object_unchecked()
+        .cast_unchecked::<FunctionDescriptor>()
+    };
+
+    // fetch upvalues
+    let num_upvalues = desc.upvalues.borrow().len();
+    let mut upvalues = Vec::with_capacity(num_upvalues);
+    upvalues.resize_with(num_upvalues, Value::none);
+    for (i, upvalue) in desc.upvalues.borrow().iter().enumerate() {
+      let value = match upvalue {
+        crate::object::function::Upvalue::Register(register) => self.get_register(*register),
+        crate::object::function::Upvalue::Upvalue(upvalue) => {
+          let parent_upvalues = &current_call_frame!(self).upvalues;
+          debug_assert!(upvalue.index() < parent_upvalues.len());
+          unsafe { parent_upvalues.get_unchecked(upvalue.index()) }
+        }
+      };
+      let slot = unsafe { upvalues.get_unchecked_mut(i) };
+      *slot = value;
+    }
+    let upvalues = self.cx.alloc(List::from(upvalues));
+
+    // TODO: actual module id
+    let module_id = ModuleId::null();
+
+    let f = self
+      .cx
+      .alloc(Function::new(&self.cx, desc, upvalues, module_id));
+
+    self.acc = Value::object(f);
+
+    Ok(())
   }
 
   fn op_make_class_empty(&mut self, desc: op::Constant) -> std::result::Result<(), Self::Error> {
@@ -470,8 +436,8 @@ impl Handler for Thread {
     offset: op::Offset,
   ) -> std::result::Result<super::dispatch::Jump, Self::Error> {
     match is_truthy(take(&mut self.acc)) {
-      true => Ok(super::dispatch::Jump::Move(offset)),
-      false => Ok(super::dispatch::Jump::Skip),
+      true => Ok(super::dispatch::Jump::Skip),
+      false => Ok(super::dispatch::Jump::Move(offset)),
     }
   }
 
@@ -584,14 +550,31 @@ impl Handler for Thread {
 
   fn op_call(
     &mut self,
+    return_addr: usize,
     callee: op::Register,
     args: op::Count,
-  ) -> std::result::Result<(), Self::Error> {
-    todo!()
+  ) -> std::result::Result<dispatch::LoadFrame, Self::Error> {
+    let f = self.get_register(callee);
+    let start = self.stack_base + callee.index() + 1;
+    let (stack_base, num_args) = push_args!(self, f.clone(), range(start, start + args.value()));
+    self.prepare_call(f, stack_base, num_args, return_addr)?;
+    Ok(dispatch::LoadFrame {
+      bytecode: current_call_frame!(self).instructions,
+      pc: self.pc,
+    })
   }
 
-  fn op_call0(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+  fn op_call0(
+    &mut self,
+    return_addr: usize,
+  ) -> std::result::Result<dispatch::LoadFrame, Self::Error> {
+    let f = take(&mut self.acc);
+    let stack_base = self.stack.len();
+    self.prepare_call(f, stack_base, 0, return_addr)?;
+    Ok(dispatch::LoadFrame {
+      bytecode: current_call_frame!(self).instructions,
+      pc: self.pc,
+    })
   }
 
   fn op_import(
@@ -602,20 +585,27 @@ impl Handler for Thread {
     todo!()
   }
 
-  fn op_return(&mut self) -> std::result::Result<(), Self::Error> {
+  fn op_return(&mut self) -> std::result::Result<dispatch::Return, Self::Error> {
+    // return value is in the accumulator
+
     // pop frame
     let frame = self.call_frames.pop().unwrap();
 
     // truncate stack
     self.stack.truncate(self.stack.len() - frame.frame_size);
 
-    // restore pc
-    match self.call_frames.last() {
-      Some(current_frame) => self.pc = current_frame.pc,
-      None => self.pc = 0,
-    };
-
-    Ok(())
+    Ok(match self.call_frames.last() {
+      Some(current_frame) => {
+        self.stack_base -= current_frame.frame_size;
+        self.pc = frame.return_addr;
+        // restore pc
+        dispatch::Return::LoadFrame(dispatch::LoadFrame {
+          bytecode: current_frame.instructions,
+          pc: self.pc,
+        })
+      }
+      None => dispatch::Return::Yield,
+    })
   }
 
   fn op_yield(&mut self) -> std::result::Result<(), Self::Error> {
