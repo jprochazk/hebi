@@ -1,0 +1,15 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Err(
+    Run(
+        Error {
+            span: Span {
+                start: 0,
+                end: 0,
+            },
+            message: "expected 1 arg, got 2",
+        },
+    ),
+)
