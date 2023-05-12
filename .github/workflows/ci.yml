@@ -75,5 +75,7 @@ jobs:
       - name: Run miri tests
         env:
           MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-permissive-provenance
-        run: cargo miri test --no-default-features -F __miri -- value
+        run: |
+          cargo miri test --no-default-features -F __miri -- value
+          cargo miri test --no-default-features -F __miri -- vm
 
