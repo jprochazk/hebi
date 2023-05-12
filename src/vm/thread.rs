@@ -16,10 +16,11 @@ use crate::ctx::Context;
 use crate::error::{Error, Result};
 use crate::object::function::Params;
 use crate::object::module::ModuleId;
-use crate::object::{Function, FunctionDescriptor, List, Object, Ptr, String};
+use crate::object::{Function, FunctionDescriptor, List, Module, Object, Ptr, String};
 use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
+use crate::{emit, syntax};
 
 pub struct Thread {
   cx: Context,
@@ -48,8 +49,7 @@ impl Thread {
 
   pub fn call(&mut self, f: Value, args: &[Value]) -> Result<Value> {
     let (stack_base, num_args) = push_args!(self, args);
-
-    self.prepare_call(f, stack_base, num_args, self.pc)?;
+    self.prepare_call(f, stack_base, num_args, None)?;
     self.run()?;
     Ok(take(&mut self.acc))
   }
@@ -80,7 +80,7 @@ impl Thread {
     f: Value,
     stack_base: usize,
     num_args: usize,
-    return_addr: usize,
+    return_addr: Option<usize>,
   ) -> Result<()> {
     let f = match f.try_to_object() {
       Ok(f) => f,
@@ -102,7 +102,7 @@ impl Thread {
     f: Ptr<Function>,
     stack_base: usize,
     num_args: usize,
-    return_addr: usize,
+    return_addr: Option<usize>,
   ) -> Result<()> {
     check_args(&self.cx, (0..0).into(), &f.descriptor.params, num_args)?;
 
@@ -126,6 +126,63 @@ impl Thread {
     });
 
     Ok(())
+  }
+
+  fn load_module(&mut self, path: Ptr<String>) -> Result<Ptr<Module>> {
+    if let Some((module_id, module)) = self.global.module_registry().get_by_name(path.as_str()) {
+      // module is in cache
+      if self.global.module_visited_set().contains(&module_id) {
+        fail!(
+          self.cx,
+          0..0,
+          "attempted to import partially initialized module {path}"
+        );
+      }
+      return Ok(module);
+    }
+
+    // module is not in cache, actually load it
+    let module_id = self.global.module_registry_mut().next_module_id();
+    // TODO: native modules
+    let module = match self.global.module_loader().load(path.as_str()) {
+      Some(module) => module.to_string(),
+      None => {
+        fail!(self.cx, 0..0, "failed to load module {path}");
+      }
+    };
+    // TODO: handle parse error properly
+    // vm::Result { Vm, User, Parse }
+    let module = syntax::parse(&self.cx, &module).expect("parse error");
+    let module = emit::emit(&self.cx, &module, path.as_str(), false);
+    println!("{}", module.root.disassemble());
+    let main = self.cx.alloc(Function::new(
+      &self.cx,
+      module.root.clone(),
+      self.cx.alloc(List::new()),
+      module_id,
+    ));
+    let module = self.cx.alloc(Module::new(
+      &self.cx,
+      path.clone(),
+      main,
+      &module.module_vars,
+      module_id,
+    ));
+    self
+      .global
+      .module_registry_mut()
+      .insert(module_id, path, module.clone());
+    self.global.module_visited_set_mut().insert(module_id);
+
+    let result = match self.call(Value::object(module.root.clone()), &[]) {
+      Ok(_) => Ok(module),
+      Err(e) => {
+        self.global.module_registry_mut().remove(module_id);
+        Err(e)
+      }
+    };
+    self.global.module_visited_set_mut().remove(&module_id);
+    result
   }
 }
 
@@ -157,7 +214,7 @@ struct Frame {
   upvalues: Ptr<List>,
   frame_size: usize,
   num_args: usize,
-  return_addr: usize,
+  return_addr: Option<usize>,
   module_id: ModuleId,
 }
 
@@ -234,11 +291,47 @@ impl Handler for Thread {
   }
 
   fn op_load_module_var(&mut self, idx: op::ModuleVar) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let module_id = current_call_frame!(self).module_id;
+    let module = match self.global.module_registry().get_by_id(module_id) {
+      Some(module) => module,
+      None => {
+        fail!(self.cx, 0..0, "failed to get module {module_id}");
+      }
+    };
+
+    let value = match module.module_vars.get_index(idx.index()) {
+      Some(value) => value,
+      None => {
+        fail!(self.cx, 0..0, "failed to get module variable {idx}");
+      }
+    };
+
+    self.acc = value;
+
+    Ok(())
   }
 
   fn op_store_module_var(&mut self, idx: op::ModuleVar) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let module_id = current_call_frame!(self).module_id;
+    let module = match self.global.module_registry().get_by_id(module_id) {
+      Some(module) => module,
+      None => {
+        fail!(self.cx, 0..0, "failed to get module {module_id}");
+      }
+    };
+
+    let value = take(&mut self.acc);
+
+    let success = module.module_vars.set_index(idx.index(), value.clone());
+    if !success {
+      fail!(
+        self.cx,
+        0..0,
+        "failed to set module variable {idx} (value={value})"
+      );
+    };
+
+    Ok(())
   }
 
   fn op_load_global(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
@@ -265,7 +358,22 @@ impl Handler for Thread {
   }
 
   fn op_load_field(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let name = self.get_constant(name).into_value();
+    debug_assert_object_type!(name, String);
+    let name = unsafe { name.to_object_unchecked().cast_unchecked::<String>() };
+
+    let value = take(&mut self.acc);
+
+    if let Some(object) = value.to_object() {
+      let Some(value) = object.get_field(&self.cx, name.as_str())? else {
+        fail!(self.cx, 0..0, "failed to get field `{name}` on value `{object}`")
+      };
+      self.acc = value;
+    } else {
+      todo!()
+    }
+
+    Ok(())
   }
 
   fn op_load_field_opt(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
@@ -559,7 +667,7 @@ impl Handler for Thread {
     let f = self.get_register(callee);
     let start = self.stack_base + callee.index() + 1;
     let (stack_base, num_args) = push_args!(self, f.clone(), range(start, start + args.value()));
-    self.prepare_call(f, stack_base, num_args, return_addr)?;
+    self.prepare_call(f, stack_base, num_args, Some(return_addr))?;
     Ok(dispatch::LoadFrame {
       bytecode: current_call_frame!(self).instructions,
       pc: self.pc,
@@ -572,7 +680,7 @@ impl Handler for Thread {
   ) -> std::result::Result<dispatch::LoadFrame, Self::Error> {
     let f = take(&mut self.acc);
     let stack_base = self.stack.len();
-    self.prepare_call(f, stack_base, 0, return_addr)?;
+    self.prepare_call(f, stack_base, 0, Some(return_addr))?;
     Ok(dispatch::LoadFrame {
       bytecode: current_call_frame!(self).instructions,
       pc: self.pc,
@@ -584,7 +692,13 @@ impl Handler for Thread {
     path: op::Constant,
     dst: op::Register,
   ) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let path = self.get_constant(path).into_value();
+    debug_assert_object_type!(path, String);
+    let path = unsafe { path.to_object_unchecked().cast_unchecked::<String>() };
+    let module = self.load_module(path)?;
+    self.set_register(dst, Value::object(module));
+
+    Ok(())
   }
 
   fn op_return(&mut self) -> std::result::Result<dispatch::Return, Self::Error> {
@@ -599,12 +713,16 @@ impl Handler for Thread {
     Ok(match self.call_frames.last() {
       Some(current_frame) => {
         self.stack_base -= current_frame.frame_size;
-        self.pc = frame.return_addr;
-        // restore pc
-        dispatch::Return::LoadFrame(dispatch::LoadFrame {
-          bytecode: current_frame.instructions,
-          pc: self.pc,
-        })
+        if let Some(return_addr) = frame.return_addr {
+          // restore pc
+          self.pc = return_addr;
+          dispatch::Return::LoadFrame(dispatch::LoadFrame {
+            bytecode: current_frame.instructions,
+            pc: self.pc,
+          })
+        } else {
+          dispatch::Return::Yield
+        }
       }
       None => dispatch::Return::Yield,
     })

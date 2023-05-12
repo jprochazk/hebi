@@ -20,8 +20,9 @@ pub unsafe fn __read_tuple<const N: usize, T: crate::bytecode::operands::Operand
   ip: *mut u8,
   width: crate::bytecode::operands::Width,
 ) -> T {
-  let buf = std::ptr::read(ip as *mut [u8; N]);
-  T::decode(&buf[..], width)
+  let len = N * width as usize;
+  let buf = &*std::ptr::slice_from_raw_parts(ip, len);
+  T::decode(buf, width)
 }
 
 macro_rules! read_operands {

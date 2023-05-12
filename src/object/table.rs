@@ -26,6 +26,25 @@ impl Table {
   pub fn get<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K) -> Option<Value> {
     self.data.borrow().get(key).cloned()
   }
+
+  pub fn get_index(&self, index: usize) -> Option<Value> {
+    self
+      .data
+      .borrow()
+      .get_index(index)
+      .map(|(_, value)| value.clone())
+  }
+
+  pub fn set_index(&self, index: usize, value: Value) -> bool {
+    // TODO: handle error
+    match self.data.borrow_mut().get_index_mut(index) {
+      Some((_, slot)) => {
+        *slot = value;
+        true
+      }
+      None => false,
+    }
+  }
 }
 
 impl Display for Table {

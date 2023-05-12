@@ -1,6 +1,8 @@
 #[macro_use]
 mod macros;
 
+use std::collections::HashMap;
+
 use super::*;
 
 check! {
@@ -93,5 +95,119 @@ check! {
     
     test(true)
     test(false)
+  "#
+}
+
+struct TestModuleLoader {
+  modules: HashMap<&'static str, &'static str>,
+}
+
+impl TestModuleLoader {
+  pub fn new(modules: &[(&'static str, &'static str)]) -> Self {
+    Self {
+      modules: HashMap::from_iter(modules.iter().cloned()),
+    }
+  }
+}
+
+impl module::Loader for TestModuleLoader {
+  fn load(&self, path: &str) -> Option<&str> {
+    self.modules.get(path).copied()
+  }
+}
+
+check! {
+  module
+  import_value,
+  {
+    test: "value := 100"
+  },
+  r#"
+    import test
+    test.value
+  "#
+}
+
+check! {
+  module
+  import_value_named,
+  {
+    test: "value := 100"
+  },
+  r#"
+    from test import value
+    value
+  "#
+}
+
+check! {
+  module
+  import_fn,
+  {
+    test: r#"
+      fn test(value):
+        return value
+    "#
+  },
+  r#"
+    import test
+    test.test("yo")
+  "#
+}
+
+check! {
+  module
+  import_fn_named,
+  {
+    test: r#"
+      fn test(value):
+        return value
+    "#
+  },
+  r#"
+    from test import test
+    test("yo")
+  "#
+}
+
+check! {
+  module
+  module_vars,
+  {
+    test: r#"
+      value := 100
+      fn set(v):
+        value = v
+      fn get():
+        return value
+    "#
+  },
+  r#"
+    import test
+    
+    test.set(50)
+    test.get()
+  "#
+}
+
+check! {
+  module
+  module_vars_per_module,
+  {
+    test: r#"
+      value := 100
+      fn set(v):
+        value = v
+      fn get():
+        return value
+    "#
+  },
+  r#"
+    import test
+
+    value := 200
+    test.set(50)
+    value = 0
+    test.get()
   "#
 }

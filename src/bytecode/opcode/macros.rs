@@ -108,11 +108,13 @@ macro_rules! instructions {
             let _name: &'static str = ::paste::paste!(stringify!([<$name:snake>]));
             let _operands: Vec<&dyn ::std::fmt::Display> = vec![$($(&*$operand),+)?];
             let _constant: Option<crate::value::constant::Constant> = __get_constant!(constants; $($(($operand, $ty))+)?);
+            let _width = ($($($operand.clone(),)+)?).width();
 
             disasm::Instruction {
               name: _name,
               operands: _operands,
               constant: _constant,
+              width: _width,
             }
           }
         }

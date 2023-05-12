@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::opcode::symbolic;
+use super::opcode::{symbolic, Width};
 use crate::util::{num_digits, JoinIter};
 use crate::value::constant::Constant;
 
@@ -8,6 +8,7 @@ pub struct Instruction<'a> {
   pub name: &'a str,
   pub operands: Vec<&'a dyn Display>,
   pub constant: Option<Constant>,
+  pub width: Width,
 }
 
 pub trait Disassemble {
@@ -20,9 +21,16 @@ impl<'a> Display for Instruction<'a> {
       name,
       operands,
       constant,
+      width,
     } = self;
 
-    write!(f, "{name}")?;
+    let width = match width {
+      Width::Normal => "",
+      Width::Wide16 => "wide16.",
+      Width::Wide32 => "wide32.",
+    };
+
+    write!(f, "{width}{name}")?;
     if !operands.is_empty() {
       write!(f, " {}", operands.iter().join(" "))?;
     }

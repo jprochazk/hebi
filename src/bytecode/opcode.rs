@@ -121,6 +121,12 @@ impl Count {
   }
 }
 
+impl ModuleVar {
+  pub fn index(&self) -> usize {
+    self.0 as usize
+  }
+}
+
 pub trait Operands {
   type Operands: Operand + Sized + Default;
 }
