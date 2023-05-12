@@ -122,6 +122,7 @@ impl Thread {
       frame_size: f.descriptor.frame_size,
       num_args,
       return_addr,
+      module_id: f.module_id,
     });
 
     Ok(())
@@ -157,6 +158,7 @@ struct Frame {
   frame_size: usize,
   num_args: usize,
   return_addr: usize,
+  module_id: ModuleId,
 }
 
 impl Thread {
@@ -353,12 +355,12 @@ impl Handler for Thread {
     }
     let upvalues = self.cx.alloc(List::from(upvalues));
 
-    // TODO: actual module id
-    let module_id = ModuleId::null();
-
-    let f = self
-      .cx
-      .alloc(Function::new(&self.cx, desc, upvalues, module_id));
+    let f = self.cx.alloc(Function::new(
+      &self.cx,
+      desc,
+      upvalues,
+      current_call_frame!(self).module_id,
+    ));
 
     self.acc = Value::object(f);
 

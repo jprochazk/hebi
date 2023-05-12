@@ -17,6 +17,9 @@ macro_rules! match_type {
   }};
 }
 
+// TODO: cache current call frame in a field (Option<T>),
+// so that it's one less indirection access
+
 macro_rules! current_call_frame {
   ($self:ident) => {{
     debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
