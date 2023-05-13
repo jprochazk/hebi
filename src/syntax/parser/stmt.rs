@@ -3,21 +3,21 @@ use std::collections::HashSet;
 use super::*;
 
 impl<'cx, 'src> Parser<'cx, 'src> {
-  pub(super) fn top_level_stmt(&mut self) -> Result<()> {
+  pub(super) fn top_level_stmt(&mut self) -> Result<(), SpannedError> {
     self.indent_eq()?;
     let stmt = self.stmt()?;
     self.module.body.push(stmt);
     Ok(())
   }
 
-  fn stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     match self.scoped_stmt()? {
       Some(stmt) => Ok(stmt),
       None => self.simple_stmt(),
     }
   }
 
-  fn scoped_stmt(&mut self) -> Result<Option<ast::Stmt<'src>>> {
+  fn scoped_stmt(&mut self) -> Result<Option<ast::Stmt<'src>>, SpannedError> {
     Ok(match self.current().kind {
       Kw_If => Some(self.if_stmt()?),
       Kw_For => Some(self.for_loop_stmt()?),
@@ -30,7 +30,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     })
   }
 
-  fn import_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn import_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.bump_if(Kw_Import) {
       // import <module>
       let start = self.previous().span.start;
@@ -53,15 +53,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let end = self.previous().span.end;
       Ok(ast::import_symbols_stmt(start..end, module, symbols))
     } else {
-      Err(
-        self
-          .cx
-          .error("expected `from` or `import`", self.previous().span),
-      )
+      Err(SpannedError::new(
+        "expected `from` or `import`",
+        self.previous().span,
+      ))
     }
   }
 
-  fn import_module_path(&mut self) -> Result<Vec<ast::Ident<'src>>> {
+  fn import_module_path(&mut self) -> Result<Vec<ast::Ident<'src>>, SpannedError> {
     self.no_indent()?;
     let mut path = vec![self.ident()?];
     while self.no_indent().is_ok() && self.bump_if(Op_Dot) {
@@ -70,7 +69,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(path)
   }
 
-  fn import_symbol_list(&mut self) -> Result<Vec<ast::ImportSymbol<'src>>> {
+  fn import_symbol_list(&mut self) -> Result<Vec<ast::ImportSymbol<'src>>, SpannedError> {
     let mut symbols = vec![self.import_symbol()?];
     while self.no_indent().is_ok() && self.bump_if(Tok_Comma) {
       symbols.push(self.import_symbol()?);
@@ -78,7 +77,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(symbols)
   }
 
-  fn import_symbol(&mut self) -> Result<ast::ImportSymbol<'src>> {
+  fn import_symbol(&mut self) -> Result<ast::ImportSymbol<'src>, SpannedError> {
     self.no_indent()?;
     let name = self.ident()?;
     let alias = if self.no_indent().is_ok() && self.bump_if(Kw_As) {
@@ -89,7 +88,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::ImportSymbol { name, alias })
   }
 
-  fn if_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn if_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_If)?;
     let start = self.previous().span.start;
 
@@ -114,7 +113,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::if_stmt(start..end, branches, default))
   }
 
-  fn if_branch(&mut self) -> Result<ast::Branch<'src>> {
+  fn if_branch(&mut self) -> Result<ast::Branch<'src>, SpannedError> {
     self.no_indent()?;
     let cond = self.expr()?;
     self.no_indent()?;
@@ -123,7 +122,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::branch(cond, body))
   }
 
-  fn for_loop_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn for_loop_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_For)?;
     let start = self.previous().span.start;
     self.no_indent()?;
@@ -139,7 +138,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::for_loop_stmt(start..end, item, iter, body))
   }
 
-  fn for_iter(&mut self) -> Result<ast::ForIter<'src>> {
+  fn for_iter(&mut self) -> Result<ast::ForIter<'src>, SpannedError> {
     let start = self.expr()?;
     let inclusive = match self.current().kind {
       Op_Range => false,
@@ -157,7 +156,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }))
   }
 
-  fn while_loop_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn while_loop_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_While)?;
     let start = self.previous().span.start;
     self.no_indent()?;
@@ -169,7 +168,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::while_loop_stmt(start..end, cond, body))
   }
 
-  fn loop_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn loop_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_Loop)?;
     let start = self.previous().span.start;
     self.no_indent()?;
@@ -179,7 +178,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::loop_stmt(start..end, body))
   }
 
-  fn loop_body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
+  fn loop_body(&mut self) -> Result<Vec<ast::Stmt<'src>>, SpannedError> {
     let state = State::with_loop(&self.state);
     let (state, body) = self.with_state2(state, Self::body)?;
     // yield may appear in loop, in which case we have to propagate it upwards here
@@ -188,7 +187,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(body)
   }
 
-  fn func_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn func_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_Fn)?;
     let start = self.previous().span.start;
     self.no_indent()?;
@@ -199,7 +198,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::func_stmt(start..end, func))
   }
 
-  fn func(&mut self, name: ast::Ident<'src>) -> Result<ast::Func<'src>> {
+  fn func(&mut self, name: ast::Ident<'src>) -> Result<ast::Func<'src>, SpannedError> {
     let params = self.func_params()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
@@ -213,7 +212,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::func(name, params, body, has_yield))
   }
 
-  fn func_params(&mut self) -> Result<ast::Params<'src>> {
+  fn func_params(&mut self) -> Result<ast::Params<'src>, SpannedError> {
     self.expect(Brk_ParenL)?;
 
     let has_self = self.bump_if(Kw_Self);
@@ -221,7 +220,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let span = self.previous().span;
       self.bump_if(Tok_Comma);
       if self.state.current_class.is_none() {
-        fail!(self.cx, span, "cannot access `self` outside of class");
+        fail!(span, "cannot access `self` outside of class");
       }
     }
 
@@ -241,10 +240,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(params)
   }
 
-  fn param(&mut self, params: &mut ast::Params<'src>, state: &mut ParamState) -> Result<()> {
+  fn param(
+    &mut self,
+    params: &mut ast::Params<'src>,
+    state: &mut ParamState,
+  ) -> Result<(), SpannedError> {
     let name = self.ident()?;
     if params.contains(&name) {
-      fail!(self.cx, name.span, "duplicate argument `{name}`");
+      fail!(name.span, "duplicate argument `{name}`");
     }
     let default = if self.bump_if(Op_Equal) {
       *state = ParamState::Default;
@@ -252,7 +255,6 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     } else {
       if *state == ParamState::Default {
         fail!(
-          self.cx,
           self.previous().span,
           "non-default argument follows default argument",
         );
@@ -266,7 +268,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(())
   }
 
-  fn class_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn class_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_Class)?;
     let start = self.previous().span.start;
     self.no_indent()?;
@@ -288,14 +290,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::class_stmt(start..end, name, parent, members))
   }
 
-  fn class_members(&mut self) -> Result<ast::ClassMembers<'src>> {
+  fn class_members(&mut self) -> Result<ast::ClassMembers<'src>, SpannedError> {
     let mut members = ast::ClassMembers::new();
 
     if self.no_indent().is_ok() {
       // empty class (single line)
       self
         .expect(Kw_Pass)
-        .map_err(|e| self.cx.error("invalid indentation", e.span))?;
+        .map_err(|e| SpannedError::new("invalid indentation", e.span))?;
       return Ok(members);
     }
 
@@ -312,9 +314,10 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let name = self.ident()?;
 
       if names.contains(&name) {
-        self
-          .errors
-          .push(self.cx.error(format!("duplicate field {name}"), name.span));
+        self.errors.push(SpannedError::new(
+          format!("duplicate field {name}"),
+          name.span,
+        ));
       } else {
         names.insert(name.clone());
       }
@@ -331,9 +334,10 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
       let name = self.ident()?;
       if names.contains(&name) {
-        self
-          .errors
-          .push(self.cx.error(format!("duplicate field {name}"), name.span));
+        self.errors.push(SpannedError::new(
+          format!("duplicate field {name}"),
+          name.span,
+        ));
       } else {
         names.insert(name.clone());
       }
@@ -343,11 +347,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
-      fail!(
-        self.cx,
-        self.current().span,
-        "fields may not appear after methods",
-      );
+      fail!(self.current().span, "fields may not appear after methods",);
     }
 
     self.dedent()?;
@@ -355,7 +355,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(members)
   }
 
-  fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>> {
+  fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>, SpannedError> {
     self.check_recursion_limit(self.current().span)?;
     if self.no_indent().is_ok() {
       Ok(vec![self.simple_stmt()?])
@@ -372,7 +372,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
   }
 
-  fn simple_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn simple_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     match self.current().kind {
       Kw_Pass => self.pass_stmt(),
       Kw_Return => self.return_stmt(),
@@ -384,14 +384,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
   }
 
-  fn pass_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn pass_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_Pass)?;
     Ok(ast::pass_stmt(self.previous().span))
   }
 
-  fn return_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn return_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_func.is_none() {
-      fail!(self.cx, self.current().span, "return outside of function");
+      fail!(self.current().span, "return outside of function");
     }
 
     self.expect(Kw_Return)?;
@@ -401,25 +401,25 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::return_stmt(start..end, value))
   }
 
-  fn continue_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn continue_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_loop.is_none() {
-      fail!(self.cx, self.current().span, "continue outside of loop");
+      fail!(self.current().span, "continue outside of loop");
     }
 
     self.expect(Kw_Continue)?;
     Ok(ast::continue_stmt(self.previous().span))
   }
 
-  fn break_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn break_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_loop.is_none() {
-      fail!(self.cx, self.current().span, "break outside of loop");
+      fail!(self.current().span, "break outside of loop");
     }
 
     self.expect(Kw_Break)?;
     Ok(ast::break_stmt(self.previous().span))
   }
 
-  fn print_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn print_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.expect(Kw_Print)?;
     let start = self.previous().span;
     self.no_indent()?;
@@ -438,11 +438,11 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::print_stmt(start.join(end), values))
   }
 
-  fn expr_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn expr_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     self.assign_stmt()
   }
 
-  fn assign_stmt(&mut self) -> Result<ast::Stmt<'src>> {
+  fn assign_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     let target = self.expr()?;
 
     'assign: {
@@ -456,7 +456,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
             ast::AssignKind::Decl => "invalid variable declaration",
             ast::AssignKind::Op(_) => "invalid assignment target",
           };
-          fail!(self.cx, error_span, "{msg}");
+          fail!( error_span, "{msg}");
         };
         return Ok(stmt);
       }
@@ -482,16 +482,17 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Some(kind)
   }
 
-  fn check_meta_params(&self, meta: &ast::Meta, params: &ast::Params, span: Span) -> Result<()> {
+  fn check_meta_params(
+    &self,
+    meta: &ast::Meta,
+    params: &ast::Params,
+    span: Span,
+  ) -> Result<(), SpannedError> {
     let name = meta.as_str();
     let arity = meta.arity();
 
     if !params.has_self {
-      fail!(
-        self.cx,
-        span,
-        "meta method `{name}` expects a `self` parameter",
-      );
+      fail!(span, "meta method `{name}` expects a `self` parameter",);
     }
 
     if let Some(arity) = arity {
@@ -500,16 +501,11 @@ impl<'cx, 'src> Parser<'cx, 'src> {
           let arity = arity + 1;
           let params = meta.param_names().join(", ");
           fail!(
-            self.cx,
             span,
             "meta method `{name}` expects {arity} parameters: self, {params}",
           );
         } else {
-          fail!(
-            self.cx,
-            span,
-            "meta method `{name}` expects only a `self` parameter",
-          );
+          fail!(span, "meta method `{name}` expects only a `self` parameter",);
         }
       }
     }

@@ -10,7 +10,7 @@ macro_rules! check {
       let module = match syntax::parse(&cx, input) {
         Ok(module) => module,
         Err(e) => {
-          for err in e {
+          for err in e.errors() {
             eprintln!("{}", err.report(input, true));
           }
           panic!("Failed to parse source, see errors above.")

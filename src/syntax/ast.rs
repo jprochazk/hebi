@@ -816,29 +816,36 @@ pub fn for_loop_stmt<'src>(
 pub mod lit {
   use super::*;
   use crate::ctx::Context;
-  use crate::error::Result;
-  use crate::span::Span;
+  use crate::span::{Span, SpannedError};
 
   pub fn none<'src>(_: &Context, s: impl Into<Span>) -> Expr<'src> {
     let s = s.into();
     Expr::new(s, ExprKind::Literal(Box::new(Literal::None)))
   }
 
-  pub fn bool<'src>(cx: &Context, s: impl Into<Span>, lexeme: &str) -> Result<Expr<'src>> {
+  pub fn bool<'src>(
+    cx: &Context,
+    s: impl Into<Span>,
+    lexeme: &str,
+  ) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let v = match lexeme {
       "true" => true,
       "false" => false,
-      _ => return Err(cx.error("bool is only ever `true` or `false`", s)),
+      _ => return Err(SpannedError::new("bool is only ever `true` or `false`", s)),
     };
     Ok(Expr::new(s, ExprKind::Literal(Box::new(Literal::Bool(v)))))
   }
 
-  pub fn int<'src>(cx: &Context, s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
+  pub fn int<'src>(
+    cx: &Context,
+    s: impl Into<Span>,
+    lexeme: &'src str,
+  ) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let value = lexeme
       .parse::<i64>()
-      .map_err(|e| cx.error(format!("invalid number {e}"), s))?;
+      .map_err(|e| SpannedError::new(format!("invalid number {e}"), s))?;
     let lit = if value < (i32::MIN as i64) || (i32::MAX as i64) < value {
       // TODO: bigint?
       Literal::Float(value as f64)
@@ -848,11 +855,15 @@ pub mod lit {
     Ok(Expr::new(s, ExprKind::Literal(Box::new(lit))))
   }
 
-  pub fn float<'src>(cx: &Context, s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>> {
+  pub fn float<'src>(
+    cx: &Context,
+    s: impl Into<Span>,
+    lexeme: &'src str,
+  ) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let value = lexeme
       .parse()
-      .map_err(|e| cx.error(format!("invalid number {e}"), s))?;
+      .map_err(|e| SpannedError::new(format!("invalid number {e}"), s))?;
     Ok(Expr::new(
       s,
       ExprKind::Literal(Box::new(Literal::Float(value))),

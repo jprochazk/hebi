@@ -51,7 +51,7 @@ macro_rules! debug_assert_object_type {
       None => panic!("{} is not an object", stringify!($value)),
     };
     if let Err(e) = value.cast::<$ty>() {
-      panic!("{e}");
+      panic!("{e} is not {}", ::std::any::type_name::<$ty>());
     }
   }};
 }

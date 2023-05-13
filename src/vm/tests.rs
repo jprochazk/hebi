@@ -111,8 +111,14 @@ impl TestModuleLoader {
 }
 
 impl module::Loader for TestModuleLoader {
-  fn load(&self, path: &str) -> Option<&str> {
-    self.modules.get(path).copied()
+  fn load(&self, path: &str) -> HebiResult<&str> {
+    match self.modules.get(path).copied() {
+      Some(module) => Ok(module),
+      None => Err(HebiError::Vm(SpannedError::new(
+        format!("module `{path}` does not exist"),
+        None,
+      ))),
+    }
   }
 }
 

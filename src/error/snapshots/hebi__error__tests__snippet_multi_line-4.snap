@@ -1,5 +1,0 @@
----
-source: src/error/tests.rs
-expression: "cx.error(\"error: test\", 19..19).report(\"d(                 \", true)"
----
-error: test

@@ -13,7 +13,7 @@ macro_rules! check_module {
     match parse(&cx, input) {
       Ok(module) => assert_debug_snapshot!(module),
       Err(e) => {
-        for err in e {
+        for err in e.errors() {
           eprintln!("{}", err.report(input, true));
         }
         panic!("Failed to parse source, see errors above.")
@@ -44,7 +44,7 @@ macro_rules! check_error {
       Ok(_) => panic!("module parsed successfully"),
       Err(e) => {
         let mut errors = String::new();
-        for err in e {
+        for err in e.errors() {
           errors += &err.report(input, true);
           errors += "\n";
         }

@@ -1,7 +1,0 @@
----
-source: src/error/tests.rs
-expression: "cx.error(\"error: test\", 10..11).report(\"let x = 10\\nlet y = 20;\", true)"
----
-error: test
-| let x = 10[4;31m_[0mlet y = 20;
-

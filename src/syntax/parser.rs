@@ -4,20 +4,19 @@
 use beef::lean::Cow;
 
 use self::indent::IndentStack;
-use super::ast;
 use super::lexer::TokenKind::*;
 use super::lexer::{Lexer, Token, TokenKind};
+use super::{ast, SyntaxError};
 use crate::ctx::Context;
-use crate::error::{Error, Result};
-use crate::span::Span;
+use crate::span::{Span, SpannedError};
 
 // TODO: `is` and `in`
 // TODO: `async`/`await` - maybe post-MVP
 
-pub fn parse<'src>(cx: &Context, src: &'src str) -> Result<ast::Module<'src>, Vec<Error>> {
+pub fn parse<'src>(cx: &Context, src: &'src str) -> Result<ast::Module<'src>, SyntaxError> {
   let lexer = Lexer::new(src);
   let parser = Parser::new(cx, lexer);
-  parser.module()
+  parser.module().map_err(SyntaxError::new)
 }
 
 #[derive(Clone)]
@@ -106,7 +105,7 @@ struct Parser<'cx, 'src> {
   cx: &'cx Context,
   module: ast::Module<'src>,
   lex: Lexer<'src>,
-  errors: Vec<Error>,
+  errors: Vec<SpannedError>,
   indent: IndentStack,
   state: State,
 }
@@ -123,16 +122,16 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
   }
 
-  fn no_indent(&self) -> Result<()> {
+  fn no_indent(&self) -> Result<(), SpannedError> {
     let token = self.current();
     if self.state.ignore_indent || token.is(Tok_Eof) || token.ws.is_none() {
       Ok(())
     } else {
-      Err(self.cx.error("invalid indentation", token.span))
+      Err(SpannedError::new("invalid indentation", token.span))
     }
   }
 
-  fn indent_eq(&self) -> Result<()> {
+  fn indent_eq(&self) -> Result<(), SpannedError> {
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
@@ -140,11 +139,11 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     {
       Ok(())
     } else {
-      Err(self.cx.error("invalid indentation", token.span))
+      Err(SpannedError::new("invalid indentation", token.span))
     }
   }
 
-  fn indent_gt(&mut self) -> Result<()> {
+  fn indent_gt(&mut self) -> Result<(), SpannedError> {
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
@@ -153,11 +152,11 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       self.indent.push(token.ws.unwrap());
       Ok(())
     } else {
-      Err(self.cx.error("invalid indentation", token.span))
+      Err(SpannedError::new("invalid indentation", token.span))
     }
   }
 
-  fn dedent(&mut self) -> Result<()> {
+  fn dedent(&mut self) -> Result<(), SpannedError> {
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
@@ -166,7 +165,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       self.indent.pop();
       Ok(())
     } else {
-      Err(self.cx.error("invalid indentation", token.span))
+      Err(SpannedError::new("invalid indentation", token.span))
     }
   }
 
@@ -181,15 +180,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   }
 
   #[inline]
-  fn expect(&mut self, kind: TokenKind) -> Result<()> {
+  fn expect(&mut self, kind: TokenKind) -> Result<(), SpannedError> {
     if self.bump_if(kind) {
       Ok(())
     } else {
-      Err(
-        self
-          .cx
-          .error(format!("expected `{}`", kind.name()), self.current().span),
-      )
+      Err(SpannedError::new(
+        format!("expected `{}`", kind.name()),
+        self.current().span,
+      ))
     }
   }
 
@@ -208,7 +206,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   fn bump(&mut self) -> &Token {
     self.lex.bump();
     while self.current().is(Tok_Error) {
-      self.errors.push(self.cx.error(
+      self.errors.push(SpannedError::new(
         format!("invalid token `{}`", self.lex.lexeme(self.current())),
         self.current().span,
       ));
@@ -223,8 +221,8 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   fn with_state<T>(
     &mut self,
     mut state: State,
-    f: impl FnOnce(&mut Self) -> Result<T>,
-  ) -> Result<T> {
+    f: impl FnOnce(&mut Self) -> Result<T, SpannedError>,
+  ) -> Result<T, SpannedError> {
     std::mem::swap(&mut self.state, &mut state);
     let res = f(self);
     std::mem::swap(&mut self.state, &mut state);
@@ -235,8 +233,8 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   fn with_state2<T>(
     &mut self,
     mut state: State,
-    f: impl FnOnce(&mut Self) -> Result<T>,
-  ) -> Result<(State, T)> {
+    f: impl FnOnce(&mut Self) -> Result<T, SpannedError>,
+  ) -> Result<(State, T), SpannedError> {
     std::mem::swap(&mut self.state, &mut state);
     let res = f(self);
     std::mem::swap(&mut self.state, &mut state);
@@ -256,7 +254,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
         // break on keywords that begin statements
         Kw_Import | Kw_From | Kw_Fn | Kw_Class | Kw_For | Kw_While | Kw_Loop | Kw_If => break,
         // handle any errors
-        Tok_Error => self.errors.push(self.cx.error(
+        Tok_Error => self.errors.push(SpannedError::new(
           format!("invalid token `{}`", self.lex.lexeme(self.current())),
           self.current().span,
         )),
@@ -286,19 +284,19 @@ impl<'cx, 'a> Parser<'cx, 'a> {
   // `try { ... } catch { ... }` around a call to one of the Hebi compiler
   // functions would be enough to properly handle this case.
   #[cfg(any(target_family = "wasm", not(feature = "__check_recursion_limit")))]
-  fn check_recursion_limit(&self, _span: Span) -> Result<(), Error> {
+  fn check_recursion_limit(&self, _span: Span) -> Result<(), SpannedError> {
     Ok(())
   }
 
   #[cfg(all(not(target_family = "wasm"), feature = "__check_recursion_limit"))]
-  fn check_recursion_limit(&self, span: Span) -> Result<()> {
+  fn check_recursion_limit(&self, span: Span) -> Result<(), SpannedError> {
     if stacker::remaining_stack()
       .map(|available| available > Self::MINIMUM_STACK_REQUIRED)
       .unwrap_or(true)
     {
       Ok(())
     } else {
-      Err(self.cx.error("nesting limit reached", span))
+      Err(SpannedError::new("nesting limit reached", span))
     }
   }
 }

@@ -1,11 +1,11 @@
 use super::*;
 
 impl<'cx, 'src> Parser<'cx, 'src> {
-  pub(super) fn expr(&mut self) -> Result<ast::Expr<'src>> {
+  pub(super) fn expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     self.maybe_expr()
   }
 
-  fn maybe_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn maybe_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.or_expr()?;
     while self.no_indent().is_ok() && self.bump_if(Op_QuestionQuestion) {
       self.no_indent()?;
@@ -20,7 +20,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn or_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn or_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.and_expr()?;
     while self.no_indent().is_ok() && self.bump_if(Op_PipePipe) {
       self.no_indent()?;
@@ -35,7 +35,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn and_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn and_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.eq_expr()?;
     while self.no_indent().is_ok() && self.bump_if(Op_AndAnd) {
       self.no_indent()?;
@@ -50,7 +50,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn eq_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn eq_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.comp_expr()?;
     while self.no_indent().is_ok() {
       let op = match self.current().kind {
@@ -66,7 +66,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn comp_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn comp_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.add_expr()?;
     while self.no_indent().is_ok() {
       let op = match self.current().kind {
@@ -84,7 +84,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn add_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn add_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.mul_expr()?;
     while self.no_indent().is_ok() {
       let op = match self.current().kind {
@@ -100,7 +100,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn mul_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn mul_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.pow_expr()?;
     while self.no_indent().is_ok() {
       let op = match self.current().kind {
@@ -117,7 +117,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn pow_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn pow_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut left = self.unary_expr()?;
     while self.no_indent().is_ok() && self.bump_if(Op_StarStar) {
       self.no_indent()?;
@@ -132,7 +132,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(left)
   }
 
-  fn unary_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn unary_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let op = match self.current().kind {
       Op_Minus => ast::UnaryOp::Minus,
       Op_Plus => ast::UnaryOp::Plus,
@@ -147,7 +147,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(ast::expr_unary(start..right.span.end, op, right))
   }
 
-  fn postfix_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn postfix_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     let mut expr = self.primary_expr()?;
     while self.no_indent().is_ok() {
       match self.current().kind {
@@ -172,7 +172,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     Ok(expr)
   }
 
-  fn primary_expr(&mut self) -> Result<ast::Expr<'src>> {
+  fn primary_expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     self.check_recursion_limit(self.current().span)?;
 
     if self.bump_if(Lit_None) {
@@ -198,7 +198,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let token = self.previous();
       match ast::lit::str(token.span, self.lex.lexeme(token)) {
         Some(str) => return Ok(str),
-        None => fail!(self.cx, token.span, "invalid escape sequence"),
+        None => fail!(token.span, "invalid escape sequence"),
       }
     }
 
@@ -239,7 +239,6 @@ impl<'cx, 'src> Parser<'cx, 'src> {
         || !self.state.current_func.map(|f| f.has_self).unwrap_or(false)
       {
         fail!(
-          self.cx,
           self.previous().span,
           "cannot access `self` outside of class method",
         );
@@ -251,21 +250,18 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       if let Some(c) = &self.state.current_class {
         if !c.has_super {
           fail!(
-            self.cx,
             self.previous().span,
             "cannot access `super` in a class with no parent class",
           );
         }
         if !self.state.current_func.map(|f| f.has_self).unwrap_or(false) {
           fail!(
-            self.cx,
             self.previous().span,
             "cannot access `super` outside of a class method that takes `self`",
           );
         }
       } else {
         fail!(
-          self.cx,
           self.previous().span,
           "cannot access `super` outside of class method",
         )
@@ -284,17 +280,17 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       return Ok(expr);
     }
 
-    Err(self.cx.error("unexpected token", self.current().span))
+    Err(SpannedError::new("unexpected token", self.current().span))
   }
 
-  fn table_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>)> {
+  fn table_field(&mut self) -> Result<(ast::Expr<'src>, ast::Expr<'src>), SpannedError> {
     let key = self.table_key()?;
     self.expect(Tok_Colon)?;
     let value = self.expr()?;
     Ok((key, value))
   }
 
-  fn table_key(&mut self) -> Result<ast::Expr<'src>> {
+  fn table_key(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
     if self.bump_if(Brk_SquareL) {
       let key = self.expr()?;
       self.expect(Brk_SquareR)?;
@@ -305,7 +301,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
   }
 
-  fn call_args(&mut self) -> Result<Vec<ast::Expr<'src>>> {
+  fn call_args(&mut self) -> Result<Vec<ast::Expr<'src>>, SpannedError> {
     let mut args = Vec::new();
     self.expect(Brk_ParenL)?;
     if !self.current().is(Brk_ParenR) {

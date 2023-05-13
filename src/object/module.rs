@@ -7,9 +7,10 @@ use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate::ctx::Context;
 use crate::value::Value;
+use crate::HebiResult;
 
 pub trait Loader {
-  fn load(&self, path: &str) -> Option<&str>;
+  fn load(&self, path: &str) -> HebiResult<&str>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -130,7 +131,7 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(&self, _: &Context, name: &str) -> crate::error::Result<Option<Value>> {
+  fn named_field(&self, _: &Context, name: &str) -> HebiResult<Option<Value>> {
     Ok(self.module_vars.get(name))
   }
 }

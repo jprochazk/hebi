@@ -1,10 +1,11 @@
+use super::*;
 use crate::ctx::Context;
 
 macro_rules! check {
   ($input:literal, $span:expr) => {{
     let cx = Context::for_test();
 
-    assert_snapshot!(cx.error("error: test", $span).report($input, true));
+    assert_snapshot!(SpannedError::new("error: test", $span).report($input, true));
   }};
 }
 
@@ -60,4 +61,31 @@ fn emit_report_multi_line_edge_case_sandwiched_newline() {
 #[test]
 fn emit_report_multi_line_edge_case_sandwiched_newline_2() {
   check!("\0\"\nl\n\n\n\n\\", 1..8);
+}
+
+#[allow(clippy::no_effect)]
+#[test]
+fn test_spanned() {
+  #[derive(Default)]
+  struct Nested {
+    v: i32,
+  }
+  #[derive(Default)]
+  struct Test {
+    a: i32,
+    b: i32,
+    c: i32,
+    nested: Nested,
+  }
+
+  let mut t = Spanned::new(0..10, Test::default());
+
+  t.span.start;
+  t.span.end;
+  t.a;
+  t.b;
+  t.c;
+  t.nested.v = 10;
+
+  let _ = &"asdfasdfasdfasdfasdf"[t.span];
 }

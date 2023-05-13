@@ -9,9 +9,9 @@ use std::ptr::{self, NonNull, Pointee};
 use std::{alloc, mem};
 
 use crate::ctx::Context;
-use crate::error::Result;
 use crate::object::Object;
 use crate::value::Value;
+use crate::HebiResult;
 
 type VTable = <dyn Object as Pointee>::Metadata;
 
@@ -127,11 +127,11 @@ impl<T: Object> Object for Ptr<T> {
     self.inner().data.type_name()
   }
 
-  fn named_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
+  fn named_field(&self, cx: &Context, key: &str) -> HebiResult<Option<Value>> {
     self.inner().data.named_field(cx, key)
   }
 
-  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
+  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> HebiResult<()> {
     self.inner().data.set_named_field(cx, key, value)
   }
 }
@@ -261,12 +261,12 @@ impl Object for Any {
     this.type_name()
   }
 
-  fn named_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
+  fn named_field(&self, cx: &Context, key: &str) -> HebiResult<Option<Value>> {
     let this = unsafe { self.as_dyn_object() };
     this.named_field(cx, key)
   }
 
-  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
+  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> HebiResult<()> {
     let this = unsafe { self.as_dyn_object() };
     this.set_named_field(cx, key, value)
   }

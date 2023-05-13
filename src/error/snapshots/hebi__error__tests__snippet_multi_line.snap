@@ -1,7 +1,0 @@
----
-source: src/error/tests.rs
-expression: "cx.error(\"error: test\",\n        6..17).report(\"lorem ipsum\\ndolor sit amet\\nconsectetur adipiscing elit\",\n    true)"
----
-error: test
-| lorem [4;31mipsum[0m
-| [4;31mdolor[0m sit amet

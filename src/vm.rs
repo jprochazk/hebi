@@ -5,18 +5,16 @@ mod global;
 mod thread;
 
 use std::cell::RefCell;
-use std::fmt::Display;
 
 use global::Global;
 
 use self::thread::Thread;
 use crate::ctx::Context;
-use crate::error::Error;
 use crate::object::module::ModuleId;
 use crate::object::{module, Function, List};
-use crate::util::JoinIter;
+use crate::span::SpannedError;
 use crate::value::Value;
-use crate::{emit, syntax};
+use crate::{emit, syntax, HebiError, HebiResult};
 
 pub struct Hebi {
   cx: Context,
@@ -28,8 +26,11 @@ struct DefaultModuleLoader {}
 
 impl module::Loader for DefaultModuleLoader {
   // TODO: return user error
-  fn load(&self, _: &str) -> Option<&str> {
-    None
+  fn load(&self, path: &str) -> HebiResult<&str> {
+    Err(HebiError::Vm(SpannedError::new(
+      format!("failed to load module {path}"),
+      0..0,
+    )))
   }
 }
 
@@ -45,9 +46,9 @@ impl Hebi {
     self.global.set_module_loader(module_loader)
   }
 
-  pub fn eval(&self, code: &str) -> EvalResult {
+  pub fn eval(&self, code: &str) -> HebiResult<Value> {
     let cx = &self.cx;
-    let ast = syntax::parse(cx, code).map_err(EvalError::Parse)?;
+    let ast = syntax::parse(cx, code).map_err(HebiError::Syntax)?;
     let module = emit::emit(cx, &ast, "__main__", true);
     let module_id = ModuleId::global();
     let upvalues = cx.alloc(List::new());
@@ -57,32 +58,11 @@ impl Hebi {
     let main = Value::object(main);
 
     let mut root = self.root.borrow_mut();
-    root.call(main, &[]).map_err(EvalError::Run)
+    root.call(main, &[])
   }
 
   pub fn cx(&self) -> &Context {
     &self.cx
-  }
-}
-
-pub type EvalResult = core::result::Result<Value, EvalError>;
-
-#[derive(Debug)]
-pub enum EvalError {
-  Parse(Vec<Error>),
-  Run(Error),
-}
-
-impl Display for EvalError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      EvalError::Parse(e) => {
-        write!(f, "{}", e.iter().join("\n"))
-      }
-      EvalError::Run(e) => {
-        write!(f, "{e}")
-      }
-    }
   }
 }
 
