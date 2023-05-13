@@ -3,9 +3,11 @@ mod macros;
 
 mod util;
 
+use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::mem::take;
 use std::ptr::NonNull;
+use std::rc::Rc;
 
 use self::util::*;
 use super::dispatch;
@@ -30,7 +32,7 @@ pub struct Thread {
   // TODO: `Stack` behind Rc+RefCell
   // - stored call_frames, stack, stack_base
   // eventually should be a flat buffer
-  call_frames: Vec<Frame>,
+  call_frames: Rc<RefCell<Vec<Frame>>>,
   stack: Ptr<List>,
   stack_base: usize,
   acc: Value,
@@ -43,7 +45,7 @@ impl Thread {
       cx: cx.clone(),
       global,
 
-      call_frames: Vec::new(),
+      call_frames: Rc::new(RefCell::new(Vec::new())),
       stack: cx.alloc(List::with_capacity(128)),
       stack_base: 0,
       acc: Value::none(),
@@ -59,7 +61,7 @@ impl Thread {
   }
 
   fn run(&mut self) -> hebi::Result<()> {
-    let instructions = self.call_frames.last_mut().unwrap().instructions;
+    let instructions = current_call_frame_mut!(self).instructions;
     let pc = self.pc;
 
     match dispatch(self, instructions, pc)? {
@@ -113,7 +115,7 @@ impl Thread {
     self.stack.extend(stack_base + f.descriptor.frame_size);
 
     // push frame
-    self.call_frames.push(Frame {
+    self.call_frames.borrow_mut().push(Frame {
       instructions: f.descriptor.instructions,
       constants: f.descriptor.constants,
       upvalues: f.upvalues.clone(),
@@ -756,12 +758,12 @@ impl Handler for Thread {
     // return value is in the accumulator
 
     // pop frame
-    let frame = self.call_frames.pop().unwrap();
+    let frame = self.call_frames.borrow_mut().pop().unwrap();
 
     // truncate stack
     self.stack.truncate(self.stack.len() - frame.frame_size);
 
-    Ok(match self.call_frames.last() {
+    Ok(match self.call_frames.borrow().last() {
       Some(current_frame) => {
         self.stack_base -= current_frame.frame_size;
         if let Some(return_addr) = frame.return_addr {
