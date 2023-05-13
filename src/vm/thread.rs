@@ -21,7 +21,7 @@ use crate::object::{
 use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, syntax};
+use crate::{emit, syntax, HebiError};
 
 pub struct Thread {
   cx: Context,
@@ -139,9 +139,7 @@ impl Thread {
     let module_id = self.global.module_registry_mut().next_module_id();
     // TODO: native modules
     let module = self.global.module_loader().load(path.as_str())?.to_string();
-    // TODO: handle parse error properly
-    // vm::Result { Vm, User, Parse }
-    let module = syntax::parse(&self.cx, &module).expect("parse error");
+    let module = syntax::parse(&self.cx, &module).map_err(HebiError::Syntax)?;
     let module = emit::emit(&self.cx, &module, path.as_str(), false);
     println!("{}", module.root.disassemble());
     let main = self.cx.alloc(Function::new(

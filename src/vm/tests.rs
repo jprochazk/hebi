@@ -115,7 +115,7 @@ impl module::Loader for TestModuleLoader {
     match self.modules.get(path).copied() {
       Some(module) => Ok(module),
       None => Err(HebiError::Vm(SpannedError::new(
-        format!("module `{path}` does not exist"),
+        format!("module `{path}` not found"),
         None,
       ))),
     }
@@ -215,5 +215,28 @@ check! {
     test.set(50)
     value = 0
     test.get()
+  "#
+}
+
+check! {
+  module
+  module_fail_to_parse,
+  {
+    test: r#"
+      fn invalid:
+        pass
+    "#
+  },
+  r#"
+    import test
+  "#
+}
+
+check! {
+  module
+  module_not_found,
+  {},
+  r#"
+    import test
   "#
 }
