@@ -52,7 +52,7 @@ impl Hebi {
     let module_id = ModuleId::global();
     let upvalues = cx.alloc(List::new());
     let main = module.root.clone();
-    let main = cx.alloc(Function::new(cx, main, upvalues, module_id));
+    let main = cx.alloc(Function::new(main, upvalues, module_id));
     println!("{}", main.descriptor.disassemble());
     let main = Value::object(main);
 

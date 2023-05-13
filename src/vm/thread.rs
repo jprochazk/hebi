@@ -156,7 +156,6 @@ impl Thread {
     let module = emit::emit(&self.cx, &module, path.as_str(), false);
     println!("{}", module.root.disassemble());
     let main = self.cx.alloc(Function::new(
-      &self.cx,
       module.root.clone(),
       self.cx.alloc(List::new()),
       module_id,
@@ -464,7 +463,6 @@ impl Handler for Thread {
     let upvalues = self.cx.alloc(List::from(upvalues));
 
     let f = self.cx.alloc(Function::new(
-      &self.cx,
       desc,
       upvalues,
       current_call_frame!(self).module_id,

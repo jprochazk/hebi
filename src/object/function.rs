@@ -6,7 +6,6 @@ use super::module::ModuleId;
 use super::ptr::Ptr;
 use super::{List, Object, String};
 use crate::bytecode::{disasm, opcode as op};
-use crate::ctx::Context;
 use crate::value::constant::Constant;
 
 #[derive(Debug)]
@@ -18,7 +17,6 @@ pub struct Function {
 
 impl Function {
   pub fn new(
-    cx: &Context,
     descriptor: Ptr<FunctionDescriptor>,
     upvalues: Ptr<List>,
     module_id: ModuleId,

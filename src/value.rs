@@ -13,7 +13,6 @@ pub mod constant;
 use std::fmt::{Debug, Display};
 
 pub use crate::object::ptr::Ref;
-use crate::object::Object;
 
 impl Default for Value {
   fn default() -> Self {
