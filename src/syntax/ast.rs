@@ -823,11 +823,7 @@ pub mod lit {
     Expr::new(s, ExprKind::Literal(Box::new(Literal::None)))
   }
 
-  pub fn bool<'src>(
-    cx: &Context,
-    s: impl Into<Span>,
-    lexeme: &str,
-  ) -> Result<Expr<'src>, SpannedError> {
+  pub fn bool<'src>(s: impl Into<Span>, lexeme: &str) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let v = match lexeme {
       "true" => true,
@@ -837,11 +833,7 @@ pub mod lit {
     Ok(Expr::new(s, ExprKind::Literal(Box::new(Literal::Bool(v)))))
   }
 
-  pub fn int<'src>(
-    cx: &Context,
-    s: impl Into<Span>,
-    lexeme: &'src str,
-  ) -> Result<Expr<'src>, SpannedError> {
+  pub fn int<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let value = lexeme
       .parse::<i64>()
@@ -855,11 +847,7 @@ pub mod lit {
     Ok(Expr::new(s, ExprKind::Literal(Box::new(lit))))
   }
 
-  pub fn float<'src>(
-    cx: &Context,
-    s: impl Into<Span>,
-    lexeme: &'src str,
-  ) -> Result<Expr<'src>, SpannedError> {
+  pub fn float<'src>(s: impl Into<Span>, lexeme: &'src str) -> Result<Expr<'src>, SpannedError> {
     let s = s.into();
     let value = lexeme
       .parse()

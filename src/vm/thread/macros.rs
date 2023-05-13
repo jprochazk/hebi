@@ -8,12 +8,12 @@ macro_rules! current_call_frame {
   }};
 }
 
-macro_rules! current_call_frame_mut {
+/* macro_rules! current_call_frame_mut {
   ($self:ident) => {{
     debug_assert!(!$self.call_frames.is_empty(), "call frame stack is empty");
     unsafe { $self.call_frames.last_mut().unwrap_unchecked() }
   }};
-}
+} */
 
 macro_rules! push_args {
   ($self:ident, $callee:expr, range($start:expr, $end:expr)) => {{

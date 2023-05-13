@@ -5,8 +5,6 @@ use std::error::Error as StdError;
 use std::fmt::{Debug, Display, Write};
 use std::ops::{Deref, DerefMut, Index, Range};
 
-use crate::ctx::Context;
-
 /// Represents a span of bytes in some source string.
 ///
 /// This type is just like [`std::ops::Range<usize>`],

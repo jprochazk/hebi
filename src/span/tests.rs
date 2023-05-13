@@ -1,10 +1,7 @@
 use super::*;
-use crate::ctx::Context;
 
 macro_rules! check {
   ($input:literal, $span:expr) => {{
-    let cx = Context::for_test();
-
     assert_snapshot!(SpannedError::new("error: test", $span).report($input, true));
   }};
 }

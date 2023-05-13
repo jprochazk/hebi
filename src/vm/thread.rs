@@ -18,7 +18,6 @@ use crate::object::module::ModuleId;
 use crate::object::{
   class, Function, FunctionDescriptor, List, Module, Object, Ptr, String, Table,
 };
-use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
 use crate::{emit, syntax, HebiError};
@@ -80,14 +79,14 @@ impl Thread {
   ) -> HebiResult<()> {
     let f = match f.try_to_object() {
       Ok(f) => f,
-      Err(f) => fail!(0..0, "cannot call value `{f}`"),
+      Err(f) => fail!("cannot call value `{f}`"),
     };
 
     if f.is::<Function>() {
       let f = unsafe { f.cast_unchecked::<Function>() };
       self.prepare_call_function(f, stack_base, num_args, return_addr)?;
     } else {
-      fail!(0..0, "cannot call object `{f}`");
+      fail!("cannot call object `{f}`");
     }
 
     Ok(())
@@ -100,7 +99,7 @@ impl Thread {
     num_args: usize,
     return_addr: Option<usize>,
   ) -> HebiResult<()> {
-    check_args(&self.cx, (0..0).into(), &f.descriptor.params, num_args)?;
+    check_args(&f.descriptor.params, num_args)?;
 
     // reset pc
     self.pc = 0;
@@ -127,10 +126,7 @@ impl Thread {
     if let Some((module_id, module)) = self.global.module_registry().get_by_name(path.as_str()) {
       // module is in cache
       if self.global.module_visited_set().contains(&module_id) {
-        fail!(
-          0..0,
-          "attempted to import partially initialized module {path}"
-        );
+        fail!("attempted to import partially initialized module {path}");
       }
       return Ok(module);
     }
@@ -286,14 +282,14 @@ impl Handler for Thread {
     let module = match self.global.module_registry().get_by_id(module_id) {
       Some(module) => module,
       None => {
-        fail!(0..0, "failed to get module {module_id}");
+        fail!("failed to get module {module_id}");
       }
     };
 
     let value = match module.module_vars.get_index(idx.index()) {
       Some(value) => value,
       None => {
-        fail!(0..0, "failed to get module variable {idx}");
+        fail!("failed to get module variable {idx}");
       }
     };
 
@@ -307,7 +303,7 @@ impl Handler for Thread {
     let module = match self.global.module_registry().get_by_id(module_id) {
       Some(module) => module,
       None => {
-        fail!(0..0, "failed to get module {module_id}");
+        fail!("failed to get module {module_id}");
       }
     };
 
@@ -315,7 +311,7 @@ impl Handler for Thread {
 
     let success = module.module_vars.set_index(idx.index(), value.clone());
     if !success {
-      fail!(0..0, "failed to set module variable {idx} (value={value})");
+      fail!("failed to set module variable {idx} (value={value})");
     };
 
     Ok(())
@@ -325,7 +321,7 @@ impl Handler for Thread {
     let name = self.get_constant_object::<String>(name);
     let value = match self.global.globals().get(&name) {
       Some(value) => value,
-      None => fail!(0..0, "undefined global {name}"),
+      None => fail!("undefined global {name}"),
     };
     self.acc = value;
 
@@ -347,7 +343,7 @@ impl Handler for Thread {
     let value = if let Some(object) = value.to_object() {
       match object.named_field(&self.cx, name.as_str())? {
         Some(value) => value,
-        None => fail!(0..0, "failed to get field `{name}` on value `{object}`"),
+        None => fail!("failed to get field `{name}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -405,7 +401,7 @@ impl Handler for Thread {
     let value = if let Some(object) = object.to_object() {
       match object.keyed_field(&self.cx, key.clone())? {
         Some(value) => value,
-        None => fail!(0..0, "failed to get field `{key}` on value `{object}`"),
+        None => fail!("failed to get field `{key}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -465,7 +461,7 @@ impl Handler for Thread {
     let this = self.get_register(op::Register(0));
 
     let Some(this) = this.to_object() else {
-      fail!( 0..0, "`self` is not a class instance");
+      fail!( "`self` is not a class instance");
     };
 
     let proxy = if let Some(proxy) = this.clone_cast::<class::Proxy>() {
@@ -479,7 +475,7 @@ impl Handler for Thread {
         class: this.parent.clone().unwrap(),
       }
     } else {
-      fail!(0..0, "{this} is not a class");
+      fail!("{this} is not a class");
     };
 
     self.acc = Value::object(self.cx.alloc(proxy));
@@ -580,7 +576,7 @@ impl Handler for Thread {
       let value = self.get_register(reg.offset(1));
 
       let Some(key) = key.clone().to_object().and_then(|v| v.cast::<String>().ok()) else {
-        fail!( 0..0, "`{key}` is not a string");
+        fail!( "`{key}` is not a string");
       };
 
       table.insert(key, value);

@@ -13,10 +13,16 @@ mod util;
 
 #[macro_export]
 macro_rules! fail {
-  ($span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
+  ($fmt:literal $(,$($arg:tt)*)?) => {
+    return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), None).into())
+  };
+  ($msg:expr) => {
+    return Err($crate::span::SpannedError::new($msg, None).into())
+  };
+  (@$span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
     return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), $span).into())
   };
-  ($span:expr, $msg:expr) => {
+  (@$span:expr, $msg:expr) => {
     return Err($crate::span::SpannedError::new($msg, $span).into())
   };
 }

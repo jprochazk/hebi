@@ -31,7 +31,7 @@ pub fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
   std::mem::ManuallyDrop::into_inner(value.clone())
 }
 
-pub fn check_args(cx: &Context, span: Span, params: &Params, n: usize) -> HebiResult<()> {
+pub fn check_args(params: &Params, n: usize) -> HebiResult<()> {
   if !params.matches(n) {
     let min = params.min as usize;
     let max = params.max as usize;
@@ -45,7 +45,7 @@ pub fn check_args(cx: &Context, span: Span, params: &Params, n: usize) -> HebiRe
       let plural = if max != 1 { "s" } else { "" };
       format!("expected at most {max} arg{plural}, got {n}")
     };
-    fail!(span, msg);
+    fail!(msg);
   }
   Ok(())
 }
