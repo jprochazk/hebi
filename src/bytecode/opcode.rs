@@ -177,5 +177,5 @@ mod private {
   pub trait Sealed {}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

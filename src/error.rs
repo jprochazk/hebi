@@ -132,5 +132,5 @@ impl Display for Error {
 
 impl StdError for Error {}
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

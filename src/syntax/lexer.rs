@@ -401,5 +401,5 @@ impl<'src> fmt::Debug for DebugToken<'src> {
   }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

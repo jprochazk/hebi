@@ -527,5 +527,5 @@ struct Loop {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Scope(usize);
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

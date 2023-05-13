@@ -393,5 +393,5 @@ impl InsertConstant for op::Offset {
   }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

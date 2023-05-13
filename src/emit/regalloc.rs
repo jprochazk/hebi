@@ -441,5 +441,5 @@ impl<T, I: std::slice::SliceIndex<[T]>> std::ops::Index<I> for SortedVec<T> {
   }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;

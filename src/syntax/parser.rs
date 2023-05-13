@@ -303,5 +303,5 @@ impl<'cx, 'a> Parser<'cx, 'a> {
   }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "__miri")))]
 mod tests;
