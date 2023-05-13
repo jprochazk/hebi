@@ -5,16 +5,18 @@ mod global;
 mod thread;
 
 use std::cell::RefCell;
+use std::marker::PhantomData;
 
 use global::Global;
 
 use self::thread::Thread;
+use crate as hebi;
 use crate::ctx::Context;
 use crate::object::module::ModuleId;
-use crate::object::{module, Function, List};
+use crate::object::{module, Function, List, Ptr};
 use crate::span::SpannedError;
 use crate::value::Value;
-use crate::{emit, syntax, HebiError, HebiResult};
+use crate::{emit, syntax, Error};
 
 pub struct Hebi {
   cx: Context,
@@ -26,8 +28,8 @@ struct DefaultModuleLoader {}
 
 impl module::Loader for DefaultModuleLoader {
   // TODO: return user error
-  fn load(&self, path: &str) -> HebiResult<&str> {
-    Err(HebiError::Vm(SpannedError::new(
+  fn load(&self, path: &str) -> hebi::Result<&str> {
+    Err(Error::Vm(SpannedError::new(
       format!("failed to load module {path}"),
       0..0,
     )))
@@ -46,9 +48,9 @@ impl Hebi {
     self.global.set_module_loader(module_loader)
   }
 
-  pub fn eval(&self, code: &str) -> HebiResult<Value> {
+  pub fn eval(&self, code: &str) -> hebi::Result<Value> {
     let cx = &self.cx;
-    let ast = syntax::parse(cx, code).map_err(HebiError::Syntax)?;
+    let ast = syntax::parse(cx, code).map_err(Error::Syntax)?;
     let module = emit::emit(cx, &ast, "__main__", true);
     let module_id = ModuleId::global();
     let upvalues = cx.alloc(List::new());
@@ -64,6 +66,15 @@ impl Hebi {
   pub fn cx(&self) -> &Context {
     &self.cx
   }
+}
+
+pub struct Scope<'a> {
+  pub(crate) cx: Context,
+  pub(crate) stack: Ptr<List>,
+  pub(crate) stack_base: usize,
+  pub(crate) args_start: usize,
+  pub(crate) args_count: usize,
+  pub(crate) lifetime: PhantomData<&'a ()>,
 }
 
 #[cfg(test)]

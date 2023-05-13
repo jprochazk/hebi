@@ -8,24 +8,10 @@ use std::fmt::Display;
 use span::SpannedError;
 use syntax::SyntaxError;
 
+pub mod macros;
+
 #[macro_use]
 mod util;
-
-#[macro_export]
-macro_rules! fail {
-  ($fmt:literal $(,$($arg:tt)*)?) => {
-    return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), None).into())
-  };
-  ($msg:expr) => {
-    return Err($crate::span::SpannedError::new($msg, None).into())
-  };
-  (@$span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
-    return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), $span).into())
-  };
-  (@$span:expr, $msg:expr) => {
-    return Err($crate::span::SpannedError::new($msg, $span).into())
-  };
-}
 
 pub mod bytecode;
 pub mod ctx;
@@ -36,41 +22,41 @@ pub mod syntax;
 pub mod value;
 pub mod vm;
 
-pub type HebiResult<T, E = HebiError> = core::result::Result<T, E>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug)]
-pub enum HebiError {
+pub enum Error {
   Vm(SpannedError),
   Syntax(SyntaxError),
   User(Box<dyn StdError + 'static>),
 }
 
-impl From<SpannedError> for HebiError {
+impl From<SpannedError> for Error {
   fn from(value: SpannedError) -> Self {
-    HebiError::Vm(value)
+    Error::Vm(value)
   }
 }
 
-impl From<SyntaxError> for HebiError {
+impl From<SyntaxError> for Error {
   fn from(value: SyntaxError) -> Self {
-    HebiError::Syntax(value)
+    Error::Syntax(value)
   }
 }
 
-impl Display for HebiError {
+impl Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      HebiError::Vm(e) => {
+      Error::Vm(e) => {
         write!(f, "{e}")
       }
-      HebiError::Syntax(e) => {
+      Error::Syntax(e) => {
         write!(f, "{e}")
       }
-      HebiError::User(e) => {
+      Error::User(e) => {
         write!(f, "{e}")
       }
     }
   }
 }
 
-impl StdError for HebiError {}
+impl StdError for Error {}

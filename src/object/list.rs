@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
+use std::ops::Range;
 use std::vec::Vec;
 
 use super::Object;
@@ -47,6 +48,23 @@ impl List {
 
   pub fn pop(&self) -> Option<Value> {
     self.data.borrow_mut().pop()
+  }
+
+  pub fn extend(&self, new_len: usize) {
+    assert!(new_len >= self.len());
+    self.data.borrow_mut().resize_with(new_len, Value::none);
+  }
+
+  pub fn extend_from_within(&self, range: Range<usize>) {
+    self.data.borrow_mut().extend_from_within(range)
+  }
+
+  pub fn extend_from_slice(&self, slice: &[Value]) {
+    self.data.borrow_mut().extend_from_slice(slice)
+  }
+
+  pub fn truncate(&self, new_len: usize) {
+    self.data.borrow_mut().truncate(new_len);
   }
 
   /// # Safety

@@ -1,4 +1,5 @@
 use super::*;
+use crate as hebi;
 
 impl<'cx, 'src> Parser<'cx, 'src> {
   pub(super) fn expr(&mut self) -> Result<ast::Expr<'src>, SpannedError> {
@@ -198,7 +199,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let token = self.previous();
       match ast::lit::str(token.span, self.lex.lexeme(token)) {
         Some(str) => return Ok(str),
-        None => fail!(@token.span, "invalid escape sequence"),
+        None => hebi::fail!(@token.span, "invalid escape sequence"),
       }
     }
 
@@ -238,7 +239,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       if self.state.current_class.is_none()
         || !self.state.current_func.map(|f| f.has_self).unwrap_or(false)
       {
-        fail!(
+        hebi::fail!(
           @self.previous().span,
           "cannot access `self` outside of class method",
         );
@@ -249,19 +250,19 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     if self.bump_if(Kw_Super) {
       if let Some(c) = &self.state.current_class {
         if !c.has_super {
-          fail!(
+          hebi::fail!(
             @self.previous().span,
             "cannot access `super` in a class with no parent class",
           );
         }
         if !self.state.current_func.map(|f| f.has_self).unwrap_or(false) {
-          fail!(
+          hebi::fail!(
             @self.previous().span,
             "cannot access `super` outside of a class method that takes `self`",
           );
         }
       } else {
-        fail!(
+        hebi::fail!(
           @self.previous().span,
           "cannot access `super` outside of class method",
         )

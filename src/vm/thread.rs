@@ -8,9 +8,10 @@ use std::mem::take;
 use std::ptr::NonNull;
 
 use self::util::*;
+use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
-use super::{dispatch, HebiResult};
+use crate as hebi;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
 use crate::object::function::Params;
@@ -20,14 +21,17 @@ use crate::object::{
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, syntax, HebiError};
+use crate::{emit, syntax, Error};
 
 pub struct Thread {
   cx: Context,
   global: Global,
 
+  // TODO: `Stack` behind Rc+RefCell
+  // - stored call_frames, stack, stack_base
+  // eventually should be a flat buffer
   call_frames: Vec<Frame>,
-  stack: Vec<Value>,
+  stack: Ptr<List>,
   stack_base: usize,
   acc: Value,
   pc: usize,
@@ -36,25 +40,25 @@ pub struct Thread {
 impl Thread {
   pub fn new(cx: Context, global: Global) -> Self {
     Thread {
-      cx,
+      cx: cx.clone(),
       global,
 
       call_frames: Vec::new(),
-      stack: Vec::with_capacity(128),
+      stack: cx.alloc(List::with_capacity(128)),
       stack_base: 0,
       acc: Value::none(),
       pc: 0,
     }
   }
 
-  pub fn call(&mut self, f: Value, args: &[Value]) -> HebiResult<Value> {
+  pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
     let (stack_base, num_args) = push_args!(self, args);
     self.prepare_call(f, stack_base, num_args, None)?;
     self.run()?;
     Ok(take(&mut self.acc))
   }
 
-  fn run(&mut self) -> HebiResult<()> {
+  fn run(&mut self) -> hebi::Result<()> {
     let instructions = self.call_frames.last_mut().unwrap().instructions;
     let pc = self.pc;
 
@@ -76,17 +80,17 @@ impl Thread {
     stack_base: usize,
     num_args: usize,
     return_addr: Option<usize>,
-  ) -> HebiResult<()> {
+  ) -> hebi::Result<()> {
     let f = match f.try_to_object() {
       Ok(f) => f,
-      Err(f) => fail!("cannot call value `{f}`"),
+      Err(f) => hebi::fail!("cannot call value `{f}`"),
     };
 
     if f.is::<Function>() {
       let f = unsafe { f.cast_unchecked::<Function>() };
       self.prepare_call_function(f, stack_base, num_args, return_addr)?;
     } else {
-      fail!("cannot call object `{f}`");
+      hebi::fail!("cannot call object `{f}`");
     }
 
     Ok(())
@@ -98,7 +102,7 @@ impl Thread {
     stack_base: usize,
     num_args: usize,
     return_addr: Option<usize>,
-  ) -> HebiResult<()> {
+  ) -> hebi::Result<()> {
     check_args(&f.descriptor.params, num_args)?;
 
     // reset pc
@@ -106,8 +110,7 @@ impl Thread {
 
     // prepare stack
     self.stack_base = stack_base;
-    let new_len = stack_base + f.descriptor.frame_size;
-    self.stack.resize_with(new_len, Value::none);
+    self.stack.extend(stack_base + f.descriptor.frame_size);
 
     // push frame
     self.call_frames.push(Frame {
@@ -122,11 +125,11 @@ impl Thread {
     Ok(())
   }
 
-  fn load_module(&mut self, path: Ptr<String>) -> HebiResult<Ptr<Module>> {
+  fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
     if let Some((module_id, module)) = self.global.module_registry().get_by_name(path.as_str()) {
       // module is in cache
       if self.global.module_visited_set().contains(&module_id) {
-        fail!("attempted to import partially initialized module {path}");
+        hebi::fail!("attempted to import partially initialized module {path}");
       }
       return Ok(module);
     }
@@ -135,7 +138,7 @@ impl Thread {
     let module_id = self.global.module_registry_mut().next_module_id();
     // TODO: native modules
     let module = self.global.module_loader().load(path.as_str())?.to_string();
-    let module = syntax::parse(&self.cx, &module).map_err(HebiError::Syntax)?;
+    let module = syntax::parse(&self.cx, &module).map_err(Error::Syntax)?;
     let module = emit::emit(&self.cx, &module, path.as_str(), false);
     println!("{}", module.root.disassemble());
     let main = self.cx.alloc(Function::new(
@@ -224,35 +227,38 @@ impl Thread {
       self.stack_base + reg.index() < self.stack.len(),
       "register out of bounds {reg:?}"
     );
-    let slot = unsafe { self.stack.get_unchecked_mut(self.stack_base + reg.index()) };
-    *slot = value;
+    unsafe {
+      self
+        .stack
+        .set_unchecked(self.stack_base + reg.index(), value)
+    };
   }
 }
 
 impl Handler for Thread {
-  type Error = crate::vm::HebiError;
+  type Error = crate::vm::Error;
 
-  fn op_load(&mut self, reg: op::Register) -> HebiResult<()> {
+  fn op_load(&mut self, reg: op::Register) -> hebi::Result<()> {
     self.acc = self.get_register(reg);
     println!("load {reg} {}", self.acc);
 
     Ok(())
   }
 
-  fn op_store(&mut self, reg: op::Register) -> HebiResult<()> {
+  fn op_store(&mut self, reg: op::Register) -> hebi::Result<()> {
     let value = take(&mut self.acc);
     self.set_register(reg, value);
 
     Ok(())
   }
 
-  fn op_load_const(&mut self, idx: op::Constant) -> HebiResult<()> {
+  fn op_load_const(&mut self, idx: op::Constant) -> hebi::Result<()> {
     self.acc = self.get_constant(idx).into_value();
 
     Ok(())
   }
 
-  fn op_load_upvalue(&mut self, idx: op::Upvalue) -> HebiResult<()> {
+  fn op_load_upvalue(&mut self, idx: op::Upvalue) -> hebi::Result<()> {
     let call_frame = current_call_frame!(self);
     let upvalues = &call_frame.upvalues;
     debug_assert!(
@@ -264,7 +270,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_store_upvalue(&mut self, idx: op::Upvalue) -> HebiResult<()> {
+  fn op_store_upvalue(&mut self, idx: op::Upvalue) -> hebi::Result<()> {
     let call_frame = current_call_frame!(self);
     let upvalues = &call_frame.upvalues;
     debug_assert!(
@@ -277,19 +283,19 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_module_var(&mut self, idx: op::ModuleVar) -> HebiResult<()> {
+  fn op_load_module_var(&mut self, idx: op::ModuleVar) -> hebi::Result<()> {
     let module_id = current_call_frame!(self).module_id;
     let module = match self.global.module_registry().get_by_id(module_id) {
       Some(module) => module,
       None => {
-        fail!("failed to get module {module_id}");
+        hebi::fail!("failed to get module {module_id}");
       }
     };
 
     let value = match module.module_vars.get_index(idx.index()) {
       Some(value) => value,
       None => {
-        fail!("failed to get module variable {idx}");
+        hebi::fail!("failed to get module variable {idx}");
       }
     };
 
@@ -298,12 +304,12 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_store_module_var(&mut self, idx: op::ModuleVar) -> HebiResult<()> {
+  fn op_store_module_var(&mut self, idx: op::ModuleVar) -> hebi::Result<()> {
     let module_id = current_call_frame!(self).module_id;
     let module = match self.global.module_registry().get_by_id(module_id) {
       Some(module) => module,
       None => {
-        fail!("failed to get module {module_id}");
+        hebi::fail!("failed to get module {module_id}");
       }
     };
 
@@ -311,24 +317,24 @@ impl Handler for Thread {
 
     let success = module.module_vars.set_index(idx.index(), value.clone());
     if !success {
-      fail!("failed to set module variable {idx} (value={value})");
+      hebi::fail!("failed to set module variable {idx} (value={value})");
     };
 
     Ok(())
   }
 
-  fn op_load_global(&mut self, name: op::Constant) -> HebiResult<()> {
+  fn op_load_global(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let value = match self.global.globals().get(&name) {
       Some(value) => value,
-      None => fail!("undefined global {name}"),
+      None => hebi::fail!("undefined global {name}"),
     };
     self.acc = value;
 
     Ok(())
   }
 
-  fn op_store_global(&mut self, name: op::Constant) -> HebiResult<()> {
+  fn op_store_global(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
     self.global.globals().insert(name, value);
@@ -336,14 +342,14 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_field(&mut self, name: op::Constant) -> HebiResult<()> {
+  fn op_load_field(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
 
     let value = if let Some(object) = value.to_object() {
       match object.named_field(&self.cx, name.as_str())? {
         Some(value) => value,
-        None => fail!("failed to get field `{name}` on value `{object}`"),
+        None => hebi::fail!("failed to get field `{name}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -355,7 +361,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_field_opt(&mut self, name: op::Constant) -> HebiResult<()> {
+  fn op_load_field_opt(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
 
@@ -379,7 +385,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> HebiResult<()> {
+  fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let object = self.get_register(obj);
     let value = take(&mut self.acc);
@@ -394,14 +400,14 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_index(&mut self, obj: op::Register) -> HebiResult<()> {
+  fn op_load_index(&mut self, obj: op::Register) -> hebi::Result<()> {
     let object = self.get_register(obj);
     let key = take(&mut self.acc);
 
     let value = if let Some(object) = object.to_object() {
       match object.keyed_field(&self.cx, key.clone())? {
         Some(value) => value,
-        None => fail!("failed to get field `{key}` on value `{object}`"),
+        None => hebi::fail!("failed to get field `{key}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -413,7 +419,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_index_opt(&mut self, obj: op::Register) -> HebiResult<()> {
+  fn op_load_index_opt(&mut self, obj: op::Register) -> hebi::Result<()> {
     let object = self.get_register(obj);
     let key = take(&mut self.acc);
 
@@ -437,7 +443,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_store_index(&mut self, obj: op::Register, key: op::Register) -> HebiResult<()> {
+  fn op_store_index(&mut self, obj: op::Register, key: op::Register) -> hebi::Result<()> {
     let object = self.get_register(obj);
     let key = self.get_register(key);
     let value = take(&mut self.acc);
@@ -452,16 +458,16 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_self(&mut self) -> HebiResult<()> {
+  fn op_load_self(&mut self) -> hebi::Result<()> {
     self.acc = self.get_register(op::Register(0));
     Ok(())
   }
 
-  fn op_load_super(&mut self) -> HebiResult<()> {
+  fn op_load_super(&mut self) -> hebi::Result<()> {
     let this = self.get_register(op::Register(0));
 
     let Some(this) = this.to_object() else {
-      fail!( "`self` is not a class instance");
+      hebi::fail!("`self` is not a class instance");
     };
 
     let proxy = if let Some(proxy) = this.clone_cast::<class::Proxy>() {
@@ -475,7 +481,7 @@ impl Handler for Thread {
         class: this.parent.clone().unwrap(),
       }
     } else {
-      fail!("{this} is not a class");
+      hebi::fail!("{this} is not a class");
     };
 
     self.acc = Value::object(self.cx.alloc(proxy));
@@ -483,31 +489,31 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_load_none(&mut self) -> HebiResult<()> {
+  fn op_load_none(&mut self) -> hebi::Result<()> {
     self.acc = Value::none();
 
     Ok(())
   }
 
-  fn op_load_true(&mut self) -> HebiResult<()> {
+  fn op_load_true(&mut self) -> hebi::Result<()> {
     self.acc = Value::bool(true);
 
     Ok(())
   }
 
-  fn op_load_false(&mut self) -> HebiResult<()> {
+  fn op_load_false(&mut self) -> hebi::Result<()> {
     self.acc = Value::bool(false);
 
     Ok(())
   }
 
-  fn op_load_smi(&mut self, smi: op::Smi) -> HebiResult<()> {
+  fn op_load_smi(&mut self, smi: op::Smi) -> hebi::Result<()> {
     self.acc = Value::int(smi.value());
 
     Ok(())
   }
 
-  fn op_make_fn(&mut self, desc: op::Constant) -> HebiResult<()> {
+  fn op_make_fn(&mut self, desc: op::Constant) -> hebi::Result<()> {
     let desc = self.get_constant_object::<FunctionDescriptor>(desc);
 
     // fetch upvalues
@@ -539,23 +545,23 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_make_class_empty(&mut self, desc: op::Constant) -> HebiResult<()> {
+  fn op_make_class_empty(&mut self, desc: op::Constant) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class_empty_derived(&mut self, desc: op::Constant) -> HebiResult<()> {
+  fn op_make_class_empty_derived(&mut self, desc: op::Constant) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class(&mut self, desc: op::Constant, parts: op::Register) -> HebiResult<()> {
+  fn op_make_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class_derived(&mut self, desc: op::Constant, parts: op::Register) -> HebiResult<()> {
+  fn op_make_class_derived(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_list(&mut self, start: op::Register, count: op::Count) -> HebiResult<()> {
+  fn op_make_list(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
     let list = List::with_capacity(count.value());
     for reg in start.iter(count, 1) {
       list.push(self.get_register(reg));
@@ -564,19 +570,19 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_make_list_empty(&mut self) -> HebiResult<()> {
+  fn op_make_list_empty(&mut self) -> hebi::Result<()> {
     self.acc = Value::object(self.cx.alloc(List::new()));
     Ok(())
   }
 
-  fn op_make_table(&mut self, start: op::Register, count: op::Count) -> HebiResult<()> {
+  fn op_make_table(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
     let table = Table::with_capacity(count.value());
     for reg in start.iter(count, 2) {
       let key = self.get_register(reg);
       let value = self.get_register(reg.offset(1));
 
       let Some(key) = key.clone().to_object().and_then(|v| v.cast::<String>().ok()) else {
-        fail!( "`{key}` is not a string");
+        hebi::fail!( "`{key}` is not a string");
       };
 
       table.insert(key, value);
@@ -585,34 +591,34 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_make_table_empty(&mut self) -> HebiResult<()> {
+  fn op_make_table_empty(&mut self) -> hebi::Result<()> {
     self.acc = Value::object(self.cx.alloc(Table::new()));
     Ok(())
   }
 
-  fn op_jump(&mut self, offset: op::Offset) -> HebiResult<op::Offset> {
+  fn op_jump(&mut self, offset: op::Offset) -> hebi::Result<op::Offset> {
     Ok(offset)
   }
 
-  fn op_jump_const(&mut self, idx: op::Constant) -> HebiResult<op::Offset> {
+  fn op_jump_const(&mut self, idx: op::Constant) -> hebi::Result<op::Offset> {
     let offset = self.get_constant(idx).as_offset().cloned();
     debug_assert!(offset.is_some());
     let offset = unsafe { offset.unwrap_unchecked() };
     Ok(offset)
   }
 
-  fn op_jump_loop(&mut self, offset: op::Offset) -> HebiResult<op::Offset> {
+  fn op_jump_loop(&mut self, offset: op::Offset) -> hebi::Result<op::Offset> {
     Ok(offset)
   }
 
-  fn op_jump_if_false(&mut self, offset: op::Offset) -> HebiResult<super::dispatch::Jump> {
+  fn op_jump_if_false(&mut self, offset: op::Offset) -> hebi::Result<super::dispatch::Jump> {
     match is_truthy(take(&mut self.acc)) {
       true => Ok(super::dispatch::Jump::Skip),
       false => Ok(super::dispatch::Jump::Move(offset)),
     }
   }
 
-  fn op_jump_if_false_const(&mut self, idx: op::Constant) -> HebiResult<super::dispatch::Jump> {
+  fn op_jump_if_false_const(&mut self, idx: op::Constant) -> hebi::Result<super::dispatch::Jump> {
     let offset = self.get_constant(idx).as_offset().cloned();
     debug_assert!(offset.is_some());
     let offset = unsafe { offset.unwrap_unchecked() };
@@ -623,82 +629,82 @@ impl Handler for Thread {
     }
   }
 
-  fn op_add(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_add(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_sub(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_sub(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_mul(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_mul(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_div(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_div(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_rem(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_rem(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_pow(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_pow(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_inv(&mut self) -> HebiResult<()> {
+  fn op_inv(&mut self) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_not(&mut self) -> HebiResult<()> {
+  fn op_not(&mut self) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_eq(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_eq(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_ne(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_ne(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_gt(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_gt(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_ge(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_ge(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_lt(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_lt(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_le(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_le(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_cmp_type(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_cmp_type(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_contains(&mut self, lhs: op::Register) -> HebiResult<()> {
+  fn op_contains(&mut self, lhs: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_is_none(&mut self) -> HebiResult<()> {
+  fn op_is_none(&mut self) -> hebi::Result<()> {
     self.acc = Value::bool(self.acc.is_none());
     Ok(())
   }
 
-  fn op_print(&mut self) -> HebiResult<()> {
+  fn op_print(&mut self) -> hebi::Result<()> {
     // TODO: allow setting output writer
     println!("{}", self.acc);
     Ok(())
   }
 
-  fn op_print_n(&mut self, start: op::Register, count: op::Count) -> HebiResult<()> {
+  fn op_print_n(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
     debug_assert!(self.stack_base + start.index() + count.value() < self.stack.len());
 
     let start = start.index();
@@ -717,7 +723,7 @@ impl Handler for Thread {
     return_addr: usize,
     callee: op::Register,
     args: op::Count,
-  ) -> HebiResult<dispatch::LoadFrame> {
+  ) -> hebi::Result<dispatch::LoadFrame> {
     let f = self.get_register(callee);
     let start = self.stack_base + callee.index() + 1;
     let (stack_base, num_args) = push_args!(self, f.clone(), range(start, start + args.value()));
@@ -728,7 +734,7 @@ impl Handler for Thread {
     })
   }
 
-  fn op_call0(&mut self, return_addr: usize) -> HebiResult<dispatch::LoadFrame> {
+  fn op_call0(&mut self, return_addr: usize) -> hebi::Result<dispatch::LoadFrame> {
     let f = take(&mut self.acc);
     let stack_base = self.stack.len();
     self.prepare_call(f, stack_base, 0, Some(return_addr))?;
@@ -738,7 +744,7 @@ impl Handler for Thread {
     })
   }
 
-  fn op_import(&mut self, path: op::Constant, dst: op::Register) -> HebiResult<()> {
+  fn op_import(&mut self, path: op::Constant, dst: op::Register) -> hebi::Result<()> {
     let path = self.get_constant_object::<String>(path);
     let module = self.load_module(path)?;
     self.set_register(dst, Value::object(module));
@@ -746,7 +752,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_return(&mut self) -> HebiResult<dispatch::Return> {
+  fn op_return(&mut self) -> hebi::Result<dispatch::Return> {
     // return value is in the accumulator
 
     // pop frame
@@ -773,7 +779,7 @@ impl Handler for Thread {
     })
   }
 
-  fn op_yield(&mut self) -> HebiResult<()> {
+  fn op_yield(&mut self) -> hebi::Result<()> {
     todo!()
   }
 }

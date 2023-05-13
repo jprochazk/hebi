@@ -4,6 +4,7 @@ mod macros;
 use std::collections::HashMap;
 
 use super::*;
+use crate as hebi;
 
 check! {
   example,
@@ -111,10 +112,10 @@ impl TestModuleLoader {
 }
 
 impl module::Loader for TestModuleLoader {
-  fn load(&self, path: &str) -> HebiResult<&str> {
+  fn load(&self, path: &str) -> hebi::Result<&str> {
     match self.modules.get(path).copied() {
       Some(module) => Ok(module),
-      None => Err(HebiError::Vm(SpannedError::new(
+      None => Err(Error::Vm(SpannedError::new(
         format!("module `{path}` not found"),
         None,
       ))),

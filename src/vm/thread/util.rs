@@ -1,4 +1,5 @@
 use super::*;
+use crate as hebi;
 
 pub fn is_truthy(value: Value) -> bool {
   if value.is_bool() {
@@ -31,7 +32,7 @@ pub fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
   std::mem::ManuallyDrop::into_inner(value.clone())
 }
 
-pub fn check_args(params: &Params, n: usize) -> HebiResult<()> {
+pub fn check_args(params: &Params, n: usize) -> hebi::Result<()> {
   if !params.matches(n) {
     let min = params.min as usize;
     let max = params.max as usize;
@@ -45,7 +46,7 @@ pub fn check_args(params: &Params, n: usize) -> HebiResult<()> {
       let plural = if max != 1 { "s" } else { "" };
       format!("expected at most {max} arg{plural}, got {n}")
     };
-    fail!(msg);
+    hebi::fail!(msg);
   }
   Ok(())
 }
