@@ -29,6 +29,24 @@ impl Object for Instance {
 }
 
 #[derive(Debug)]
+pub struct Proxy {
+  pub this: Ptr<Instance>,
+  pub class: Ptr<Class>,
+}
+
+impl Display for Proxy {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<class `{}` instance>", self.this.name)
+  }
+}
+
+impl Object for Proxy {
+  fn type_name(&self) -> &'static str {
+    "Instance"
+  }
+}
+
+#[derive(Debug)]
 pub struct Class {
   pub descriptor: Ptr<ClassDescriptor>,
   pub meta: Ptr<Meta>,

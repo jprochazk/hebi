@@ -331,6 +331,8 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::Call => {
+          // frame is reloaded so neither `ip` nor `width` are read
+          #[allow(unused_assignments)]
           let (callee, args) = read_operands!(Call, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
           let new_frame = handler
@@ -341,6 +343,8 @@ pub fn dispatch<T: Handler>(
           continue 'load_frame;
         }
         Opcode::Call0 => {
+          // frame is reloaded so neither `ip` nor `width` are read
+          #[allow(unused_assignments)]
           let () = read_operands!(Call0, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
           let new_frame = handler.op_call0(return_addr).map_err(Error::Handler)?;

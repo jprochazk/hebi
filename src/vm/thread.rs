@@ -16,7 +16,9 @@ use crate::ctx::Context;
 use crate::error::{Error, Result};
 use crate::object::function::Params;
 use crate::object::module::ModuleId;
-use crate::object::{Function, FunctionDescriptor, List, Module, Object, Ptr, String};
+use crate::object::{
+  class, Function, FunctionDescriptor, List, Module, Object, Ptr, String, Table,
+};
 use crate::span::Span;
 use crate::value::constant::Constant;
 use crate::value::Value;
@@ -120,7 +122,6 @@ impl Thread {
       constants: f.descriptor.constants,
       upvalues: f.upvalues.clone(),
       frame_size: f.descriptor.frame_size,
-      num_args,
       return_addr,
       module_id: f.module_id,
     });
@@ -212,7 +213,6 @@ struct Frame {
   constants: NonNull<[Constant]>,
   upvalues: Ptr<List>,
   frame_size: usize,
-  num_args: usize,
   return_addr: Option<usize>,
   module_id: ModuleId,
 }
@@ -220,6 +220,12 @@ struct Frame {
 impl Thread {
   fn get_constant(&self, idx: op::Constant) -> Constant {
     clone_from_raw_slice(current_call_frame!(self).constants.as_ptr(), idx.index())
+  }
+
+  fn get_constant_object<T: Object>(&self, idx: op::Constant) -> Ptr<T> {
+    let object = self.get_constant(idx).into_value();
+    debug_assert_object_type!(object, String);
+    unsafe { object.to_object_unchecked().cast_unchecked::<T>() }
   }
 
   fn get_register(&self, reg: op::Register) -> Value {
@@ -334,9 +340,7 @@ impl Handler for Thread {
   }
 
   fn op_load_global(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
-    let name = self.get_constant(name).into_value();
-    debug_assert_object_type!(name, String);
-    let name = unsafe { name.to_object_unchecked().cast_unchecked::<String>() };
+    let name = self.get_constant_object::<String>(name);
     let value = match self.global.globals().get(&name) {
       Some(value) => value,
       None => fail!(self.cx, 0..0, "undefined global {name}"),
@@ -347,9 +351,7 @@ impl Handler for Thread {
   }
 
   fn op_store_global(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
-    let name = self.get_constant(name).into_value();
-    debug_assert_object_type!(name, String);
-    let name = unsafe { name.to_object_unchecked().cast_unchecked::<String>() };
+    let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
     self.global.globals().insert(name, value);
 
@@ -357,26 +359,50 @@ impl Handler for Thread {
   }
 
   fn op_load_field(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
-    let name = self.get_constant(name).into_value();
-    debug_assert_object_type!(name, String);
-    let name = unsafe { name.to_object_unchecked().cast_unchecked::<String>() };
-
+    let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
 
-    if let Some(object) = value.to_object() {
-      let Some(value) = object.get_field(&self.cx, name.as_str())? else {
-        fail!(self.cx, 0..0, "failed to get field `{name}` on value `{object}`")
-      };
-      self.acc = value;
+    let value = if let Some(object) = value.to_object() {
+      match object.named_field(&self.cx, name.as_str())? {
+        Some(value) => value,
+        None => fail!(
+          self.cx,
+          0..0,
+          "failed to get field `{name}` on value `{object}`"
+        ),
+      }
     } else {
+      // TODO: fields on primitives
       todo!()
-    }
+    };
+
+    self.acc = value;
 
     Ok(())
   }
 
   fn op_load_field_opt(&mut self, name: op::Constant) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let name = self.get_constant_object::<String>(name);
+    let value = take(&mut self.acc);
+
+    if value.is_none() {
+      self.acc = Value::none();
+      return Ok(());
+    }
+
+    let value = if let Some(object) = value.to_object() {
+      match object.named_field(&self.cx, name.as_str())? {
+        Some(value) => value,
+        None => Value::none(),
+      }
+    } else {
+      // TODO: fields on primitives
+      todo!()
+    };
+
+    self.acc = value;
+
+    Ok(())
   }
 
   fn op_store_field(
@@ -384,15 +410,65 @@ impl Handler for Thread {
     obj: op::Register,
     name: op::Constant,
   ) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let name = self.get_constant_object::<String>(name);
+    let object = self.get_register(obj);
+    let value = take(&mut self.acc);
+
+    if let Some(object) = object.to_object() {
+      object.set_named_field(&self.cx, name.as_str(), value)?;
+    } else {
+      // TODO: fields on primitives
+      todo!()
+    }
+
+    Ok(())
   }
 
   fn op_load_index(&mut self, obj: op::Register) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let object = self.get_register(obj);
+    let key = take(&mut self.acc);
+
+    let value = if let Some(object) = object.to_object() {
+      match object.keyed_field(&self.cx, key.clone())? {
+        Some(value) => value,
+        None => fail!(
+          self.cx,
+          0..0,
+          "failed to get field `{key}` on value `{object}`"
+        ),
+      }
+    } else {
+      // TODO: fields on primitives
+      todo!()
+    };
+
+    self.acc = value;
+
+    Ok(())
   }
 
   fn op_load_index_opt(&mut self, obj: op::Register) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let object = self.get_register(obj);
+    let key = take(&mut self.acc);
+
+    if object.is_none() {
+      self.acc = Value::none();
+      return Ok(());
+    }
+
+    let value = if let Some(object) = object.to_object() {
+      match object.keyed_field(&self.cx, key)? {
+        Some(value) => value,
+        None => Value::none(),
+      }
+    } else {
+      // TODO: fields on primitives
+      todo!()
+    };
+
+    self.acc = value;
+
+    Ok(())
   }
 
   fn op_store_index(
@@ -400,15 +476,49 @@ impl Handler for Thread {
     obj: op::Register,
     key: op::Register,
   ) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let object = self.get_register(obj);
+    let key = self.get_register(key);
+    let value = take(&mut self.acc);
+
+    if let Some(object) = object.to_object() {
+      object.set_keyed_field(&self.cx, key, value)?;
+    } else {
+      // TODO: fields on primitives
+      todo!()
+    }
+
+    Ok(())
   }
 
   fn op_load_self(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+    self.acc = self.get_register(op::Register(0));
+    Ok(())
   }
 
   fn op_load_super(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let this = self.get_register(op::Register(0));
+
+    let Some(this) = this.to_object() else {
+      fail!(self.cx, 0..0, "`self` is not a class instance");
+    };
+
+    let proxy = if let Some(proxy) = this.clone_cast::<class::Proxy>() {
+      class::Proxy {
+        this: proxy.this.clone(),
+        class: proxy.class.parent.clone().unwrap(),
+      }
+    } else if let Some(this) = this.clone_cast::<class::Instance>() {
+      class::Proxy {
+        this: this.clone(),
+        class: this.parent.clone().unwrap(),
+      }
+    } else {
+      fail!(self.cx, 0..0, "{this} is not a class");
+    };
+
+    self.acc = Value::object(self.cx.alloc(proxy));
+
+    Ok(())
   }
 
   fn op_load_none(&mut self) -> std::result::Result<(), Self::Error> {
@@ -436,13 +546,7 @@ impl Handler for Thread {
   }
 
   fn op_make_fn(&mut self, desc: op::Constant) -> std::result::Result<(), Self::Error> {
-    let desc = self.get_constant(desc).into_value();
-    debug_assert_object_type!(desc, FunctionDescriptor);
-    let desc = unsafe {
-      desc
-        .to_object_unchecked()
-        .cast_unchecked::<FunctionDescriptor>()
-    };
+    let desc = self.get_constant_object::<FunctionDescriptor>(desc);
 
     // fetch upvalues
     let num_upvalues = desc.upvalues.borrow().len();
@@ -505,11 +609,17 @@ impl Handler for Thread {
     start: op::Register,
     count: op::Count,
   ) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let list = List::with_capacity(count.value());
+    for reg in start.iter(count, 1) {
+      list.push(self.get_register(reg));
+    }
+    self.acc = Value::object(self.cx.alloc(list));
+    Ok(())
   }
 
   fn op_make_list_empty(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+    self.acc = Value::object(self.cx.alloc(List::new()));
+    Ok(())
   }
 
   fn op_make_table(
@@ -517,11 +627,24 @@ impl Handler for Thread {
     start: op::Register,
     count: op::Count,
   ) -> std::result::Result<(), Self::Error> {
-    todo!()
+    let table = Table::with_capacity(count.value());
+    for reg in start.iter(count, 2) {
+      let key = self.get_register(reg);
+      let value = self.get_register(reg.offset(1));
+
+      let Some(key) = key.clone().to_object().and_then(|v| v.cast::<String>().ok()) else {
+        fail!(self.cx, 0..0, "`{key}` is not a string");
+      };
+
+      table.insert(key, value);
+    }
+    self.acc = Value::object(self.cx.alloc(table));
+    Ok(())
   }
 
   fn op_make_table_empty(&mut self) -> std::result::Result<(), Self::Error> {
-    todo!()
+    self.acc = Value::object(self.cx.alloc(Table::new()));
+    Ok(())
   }
 
   fn op_jump(&mut self, offset: op::Offset) -> std::result::Result<op::Offset, Self::Error> {
@@ -690,9 +813,7 @@ impl Handler for Thread {
     path: op::Constant,
     dst: op::Register,
   ) -> std::result::Result<(), Self::Error> {
-    let path = self.get_constant(path).into_value();
-    debug_assert_object_type!(path, String);
-    let path = unsafe { path.to_object_unchecked().cast_unchecked::<String>() };
+    let path = self.get_constant_object::<String>(path);
     let module = self.load_module(path)?;
     self.set_register(dst, Value::object(module));
 

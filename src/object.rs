@@ -26,12 +26,22 @@ pub type Any = Ptr<ptr::Any>;
 
 pub trait Object: DynAny + Debug + Display {
   fn type_name(&self) -> &'static str;
-  fn get_field(&self, _: &Context, _: &str) -> Result<Option<Value>> {
-    Ok(None)
+
+  fn named_field(&self, cx: &Context, name: &str) -> Result<Option<Value>> {
+    Err(cx.error(format!("cannot get field `{name}`"), None))
   }
-  fn set_field(&self, cx: &Context, key: &str, _: Value) -> Result<()> {
-    Err(cx.error(format!("cannot set field `{key}`"), None))
+
+  fn set_named_field(&self, cx: &Context, name: &str, value: Value) -> Result<()> {
+    let _ = value;
+    Err(cx.error(format!("cannot set field `{name}`"), None))
   }
-  /* fn get_index(&self, key: Value) -> Option<Value>;
-  fn set_index(&self, key: Value, value: Value); */
+
+  fn keyed_field(&self, cx: &Context, key: Value) -> Result<Option<Value>> {
+    Err(cx.error(format!("cannot get index `{key}`"), None))
+  }
+
+  fn set_keyed_field(&self, cx: &Context, key: Value, value: Value) -> Result<()> {
+    let _ = value;
+    Err(cx.error(format!("cannot set index `{key}`"), None))
+  }
 }

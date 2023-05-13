@@ -130,7 +130,7 @@ impl Object for Module {
     "Module"
   }
 
-  fn get_field(&self, _: &Context, name: &str) -> crate::error::Result<Option<Value>> {
+  fn named_field(&self, _: &Context, name: &str) -> crate::error::Result<Option<Value>> {
     Ok(self.module_vars.get(name))
   }
 }

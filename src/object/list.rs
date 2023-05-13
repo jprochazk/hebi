@@ -41,6 +41,14 @@ impl List {
     self.data.borrow().get(index).cloned()
   }
 
+  pub fn push(&self, value: Value) {
+    self.data.borrow_mut().push(value);
+  }
+
+  pub fn pop(&self) -> Option<Value> {
+    self.data.borrow_mut().pop()
+  }
+
   /// # Safety
   ///
   /// - `index` must be within the bounds of `self`

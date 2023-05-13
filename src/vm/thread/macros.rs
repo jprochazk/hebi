@@ -1,22 +1,3 @@
-macro_rules! match_type {
-  (
-    match $binding:ident {
-      $($ty:ident => $body:expr,)*
-
-      $(_ => $default:expr,)?
-    }
-  ) => {{
-    $(
-      #[allow(unused_variables)]
-      let $binding = match $binding.cast::<$ty>() {
-        Ok($binding) => $body,
-        Err(v) => v,
-      };
-    )*
-    $({ $default })?
-  }};
-}
-
 // TODO: cache current call frame in a field (Option<T>),
 // so that it's one less indirection access
 

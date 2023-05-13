@@ -127,12 +127,12 @@ impl<T: Object> Object for Ptr<T> {
     self.inner().data.type_name()
   }
 
-  fn get_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
-    self.inner().data.get_field(cx, key)
+  fn named_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
+    self.inner().data.named_field(cx, key)
   }
 
-  fn set_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
-    self.inner().data.set_field(cx, key, value)
+  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
+    self.inner().data.set_named_field(cx, key, value)
   }
 }
 
@@ -261,14 +261,14 @@ impl Object for Any {
     this.type_name()
   }
 
-  fn get_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
+  fn named_field(&self, cx: &Context, key: &str) -> Result<Option<Value>> {
     let this = unsafe { self.as_dyn_object() };
-    this.get_field(cx, key)
+    this.named_field(cx, key)
   }
 
-  fn set_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
+  fn set_named_field(&self, cx: &Context, key: &str, value: Value) -> Result<()> {
     let this = unsafe { self.as_dyn_object() };
-    this.set_field(cx, key, value)
+    this.set_named_field(cx, key, value)
   }
 }
 
@@ -302,6 +302,10 @@ impl Ptr<Any> {
       true => Ok(unsafe { self.cast_unchecked() }),
       false => Err(self),
     }
+  }
+
+  pub fn clone_cast<T: Object>(&self) -> Option<Ptr<T>> {
+    self.clone().cast().ok()
   }
 
   /// # Safety

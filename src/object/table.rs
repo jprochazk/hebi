@@ -8,11 +8,16 @@ use super::ptr::Ptr;
 use super::{Object, String};
 use crate::value::Value;
 
+#[derive(Default)]
 pub struct Table {
   data: RefCell<IndexMap<Ptr<String>, Value>>,
 }
 
 impl Table {
+  pub fn new() -> Self {
+    Self::with_capacity(0)
+  }
+
   pub fn with_capacity(n: usize) -> Self {
     Self {
       data: RefCell::new(IndexMap::with_capacity(n)),

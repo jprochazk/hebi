@@ -89,6 +89,40 @@ impl Register {
   pub fn index(&self) -> usize {
     self.0 as usize
   }
+
+  pub fn offset(self, n: usize) -> Register {
+    Register(self.0 + n as u32)
+  }
+
+  pub fn iter(self, count: Count, stride: usize) -> RegisterIter {
+    RegisterIter {
+      start: self,
+      count,
+      current_offset: 0,
+      stride,
+    }
+  }
+}
+
+pub struct RegisterIter {
+  start: Register,
+  count: Count,
+  current_offset: u32,
+  stride: usize,
+}
+
+impl Iterator for RegisterIter {
+  type Item = Register;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let reg = Register(self.start.0 + self.current_offset);
+    if self.current_offset < self.count.0 {
+      self.current_offset += self.stride as u32;
+      Some(reg)
+    } else {
+      None
+    }
+  }
 }
 
 impl Constant {
