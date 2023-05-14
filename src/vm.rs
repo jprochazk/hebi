@@ -68,12 +68,16 @@ impl Hebi {
   }
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct Args {
+  start: usize,
+  count: usize,
+}
+
 pub struct Scope<'a> {
   pub(crate) cx: Context,
   pub(crate) stack: Ptr<List>,
-  pub(crate) stack_base: usize,
-  pub(crate) args_start: usize,
-  pub(crate) args_count: usize,
+  pub(crate) args: Args,
   pub(crate) lifetime: PhantomData<&'a ()>,
 }
 

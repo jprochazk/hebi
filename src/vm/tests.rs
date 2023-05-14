@@ -750,3 +750,189 @@ check! {
     U.test(U(), 10)
   "#
 }
+
+check! {
+  call_class_nested_inheritance_method,
+  r#"
+    class A:
+      fn test(self, v):
+        return v + 1
+    class B(A):
+      fn test(self, v):
+        return super.test(v) + 1
+    class C(B):
+      fn test(self, v):
+        return super.test(v) + 1
+    
+    C().test(0)
+  "#
+}
+
+check! {
+  call_class_nested_inheritance_method_static_call,
+  r#"
+    class A:
+      fn test(self, v):
+        return v + 1
+    class B(A):
+      fn test(self, v):
+        return super.test(v) + 1
+    class C(B):
+      fn test(self, v):
+        return super.test(v) + 1
+    
+    C.test(C(), 0)
+  "#
+}
+
+#[test]
+fn subsequent_eval() {
+  let hebi = Hebi::new();
+  hebi.eval("v := 0").unwrap();
+  let value = hebi.eval("v").unwrap().to_int();
+  assert_eq!(value, Some(0));
+}
+
+check! {
+  nested_optional_access,
+  r#"
+    v := none
+
+    ?v.a["b"].c ?? "test"
+  "#
+}
+
+check! {
+  empty_table,
+  r#"
+    v := {}
+    v
+  "#
+}
+
+check! {
+  nested_table,
+  r#"
+    v := {a: {b: 10}}
+    v
+  "#
+}
+
+check! {
+  table_access_named,
+  r#"
+    v := {a: 10}
+    v.a
+  "#
+}
+
+check! {
+  table_access_keyed,
+  r#"
+    v := {a: 10}
+    v["a"]
+  "#
+}
+
+check! {
+  table_nested_access_named,
+  r#"
+    v := {a: {b: 10}}
+    v.a.b
+  "#
+}
+
+check! {
+  table_nested_access_keyed,
+  r#"
+    v := {a: {b: 10}}
+    v["a"]["b"]
+  "#
+}
+
+check! {
+  arithmetic,
+  r#"
+    v := 10 # 10
+    v += 1  # 11
+    v -= 1  # 10
+    v **= 2 # 100
+    v /= 5  # 20
+    v %= 1  # 0
+    v
+  "#
+}
+
+check! {
+  unary_invert,
+  r#"
+    v := 20
+    -v
+  "#
+}
+
+check! {
+  unary_not,
+  r#"
+    v := false
+    !v
+  "#
+}
+
+check! {
+  unary_not_int,
+  r#"
+    v := 0
+    !v
+  "#
+}
+
+check! {
+  unary_not_float,
+  r#"
+    v := 0.0
+    !v
+  "#
+}
+
+check! {
+  unary_not_none,
+  r#"
+    v := none
+    !v
+  "#
+}
+
+check! {
+  unary_not_str,
+  r#"
+    v := "test"
+    !v
+  "#
+}
+
+check! {
+  if_stmt,
+  r#"
+    v := true
+    result := none
+    if v:
+      result = "true"
+    else:
+      result = "false"
+    result
+  "#
+}
+
+check! {
+  if_stmt_false,
+  r#"
+    v := false
+    result := none
+    if v:
+      result = "true"
+    else:
+      result = "false"
+    result
+  "#
+}

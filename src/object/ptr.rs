@@ -1,6 +1,7 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::cell::Cell;
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
@@ -90,6 +91,10 @@ impl<T> Ptr<T> {
   pub fn ptr_eq(&self, other: &Ptr<T>) -> bool {
     self.repr.eq(&other.repr)
   }
+
+  pub fn ty(&self) -> TypeId {
+    self.inner().type_id
+  }
 }
 
 impl<T> Deref for Ptr<T> {
@@ -123,16 +128,24 @@ impl<T> Clone for Ptr<T> {
 }
 
 impl<T: Object> Object for Ptr<T> {
-  fn type_name(&self) -> &'static str {
-    self.inner().data.type_name()
-  }
+  __delegate! {
+    to(&self.inner().data);
 
-  fn named_field(&self, cx: &Context, key: Ptr<String>) -> hebi::Result<Option<Value>> {
-    self.inner().data.named_field(cx, key)
-  }
-
-  fn set_named_field(&self, cx: &Context, key: Ptr<String>, value: Value) -> hebi::Result<()> {
-    self.inner().data.set_named_field(cx, key, value)
+    fn type_name(self: &Self) -> &'static str;
+    fn named_field(self: &Self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>>;
+    fn set_named_field(self: &Self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()>;
+    fn keyed_field(self: &Self, cx: &Context, key: Value) -> hebi::Result<Option<Value>>;
+    fn set_keyed_field(self: &Self, cx: &Context, key: Value, value: Value) -> hebi::Result<()>;
+    fn contains(self: &Self, cx: &Context, item: Value) -> hebi::Result<bool>;
+    fn add(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn subtract(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn multiply(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn divide(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn remainder(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn pow(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn invert(self: &Self, cx: &Context) -> hebi::Result<Value>;
+    fn not(self: &Self, cx: &Context) -> hebi::Result<Value>;
+    fn cmp(self: &Self, cx: &Context, other: Value) -> hebi::Result<Ordering>;
   }
 }
 
@@ -256,19 +269,24 @@ impl Drop for Any {
 }
 
 impl Object for Any {
-  fn type_name(&self) -> &'static str {
-    let this = unsafe { self.as_dyn_object() };
-    this.type_name()
-  }
+  __delegate! {
+    to(unsafe { self.as_dyn_object() });
 
-  fn named_field(&self, cx: &Context, key: Ptr<String>) -> hebi::Result<Option<Value>> {
-    let this = unsafe { self.as_dyn_object() };
-    this.named_field(cx, key)
-  }
-
-  fn set_named_field(&self, cx: &Context, key: Ptr<String>, value: Value) -> hebi::Result<()> {
-    let this = unsafe { self.as_dyn_object() };
-    this.set_named_field(cx, key, value)
+    fn type_name(self: &Self) -> &'static str;
+    fn named_field(self: &Self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>>;
+    fn set_named_field(self: &Self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()>;
+    fn keyed_field(self: &Self, cx: &Context, key: Value) -> hebi::Result<Option<Value>>;
+    fn set_keyed_field(self: &Self, cx: &Context, key: Value, value: Value) -> hebi::Result<()>;
+    fn contains(self: &Self, cx: &Context, item: Value) -> hebi::Result<bool>;
+    fn add(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn subtract(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn multiply(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn divide(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn remainder(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn pow(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
+    fn invert(self: &Self, cx: &Context) -> hebi::Result<Value>;
+    fn not(self: &Self, cx: &Context) -> hebi::Result<Value>;
+    fn cmp(self: &Self, cx: &Context, other: Value) -> hebi::Result<Ordering>;
   }
 }
 

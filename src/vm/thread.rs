@@ -13,9 +13,9 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 
 use self::util::*;
-use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
+use super::{dispatch, Args};
 use crate as hebi;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
@@ -33,21 +33,11 @@ use crate::{emit, object, syntax, Error};
 pub struct Thread {
   cx: Context,
   global: Global,
-
-  // TODO: `Stack` behind Rc+RefCell
-  // - stored call_frames, stack, stack_base
-  // eventually should be a flat buffer
   call_frames: Rc<RefCell<Vec<Frame>>>,
   stack: Ptr<List>,
   stack_base: usize,
   acc: Value,
   pc: usize,
-}
-
-#[derive(Clone, Copy)]
-struct Args {
-  start: usize,
-  count: usize,
 }
 
 impl Thread {
@@ -840,67 +830,217 @@ impl Handler for Thread {
   }
 
   fn op_add(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::int(lhs + rhs),
+      f64 => Value::float(lhs + rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_sub(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::int(lhs - rhs),
+      f64 => Value::float(lhs - rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_mul(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::int(lhs * rhs),
+      f64 => Value::float(lhs * rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_div(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => {
+        if rhs != 0 {
+          Value::float(lhs as f64 / rhs as f64)
+        } else {
+          hebi::fail!("cannot divide int by zero")
+        }
+      },
+      f64 => Value::float(lhs / rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_rem(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => {
+        if rhs != 0 {
+          Value::float(lhs as f64 % rhs as f64)
+        } else {
+          hebi::fail!("cannot divide int by zero")
+        }
+      },
+      f64 => Value::float(lhs % rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_pow(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::float((lhs as f64).powf(rhs as f64)),
+      f64 => Value::float(lhs.powf(rhs)),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_inv(&mut self) -> hebi::Result<()> {
-    todo!()
+    let value = take(&mut self.acc);
+    let value = if value.is_int() {
+      let value = unsafe { value.to_int_unchecked() };
+      Value::int(-value)
+    } else if value.is_float() {
+      let value = unsafe { value.to_float_unchecked() };
+      Value::float(-value)
+    } else if value.is_bool() {
+      hebi::fail!("cannot invert `bool`")
+    } else if value.is_none() {
+      hebi::fail!("cannot invert `none`")
+    } else if value.is_object() {
+      let _ = unsafe { value.to_any_unchecked() };
+      todo!()
+    } else {
+      unreachable!()
+    };
+    self.acc = value;
+    Ok(())
   }
 
   fn op_not(&mut self) -> hebi::Result<()> {
-    todo!()
+    let value = take(&mut self.acc);
+    let value = Value::bool(!is_truthy(value));
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_eq(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs == rhs),
+      f64 => Value::bool(lhs == rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_ne(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs != rhs),
+      f64 => Value::bool(lhs != rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_gt(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs > rhs),
+      f64 => Value::bool(lhs > rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_ge(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs >= rhs),
+      f64 => Value::bool(lhs >= rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_lt(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs < rhs),
+      f64 => Value::bool(lhs < rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_le(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let value = binary!(lhs, rhs {
+      i32 => Value::bool(lhs <= rhs),
+      f64 => Value::bool(lhs <= rhs),
+      any => todo!(),
+    });
+    self.acc = value;
+    Ok(())
   }
 
   fn op_cmp_type(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+    let same_type = (lhs.is_int() && rhs.is_int())
+      || (lhs.is_float() && rhs.is_float())
+      || (lhs.is_bool() && rhs.is_bool())
+      || (lhs.is_none() && rhs.is_none());
+    if !same_type {
+      // compare types of objects
+      todo!()
+    }
+    self.acc = Value::bool(same_type);
+    Ok(())
   }
 
   fn op_contains(&mut self, lhs: op::Register) -> hebi::Result<()> {
-    todo!()
+    // lhs in rhs
+    let lhs = self.get_register(lhs);
+    let rhs = take(&mut self.acc);
+
+    let Some(rhs) = rhs.clone().to_any() else {
+      hebi::fail!("`{rhs}` is not an object");
+    };
+
+    let result = rhs.contains(&self.cx, lhs)?;
+    self.acc = Value::bool(result);
+    Ok(())
   }
 
   fn op_is_none(&mut self) -> hebi::Result<()> {

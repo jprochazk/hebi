@@ -25,31 +25,41 @@ macro_rules! current_call_frame_mut {
   }};
 }
 
-macro_rules! push_args {
-  ($self:ident, $reserved:expr, range($start:expr, $end:expr)) => {{
-    let reserved = $reserved;
-    let start = $start;
-    let end = $end;
-    let stack_base = $self.stack.len();
-    let num_args = end - start;
-    $self.stack.push(reserved);
-    $self.stack.extend_from_within(start..end);
-    (stack_base, num_args)
-  }};
-  ($self:ident, $reserved:expr, $args:expr) => {{
-    let reserved = $reserved;
-    let args = $args;
-    let stack_base = $self.stack.len();
-    let num_args = args.len();
-    $self.stack.push(reserved);
-    $self.stack.extend_from_slice(args);
-    (stack_base, num_args)
-  }};
-  ($self:ident, $args:expr) => {{
-    let args = $args;
-    let stack_base = $self.stack.len();
-    let num_args = args.len();
-    $self.stack.extend_from_slice(args);
-    (stack_base, num_args)
+macro_rules! binary {
+  ($lhs:ident, $rhs:ident {
+    i32 => $i32_expr:expr,
+    f64 => $f64_expr:expr,
+    any => $any_expr:expr,
+  }) => {{
+    if $lhs.is_int() && $rhs.is_int() {
+      let $lhs = unsafe { $lhs.to_int_unchecked() };
+      let $rhs = unsafe { $rhs.to_int_unchecked() };
+      $i32_expr
+    } else if $lhs.is_float() && $rhs.is_float() {
+      let $lhs = unsafe { $lhs.to_float_unchecked() };
+      let $rhs = unsafe { $rhs.to_float_unchecked() };
+      $f64_expr
+    } else if $lhs.is_float() && $rhs.is_int() {
+      let $lhs = unsafe { $lhs.to_float_unchecked() };
+      let $rhs = unsafe { $rhs.to_int_unchecked() } as f64;
+      $f64_expr
+    } else if $lhs.is_int() && $rhs.is_float() {
+      let $lhs = unsafe { $lhs.to_int_unchecked() } as f64;
+      let $rhs = unsafe { $rhs.to_float_unchecked() };
+      $f64_expr
+    } else if $lhs.is_bool() && $rhs.is_bool() {
+      hebi::fail!("cannot {} `bool`", stringify!($op))
+    } else if $lhs.is_none() && $rhs.is_none() {
+      hebi::fail!("cannot {} `none`", stringify!($op))
+    } else if $lhs.is_object() && $rhs.is_object() {
+      let $lhs = unsafe { $lhs.to_any_unchecked() };
+      let $rhs = unsafe { $rhs.to_any_unchecked() };
+      if $lhs.ty() != $rhs.ty() {
+        hebi::fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+      }
+      $any_expr
+    } else {
+      hebi::fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+    }
   }};
 }

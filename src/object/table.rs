@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
@@ -6,6 +6,7 @@ use indexmap::{Equivalent, IndexMap};
 
 use super::ptr::Ptr;
 use super::{Object, String};
+use crate as hebi;
 use crate::value::Value;
 
 #[derive(Default, Clone)]
@@ -120,5 +121,42 @@ impl Debug for Table {
 impl Object for Table {
   fn type_name(&self) -> &'static str {
     "Table"
+  }
+
+  fn named_field(
+    &self,
+    cx: &crate::ctx::Context,
+    name: Ptr<String>,
+  ) -> crate::Result<Option<Value>> {
+    let _ = cx;
+    Ok(self.get(&name))
+  }
+
+  fn set_named_field(
+    &self,
+    cx: &crate::ctx::Context,
+    name: Ptr<String>,
+    value: Value,
+  ) -> crate::Result<()> {
+    let _ = cx;
+    self.insert(name, value);
+    Ok(())
+  }
+
+  fn keyed_field(&self, cx: &crate::ctx::Context, key: Value) -> crate::Result<Option<Value>> {
+    let _ = cx;
+    let Some(key) = key.clone().to_object::<String>() else {
+      hebi::fail!("`{key}` is not a string");
+    };
+    Ok(self.get(&key))
+  }
+
+  fn set_keyed_field(&self, cx: &hebi::ctx::Context, key: Value, value: Value) -> hebi::Result<()> {
+    let _ = cx;
+    let Some(key) = key.clone().to_object::<String>() else {
+      hebi::fail!("`{key}` is not a string");
+    };
+    self.insert(key, value);
+    Ok(())
   }
 }

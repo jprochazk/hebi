@@ -2,6 +2,7 @@ pub mod class;
 pub mod function;
 pub mod list;
 pub mod module;
+pub mod native;
 pub mod string;
 pub mod table;
 
@@ -21,7 +22,6 @@ pub use table::Table;
 
 use crate as hebi;
 use crate::ctx::Context;
-use crate::span::SpannedError;
 use crate::value::Value;
 
 pub type Any = Ptr<ptr::Any>;
@@ -31,68 +31,82 @@ pub trait Object: DynAny + Debug + Display {
 
   fn named_field(&self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
     let _ = cx;
-    Err(SpannedError::new(format!("cannot get field `{name}`"), None).into())
+    hebi::fail!("cannot get field `{name}`")
   }
 
   fn set_named_field(&self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()> {
     let _ = cx;
     let _ = value;
-    Err(SpannedError::new(format!("cannot set field `{name}`"), None).into())
+    hebi::fail!("cannot set field `{name}`")
   }
 
   fn keyed_field(&self, cx: &Context, key: Value) -> hebi::Result<Option<Value>> {
     let _ = cx;
-    Err(SpannedError::new(format!("cannot get index `{key}`"), None).into())
+    hebi::fail!("cannot get index `{key}`")
   }
 
   fn set_keyed_field(&self, cx: &Context, key: Value, value: Value) -> hebi::Result<()> {
     let _ = cx;
     let _ = value;
-    Err(SpannedError::new(format!("cannot set index `{key}`"), None).into())
+    hebi::fail!("cannot set index `{key}`")
   }
 
   fn contains(&self, cx: &Context, item: Value) -> hebi::Result<bool> {
-    todo!()
+    let _ = cx;
+    let _ = item;
+    hebi::fail!("cannot get item `{item}`")
   }
 
   fn add(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `+`")
   }
 
   fn subtract(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `-`")
   }
 
   fn multiply(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `*`")
   }
 
   fn divide(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `/`")
   }
 
   fn remainder(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `%`")
   }
 
   fn pow(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support `**`")
   }
 
-  fn invert(&self) -> hebi::Result<()> {
-    todo!()
+  fn invert(&self, cx: &Context) -> hebi::Result<Value> {
+    let _ = cx;
+    hebi::fail!("`{self}` does not support unary `-`")
   }
 
-  fn not(&self) -> hebi::Result<()> {
-    todo!()
+  fn not(&self, cx: &Context) -> hebi::Result<Value> {
+    let _ = cx;
+    hebi::fail!("`{self}` does not support `!`")
   }
 
   fn cmp(&self, cx: &Context, other: Value) -> hebi::Result<Ordering> {
-    todo!()
-  }
-
-  fn type_eq(&self, cx: &Context, other: Value) -> hebi::Result<bool> {
-    todo!()
+    let _ = cx;
+    let _ = other;
+    hebi::fail!("`{self}` does not support comparison")
   }
 }
 

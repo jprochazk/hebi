@@ -8,6 +8,7 @@ use std::fmt::Display;
 use span::SpannedError;
 use syntax::SyntaxError;
 
+#[macro_use]
 pub mod macros;
 
 #[macro_use]
