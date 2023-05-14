@@ -31,7 +31,7 @@ impl Display for Value {
       write!(f, "{v}")?;
     } else if v.is_none() {
       write!(f, "none")?;
-    } else if let Some(v) = v.to_object() {
+    } else if let Some(v) = v.to_any() {
       write!(f, "{v}")?;
     } else {
       unreachable!("invalid type");
@@ -52,7 +52,7 @@ impl Debug for Value {
       f.debug_tuple("Bool").field(&v).finish()
     } else if v.is_none() {
       f.debug_tuple("None").finish()
-    } else if let Some(v) = v.to_object() {
+    } else if let Some(v) = v.to_any() {
       f.debug_tuple("Object").field(&v).finish()
     } else {
       unreachable!("invalid type");

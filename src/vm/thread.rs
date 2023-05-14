@@ -6,6 +6,7 @@ mod util;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::mem::take;
+use std::ops::Deref;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
@@ -16,10 +17,12 @@ use super::global::Global;
 use crate as hebi;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
+use crate::object::class::{ClassInstance, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::ModuleId;
 use crate::object::{
-  class, Function, FunctionDescriptor, List, Module, Object, Ptr, String, Table,
+  ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
+  Table,
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
@@ -83,7 +86,7 @@ impl Thread {
     num_args: usize,
     return_addr: Option<usize>,
   ) -> hebi::Result<()> {
-    let f = match f.try_to_object() {
+    let f = match f.try_to_any() {
       Ok(f) => f,
       Err(f) => hebi::fail!("cannot call value `{f}`"),
     };
@@ -125,6 +128,49 @@ impl Thread {
     });
 
     Ok(())
+  }
+
+  fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {
+    let num_upvalues = desc.upvalues.borrow().len();
+    let mut upvalues = Vec::with_capacity(num_upvalues);
+    upvalues.resize_with(num_upvalues, Value::none);
+    for (i, upvalue) in desc.upvalues.borrow().iter().enumerate() {
+      let value = match upvalue {
+        crate::object::function::Upvalue::Register(register) => self.get_register(*register),
+        crate::object::function::Upvalue::Upvalue(upvalue) => {
+          let parent_upvalues = &current_call_frame!(self).upvalues;
+          debug_assert!(upvalue.index() < parent_upvalues.len());
+          unsafe { parent_upvalues.get_unchecked(upvalue.index()) }
+        }
+      };
+      let slot = unsafe { upvalues.get_unchecked_mut(i) };
+      *slot = value;
+    }
+    let upvalues = self.cx.alloc(List::from(upvalues));
+
+    self.cx.alloc(Function::new(
+      desc,
+      upvalues,
+      current_call_frame!(self).module_id,
+    ))
+  }
+
+  fn make_class(
+    &mut self,
+    desc: Ptr<ClassDescriptor>,
+    fields: Option<Ptr<Table>>,
+    parent: Option<Ptr<ClassType>>,
+  ) -> Ptr<ClassType> {
+    let mut init = None;
+    let fields = fields.unwrap_or_else(|| self.cx.alloc(Table::with_capacity(desc.methods.len())));
+    for (key, desc) in desc.methods.iter() {
+      let method = self.make_fn(desc.clone());
+      if key == &"init" {
+        init = Some(method.clone());
+      }
+      fields.insert(key.clone(), Value::object(method));
+    }
+    self.cx.alloc(ClassType::new(desc, init, fields, parent))
   }
 
   fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
@@ -211,10 +257,10 @@ impl Thread {
 
   fn get_constant_object<T: Object>(&self, idx: op::Constant) -> Ptr<T> {
     let object = self.get_constant(idx).into_value();
-    debug_assert_object_type!(object, T);
-    unsafe { object.to_object_unchecked().cast_unchecked::<T>() }
+    unsafe { object.to_any_unchecked().cast_unchecked::<T>() }
   }
 
+  // TODO: get_register_as
   fn get_register(&self, reg: op::Register) -> Value {
     debug_assert!(
       self.stack_base + reg.index() < self.stack.len(),
@@ -347,7 +393,7 @@ impl Handler for Thread {
     let name = self.get_constant_object::<String>(name);
     let value = take(&mut self.acc);
 
-    let value = if let Some(object) = value.to_object() {
+    let value = if let Some(object) = value.to_any() {
       match object.named_field(&self.cx, name.as_str())? {
         Some(value) => value,
         None => hebi::fail!("failed to get field `{name}` on value `{object}`"),
@@ -371,7 +417,7 @@ impl Handler for Thread {
       return Ok(());
     }
 
-    let value = if let Some(object) = value.to_object() {
+    let value = if let Some(object) = value.to_any() {
       match object.named_field(&self.cx, name.as_str())? {
         Some(value) => value,
         None => Value::none(),
@@ -391,7 +437,7 @@ impl Handler for Thread {
     let object = self.get_register(obj);
     let value = take(&mut self.acc);
 
-    if let Some(object) = object.to_object() {
+    if let Some(object) = object.to_any() {
       object.set_named_field(&self.cx, name.as_str(), value)?;
     } else {
       // TODO: fields on primitives
@@ -405,7 +451,7 @@ impl Handler for Thread {
     let object = self.get_register(obj);
     let key = take(&mut self.acc);
 
-    let value = if let Some(object) = object.to_object() {
+    let value = if let Some(object) = object.to_any() {
       match object.keyed_field(&self.cx, key.clone())? {
         Some(value) => value,
         None => hebi::fail!("failed to get field `{key}` on value `{object}`"),
@@ -429,7 +475,7 @@ impl Handler for Thread {
       return Ok(());
     }
 
-    let value = if let Some(object) = object.to_object() {
+    let value = if let Some(object) = object.to_any() {
       match object.keyed_field(&self.cx, key)? {
         Some(value) => value,
         None => Value::none(),
@@ -449,7 +495,7 @@ impl Handler for Thread {
     let key = self.get_register(key);
     let value = take(&mut self.acc);
 
-    if let Some(object) = object.to_object() {
+    if let Some(object) = object.to_any() {
       object.set_keyed_field(&self.cx, key, value)?;
     } else {
       // TODO: fields on primitives
@@ -467,17 +513,17 @@ impl Handler for Thread {
   fn op_load_super(&mut self) -> hebi::Result<()> {
     let this = self.get_register(op::Register(0));
 
-    let Some(this) = this.to_object() else {
+    let Some(this) = this.to_any() else {
       hebi::fail!("`self` is not a class instance");
     };
 
-    let proxy = if let Some(proxy) = this.clone_cast::<class::Proxy>() {
-      class::Proxy {
+    let proxy = if let Some(proxy) = this.clone_cast::<ClassProxy>() {
+      ClassProxy {
         this: proxy.this.clone(),
         class: proxy.class.parent.clone().unwrap(),
       }
-    } else if let Some(this) = this.clone_cast::<class::Instance>() {
-      class::Proxy {
+    } else if let Some(this) = this.clone_cast::<ClassInstance>() {
+      ClassProxy {
         this: this.clone(),
         class: this.parent.clone().unwrap(),
       }
@@ -518,28 +564,7 @@ impl Handler for Thread {
     let desc = self.get_constant_object::<FunctionDescriptor>(desc);
 
     // fetch upvalues
-    let num_upvalues = desc.upvalues.borrow().len();
-    let mut upvalues = Vec::with_capacity(num_upvalues);
-    upvalues.resize_with(num_upvalues, Value::none);
-    for (i, upvalue) in desc.upvalues.borrow().iter().enumerate() {
-      let value = match upvalue {
-        crate::object::function::Upvalue::Register(register) => self.get_register(*register),
-        crate::object::function::Upvalue::Upvalue(upvalue) => {
-          let parent_upvalues = &current_call_frame!(self).upvalues;
-          debug_assert!(upvalue.index() < parent_upvalues.len());
-          unsafe { parent_upvalues.get_unchecked(upvalue.index()) }
-        }
-      };
-      let slot = unsafe { upvalues.get_unchecked_mut(i) };
-      *slot = value;
-    }
-    let upvalues = self.cx.alloc(List::from(upvalues));
-
-    let f = self.cx.alloc(Function::new(
-      desc,
-      upvalues,
-      current_call_frame!(self).module_id,
-    ));
+    let f = self.make_fn(desc);
 
     self.acc = Value::object(f);
 
@@ -547,14 +572,48 @@ impl Handler for Thread {
   }
 
   fn op_make_class(&mut self, desc: op::Constant) -> hebi::Result<()> {
-    todo!()
+    let desc = self.get_constant_object::<ClassDescriptor>(desc);
+
+    let class = self.make_class(desc, None, None);
+
+    self.acc = Value::object(class);
+
+    Ok(())
   }
 
   fn op_make_class_derived(&mut self, desc: op::Constant) -> hebi::Result<()> {
-    todo!()
+    let desc = self.get_constant_object::<ClassDescriptor>(desc);
+    let parent = take(&mut self.acc);
+
+    let Some(parent) = parent.clone().to_object::<ClassType>() else {
+      hebi::fail!("{parent} is not a class");
+    };
+    let class = self.make_class(desc, None, Some(parent));
+
+    self.acc = Value::object(class);
+
+    Ok(())
   }
 
   fn op_make_data_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
+    let desc = self.get_constant_object::<ClassDescriptor>(desc);
+
+    let fields = Table::with_capacity(desc.fields.len());
+    for offset in 0..desc.fields.len() * 2 {
+      let key = self.get_register(parts.offset(offset));
+      let value = self.get_register(parts.offset(offset + 1));
+
+      let Some(key) = key.clone().to_object::<String>() else {
+        hebi::fail!("`{key}` is not a string");
+      };
+
+      fields.insert(key, value);
+    }
+    let fields = self.cx.alloc(fields);
+    let class = self.make_class(desc, Some(fields), None);
+
+    self.acc = Value::object(class);
+
     todo!()
   }
 
@@ -563,7 +622,30 @@ impl Handler for Thread {
     desc: op::Constant,
     parts: op::Register,
   ) -> hebi::Result<()> {
-    todo!()
+    let desc = self.get_constant_object::<ClassDescriptor>(desc);
+    let parent = take(&mut self.acc);
+
+    let Some(parent) = parent.clone().to_object::<ClassType>() else {
+      hebi::fail!("{parent} is not a class");
+    };
+
+    let fields = Table::with_capacity(desc.fields.len());
+    for offset in 0..desc.fields.len() * 2 {
+      let key = self.get_register(parts.offset(offset));
+      let value = self.get_register(parts.offset(offset + 1));
+
+      let Some(key) = key.clone().to_object::<String>() else {
+        hebi::fail!("`{key}` is not a string");
+      };
+
+      fields.insert(key, value);
+    }
+    let fields = self.cx.alloc(fields);
+    let class = self.make_class(desc, Some(fields), Some(parent));
+
+    self.acc = Value::object(class);
+
+    Ok(())
   }
 
   fn op_make_list(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
@@ -586,7 +668,7 @@ impl Handler for Thread {
       let key = self.get_register(reg);
       let value = self.get_register(reg.offset(1));
 
-      let Some(key) = key.clone().to_object().and_then(|v| v.cast::<String>().ok()) else {
+      let Some(key) = key.clone().to_any().and_then(|v| v.cast::<String>().ok()) else {
         hebi::fail!( "`{key}` is not a string");
       };
 

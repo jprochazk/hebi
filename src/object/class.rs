@@ -2,85 +2,88 @@ use std::fmt::Display;
 
 use indexmap::IndexMap;
 
-use super::function::Params;
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
-use crate::syntax::ast;
 
 #[derive(Debug)]
-pub struct Instance {
+pub struct ClassInstance {
   pub name: Ptr<String>,
-  pub meta: Ptr<Meta>,
   pub fields: Ptr<Table>,
-  pub parent: Option<Ptr<Class>>,
+  pub parent: Option<Ptr<ClassType>>,
   pub is_frozen: bool,
 }
 
-impl Display for Instance {
+impl Display for ClassInstance {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<class `{}` instance>", self.name)
   }
 }
 
-impl Object for Instance {
+impl Object for ClassInstance {
   fn type_name(&self) -> &'static str {
     "Instance"
   }
 }
 
 #[derive(Debug)]
-pub struct Proxy {
-  pub this: Ptr<Instance>,
-  pub class: Ptr<Class>,
+pub struct ClassProxy {
+  pub this: Ptr<ClassInstance>,
+  pub class: Ptr<ClassType>,
 }
 
-impl Display for Proxy {
+impl Display for ClassProxy {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<class `{}` instance>", self.this.name)
   }
 }
 
-impl Object for Proxy {
+impl Object for ClassProxy {
   fn type_name(&self) -> &'static str {
     "Instance"
   }
 }
 
 #[derive(Debug)]
-pub struct Class {
+pub struct ClassType {
   pub descriptor: Ptr<ClassDescriptor>,
-  pub meta: Ptr<Meta>,
   pub init: Option<Ptr<Function>>,
-  pub methods: Ptr<Table>,
   pub fields: Ptr<Table>,
-  pub parent: Option<Ptr<Class>>,
+  pub parent: Option<Ptr<ClassType>>,
 }
 
-impl Display for Class {
+impl ClassType {
+  pub fn new(
+    descriptor: Ptr<ClassDescriptor>,
+    init: Option<Ptr<Function>>,
+    fields: Ptr<Table>,
+    parent: Option<Ptr<ClassType>>,
+  ) -> Self {
+    Self {
+      descriptor,
+      init,
+      fields,
+      parent,
+    }
+  }
+}
+
+impl Display for ClassType {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<class `{}`>", self.descriptor.name)
   }
 }
 
-impl Object for Class {
+impl Object for ClassType {
   fn type_name(&self) -> &'static str {
     "Class"
   }
 }
 
 #[derive(Debug)]
-pub struct Meta {
-  pub methods: IndexMap<ast::Meta, Ptr<Function>>,
-}
-
-#[derive(Debug)]
 pub struct ClassDescriptor {
   pub name: Ptr<String>,
-  pub params: Params,
-  pub init: Option<Ptr<FunctionDescriptor>>,
   pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
   pub fields: Ptr<Table>,
-  pub is_derived: bool,
 }
 
 impl Display for ClassDescriptor {

@@ -287,17 +287,12 @@ impl<'cx, 'src> State<'cx, 'src> {
   fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) {
     let mut preserve = Vec::new();
 
-    let mut init = None;
     let mut methods = IndexMap::with_capacity(stmt.members.methods.len());
     for function in stmt.members.methods.iter() {
       let function = self.emit_function(function);
       preserve.push(function.upvalues);
       let function = function.ptr;
       methods.insert(function.name.clone(), function.clone());
-      if function.name == "init" {
-        assert!(init.is_none());
-        init = Some(function);
-      }
     }
 
     let fields = Table::with_capacity(stmt.members.fields.len());
@@ -308,11 +303,8 @@ impl<'cx, 'src> State<'cx, 'src> {
 
     let class = self.cx.alloc(object::ClassDescriptor {
       name: self.cx.intern(stmt.name.to_string()),
-      params: function::Params::from_ast_class(stmt),
-      init,
       methods,
       fields,
-      is_derived: stmt.parent.is_some(),
     });
     let desc = self.constant_value(class);
 

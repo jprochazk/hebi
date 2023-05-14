@@ -343,18 +343,6 @@ impl function::Params {
       max,
     }
   }
-
-  pub fn from_ast_class(class: &ast::Class) -> Self {
-    if let Some(init) = class.members.methods.iter().find(|m| m.name == "init") {
-      Self::from_ast_func(init)
-    } else {
-      Self {
-        has_self: false,
-        min: 0,
-        max: 0,
-      }
-    }
-  }
 }
 
 struct Module<'cx, 'src> {

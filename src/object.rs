@@ -11,7 +11,7 @@ use std::any::Any as DynAny;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 
-pub use class::{Class, ClassDescriptor};
+pub use class::{ClassDescriptor, ClassType};
 pub use function::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor};

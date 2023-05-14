@@ -241,3 +241,10 @@ check! {
     import test
   "#
 }
+
+check! {
+  empty_class,
+  r#"
+    class T: pass
+  "#
+}

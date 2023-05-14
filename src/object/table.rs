@@ -8,7 +8,7 @@ use super::ptr::Ptr;
 use super::{Object, String};
 use crate::value::Value;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Table {
   data: RefCell<IndexMap<Ptr<String>, Value>>,
 }
@@ -22,6 +22,14 @@ impl Table {
     Self {
       data: RefCell::new(IndexMap::with_capacity(n)),
     }
+  }
+
+  pub fn len(&self) -> usize {
+    self.data.borrow().len()
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.data.borrow().is_empty()
   }
 
   pub fn insert(&self, key: Ptr<String>, value: Value) {

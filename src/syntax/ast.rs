@@ -45,45 +45,6 @@ impl<'src> DerefMut for Ident<'src> {
   }
 }
 
-#[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Symbol<'src>(Spanned<Cow<'src, str>>);
-
-impl<'src> Symbol<'src> {
-  pub fn new(span: impl Into<Span>, lexeme: Cow<'src, str>) -> Self {
-    Self(Spanned::new(span, lexeme))
-  }
-
-  /// Strips the leading `@` and returns the result as an identifier.
-  ///
-  /// This copies the string.
-  pub fn ident<'a>(&'a self) -> Ident<'src> {
-    let span = self.0.span;
-    Ident::new(span, Cow::from(self.0.deref()[1..].to_string()))
-  }
-
-  pub fn which(&self) -> Option<Meta> {
-    Meta::parse(&self.0.deref()[1..])
-  }
-
-  pub fn lexeme(&self) -> Cow<'src, str> {
-    self.0.deref().clone()
-  }
-}
-
-impl<'src> Deref for Symbol<'src> {
-  type Target = Spanned<Cow<'src, str>>;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl<'src> DerefMut for Symbol<'src> {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.0
-  }
-}
-
 pub type Map<K, V> = BTreeMap<K, V>;
 
 #[cfg_attr(test, derive(Debug))]
@@ -205,103 +166,6 @@ pub struct Field<'src> {
 impl<'src> Field<'src> {
   pub fn span(&self) -> Span {
     self.name.span.join(self.default.span)
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(u8)]
-pub enum Meta {
-  Str,
-
-  Init,
-
-  Add,
-  Sub,
-  Mul,
-  Div,
-  Rem,
-  Pow,
-
-  Cmp,
-
-  Index,
-
-  Iter,
-  Next,
-  Done,
-
-  Enter,
-  Leave,
-}
-
-impl Meta {
-  pub fn parse(s: &str) -> Option<Self> {
-    let v = match s {
-      "str" => Self::Str,
-      "init" => Self::Init,
-      "add" => Self::Add,
-      "sub" => Self::Sub,
-      "mul" => Self::Mul,
-      "div" => Self::Div,
-      "rem" => Self::Rem,
-      "pow" => Self::Pow,
-      "cmp" => Self::Cmp,
-      "index" => Self::Index,
-      "iter" => Self::Iter,
-      "next" => Self::Next,
-      "done" => Self::Done,
-      "enter" => Self::Enter,
-      "leave" => Self::Leave,
-      _ => return None,
-    };
-    Some(v)
-  }
-
-  pub fn arity(&self) -> Option<usize> {
-    match self {
-      Meta::Init => None,
-      Meta::Add
-      | Meta::Sub
-      | Meta::Mul
-      | Meta::Div
-      | Meta::Rem
-      | Meta::Pow
-      | Meta::Cmp
-      | Meta::Index => Some(1),
-      Meta::Str | Meta::Iter | Meta::Next | Meta::Done | Meta::Enter | Meta::Leave => Some(0),
-    }
-  }
-
-  pub fn param_names(&self) -> &'static [&'static str] {
-    match self {
-      Meta::Add | Meta::Sub | Meta::Mul | Meta::Div | Meta::Rem | Meta::Pow | Meta::Cmp => {
-        &["other"]
-      }
-      Meta::Index => &["key"],
-      Meta::Str | Meta::Init | Meta::Iter | Meta::Next | Meta::Done | Meta::Enter | Meta::Leave => {
-        &[]
-      }
-    }
-  }
-
-  pub fn as_str(&self) -> &'static str {
-    match self {
-      Self::Str => "str",
-      Self::Init => "init",
-      Self::Add => "add",
-      Self::Sub => "sub",
-      Self::Mul => "mul",
-      Self::Div => "div",
-      Self::Rem => "rem",
-      Self::Pow => "pow",
-      Self::Cmp => "cmp",
-      Self::Index => "index",
-      Self::Iter => "iter",
-      Self::Next => "next",
-      Self::Done => "done",
-      Self::Enter => "enter",
-      Self::Leave => "leave",
-    }
   }
 }
 
@@ -949,11 +813,5 @@ pub mod lit {
 impl<'src> Display for Ident<'src> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.0)
-  }
-}
-
-impl<'src> Display for Symbol<'src> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "@{}", self.0)
   }
 }

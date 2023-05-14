@@ -53,15 +53,3 @@ macro_rules! push_args {
     (stack_base, num_args)
   }};
 }
-
-macro_rules! debug_assert_object_type {
-  ($value:ident, $ty:ty) => {{
-    let value = match $value.clone().to_object() {
-      Some(value) => value,
-      None => panic!("{} is not an object", stringify!($value)),
-    };
-    if let Err(e) = value.cast::<$ty>() {
-      panic!("{e} is not {}", ::std::any::type_name::<$ty>());
-    }
-  }};
-}

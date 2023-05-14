@@ -78,10 +78,10 @@ fn clone_and_drop_object_value() {
   assert_eq!(ptr.refs(), 3);
 
   // check object refcounts
-  let ptr_a = a.to_object().unwrap();
+  let ptr_a = a.to_any().unwrap();
   assert_eq!(ptr_a.refs(), 3);
 
-  let ptr_b = b.to_object().unwrap();
+  let ptr_b = b.to_any().unwrap();
   assert_eq!(ptr_b.refs(), 3);
 
   // reconstruct and drop

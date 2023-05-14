@@ -482,37 +482,6 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     self.bump(); // bump operator
     Some(kind)
   }
-
-  fn check_meta_params(
-    &self,
-    meta: &ast::Meta,
-    params: &ast::Params,
-    span: Span,
-  ) -> Result<(), SpannedError> {
-    let name = meta.as_str();
-    let arity = meta.arity();
-
-    if !params.has_self {
-      hebi::fail!(@span, "meta method `{name}` expects a `self` parameter",);
-    }
-
-    if let Some(arity) = arity {
-      if params.pos.len() != arity {
-        if arity > 1 {
-          let arity = arity + 1;
-          let params = meta.param_names().join(", ");
-          hebi::fail!(
-            @span,
-            "meta method `{name}` expects {arity} parameters: self, {params}",
-          );
-        } else {
-          hebi::fail!(@span, "meta method `{name}` expects only a `self` parameter",);
-        }
-      }
-    }
-
-    Ok(())
-  }
 }
 
 #[allow(clippy::ptr_arg)]

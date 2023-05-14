@@ -221,20 +221,28 @@ impl Value {
     ()
   }
 
-  pub fn to_object(self) -> Option<Ptr<Any>> {
+  pub fn to_object<T: Object>(self) -> Option<Ptr<T>> {
     self.try_to_object().ok()
   }
 
-  pub fn try_to_object(self) -> Result<Ptr<Any>, Value> {
+  pub fn try_to_object<T: Object>(self) -> Result<Ptr<T>, Value> {
+    self.try_to_any()?.cast::<T>().map_err(Value::object)
+  }
+
+  pub fn to_any(self) -> Option<Ptr<Any>> {
+    self.try_to_any().ok()
+  }
+
+  pub fn try_to_any(self) -> Result<Ptr<Any>, Value> {
     if !self.is_object() {
       return Err(self);
     }
-    Ok(unsafe { self.to_object_unchecked() })
+    Ok(unsafe { self.to_any_unchecked() })
   }
 
   /// # Safety
   /// - `self.is_object()` must be `true`
-  pub unsafe fn to_object_unchecked(self) -> Ptr<Any> {
+  pub unsafe fn to_any_unchecked(self) -> Ptr<Any> {
     debug_assert!(self.is_object(), "value is not an object");
     let ptr = unsafe { Ptr::from_addr(self.value() as usize) };
     mem::forget(self);
