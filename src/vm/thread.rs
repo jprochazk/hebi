@@ -44,6 +44,12 @@ pub struct Thread {
   pc: usize,
 }
 
+#[derive(Clone, Copy)]
+struct Args {
+  start: usize,
+  count: usize,
+}
+
 impl Thread {
   pub fn new(cx: Context, global: Global) -> Self {
     Thread {
@@ -59,9 +65,10 @@ impl Thread {
   }
 
   pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
-    let (stack_base, num_args) = push_args!(self, args);
-    self.do_call(f, stack_base, num_args, None)?;
+    let args = self.push_args(args);
+    self.do_call(f, args, None)?;
     self.run()?;
+    self.pop_args(args);
     Ok(take(&mut self.acc))
   }
 
@@ -81,11 +88,30 @@ impl Thread {
     }
   }
 
+  fn push_args(&mut self, args: &[Value]) -> Args {
+    let start = self.stack.len();
+    let count = args.len();
+    self.stack.extend_from_slice(args);
+    Args { start, count }
+  }
+
+  fn pop_args(&mut self, args: Args) {
+    self.stack.truncate(args.start)
+  }
+
+  /// Args are passed through the stack:
+  /// - `self.stack[args_start]` is the first arg
+  /// - `self.stack[args_start+num_args]` is the last arg
+  ///
+  /// If the call pushes a call frame, `return_addr` is stored in that call
+  /// frame and the `pc` will be restored to it during `op_return`.
+  ///
+  /// If `return_addr` is `None`, the resulting call frame when popped will
+  /// yield to the VM's host.
   fn do_call(
     &mut self,
     value: Value,
-    stack_base: usize,
-    num_args: usize,
+    args: Args,
     return_addr: Option<usize>,
   ) -> hebi::Result<dispatch::Call> {
     let object = match value.try_to_any() {
@@ -95,13 +121,13 @@ impl Thread {
 
     if object.is::<Function>() {
       let function = unsafe { object.cast_unchecked::<Function>() };
-      self.call_function(function, stack_base, num_args, return_addr)
+      self.call_function(function, args, return_addr)
     } else if object.is::<ClassMethod>() {
       let method = unsafe { object.cast_unchecked::<ClassMethod>() };
-      self.call_method(method, stack_base, num_args, return_addr)
+      self.call_method(method, args, return_addr)
     } else if object.is::<ClassType>() {
       let class = unsafe { object.cast_unchecked::<ClassType>() };
-      self.init_class(class, stack_base, num_args)
+      self.init_class(class, args)
     } else {
       hebi::fail!("cannot call object `{object}`")
     }
@@ -110,17 +136,28 @@ impl Thread {
   fn call_function(
     &mut self,
     function: Ptr<Function>,
-    stack_base: usize,
-    num_args: usize,
+    args: Args,
     return_addr: Option<usize>,
   ) -> hebi::Result<dispatch::Call> {
-    check_args(&function.descriptor.params, false, num_args)?;
+    check_args(&function.descriptor.params, false, args.count)?;
 
     self.pc = 0;
-    self.stack_base = stack_base;
+    self.stack_base = self.stack.len();
+    // note that this only works because `self` is
+    // syntactically guaranteed to only exist in class methods
+    // if that guarantee ever disappears, this will break
+    if !function.descriptor.params.has_self {
+      // this is a regular function, put `function` in slot 0
+      // the slot is already reserved by codegen
+      self.stack.push(Value::object(function.clone()));
+    }
+    // if the above condition is false, the first arg will be the receiver
     self
       .stack
-      .extend(stack_base + function.descriptor.frame_size);
+      .extend_from_within(args.start..args.start + args.count);
+    self
+      .stack
+      .extend(function.descriptor.frame_size - args.count);
 
     self.call_frames.borrow_mut().push(Frame {
       instructions: function.descriptor.instructions,
@@ -143,19 +180,22 @@ impl Thread {
   fn call_method(
     &mut self,
     method: Ptr<ClassMethod>,
-    stack_base: usize,
-    num_args: usize,
+    args: Args,
     return_addr: Option<usize>,
   ) -> hebi::Result<dispatch::Call> {
     let function = unsafe { method.function().cast_unchecked::<Function>() };
-    check_args(&function.descriptor.params, true, num_args)?;
+    check_args(&function.descriptor.params, true, args.count)?;
 
     self.pc = 0;
-    self.stack_base = stack_base;
+    self.stack_base = self.stack.len();
+    // receiver is passed implicitly through the `ClassMethod` wrapper
+    self.stack.push(Value::object(method.this()));
     self
       .stack
-      .extend(stack_base + function.descriptor.frame_size);
-    self.set_register(op::Register(0), Value::object(method.this()));
+      .extend_from_within(args.start..args.start + args.count);
+    self
+      .stack
+      .extend(function.descriptor.frame_size - args.count);
 
     self.call_frames.borrow_mut().push(Frame {
       instructions: function.descriptor.instructions,
@@ -175,25 +215,19 @@ impl Thread {
     )
   }
 
-  fn init_class(
-    &mut self,
-    class: Ptr<ClassType>,
-    stack_base: usize,
-    num_args: usize,
-  ) -> hebi::Result<dispatch::Call> {
+  fn init_class(&mut self, class: Ptr<ClassType>, args: Args) -> hebi::Result<dispatch::Call> {
     let instance = self.cx.alloc(ClassInstance::new(&self.cx, &class));
 
     if let Some(init) = class.init.as_ref() {
-      check_args(&init.descriptor.params, true, num_args)?;
+      check_args(&init.descriptor.params, true, args.count)?;
 
-      // args are already on the stack (pushed by `op_call`)
       let method = self.cx.alloc(ClassMethod::new(
         instance.clone().into_any(),
         init.clone().into_any(),
       ));
-      self.call_method(method, stack_base, num_args, None)?;
+      self.call_method(method, args, None)?;
       self.run()?;
-    } else if num_args > 0 {
+    } else if args.count > 0 {
       hebi::fail!("expected at most 0 args");
     }
 
@@ -473,7 +507,6 @@ impl Handler for Thread {
   fn op_load_field(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
     let receiver = take(&mut self.acc);
-    println!("{receiver:?}");
 
     let value = if let Some(object) = receiver.clone().to_any() {
       match object.named_field(&self.cx, name.clone())? {
@@ -902,15 +935,20 @@ impl Handler for Thread {
     args: op::Count,
   ) -> hebi::Result<dispatch::Call> {
     let f = self.get_register(callee);
-    let start = self.stack_base + callee.index() + 1;
-    let (stack_base, num_args) = push_args!(self, f.clone(), range(start, start + args.value()));
-    self.do_call(f, stack_base, num_args, Some(return_addr))
+    let args = Args {
+      start: self.stack_base + callee.index() + 1,
+      count: args.value(),
+    };
+    self.do_call(f, args, Some(return_addr))
   }
 
   fn op_call0(&mut self, return_addr: usize) -> hebi::Result<dispatch::Call> {
     let f = take(&mut self.acc);
-    let stack_base = self.stack.len();
-    self.do_call(f, stack_base, 0, Some(return_addr))
+    let args = Args {
+      start: self.stack.len(),
+      count: 0,
+    };
+    self.do_call(f, args, Some(return_addr))
   }
 
   fn op_import(&mut self, path: op::Constant, dst: op::Register) -> hebi::Result<()> {

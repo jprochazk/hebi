@@ -1,6 +1,7 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 use std::ops::Range;
+use std::slice::SliceIndex;
 use std::vec::Vec;
 
 use super::Object;
@@ -50,8 +51,8 @@ impl List {
     self.data.borrow_mut().pop()
   }
 
-  pub fn extend(&self, new_len: usize) {
-    assert!(new_len >= self.len());
+  pub fn extend(&self, additional: usize) {
+    let new_len = self.len() + additional;
     self.data.borrow_mut().resize_with(new_len, Value::none);
   }
 
@@ -87,6 +88,10 @@ impl List {
   pub unsafe fn set_unchecked(&self, index: usize, value: Value) {
     debug_assert!(index < self.len(), "index {index} out of bounds");
     *self.data.borrow_mut().get_mut(index).unwrap_unchecked() = value;
+  }
+
+  pub fn slice<R: SliceIndex<[Value]>>(&self, range: R) -> Ref<'_, R::Output> {
+    Ref::map(self.data.borrow(), |data| &data[range])
   }
 }
 

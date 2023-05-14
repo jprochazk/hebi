@@ -685,3 +685,68 @@ check! {
     U().test()
   "#
 }
+
+check! {
+  call_class_method_derived2,
+  r#"
+    class T:
+      fn test(self, v):
+        return v
+    class U(T):
+      fn test(self, v):
+        return super.test(v)
+    U().test(10)
+  "#
+}
+
+check! {
+  call_class_method_derived3,
+  r#"
+    class T:
+      fn test(self, v=5):
+        return v
+    class U(T):
+      fn test(self, v):
+        return super.test(v)
+    U().test(none)
+  "#
+}
+
+check! {
+  call_class_method_derived4,
+  r#"
+    class T:
+      fn test(self, v):
+        return v
+    class U(T):
+      fn test(self, v=5):
+        return super.test(v)
+    U().test()
+  "#
+}
+
+check! {
+  call_class_method_derived_static,
+  r#"
+    class T:
+      fn test(self, v):
+        return v
+    class U(T):
+      fn test(self, v=5):
+        return super.test(v)
+    U.test(U())
+  "#
+}
+
+check! {
+  call_class_method_derived_static2,
+  r#"
+    class T:
+      fn test(self, v):
+        return v
+    class U(T):
+      fn test(self, v=5):
+        return super.test(v)
+    U.test(U(), 10)
+  "#
+}
