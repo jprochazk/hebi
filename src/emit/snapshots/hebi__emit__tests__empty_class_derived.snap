@@ -10,7 +10,7 @@ class T(U): pass
 function `main` (registers: 0, length: 7, constants: 3)
 .code
   0 | load_global [1]; U
-  2 | make_class_empty_derived [0]; <class `T` descriptor>
+  2 | make_class_derived [0]; <class `T` descriptor>
   4 | store_global [2]; T
   6 | return
 

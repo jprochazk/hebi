@@ -24,7 +24,7 @@ function `main` (registers: 1, length: 10, constants: 2)
 .code
   0  | load_smi 0
   2  | store r0
-  4  | make_class [0] r0; <class `T` descriptor>
+  4  | make_data_class [0] r0; <class `T` descriptor>
   7  | store_global [1]; T
   9  | return
 

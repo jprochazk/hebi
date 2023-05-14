@@ -32,7 +32,7 @@ function `main` (registers: 2, length: 18, constants: 4)
   6  | store r0
   8  | load_smi 0
   10 | store r1
-  12 | make_class_derived [1] r0; <class `T` descriptor>
+  12 | make_data_class_derived [1] r0; <class `T` descriptor>
   15 | store_global [3]; T
   17 | return
 
