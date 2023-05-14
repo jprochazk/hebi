@@ -1,0 +1,17 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Object(
+        {
+            "a": Object(
+                {
+                    "b": Int(
+                        10,
+                    ),
+                },
+            ),
+        },
+    ),
+)

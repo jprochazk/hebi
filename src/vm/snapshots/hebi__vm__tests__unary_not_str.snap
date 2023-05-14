@@ -1,0 +1,9 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Bool(
+        false,
+    ),
+)
