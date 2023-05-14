@@ -26,22 +26,22 @@ macro_rules! current_call_frame_mut {
 }
 
 macro_rules! push_args {
-  ($self:ident, $callee:expr, range($start:expr, $end:expr)) => {{
-    let callee = $callee;
+  ($self:ident, $reserved:expr, range($start:expr, $end:expr)) => {{
+    let reserved = $reserved;
     let start = $start;
     let end = $end;
     let stack_base = $self.stack.len();
     let num_args = end - start;
-    $self.stack.push(callee);
+    $self.stack.push(reserved);
     $self.stack.extend_from_within(start..end);
     (stack_base, num_args)
   }};
-  ($self:ident, $callee:expr, $args:expr) => {{
-    let callee = $callee;
+  ($self:ident, $reserved:expr, $args:expr) => {{
+    let reserved = $reserved;
     let args = $args;
     let stack_base = $self.stack.len();
     let num_args = args.len();
-    $self.stack.push(callee);
+    $self.stack.push(reserved);
     $self.stack.extend_from_slice(args);
     (stack_base, num_args)
   }};

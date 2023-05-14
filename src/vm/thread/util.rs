@@ -32,21 +32,28 @@ pub fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
   std::mem::ManuallyDrop::into_inner(value.clone())
 }
 
-pub fn check_args(params: &Params, n: usize) -> hebi::Result<()> {
-  if !params.matches(n) {
-    let min = params.min as usize;
-    let max = params.max as usize;
-    let msg = if min == max {
+pub fn check_args(
+  params: &Params,
+  has_implicit_receiver: bool,
+  num_args: usize,
+) -> hebi::Result<()> {
+  let has_explicit_self_param = params.has_self && !has_implicit_receiver;
+
+  let min = params.min as usize + has_explicit_self_param as usize;
+  let max = params.max as usize + has_explicit_self_param as usize;
+
+  if min > num_args || num_args > max {
+    if min == max {
       let plural = if min != 1 { "s" } else { "" };
-      format!("expected {min} arg{plural}, got {n}")
-    } else if n < min {
+      hebi::fail!("expected {min} arg{plural}, got {num_args}")
+    } else if num_args < min {
       let plural = if min != 1 { "s" } else { "" };
-      format!("expected at least {min} arg{plural}, got {n}")
+      hebi::fail!("expected at least {min} arg{plural}, got {num_args}")
     } else {
       let plural = if max != 1 { "s" } else { "" };
-      format!("expected at most {max} arg{plural}, got {n}")
+      hebi::fail!("expected at most {max} arg{plural}, got {num_args}")
     };
-    hebi::fail!(msg);
   }
+
   Ok(())
 }

@@ -40,7 +40,7 @@ pub fn emit<'cx, 'src>(
 
   let mut module = State::new(cx, ast, name.clone(), is_root).emit_module();
 
-  let name = cx.alloc(object::String::new(name.to_string().into()));
+  let name = cx.alloc(object::String::owned(name));
   // NOTE: no need to handle `.upvalues` here,
   // because the module root never has any upvalues
   let root = module.functions.pop().unwrap().finish().ptr;
@@ -454,9 +454,7 @@ impl<'cx, 'src> Function<'cx, 'src> {
     }
 
     let ptr = self.cx.alloc(object::FunctionDescriptor::new(
-      self
-        .cx
-        .alloc(object::String::new(self.name.to_string().into())),
+      self.cx.intern(self.name.to_string()),
       self.is_generator,
       self.params,
       self

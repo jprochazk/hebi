@@ -10,6 +10,8 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
+
 use self::util::*;
 use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
@@ -17,7 +19,7 @@ use super::global::Global;
 use crate as hebi;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
-use crate::object::class::{ClassInstance, ClassProxy};
+use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::ModuleId;
 use crate::object::{
@@ -26,7 +28,7 @@ use crate::object::{
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, syntax, Error};
+use crate::{emit, object, syntax, Error};
 
 pub struct Thread {
   cx: Context,
@@ -58,7 +60,7 @@ impl Thread {
 
   pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
     let (stack_base, num_args) = push_args!(self, args);
-    self.prepare_call(f, stack_base, num_args, None)?;
+    self.do_call(f, stack_base, num_args, None)?;
     self.run()?;
     Ok(take(&mut self.acc))
   }
@@ -79,55 +81,127 @@ impl Thread {
     }
   }
 
-  fn prepare_call(
+  fn do_call(
     &mut self,
-    f: Value,
+    value: Value,
     stack_base: usize,
     num_args: usize,
     return_addr: Option<usize>,
-  ) -> hebi::Result<()> {
-    let f = match f.try_to_any() {
+  ) -> hebi::Result<dispatch::Call> {
+    let object = match value.try_to_any() {
       Ok(f) => f,
       Err(f) => hebi::fail!("cannot call value `{f}`"),
     };
 
-    if f.is::<Function>() {
-      let f = unsafe { f.cast_unchecked::<Function>() };
-      self.prepare_call_function(f, stack_base, num_args, return_addr)?;
+    if object.is::<Function>() {
+      let function = unsafe { object.cast_unchecked::<Function>() };
+      self.call_function(function, stack_base, num_args, return_addr)
+    } else if object.is::<ClassMethod>() {
+      let method = unsafe { object.cast_unchecked::<ClassMethod>() };
+      self.call_method(method, stack_base, num_args, return_addr)
+    } else if object.is::<ClassType>() {
+      let class = unsafe { object.cast_unchecked::<ClassType>() };
+      self.init_class(class, stack_base, num_args)
     } else {
-      hebi::fail!("cannot call object `{f}`");
+      hebi::fail!("cannot call object `{object}`")
     }
-
-    Ok(())
   }
 
-  fn prepare_call_function(
+  fn call_function(
     &mut self,
-    f: Ptr<Function>,
+    function: Ptr<Function>,
     stack_base: usize,
     num_args: usize,
     return_addr: Option<usize>,
-  ) -> hebi::Result<()> {
-    check_args(&f.descriptor.params, num_args)?;
+  ) -> hebi::Result<dispatch::Call> {
+    check_args(&function.descriptor.params, false, num_args)?;
 
-    // reset pc
     self.pc = 0;
-
-    // prepare stack
     self.stack_base = stack_base;
-    self.stack.extend(stack_base + f.descriptor.frame_size);
+    self
+      .stack
+      .extend(stack_base + function.descriptor.frame_size);
 
-    // push frame
     self.call_frames.borrow_mut().push(Frame {
-      instructions: f.descriptor.instructions,
-      constants: f.descriptor.constants,
-      upvalues: f.upvalues.clone(),
-      frame_size: f.descriptor.frame_size,
+      instructions: function.descriptor.instructions,
+      constants: function.descriptor.constants,
+      upvalues: function.upvalues.clone(),
+      frame_size: function.descriptor.frame_size,
       return_addr,
-      module_id: f.module_id,
+      module_id: function.module_id,
     });
 
-    Ok(())
+    Ok(
+      dispatch::LoadFrame {
+        bytecode: function.descriptor.instructions,
+        pc: 0,
+      }
+      .into(),
+    )
+  }
+
+  fn call_method(
+    &mut self,
+    method: Ptr<ClassMethod>,
+    stack_base: usize,
+    num_args: usize,
+    return_addr: Option<usize>,
+  ) -> hebi::Result<dispatch::Call> {
+    let function = unsafe { method.function().cast_unchecked::<Function>() };
+    check_args(&function.descriptor.params, true, num_args)?;
+
+    self.pc = 0;
+    self.stack_base = stack_base;
+    self
+      .stack
+      .extend(stack_base + function.descriptor.frame_size);
+    self.set_register(op::Register(0), Value::object(method.this()));
+
+    self.call_frames.borrow_mut().push(Frame {
+      instructions: function.descriptor.instructions,
+      constants: function.descriptor.constants,
+      upvalues: function.upvalues.clone(),
+      frame_size: function.descriptor.frame_size,
+      return_addr,
+      module_id: function.module_id,
+    });
+
+    Ok(
+      dispatch::LoadFrame {
+        bytecode: function.descriptor.instructions,
+        pc: 0,
+      }
+      .into(),
+    )
+  }
+
+  fn init_class(
+    &mut self,
+    class: Ptr<ClassType>,
+    stack_base: usize,
+    num_args: usize,
+  ) -> hebi::Result<dispatch::Call> {
+    let instance = self.cx.alloc(ClassInstance::new(&self.cx, &class));
+
+    if let Some(init) = class.init.as_ref() {
+      check_args(&init.descriptor.params, true, num_args)?;
+
+      // args are already on the stack (pushed by `op_call`)
+      let method = self.cx.alloc(ClassMethod::new(
+        instance.clone().into_any(),
+        init.clone().into_any(),
+      ));
+      self.call_method(method, stack_base, num_args, None)?;
+      self.run()?;
+    } else if num_args > 0 {
+      hebi::fail!("expected at most 0 args");
+    }
+
+    instance.is_frozen.set(true);
+
+    self.acc = Value::object(instance);
+
+    Ok(dispatch::Call::Continue)
   }
 
   fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {
@@ -162,17 +236,22 @@ impl Thread {
     parent: Option<Ptr<ClassType>>,
   ) -> Ptr<ClassType> {
     let mut init = None;
-    let fields = fields.unwrap_or_else(|| self.cx.alloc(Table::with_capacity(desc.methods.len())));
+    let fields = fields.unwrap_or_else(|| self.cx.alloc(Table::new()));
+    let mut methods = IndexMap::with_capacity(desc.methods.len());
     for (key, desc) in desc.methods.iter() {
       let method = self.make_fn(desc.clone());
       if key == &"init" {
         init = Some(method.clone());
       }
-      fields.insert(key.clone(), Value::object(method));
+      methods.insert(key.clone(), method);
     }
-    self
-      .cx
-      .alloc(ClassType::new(desc.name.clone(), init, fields, parent))
+    self.cx.alloc(ClassType::new(
+      desc.name.clone(),
+      init,
+      fields,
+      methods,
+      parent,
+    ))
   }
 
   fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
@@ -393,10 +472,11 @@ impl Handler for Thread {
 
   fn op_load_field(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
-    let value = take(&mut self.acc);
+    let receiver = take(&mut self.acc);
+    println!("{receiver:?}");
 
-    let value = if let Some(object) = value.to_any() {
-      match object.named_field(&self.cx, name.as_str())? {
+    let value = if let Some(object) = receiver.clone().to_any() {
+      match object.named_field(&self.cx, name.clone())? {
         Some(value) => value,
         None => hebi::fail!("failed to get field `{name}` on value `{object}`"),
       }
@@ -405,6 +485,13 @@ impl Handler for Thread {
       todo!()
     };
 
+    if let (Some(object), Some(value)) = (receiver.to_any(), value.clone().to_any()) {
+      if object::is_class(&object) && object::is_callable(&value) {
+        self.acc = Value::object(self.cx.alloc(ClassMethod::new(object, value)));
+        return Ok(());
+      }
+    }
+
     self.acc = value;
 
     Ok(())
@@ -412,15 +499,15 @@ impl Handler for Thread {
 
   fn op_load_field_opt(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
-    let value = take(&mut self.acc);
+    let receiver = take(&mut self.acc);
 
-    if value.is_none() {
+    if receiver.is_none() {
       self.acc = Value::none();
       return Ok(());
     }
 
-    let value = if let Some(object) = value.to_any() {
-      match object.named_field(&self.cx, name.as_str())? {
+    let value = if let Some(object) = receiver.clone().to_any() {
+      match object.named_field(&self.cx, name)? {
         Some(value) => value,
         None => Value::none(),
       }
@@ -428,6 +515,13 @@ impl Handler for Thread {
       // TODO: fields on primitives
       todo!()
     };
+
+    if let (Some(object), Some(value)) = (receiver.to_any(), value.clone().to_any()) {
+      if object::is_class(&object) && object::is_callable(&value) {
+        self.acc = Value::object(self.cx.alloc(ClassMethod::new(object, value)));
+        return Ok(());
+      }
+    }
 
     self.acc = value;
 
@@ -440,7 +534,7 @@ impl Handler for Thread {
     let value = take(&mut self.acc);
 
     if let Some(object) = object.to_any() {
-      object.set_named_field(&self.cx, name.as_str(), value)?;
+      object.set_named_field(&self.cx, name, value)?;
     } else {
       // TODO: fields on primitives
       todo!()
@@ -508,7 +602,14 @@ impl Handler for Thread {
   }
 
   fn op_load_self(&mut self) -> hebi::Result<()> {
-    self.acc = self.get_register(op::Register(0));
+    let this = self.get_register(op::Register(0));
+
+    let this = match this.try_to_object::<ClassProxy>() {
+      Ok(proxy) => Value::object(proxy.this.clone()),
+      Err(value) => value,
+    };
+
+    self.acc = this;
     Ok(())
   }
 
@@ -590,7 +691,8 @@ impl Handler for Thread {
     let Some(parent) = parent.clone().to_object::<ClassType>() else {
       hebi::fail!("{parent} is not a class");
     };
-    let class = self.make_class(desc, None, Some(parent));
+    let fields = self.cx.alloc(parent.fields.deref().clone());
+    let class = self.make_class(desc, Some(fields), Some(parent));
 
     self.acc = Value::object(class);
 
@@ -600,23 +702,16 @@ impl Handler for Thread {
   fn op_make_data_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
 
-    let fields = Table::with_capacity(desc.fields.len());
-    for offset in 0..desc.fields.len() * 2 {
-      let key = self.get_register(parts.offset(offset));
-      let value = self.get_register(parts.offset(offset + 1));
-
-      let Some(key) = key.clone().to_object::<String>() else {
-        hebi::fail!("`{key}` is not a string");
-      };
-
+    let fields = self.cx.alloc(Table::with_capacity(desc.fields.len()));
+    for (offset, key) in desc.fields.keys().enumerate() {
+      let value = self.get_register(parts.offset(offset));
       fields.insert(key, value);
     }
-    let fields = self.cx.alloc(fields);
     let class = self.make_class(desc, Some(fields), None);
 
     self.acc = Value::object(class);
 
-    todo!()
+    Ok(())
   }
 
   fn op_make_data_class_derived(
@@ -625,24 +720,17 @@ impl Handler for Thread {
     parts: op::Register,
   ) -> hebi::Result<()> {
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
-    let parent = take(&mut self.acc);
+    let parent = self.get_register(parts);
 
     let Some(parent) = parent.clone().to_object::<ClassType>() else {
       hebi::fail!("{parent} is not a class");
     };
 
-    let fields = Table::with_capacity(desc.fields.len());
-    for offset in 0..desc.fields.len() * 2 {
-      let key = self.get_register(parts.offset(offset));
-      let value = self.get_register(parts.offset(offset + 1));
-
-      let Some(key) = key.clone().to_object::<String>() else {
-        hebi::fail!("`{key}` is not a string");
-      };
-
+    let fields = self.cx.alloc(parent.fields.deref().clone());
+    for (offset, key) in desc.fields.keys().enumerate() {
+      let value = self.get_register(parts.offset(1 + offset));
       fields.insert(key, value);
     }
-    let fields = self.cx.alloc(fields);
     let class = self.make_class(desc, Some(fields), Some(parent));
 
     self.acc = Value::object(class);
@@ -812,25 +900,17 @@ impl Handler for Thread {
     return_addr: usize,
     callee: op::Register,
     args: op::Count,
-  ) -> hebi::Result<dispatch::LoadFrame> {
+  ) -> hebi::Result<dispatch::Call> {
     let f = self.get_register(callee);
     let start = self.stack_base + callee.index() + 1;
     let (stack_base, num_args) = push_args!(self, f.clone(), range(start, start + args.value()));
-    self.prepare_call(f, stack_base, num_args, Some(return_addr))?;
-    Ok(dispatch::LoadFrame {
-      bytecode: current_call_frame!(self).instructions,
-      pc: self.pc,
-    })
+    self.do_call(f, stack_base, num_args, Some(return_addr))
   }
 
-  fn op_call0(&mut self, return_addr: usize) -> hebi::Result<dispatch::LoadFrame> {
+  fn op_call0(&mut self, return_addr: usize) -> hebi::Result<dispatch::Call> {
     let f = take(&mut self.acc);
     let stack_base = self.stack.len();
-    self.prepare_call(f, stack_base, 0, Some(return_addr))?;
-    Ok(dispatch::LoadFrame {
-      bytecode: current_call_frame!(self).instructions,
-      pc: self.pc,
-    })
+    self.do_call(f, stack_base, 0, Some(return_addr))
   }
 
   fn op_import(&mut self, path: op::Constant, dst: op::Register) -> hebi::Result<()> {

@@ -12,8 +12,16 @@ pub struct String {
 }
 
 impl String {
-  pub fn new(data: Cow<'static, str>) -> Self {
-    Self { data }
+  pub fn borrowed(data: &'static str) -> Self {
+    Self {
+      data: Cow::borrowed(data),
+    }
+  }
+
+  pub fn owned(data: impl ToString) -> Self {
+    Self {
+      data: Cow::owned(data.to_string()),
+    }
   }
 
   pub fn as_str(&self) -> &str {

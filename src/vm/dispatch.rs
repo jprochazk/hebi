@@ -330,20 +330,26 @@ pub fn dispatch<T: Handler>(
           #[allow(unused_assignments)]
           let (callee, args) = read_operands!(Call, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
-          let new_frame = handler.op_call(return_addr, callee, args)?;
-          bytecode = new_frame.bytecode;
-          pc = new_frame.pc;
-          continue 'load_frame;
+          let result = handler.op_call(return_addr, callee, args)?;
+          if let Call::LoadFrame(new_frame) = result {
+            bytecode = new_frame.bytecode;
+            pc = new_frame.pc;
+            continue 'load_frame;
+          };
+          continue;
         }
         Opcode::Call0 => {
           // frame is reloaded so neither `ip` nor `width` are read
           #[allow(unused_assignments)]
           let () = read_operands!(Call0, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
-          let new_frame = handler.op_call0(return_addr)?;
-          bytecode = new_frame.bytecode;
-          pc = new_frame.pc;
-          continue 'load_frame;
+          let result = handler.op_call0(return_addr)?;
+          if let Call::LoadFrame(new_frame) = result {
+            bytecode = new_frame.bytecode;
+            pc = new_frame.pc;
+            continue 'load_frame;
+          };
+          continue;
         }
         Opcode::Import => {
           let (path, dst) = read_operands!(Import, ip, end, width);
@@ -391,9 +397,26 @@ pub struct LoadFrame {
   pub pc: usize,
 }
 
+pub enum Call {
+  LoadFrame(LoadFrame),
+  Continue,
+}
+
+impl From<LoadFrame> for Call {
+  fn from(value: LoadFrame) -> Self {
+    Self::LoadFrame(value)
+  }
+}
+
 pub enum Return {
   LoadFrame(LoadFrame),
   Yield,
+}
+
+impl From<LoadFrame> for Return {
+  fn from(value: LoadFrame) -> Self {
+    Self::LoadFrame(value)
+  }
 }
 
 pub trait Handler {
@@ -466,8 +489,8 @@ pub trait Handler {
     return_addr: usize,
     callee: op::Register,
     args: op::Count,
-  ) -> Result<LoadFrame, Self::Error>;
-  fn op_call0(&mut self, return_addr: usize) -> Result<LoadFrame, Self::Error>;
+  ) -> Result<Call, Self::Error>;
+  fn op_call0(&mut self, return_addr: usize) -> Result<Call, Self::Error>;
   fn op_import(&mut self, path: op::Constant, dst: op::Register) -> Result<(), Self::Error>;
   fn op_return(&mut self) -> Result<Return, Self::Error>;
   fn op_yield(&mut self) -> Result<(), Self::Error>;

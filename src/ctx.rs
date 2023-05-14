@@ -26,7 +26,7 @@ impl Context {
       return s.clone();
     }
 
-    let v = self.alloc(String::new(s.clone()));
+    let v = self.alloc(String::owned(s.clone()));
     self.inner.borrow_mut().string_table.insert(s, v.clone());
     v
   }

@@ -131,8 +131,8 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(&self, _: &Context, name: &str) -> hebi::Result<Option<Value>> {
-    Ok(self.module_vars.get(name))
+  fn named_field(&self, _: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+    Ok(self.module_vars.get(&name))
   }
 }
 

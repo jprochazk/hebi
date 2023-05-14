@@ -243,8 +243,445 @@ check! {
 }
 
 check! {
-  empty_class,
+  simple_class,
   r#"
     class T: pass
+    T
+  "#
+}
+
+check! {
+  simple_class_derived,
+  r#"
+    class T: pass
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  class_with_method,
+  r#"
+    class T:
+      fn test(self): pass
+    T
+  "#
+}
+
+check! {
+  class_with_multiple_methods,
+  r#"
+    class T:
+      fn test_0(self): pass
+      fn test_1(self): pass
+    T
+  "#
+}
+
+check! {
+  class_derived_with_method,
+  r#"
+    class T:
+      pass
+    class U(T):
+      fn test(self): pass
+    U
+  "#
+}
+
+check! {
+  class_derived_with_multiple_methods,
+  r#"
+    class T: pass
+    class U(T):
+      fn test_0(self): pass
+      fn test_1(self): pass
+    U
+  "#
+}
+
+check! {
+  class_derived_with_parent_method,
+  r#"
+    class T:
+      fn test(self): pass
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  class_derived_with_parent_multiple_methods,
+  r#"
+    class T:
+      fn test_0(self): pass
+      fn test_1(self): pass
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  simple_data_class,
+  r#"
+    class T:
+      v = 0
+    T
+  "#
+}
+
+check! {
+  simple_data_class_derived,
+  r#"
+    class T: pass
+    class U(T):
+      v = 0
+    U
+  "#
+}
+
+check! {
+  simple_data_class_derived_with_parent_field,
+  r#"
+    class T:
+      v = 0
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  data_class_with_method,
+  r#"
+    class T:
+      v = 0
+      fn test(self): pass
+    T
+  "#
+}
+
+check! {
+  data_class_with_multiple_methods,
+  r#"
+    class T:
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    T
+  "#
+}
+
+check! {
+  data_class_derived_with_method,
+  r#"
+    class T:
+      pass
+    class U(T):
+      v = 0
+      fn test(self): pass
+    U
+  "#
+}
+
+check! {
+  data_class_derived_with_multiple_methods,
+  r#"
+    class T: pass
+    class U(T):
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    U
+  "#
+}
+
+check! {
+  data_class_derived_with_parent_method,
+  r#"
+    class T:
+      v = 0
+      fn test(self): pass
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  data_class_derived_with_parent_multiple_methods,
+  r#"
+    class T:
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    class U(T): pass
+    U
+  "#
+}
+
+check! {
+  init_simple_class,
+  r#"
+    class T: pass
+    T()
+  "#
+}
+
+check! {
+  init_simple_class_derived,
+  r#"
+    class T: pass
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  init_class_with_method,
+  r#"
+    class T:
+      fn test(self): pass
+    T()
+  "#
+}
+
+check! {
+  init_class_with_multiple_methods,
+  r#"
+    class T:
+      fn test_0(self): pass
+      fn test_1(self): pass
+    T()
+  "#
+}
+
+check! {
+  init_class_derived_with_method,
+  r#"
+    class T:
+      pass
+    class U(T):
+      fn test(self): pass
+    U()
+  "#
+}
+
+check! {
+  init_class_derived_with_multiple_methods,
+  r#"
+    class T: pass
+    class U(T):
+      fn test_0(self): pass
+      fn test_1(self): pass
+    U()
+  "#
+}
+
+check! {
+  init_class_derived_with_parent_method,
+  r#"
+    class T:
+      fn test(self): pass
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  init_class_derived_with_parent_multiple_methods,
+  r#"
+    class T:
+      fn test_0(self): pass
+      fn test_1(self): pass
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  init_simple_data_class,
+  r#"
+    class T:
+      v = 0
+    T()
+  "#
+}
+
+check! {
+  init_simple_data_class_derived,
+  r#"
+    class T: pass
+    class U(T):
+      v = 0
+    U()
+  "#
+}
+
+check! {
+  init_simple_data_class_derived_with_parent_field,
+  r#"
+    class T:
+      v = 0
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  init_data_class_with_method,
+  r#"
+    class T:
+      v = 0
+      fn test(self): pass
+    T()
+  "#
+}
+
+check! {
+  init_data_class_with_multiple_methods,
+  r#"
+    class T:
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    T()
+  "#
+}
+
+check! {
+  init_data_class_derived_with_method,
+  r#"
+    class T:
+      pass
+    class U(T):
+      v = 0
+      fn test(self): pass
+    U()
+  "#
+}
+
+check! {
+  init_data_class_derived_with_multiple_methods,
+  r#"
+    class T: pass
+    class U(T):
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    U()
+  "#
+}
+
+check! {
+  init_data_class_derived_with_parent_method,
+  r#"
+    class T:
+      v = 0
+      fn test(self): pass
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  init_data_class_derived_with_parent_multiple_methods,
+  r#"
+    class T:
+      v = 0
+      fn test_0(self): pass
+      fn test_1(self): pass
+    class U(T): pass
+    U()
+  "#
+}
+
+check! {
+  class_with_init,
+  r#"
+    class T:
+      fn init(self):
+        self.v = 10
+    T().v
+  "#
+}
+
+check! {
+  class_with_init_conditional_false,
+  r#"
+    class T:
+      fn init(self, v, set):
+        if set:
+          self.v = v
+    ?T(10, false).v
+  "#
+}
+
+check! {
+  class_with_init_conditional_true,
+  r#"
+    class T:
+      fn init(self, v, set):
+        if set:
+          self.v = v
+    ?T(10, true).v
+  "#
+}
+
+check! {
+  get_class_method,
+  r#"
+    class T:
+      fn test(self):
+        pass
+    T().test
+  "#
+}
+
+check! {
+  get_class_field,
+  r#"
+    class T:
+      v = 10
+    T().v
+  "#
+}
+
+check! {
+  call_class_method,
+  r#"
+    class T:
+      v = 10
+      fn test(self):
+        return self.v
+    T().test()
+  "#
+}
+
+check! {
+  call_class_method2,
+  r#"
+    class T:
+      v = 10
+      fn set(self, v):
+        self.v = v
+      fn get(self):
+        return self.v
+
+    t := T()
+    t.set(20)
+    t.get()
+  "#
+}
+
+check! {
+  call_class_method_derived,
+  r#"
+    class T:
+      v = 0
+      fn test(self):
+        return self.v
+    class U(T):
+      fn test(self):
+        return super.test()
+    U().test()
   "#
 }

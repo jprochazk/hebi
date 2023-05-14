@@ -29,12 +29,12 @@ pub type Any = Ptr<ptr::Any>;
 pub trait Object: DynAny + Debug + Display {
   fn type_name(&self) -> &'static str;
 
-  fn named_field(&self, cx: &Context, name: &str) -> hebi::Result<Option<Value>> {
+  fn named_field(&self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
     let _ = cx;
     Err(SpannedError::new(format!("cannot get field `{name}`"), None).into())
   }
 
-  fn set_named_field(&self, cx: &Context, name: &str, value: Value) -> hebi::Result<()> {
+  fn set_named_field(&self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()> {
     let _ = cx;
     let _ = value;
     Err(SpannedError::new(format!("cannot set field `{name}`"), None).into())
@@ -94,4 +94,12 @@ pub trait Object: DynAny + Debug + Display {
   fn type_eq(&self, cx: &Context, other: Value) -> hebi::Result<bool> {
     todo!()
   }
+}
+
+pub fn is_callable(v: &Any) -> bool {
+  v.is::<function::Function>() || v.is::<class::ClassMethod>()
+}
+
+pub fn is_class(v: &Any) -> bool {
+  v.is::<class::ClassInstance>() || v.is::<class::ClassProxy>()
 }

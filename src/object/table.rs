@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
@@ -40,6 +40,15 @@ impl Table {
     self.data.borrow().get(key).cloned()
   }
 
+  pub fn set<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K, value: Value) -> bool {
+    if let Some(slot) = self.data.borrow_mut().get_mut(key) {
+      *slot = value;
+      true
+    } else {
+      false
+    }
+  }
+
   pub fn get_index(&self, index: usize) -> Option<Value> {
     self
       .data
@@ -56,6 +65,38 @@ impl Table {
         true
       }
       None => false,
+    }
+  }
+
+  pub fn keys(&self) -> Keys<'_> {
+    Keys {
+      table: self,
+      index: 0,
+    }
+  }
+}
+
+pub struct Keys<'a> {
+  table: &'a Table,
+  index: usize,
+}
+
+impl<'a> Iterator for Keys<'a> {
+  type Item = Ptr<String>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    match self
+      .table
+      .data
+      .borrow()
+      .get_index(self.index)
+      .map(|(key, _)| key.clone())
+    {
+      Some(key) => {
+        self.index += 1;
+        Some(key)
+      }
+      None => None,
     }
   }
 }
