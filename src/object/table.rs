@@ -68,9 +68,9 @@ impl Display for Table {
 
 impl Debug for Table {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let mut s = f.debug_struct("Table");
+    let mut s = f.debug_map();
     for (key, value) in self.data.borrow().iter() {
-      s.field(key, value);
+      s.entry(key, value);
     }
     s.finish()
   }
