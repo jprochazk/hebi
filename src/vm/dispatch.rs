@@ -151,24 +151,24 @@ pub fn dispatch<T: Handler>(
           handler.op_make_fn(desc)?;
           continue;
         }
-        Opcode::MakeClassEmpty => {
-          let (desc,) = read_operands!(MakeClassEmpty, ip, end, width);
-          handler.op_make_class_empty(desc)?;
-          continue;
-        }
-        Opcode::MakeClassEmptyDerived => {
-          let (desc,) = read_operands!(MakeClassEmptyDerived, ip, end, width);
-          handler.op_make_class_empty_derived(desc)?;
-          continue;
-        }
         Opcode::MakeClass => {
-          let (desc, parts) = read_operands!(MakeClass, ip, end, width);
-          handler.op_make_class(desc, parts)?;
+          let (desc,) = read_operands!(MakeClass, ip, end, width);
+          handler.op_make_class(desc)?;
           continue;
         }
         Opcode::MakeClassDerived => {
-          let (desc, parts) = read_operands!(MakeClassDerived, ip, end, width);
-          handler.op_make_class_derived(desc, parts)?;
+          let (desc,) = read_operands!(MakeClassDerived, ip, end, width);
+          handler.op_make_class_derived(desc)?;
+          continue;
+        }
+        Opcode::MakeDataClass => {
+          let (desc, parts) = read_operands!(MakeDataClass, ip, end, width);
+          handler.op_make_data_class(desc, parts)?;
+          continue;
+        }
+        Opcode::MakeDataClassDerived => {
+          let (desc, parts) = read_operands!(MakeDataClassDerived, ip, end, width);
+          handler.op_make_data_class_derived(desc, parts)?;
           continue;
         }
         Opcode::MakeList => {
@@ -421,10 +421,14 @@ pub trait Handler {
   fn op_load_false(&mut self) -> Result<(), Self::Error>;
   fn op_load_smi(&mut self, smi: op::Smi) -> Result<(), Self::Error>;
   fn op_make_fn(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
-  fn op_make_class_empty(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
-  fn op_make_class_empty_derived(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
-  fn op_make_class(&mut self, desc: op::Constant, parts: op::Register) -> Result<(), Self::Error>;
-  fn op_make_class_derived(
+  fn op_make_class(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
+  fn op_make_class_derived(&mut self, desc: op::Constant) -> Result<(), Self::Error>;
+  fn op_make_data_class(
+    &mut self,
+    desc: op::Constant,
+    parts: op::Register,
+  ) -> Result<(), Self::Error>;
+  fn op_make_data_class_derived(
     &mut self,
     desc: op::Constant,
     parts: op::Register,

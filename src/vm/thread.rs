@@ -220,8 +220,7 @@ impl Thread {
       self.stack_base + reg.index() < self.stack.len(),
       "register out of bounds {reg:?}"
     );
-    let value = unsafe { self.stack.get_unchecked(self.stack_base + reg.index()) };
-    value.clone()
+    unsafe { self.stack.get_unchecked(self.stack_base + reg.index()) }
   }
 
   fn set_register(&mut self, reg: op::Register, value: Value) {
@@ -547,19 +546,23 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_make_class_empty(&mut self, desc: op::Constant) -> hebi::Result<()> {
+  fn op_make_class(&mut self, desc: op::Constant) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class_empty_derived(&mut self, desc: op::Constant) -> hebi::Result<()> {
+  fn op_make_class_derived(&mut self, desc: op::Constant) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
+  fn op_make_data_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
     todo!()
   }
 
-  fn op_make_class_derived(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
+  fn op_make_data_class_derived(
+    &mut self,
+    desc: op::Constant,
+    parts: op::Register,
+  ) -> hebi::Result<()> {
     todo!()
   }
 

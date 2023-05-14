@@ -321,9 +321,9 @@ impl<'cx, 'src> State<'cx, 'src> {
         self.emit_get(parent.lexeme(), parent.span);
         self
           .builder()
-          .emit(MakeClassEmptyDerived { desc }, stmt.name.span);
+          .emit(MakeClassDerived { desc }, stmt.name.span);
       } else {
-        self.builder().emit(MakeClassEmpty { desc }, stmt.name.span);
+        self.builder().emit(MakeClass { desc }, stmt.name.span);
       }
     } else {
       let (parts, offset) = match stmt.parent.as_ref() {
@@ -341,14 +341,14 @@ impl<'cx, 'src> State<'cx, 'src> {
       }
       match stmt.parent.as_ref() {
         Some(_) => self.builder().emit(
-          MakeClassDerived {
+          MakeDataClassDerived {
             desc,
             parts: parts.access(0),
           },
           stmt.name.span,
         ),
         None => self.builder().emit(
-          MakeClass {
+          MakeDataClass {
             desc,
             parts: parts.access(0),
           },
