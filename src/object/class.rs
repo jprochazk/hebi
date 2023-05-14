@@ -45,7 +45,7 @@ impl Object for ClassProxy {
 
 #[derive(Debug)]
 pub struct ClassType {
-  pub descriptor: Ptr<ClassDescriptor>,
+  pub name: Ptr<String>,
   pub init: Option<Ptr<Function>>,
   pub fields: Ptr<Table>,
   pub parent: Option<Ptr<ClassType>>,
@@ -53,13 +53,13 @@ pub struct ClassType {
 
 impl ClassType {
   pub fn new(
-    descriptor: Ptr<ClassDescriptor>,
+    name: Ptr<String>,
     init: Option<Ptr<Function>>,
     fields: Ptr<Table>,
     parent: Option<Ptr<ClassType>>,
   ) -> Self {
     Self {
-      descriptor,
+      name,
       init,
       fields,
       parent,
@@ -69,7 +69,7 @@ impl ClassType {
 
 impl Display for ClassType {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<class `{}`>", self.descriptor.name)
+    write!(f, "<class `{}`>", self.name)
   }
 }
 

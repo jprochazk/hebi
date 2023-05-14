@@ -170,7 +170,9 @@ impl Thread {
       }
       fields.insert(key.clone(), Value::object(method));
     }
-    self.cx.alloc(ClassType::new(desc, init, fields, parent))
+    self
+      .cx
+      .alloc(ClassType::new(desc.name.clone(), init, fields, parent))
   }
 
   fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
