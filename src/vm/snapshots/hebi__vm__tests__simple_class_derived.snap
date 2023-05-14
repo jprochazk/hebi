@@ -1,0 +1,23 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Object(
+        ClassType {
+            name: "U",
+            init: None,
+            fields: {},
+            methods: {},
+            parent: Some(
+                ClassType {
+                    name: "T",
+                    init: None,
+                    fields: {},
+                    methods: {},
+                    parent: None,
+                },
+            ),
+        },
+    ),
+)

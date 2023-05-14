@@ -1,0 +1,7 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    None,
+)

@@ -1,0 +1,32 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Object(
+        ClassInstance {
+            name: "U",
+            fields: {
+                "v": Int(
+                    0,
+                ),
+            },
+            parent: Some(
+                ClassType {
+                    name: "T",
+                    init: None,
+                    fields: {
+                        "v": Int(
+                            0,
+                        ),
+                    },
+                    methods: {},
+                    parent: None,
+                },
+            ),
+            is_frozen: Cell {
+                value: true,
+            },
+        },
+    ),
+)
