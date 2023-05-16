@@ -3,10 +3,12 @@ use std::num::NonZeroU64;
 
 use indexmap::{IndexMap, IndexSet};
 
+use super::native::NativeFunction;
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate as hebi;
 use crate::ctx::Context;
+use crate::module::NativeModule;
 use crate::value::Value;
 
 pub trait Loader {
@@ -97,12 +99,18 @@ impl Default for Registry {
 pub struct Module {
   pub module_id: ModuleId,
   pub name: Ptr<String>,
-  pub root: Ptr<Function>,
   pub module_vars: Ptr<Table>,
+  pub kind: ModuleKind,
+}
+
+#[derive(Debug)]
+pub enum ModuleKind {
+  Script { root: Ptr<Function> },
+  Native,
 }
 
 impl Module {
-  pub fn new(
+  pub fn script(
     cx: &Context,
     name: Ptr<String>,
     root: Ptr<Function>,
@@ -120,8 +128,31 @@ impl Module {
     Self {
       module_id,
       name,
-      root,
       module_vars,
+      kind: ModuleKind::Script { root },
+    }
+  }
+
+  pub fn native(
+    cx: &Context,
+    name: Ptr<String>,
+    module: &NativeModule,
+    module_id: ModuleId,
+  ) -> Self {
+    let module_vars = cx.alloc(Table::with_capacity(module.data.fns.len()));
+    for (name, f) in module.data.fns.iter() {
+      let name = cx.alloc(String::owned(name.clone()));
+      module_vars.insert(
+        name.clone(),
+        Value::object(cx.alloc(NativeFunction { name, cb: *f })),
+      );
+    }
+
+    Self {
+      module_id,
+      name,
+      module_vars,
+      kind: ModuleKind::Native,
     }
   }
 }

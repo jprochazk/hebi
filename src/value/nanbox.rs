@@ -1,3 +1,5 @@
+#![allow(clippy::wrong_self_convention)]
+
 use std::marker::PhantomData;
 use std::mem;
 
@@ -213,6 +215,7 @@ impl Value {
     Some(())
   }
 
+  /*
   /// # Safety
   /// - `self.is_none()` must be `true`
   #[allow(clippy::unused_unit)]
@@ -220,6 +223,7 @@ impl Value {
     debug_assert!(self.is_none(), "value is not none");
     ()
   }
+  */
 
   pub fn to_object<T: Object>(self) -> Option<Ptr<T>> {
     self.try_to_object().ok()

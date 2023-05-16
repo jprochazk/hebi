@@ -1,6 +1,5 @@
 use std::cell::Cell;
 use std::fmt::Display;
-use std::ops::Deref;
 
 use indexmap::IndexMap;
 
@@ -22,7 +21,7 @@ pub struct ClassInstance {
 impl ClassInstance {
   pub fn new(cx: &Context, type_: &ClassType) -> Self {
     let name = type_.name.clone();
-    let fields = cx.alloc(type_.fields.deref().clone());
+    let fields = cx.alloc(type_.fields.copy());
     for (key, method) in type_.methods.iter() {
       fields.insert(key.clone(), Value::object(method.clone()));
     }

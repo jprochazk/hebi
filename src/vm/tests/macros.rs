@@ -4,7 +4,7 @@ macro_rules! check {
     #[allow(non_snake_case)]
     fn $name() {
       let input = indoc::indoc!($input);
-      let hebi = Hebi::new();
+      let mut hebi = crate::vm::Vm::new();
       let snapshot = format!("{:#?}", hebi.eval(input));
       assert_snapshot!(snapshot);
     }
@@ -14,8 +14,8 @@ macro_rules! check {
     #[allow(non_snake_case)]
     fn $name() {
       let input = indoc::indoc!($input);
-      let hebi = Hebi::new();
-      hebi.set_module_loader(
+      let mut hebi = crate::vm::Vm::new();
+      hebi.root.global.set_module_loader(
         TestModuleLoader::new(&[$(
           (stringify!($module), indoc::indoc!($code))
         ),*])

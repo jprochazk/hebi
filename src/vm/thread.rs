@@ -3,39 +3,37 @@ mod macros;
 
 mod util;
 
-use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::mem::take;
-use std::ops::Deref;
 use std::ptr::NonNull;
-use std::rc::Rc;
 
 use indexmap::IndexMap;
 
 use self::util::*;
+use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
-use super::{dispatch, Args};
 use crate as hebi;
 use crate::bytecode::opcode as op;
 use crate::ctx::Context;
 use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
-use crate::object::module::ModuleId;
+use crate::object::module::{ModuleId, ModuleKind};
+use crate::object::native::NativeFunction;
 use crate::object::{
   ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
   Table,
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, object, syntax, Error};
+use crate::{emit, object, syntax, Error, Scope};
 
 pub struct Thread {
-  cx: Context,
-  global: Global,
-  call_frames: Rc<RefCell<Vec<Frame>>>,
-  stack: Ptr<List>,
-  stack_base: usize,
+  pub(crate) cx: Context,
+  pub(crate) global: Global,
+  pub(crate) call_frames: Vec<Frame>,
+  pub(crate) stack: Vec<Value>,
+  pub(crate) stack_base: usize,
   acc: Value,
   pc: usize,
 }
@@ -43,11 +41,11 @@ pub struct Thread {
 impl Thread {
   pub fn new(cx: Context, global: Global) -> Self {
     Thread {
-      cx: cx.clone(),
+      cx,
       global,
 
-      call_frames: Rc::new(RefCell::new(Vec::new())),
-      stack: cx.alloc(List::with_capacity(128)),
+      call_frames: Vec::new(),
+      stack: Vec::with_capacity(128),
       stack_base: 0,
       acc: Value::none(),
       pc: 0,
@@ -118,6 +116,9 @@ impl Thread {
     } else if object.is::<ClassType>() {
       let class = unsafe { object.cast_unchecked::<ClassType>() };
       self.init_class(class, args)
+    } else if object.is::<NativeFunction>() {
+      let function = unsafe { object.cast_unchecked::<NativeFunction>() };
+      self.call_native_function(function, args)
     } else {
       hebi::fail!("cannot call object `{object}`")
     }
@@ -147,9 +148,9 @@ impl Thread {
       .extend_from_within(args.start..args.start + args.count);
     self
       .stack
-      .extend(function.descriptor.frame_size - args.count);
+      .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
 
-    self.call_frames.borrow_mut().push(Frame {
+    self.call_frames.push(Frame {
       instructions: function.descriptor.instructions,
       constants: function.descriptor.constants,
       upvalues: function.upvalues.clone(),
@@ -185,9 +186,9 @@ impl Thread {
       .extend_from_within(args.start..args.start + args.count);
     self
       .stack
-      .extend(function.descriptor.frame_size - args.count);
+      .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
 
-    self.call_frames.borrow_mut().push(Frame {
+    self.call_frames.push(Frame {
       instructions: function.descriptor.instructions,
       constants: function.descriptor.constants,
       upvalues: function.upvalues.clone(),
@@ -225,6 +226,15 @@ impl Thread {
 
     self.acc = Value::object(instance);
 
+    Ok(dispatch::Call::Continue)
+  }
+
+  fn call_native_function(
+    &mut self,
+    function: Ptr<NativeFunction>,
+    args: Args,
+  ) -> hebi::Result<dispatch::Call> {
+    self.acc = function.call(Scope { thread: self, args })?;
     Ok(dispatch::Call::Continue)
   }
 
@@ -299,7 +309,7 @@ impl Thread {
       self.cx.alloc(List::new()),
       module_id,
     ));
-    let module = self.cx.alloc(Module::new(
+    let module = self.cx.alloc(Module::script(
       &self.cx,
       path.clone(),
       main,
@@ -312,7 +322,11 @@ impl Thread {
       .insert(module_id, path, module.clone());
     self.global.module_visited_set_mut().insert(module_id);
 
-    let result = match self.call(Value::object(module.root.clone()), &[]) {
+    let ModuleKind::Script { root } = &module.kind else {
+      hebi::fail!("expected module kind to be `script`");
+    };
+
+    let result = match self.call(Value::object(root.clone()), &[]) {
       Ok(_) => Ok(module),
       Err(e) => {
         self.global.module_registry_mut().remove(module_id);
@@ -322,6 +336,12 @@ impl Thread {
     self.global.module_visited_set_mut().remove(&module_id);
     result
   }
+}
+
+#[derive(Clone, Copy)]
+pub struct Args {
+  pub start: usize,
+  pub count: usize,
 }
 
 impl Display for Thread {
@@ -346,7 +366,7 @@ impl Object for Thread {
   }
 }
 
-struct Frame {
+pub(crate) struct Frame {
   instructions: NonNull<[u8]>,
   constants: NonNull<[Constant]>,
   upvalues: Ptr<List>,
@@ -371,7 +391,12 @@ impl Thread {
       self.stack_base + reg.index() < self.stack.len(),
       "register out of bounds {reg:?}"
     );
-    unsafe { self.stack.get_unchecked(self.stack_base + reg.index()) }
+    unsafe {
+      self
+        .stack
+        .get_unchecked(self.stack_base + reg.index())
+        .clone()
+    }
   }
 
   fn set_register(&mut self, reg: op::Register, value: Value) {
@@ -380,9 +405,8 @@ impl Thread {
       "register out of bounds {reg:?}"
     );
     unsafe {
-      self
-        .stack
-        .set_unchecked(self.stack_base + reg.index(), value)
+      let slot = self.stack.get_unchecked_mut(self.stack_base + reg.index());
+      *slot = value;
     };
   }
 }
@@ -714,7 +738,7 @@ impl Handler for Thread {
     let Some(parent) = parent.clone().to_object::<ClassType>() else {
       hebi::fail!("{parent} is not a class");
     };
-    let fields = self.cx.alloc(parent.fields.deref().clone());
+    let fields = self.cx.alloc(parent.fields.copy());
     let class = self.make_class(desc, Some(fields), Some(parent));
 
     self.acc = Value::object(class);
@@ -749,7 +773,7 @@ impl Handler for Thread {
       hebi::fail!("{parent} is not a class");
     };
 
-    let fields = self.cx.alloc(parent.fields.deref().clone());
+    let fields = self.cx.alloc(parent.fields.copy());
     for (offset, key) in desc.fields.keys().enumerate() {
       let value = self.get_register(parts.offset(1 + offset));
       fields.insert(key, value);
@@ -1103,12 +1127,12 @@ impl Handler for Thread {
     // return value is in the accumulator
 
     // pop frame
-    let frame = self.call_frames.borrow_mut().pop().unwrap();
+    let frame = self.call_frames.pop().unwrap();
 
     // truncate stack
     self.stack.truncate(self.stack.len() - frame.frame_size);
 
-    Ok(match self.call_frames.borrow().last() {
+    Ok(match self.call_frames.last() {
       Some(current_frame) => {
         self.stack_base -= current_frame.frame_size;
         if let Some(return_addr) = frame.return_addr {

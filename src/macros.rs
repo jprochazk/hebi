@@ -1,17 +1,32 @@
 #[macro_export]
-#[doc(hidden)]
-macro_rules! fail {
+macro_rules! error {
   ($fmt:literal $(,$($arg:tt)*)?) => {
-    return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), None).into())
+    $crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), None)
   };
   ($msg:expr) => {
-    return Err($crate::span::SpannedError::new($msg, None).into())
+    $crate::span::SpannedError::new($msg, None)
   };
   (@$span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
-    return Err($crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), $span).into())
+    $crate::span::SpannedError::new(format!($fmt $(, $($arg)*)?), $span)
   };
   (@$span:expr, $msg:expr) => {
-    return Err($crate::span::SpannedError::new($msg, $span).into())
+    $crate::span::SpannedError::new($msg, $span)
+  };
+}
+
+#[macro_export]
+macro_rules! fail {
+  ($fmt:literal $(,$($arg:tt)*)?) => {
+    return Err(error!($fmt $(,$($arg)*)?).into())
+  };
+  ($msg:expr) => {
+    return Err(error!($msg).into())
+  };
+  (@$span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
+    return Err(error!(@$span, $fmt $(, $($arg)*)?).into())
+  };
+  (@$span:expr, $msg:expr) => {
+    return Err(error!(@$span, $msg).into())
   };
 }
 

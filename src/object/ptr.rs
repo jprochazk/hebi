@@ -4,7 +4,6 @@ use std::cell::Cell;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ptr::{self, NonNull, Pointee};
 use std::{alloc, mem};
@@ -35,13 +34,6 @@ pub struct Ptr<T> {
 impl<T> Ptr<T> {
   fn inner(&self) -> &Repr<T> {
     unsafe { self.repr.as_ref() }
-  }
-
-  pub fn into_ref<'cx>(self) -> Ref<'cx, T> {
-    Ref {
-      ptr: self,
-      lifetime: PhantomData,
-    }
   }
 
   pub(crate) fn refs(&self) -> u64 {
@@ -211,19 +203,6 @@ impl Context {
     Ptr {
       repr: unsafe { NonNull::new_unchecked(Box::into_raw(object)) },
     }
-  }
-}
-
-pub struct Ref<'cx, T> {
-  ptr: Ptr<T>,
-  lifetime: PhantomData<&'cx T>,
-}
-
-impl<'cx, T> Deref for Ref<'cx, T> {
-  type Target = T;
-
-  fn deref(&self) -> &Self::Target {
-    self.ptr.deref()
   }
 }
 

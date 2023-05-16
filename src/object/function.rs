@@ -225,10 +225,6 @@ impl Params {
       max: 0,
     }
   }
-
-  pub fn matches(&self, n: usize) -> bool {
-    (self.min as usize) <= n && n <= (self.max as usize)
-  }
 }
 
 impl Default for Params {

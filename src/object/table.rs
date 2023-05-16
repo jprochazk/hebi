@@ -9,7 +9,7 @@ use super::{Object, String};
 use crate as hebi;
 use crate::value::Value;
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct Table {
   data: RefCell<IndexMap<Ptr<String>, Value>>,
 }
@@ -73,6 +73,12 @@ impl Table {
     Keys {
       table: self,
       index: 0,
+    }
+  }
+
+  pub fn copy(&self) -> Self {
+    Self {
+      data: self.data.clone(),
     }
   }
 }

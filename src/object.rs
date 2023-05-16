@@ -16,15 +16,13 @@ pub use class::{ClassDescriptor, ClassType};
 pub use function::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor};
-pub use ptr::Ptr;
+pub use ptr::{Any, Ptr};
 pub use string::String;
 pub use table::Table;
 
 use crate as hebi;
 use crate::ctx::Context;
 use crate::value::Value;
-
-pub type Any = Ptr<ptr::Any>;
 
 pub trait Object: DynAny + Debug + Display {
   fn type_name(&self) -> &'static str;
@@ -110,10 +108,10 @@ pub trait Object: DynAny + Debug + Display {
   }
 }
 
-pub fn is_callable(v: &Any) -> bool {
+pub fn is_callable(v: &Ptr<Any>) -> bool {
   v.is::<function::Function>() || v.is::<class::ClassMethod>()
 }
 
-pub fn is_class(v: &Any) -> bool {
+pub fn is_class(v: &Ptr<Any>) -> bool {
   v.is::<class::ClassInstance>() || v.is::<class::ClassProxy>()
 }

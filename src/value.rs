@@ -12,8 +12,6 @@ pub mod constant;
 
 use std::fmt::{Debug, Display};
 
-pub use crate::object::ptr::Ref;
-
 impl Default for Value {
   fn default() -> Self {
     Self::none()

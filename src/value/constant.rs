@@ -1,3 +1,5 @@
+#![allow(clippy::wrong_self_convention)]
+
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
@@ -33,78 +35,6 @@ impl Constant {
 }
 
 impl Constant {
-  /// Returns `true` if the constant is [`Reserved`].
-  ///
-  /// [`Reserved`]: Constant::Reserved
-  #[must_use]
-  pub fn is_reserved(&self) -> bool {
-    matches!(self, Self::Reserved)
-  }
-
-  /// Returns `true` if the constant is [`String`].
-  ///
-  /// [`String`]: Constant::String
-  #[must_use]
-  pub fn is_string(&self) -> bool {
-    matches!(self, Self::String(..))
-  }
-
-  /// Returns `true` if the constant is [`Function`].
-  ///
-  /// [`Function`]: Constant::Function
-  #[must_use]
-  pub fn is_function(&self) -> bool {
-    matches!(self, Self::Function(..))
-  }
-
-  /// Returns `true` if the constant is [`Class`].
-  ///
-  /// [`Class`]: Constant::Class
-  #[must_use]
-  pub fn is_class(&self) -> bool {
-    matches!(self, Self::Class(..))
-  }
-
-  /// Returns `true` if the constant is [`Offset`].
-  ///
-  /// [`Offset`]: Constant::Offset
-  #[must_use]
-  pub fn is_offset(&self) -> bool {
-    matches!(self, Self::Offset(..))
-  }
-
-  /// Returns `true` if the constant is [`Float`].
-  ///
-  /// [`Float`]: Constant::Float
-  #[must_use]
-  pub fn is_float(&self) -> bool {
-    matches!(self, Self::Float(..))
-  }
-
-  pub fn as_string(&self) -> Option<&Ptr<String>> {
-    if let Self::String(v) = self {
-      Some(v)
-    } else {
-      None
-    }
-  }
-
-  pub fn as_function(&self) -> Option<&Ptr<FunctionDescriptor>> {
-    if let Self::Function(v) = self {
-      Some(v)
-    } else {
-      None
-    }
-  }
-
-  pub fn as_class(&self) -> Option<&Ptr<ClassDescriptor>> {
-    if let Self::Class(v) = self {
-      Some(v)
-    } else {
-      None
-    }
-  }
-
   pub fn as_offset(&self) -> Option<&op::Offset> {
     if let Self::Offset(v) = self {
       Some(v)

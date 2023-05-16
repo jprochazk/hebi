@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use super::opcode::symbolic::*;
 use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
-use crate::object;
+use crate::object::{Any, ClassDescriptor, FunctionDescriptor, Ptr, String};
 use crate::span::Span;
 use crate::value::constant::{Constant, NonNaNFloat};
 
@@ -264,7 +264,7 @@ impl BytecodeBuilder {
   }
 }
 
-struct PtrHash(object::Any);
+struct PtrHash(Ptr<Any>);
 
 impl Hash for PtrHash {
   fn hash<H: Hasher>(&self, state: &mut H) {
@@ -338,8 +338,8 @@ mod private {
 
 macro_rules! insert_constant_object {
   ($object_type:ty, $constant_variant:ident) => {
-    impl private::Sealed for object::Ptr<$object_type> {}
-    impl InsertConstant for object::Ptr<$object_type> {
+    impl private::Sealed for Ptr<$object_type> {}
+    impl InsertConstant for Ptr<$object_type> {
       fn insert(self, builder: &mut ConstantPoolBuilder) -> op::Constant {
         let key = PtrHash(self.clone().into_any());
         if let Some(index) = builder.ptr_map.get(&key).copied() {
@@ -358,9 +358,9 @@ macro_rules! insert_constant_object {
   };
 }
 
-insert_constant_object!(object::String, String);
-insert_constant_object!(object::FunctionDescriptor, Function);
-insert_constant_object!(object::ClassDescriptor, Class);
+insert_constant_object!(String, String);
+insert_constant_object!(FunctionDescriptor, Function);
+insert_constant_object!(ClassDescriptor, Class);
 
 impl private::Sealed for NonNaNFloat {}
 impl InsertConstant for NonNaNFloat {

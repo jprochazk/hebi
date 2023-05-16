@@ -787,7 +787,7 @@ check! {
 
 #[test]
 fn subsequent_eval() {
-  let hebi = Hebi::new();
+  let mut hebi = Vm::new();
   hebi.eval("v := 0").unwrap();
   let value = hebi.eval("v").unwrap().to_int();
   assert_eq!(value, Some(0));
