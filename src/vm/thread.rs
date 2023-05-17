@@ -4,6 +4,7 @@ mod macros;
 mod util;
 
 use std::fmt::{Debug, Display};
+use std::marker::PhantomData;
 use std::mem::take;
 use std::ptr::NonNull;
 
@@ -19,14 +20,14 @@ use crate::ctx::Context;
 use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
-use crate::object::native::NativeFunction;
+use crate::object::native::{NativeAsyncFunction, NativeFunction};
 use crate::object::{
   ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
   Table,
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, object, syntax, Error, Scope};
+use crate::{emit, object, syntax, AsyncScope, Error, LocalBoxFuture, Scope};
 
 pub struct Thread {
   pub(crate) cx: Context,
@@ -36,6 +37,8 @@ pub struct Thread {
   pub(crate) stack_base: usize,
   acc: Value,
   pc: usize,
+  fut: Option<LocalBoxFuture<'static, hebi::Result<Value>>>,
+  poll: bool,
 }
 
 impl Thread {
@@ -49,14 +52,60 @@ impl Thread {
       stack_base: 0,
       acc: Value::none(),
       pc: 0,
+
+      fut: None,
+      poll: false,
     }
   }
 
   pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
+    let poll = self.poll;
+    self.poll = false;
+
     let args = self.push_args(args);
-    self.do_call(f, args, None)?;
-    self.run()?;
+    if let Err(e) = self.do_call(f, args, None) {
+      self.pop_args(args);
+      return Err(e);
+    };
+    if let Err(e) = self.run() {
+      self.pop_args(args);
+      return Err(e);
+    };
     self.pop_args(args);
+
+    self.poll = poll;
+
+    Ok(take(&mut self.acc))
+  }
+
+  pub async fn call_async(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
+    let poll = self.poll;
+    self.poll = true;
+
+    let args = self.push_args(args);
+    if let Err(e) = self.do_call(f, args, None) {
+      self.pop_args(args);
+      return Err(e);
+    };
+    loop {
+      self.run()?;
+      match self.fut.take() {
+        Some(fut) => match fut.await {
+          Ok(value) => {
+            self.acc = value;
+          }
+          Err(e) => {
+            self.pop_args(args);
+            return Err(e);
+          }
+        },
+        None => break,
+      }
+    }
+    self.pop_args(args);
+
+    self.poll = poll;
+
     Ok(take(&mut self.acc))
   }
 
@@ -119,6 +168,9 @@ impl Thread {
     } else if object.is::<NativeFunction>() {
       let function = unsafe { object.cast_unchecked::<NativeFunction>() };
       self.call_native_function(function, args)
+    } else if object.is::<NativeAsyncFunction>() {
+      let function = unsafe { object.cast_unchecked::<NativeAsyncFunction>() };
+      self.call_native_async_function(function, args)
     } else {
       hebi::fail!("cannot call object `{object}`")
     }
@@ -236,6 +288,30 @@ impl Thread {
   ) -> hebi::Result<dispatch::Call> {
     self.acc = function.call(Scope { thread: self, args })?;
     Ok(dispatch::Call::Continue)
+  }
+
+  fn call_native_async_function(
+    &mut self,
+    function: Ptr<NativeAsyncFunction>,
+    args: Args,
+  ) -> hebi::Result<dispatch::Call> {
+    if !self.poll {
+      hebi::fail!(
+        "cannot call async function `{}` in a non-async context",
+        function.name
+      );
+    }
+
+    let mut thread = Thread::new(self.cx.clone(), self.global.clone());
+    thread.poll = true;
+
+    self.fut.replace(function.call(AsyncScope {
+      thread,
+      args,
+      lifetime: PhantomData,
+    }));
+
+    Ok(dispatch::Call::Yield)
   }
 
   fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {

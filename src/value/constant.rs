@@ -43,6 +43,7 @@ impl Constant {
     }
   }
 
+  #[allow(dead_code)] // used in tests
   pub fn as_float(&self) -> Option<&NonNaNFloat> {
     if let Self::Float(v) = self {
       Some(v)

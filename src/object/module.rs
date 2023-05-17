@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 
 use indexmap::{IndexMap, IndexSet};
 
-use super::native::NativeFunction;
+use super::native::{NativeAsyncFunction, NativeFunction};
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate as hebi;
@@ -27,10 +27,6 @@ impl ModuleId {
   /// An example usage of this is in `Hebi::eval`.
   pub fn global() -> Self {
     Self(None)
-  }
-
-  pub fn is_global(&self) -> bool {
-    self.0.is_none()
   }
 }
 
@@ -76,10 +72,6 @@ impl Registry {
 
   pub fn get_by_id(&self, id: ModuleId) -> Option<Ptr<Module>> {
     self.modules.get(&id).cloned()
-  }
-
-  pub fn contains_by_name(&self, name: &str) -> bool {
-    self.index.contains_key(name)
   }
 
   pub fn get_by_name(&self, name: &str) -> Option<(ModuleId, Ptr<Module>)> {
@@ -145,6 +137,16 @@ impl Module {
       module_vars.insert(
         name.clone(),
         Value::object(cx.alloc(NativeFunction { name, cb: *f })),
+      );
+    }
+    for (name, f) in module.data.async_fns.iter() {
+      let name = cx.alloc(String::owned(name.clone()));
+      module_vars.insert(
+        name.clone(),
+        Value::object(cx.alloc(NativeAsyncFunction {
+          name,
+          cb: f.clone(),
+        })),
       );
     }
 

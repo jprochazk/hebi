@@ -42,6 +42,7 @@ impl Global {
     self.module_registry.borrow_mut()
   }
 
+  #[allow(dead_code)] // used in tests
   pub(super) fn set_module_loader(&self, module_loader: impl module::Loader + 'static) {
     self.module_loader.replace(Box::new(module_loader));
   }

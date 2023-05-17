@@ -1,6 +1,6 @@
 use super::object::{AnyRef, ObjectRef};
 use crate::value::Value;
-use crate::{Bind, Result, Scope, Unbind};
+use crate::{Bind, Context, Result, Unbind};
 
 decl_ref! {
   struct Value
@@ -23,8 +23,8 @@ impl<'cx> ValueRef<'cx> {
     self.inner.clone().to_none()
   }
 
-  pub fn as_object<T: ObjectRef<'cx>>(&self) -> Option<T> {
-    self.as_any().and_then(AnyRef::cast)
+  pub fn as_object<T: ObjectRef<'cx>>(&self, cx: Context<'cx>) -> Option<T> {
+    self.as_any().and_then(|v| AnyRef::cast(v, cx))
   }
 
   pub fn as_any(&self) -> Option<AnyRef<'cx>> {
@@ -36,22 +36,36 @@ impl<'cx> ValueRef<'cx> {
 }
 
 pub trait FromValue<'cx>: Sized {
-  fn from_value(value: ValueRef<'cx>, scope: &'cx Scope<'cx>) -> Result<Self>;
+  fn from_value(value: ValueRef<'cx>, cx: Context<'cx>) -> Result<Self>;
 }
 
 pub trait IntoValue<'cx>: Sized {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>>;
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>>;
+}
+
+impl<'cx> IntoValue<'cx> for ValueRef<'cx> {
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    let _ = cx;
+    Ok(self)
+  }
+}
+
+impl<'cx> FromValue<'cx> for ValueRef<'cx> {
+  fn from_value(value: ValueRef<'cx>, cx: Context<'cx>) -> Result<Self> {
+    let _ = cx;
+    Ok(value)
+  }
 }
 
 impl<'cx> IntoValue<'cx> for i32 {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    Ok(Value::int(self).bind(scope))
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    Ok(Value::int(self).bind(cx))
   }
 }
 
 impl<'cx> FromValue<'cx> for i32 {
-  fn from_value(value: ValueRef<'cx>, scope: &'cx Scope<'cx>) -> Result<Self> {
-    let _ = scope;
+  fn from_value(value: ValueRef<'cx>, cx: Context<'cx>) -> Result<Self> {
+    let _ = cx;
     match value.as_int() {
       Some(value) => Ok(value),
       None => crate::fail!("value is not an int"),
@@ -60,14 +74,14 @@ impl<'cx> FromValue<'cx> for i32 {
 }
 
 impl<'cx> IntoValue<'cx> for f64 {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    Ok(Value::float(self).bind(scope))
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    Ok(Value::float(self).bind(cx))
   }
 }
 
 impl<'cx> FromValue<'cx> for f64 {
-  fn from_value(value: ValueRef<'cx>, scope: &'cx Scope<'cx>) -> Result<Self> {
-    let _ = scope;
+  fn from_value(value: ValueRef<'cx>, cx: Context<'cx>) -> Result<Self> {
+    let _ = cx;
     match value.as_float() {
       Some(value) => Ok(value),
       None => crate::fail!("value is not an int"),
@@ -76,14 +90,14 @@ impl<'cx> FromValue<'cx> for f64 {
 }
 
 impl<'cx> IntoValue<'cx> for bool {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    Ok(Value::bool(self).bind(scope))
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    Ok(Value::bool(self).bind(cx))
   }
 }
 
 impl<'cx> FromValue<'cx> for bool {
-  fn from_value(value: ValueRef<'cx>, scope: &'cx Scope<'cx>) -> Result<Self> {
-    let _ = scope;
+  fn from_value(value: ValueRef<'cx>, cx: Context<'cx>) -> Result<Self> {
+    let _ = cx;
     match value.as_bool() {
       Some(value) => Ok(value),
       None => crate::fail!("value is not an int"),
@@ -92,8 +106,8 @@ impl<'cx> FromValue<'cx> for bool {
 }
 
 impl<'cx> IntoValue<'cx> for () {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    Ok(Value::none().bind(scope))
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    Ok(Value::none().bind(cx))
   }
 }
 
@@ -101,10 +115,10 @@ impl<'cx, T> IntoValue<'cx> for Option<T>
 where
   T: IntoValue<'cx>,
 {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
     match self {
-      Some(value) => value.into_value(scope),
-      None => Ok(Value::none().bind(scope)),
+      Some(value) => value.into_value(cx),
+      None => Ok(Value::none().bind(cx)),
     }
   }
 }
@@ -113,8 +127,8 @@ impl<'cx, T> IntoValue<'cx> for Result<T>
 where
   T: IntoValue<'cx>,
 {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    self?.into_value(scope)
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    self?.into_value(cx)
   }
 }
 
@@ -122,7 +136,7 @@ impl<'cx, T> IntoValue<'cx> for T
 where
   T: ObjectRef<'cx>,
 {
-  fn into_value(self, scope: &'cx Scope<'cx>) -> Result<ValueRef<'cx>> {
-    Ok(Value::object(self.as_any().unbind()).bind(scope))
+  fn into_value(self, cx: Context<'cx>) -> Result<ValueRef<'cx>> {
+    Ok(Value::object(self.as_any(cx.clone()).unbind()).bind(cx))
   }
 }

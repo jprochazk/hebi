@@ -65,11 +65,6 @@ impl<'src> Lexer<'src> {
   }
 
   #[inline]
-  pub fn eof(&self) -> &Token {
-    &self.eof
-  }
-
-  #[inline]
   pub fn lexeme(&self, token: &Token) -> &'src str {
     &self.src[Range::from(token.span)]
   }

@@ -1,5 +1,4 @@
 {
-  "rust-analyzer.cargo.features": [],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.check.extraArgs": ["--target-dir=./target_ra"]
 }

@@ -1,6 +1,5 @@
 #![allow(clippy::needless_lifetimes)]
 
-use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 
@@ -44,8 +43,6 @@ impl<'src> DerefMut for Ident<'src> {
     &mut self.0
   }
 }
-
-pub type Map<K, V> = BTreeMap<K, V>;
 
 #[cfg_attr(test, derive(Debug))]
 pub struct Module<'src> {

@@ -1,7 +1,5 @@
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::fmt::{Debug, Display};
-use std::ops::Range;
-use std::slice::SliceIndex;
 use std::vec::Vec;
 
 use super::Object;
@@ -23,14 +21,6 @@ impl List {
     }
   }
 
-  pub fn with_len(n: usize) -> Self {
-    let mut values = Vec::new();
-    values.resize_with(n, Value::none);
-    Self {
-      data: RefCell::new(values),
-    }
-  }
-
   pub fn len(&self) -> usize {
     self.data.borrow().len()
   }
@@ -39,6 +29,7 @@ impl List {
     self.data.borrow().is_empty()
   }
 
+  #[allow(dead_code)] // TODO: use in `index` impl
   pub fn get(&self, index: usize) -> Option<Value> {
     self.data.borrow().get(index).cloned()
   }
@@ -51,23 +42,6 @@ impl List {
     self.data.borrow_mut().pop()
   }
 
-  pub fn extend(&self, additional: usize) {
-    let new_len = self.len() + additional;
-    self.data.borrow_mut().resize_with(new_len, Value::none);
-  }
-
-  pub fn extend_from_within(&self, range: Range<usize>) {
-    self.data.borrow_mut().extend_from_within(range)
-  }
-
-  pub fn extend_from_slice(&self, slice: &[Value]) {
-    self.data.borrow_mut().extend_from_slice(slice)
-  }
-
-  pub fn truncate(&self, new_len: usize) {
-    self.data.borrow_mut().truncate(new_len);
-  }
-
   /// # Safety
   ///
   /// - `index` must be within the bounds of `self`
@@ -76,6 +50,7 @@ impl List {
     self.data.borrow().get_unchecked(index).clone()
   }
 
+  #[allow(dead_code)] // TODO: use in `index` impl
   pub fn set(&self, index: usize, value: Value) {
     if let Some(slot) = self.data.borrow_mut().get_mut(index) {
       *slot = value;
@@ -88,10 +63,6 @@ impl List {
   pub unsafe fn set_unchecked(&self, index: usize, value: Value) {
     debug_assert!(index < self.len(), "index {index} out of bounds");
     *self.data.borrow_mut().get_mut(index).unwrap_unchecked() = value;
-  }
-
-  pub fn slice<R: SliceIndex<[Value]>>(&self, range: R) -> Ref<'_, R::Output> {
-    Ref::map(self.data.borrow(), |data| &data[range])
   }
 }
 

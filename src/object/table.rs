@@ -29,6 +29,7 @@ impl Table {
     self.data.borrow().len()
   }
 
+  #[allow(dead_code)] // TODO: expose
   pub fn is_empty(&self) -> bool {
     self.data.borrow().is_empty()
   }

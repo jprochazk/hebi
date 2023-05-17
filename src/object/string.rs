@@ -12,6 +12,7 @@ pub struct String {
 }
 
 impl String {
+  #[allow(dead_code)] // symmetry with `owned`
   pub fn borrowed(data: &'static str) -> Self {
     Self {
       data: Cow::borrowed(data),

@@ -331,12 +331,15 @@ pub fn dispatch<T: Handler>(
           let (callee, args) = read_operands!(Call, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
           let result = handler.op_call(return_addr, callee, args)?;
-          if let Call::LoadFrame(new_frame) = result {
-            bytecode = new_frame.bytecode;
-            pc = new_frame.pc;
-            continue 'load_frame;
-          };
-          continue;
+          match result {
+            Call::LoadFrame(new_frame) => {
+              bytecode = new_frame.bytecode;
+              pc = new_frame.pc;
+              continue 'load_frame;
+            }
+            Call::Continue => continue,
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
+          }
         }
         Opcode::Call0 => {
           // frame is reloaded so neither `ip` nor `width` are read
@@ -344,12 +347,15 @@ pub fn dispatch<T: Handler>(
           let () = read_operands!(Call0, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
           let result = handler.op_call0(return_addr)?;
-          if let Call::LoadFrame(new_frame) = result {
-            bytecode = new_frame.bytecode;
-            pc = new_frame.pc;
-            continue 'load_frame;
-          };
-          continue;
+          match result {
+            Call::LoadFrame(new_frame) => {
+              bytecode = new_frame.bytecode;
+              pc = new_frame.pc;
+              continue 'load_frame;
+            }
+            Call::Continue => continue,
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
+          }
         }
         Opcode::Import => {
           let (path, dst) = read_operands!(Import, ip, end, width);
@@ -372,10 +378,7 @@ pub fn dispatch<T: Handler>(
           #[allow(unused_assignments)] // ip is overwritten by start+offset
           let () = read_operands!(Yield, ip, end, width);
           handler.op_yield()?;
-
-          return Ok(ControlFlow::Yield(
-            (ip as usize) - (bytecode.as_ptr() as *mut u8 as usize),
-          ));
+          return Ok(ControlFlow::Yield(get_pc!(ip, bytecode)));
         }
       }
     }
@@ -400,6 +403,7 @@ pub struct LoadFrame {
 pub enum Call {
   LoadFrame(LoadFrame),
   Continue,
+  Yield,
 }
 
 impl From<LoadFrame> for Call {
