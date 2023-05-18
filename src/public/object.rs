@@ -3,6 +3,8 @@ pub mod list;
 pub mod string;
 pub mod table;
 
+use std::fmt::{Debug, Display};
+
 use crate::object::{Any, Ptr};
 use crate::{Bind, Context};
 
@@ -16,7 +18,7 @@ impl<'cx> AnyRef<'cx> {
   }
 }
 
-pub trait ObjectRef<'cx>: private::Sealed + Sized {
+pub trait ObjectRef<'cx>: private::Sealed + Sized + Debug + Display {
   fn as_any(&self, cx: Context<'cx>) -> AnyRef<'cx>;
   fn from_any(v: AnyRef<'cx>, cx: Context<'cx>) -> Option<Self>;
 

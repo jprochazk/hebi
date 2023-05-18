@@ -136,7 +136,10 @@ impl Module {
       let name = cx.alloc(String::owned(name.clone()));
       module_vars.insert(
         name.clone(),
-        Value::object(cx.alloc(NativeFunction { name, cb: *f })),
+        Value::object(cx.alloc(NativeFunction {
+          name,
+          cb: f.clone(),
+        })),
       );
     }
     for (name, f) in module.data.async_fns.iter() {

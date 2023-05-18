@@ -3,21 +3,23 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 use super::{Object, Ptr, String};
-use crate::ctx::Context;
-use crate::public::value::ValueRef;
 use crate::value::Value;
-use crate::{AsyncScope, Result, Scope, Unbind};
+use crate::{Result, Scope};
 
-pub type Callback = for<'cx> fn(&'cx Scope<'cx>) -> Result<ValueRef<'cx>>;
+pub type Callback<R> = Rc<dyn Fn(Scope<'_>) -> R>;
+pub type LocalBoxFuture<'a, T> = Pin<Box<dyn core::future::Future<Output = T> + 'a>>;
+
+pub type SyncCallback = Callback<Result<Value>>;
+pub type AsyncCallback = Callback<LocalBoxFuture<'static, Result<Value>>>;
 
 pub struct NativeFunction {
   pub name: Ptr<String>,
-  pub cb: Callback,
+  pub cb: SyncCallback,
 }
 
 impl NativeFunction {
-  pub fn call(&self, scope: Scope<'_>) -> Result<Value> {
-    Ok((self.cb)(&scope)?.unbind())
+  pub fn call(&self, scope: Scope) -> Result<Value> {
+    (self.cb)(scope)
   }
 }
 
@@ -41,19 +43,14 @@ impl Object for NativeFunction {
   }
 }
 
-pub type LocalBoxFuture<'a, T> = Pin<Box<dyn core::future::Future<Output = T> + 'a>>;
-
-pub type AsyncCallback = Rc<dyn Fn(AsyncScope, Context) -> LocalBoxFuture<'static, Result<Value>>>;
-
 pub struct NativeAsyncFunction {
   pub name: Ptr<String>,
   pub cb: AsyncCallback,
 }
 
 impl NativeAsyncFunction {
-  pub fn call(&self, scope: AsyncScope) -> LocalBoxFuture<'static, Result<Value>> {
-    let cx = scope.thread.cx.clone();
-    (self.cb)(scope, cx)
+  pub fn call(&self, scope: Scope) -> LocalBoxFuture<'static, Result<Value>> {
+    (self.cb)(scope)
   }
 }
 

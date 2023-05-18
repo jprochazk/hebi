@@ -13,6 +13,12 @@ pub enum Error {
   User(Box<dyn StdError + 'static>),
 }
 
+impl Error {
+  pub fn user(e: impl StdError + 'static) -> Self {
+    Self::User(Box::new(e))
+  }
+}
+
 impl From<SpannedError> for Error {
   fn from(value: SpannedError) -> Self {
     Error::Vm(value)

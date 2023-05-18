@@ -17,16 +17,16 @@ macro_rules! error {
 #[macro_export]
 macro_rules! fail {
   ($fmt:literal $(,$($arg:tt)*)?) => {
-    return Err(error!($fmt $(,$($arg)*)?).into())
+    return Err($crate::error!($fmt $(,$($arg)*)?).into())
   };
   ($msg:expr) => {
-    return Err(error!($msg).into())
+    return Err($crate::error!($msg).into())
   };
   (@$span:expr, $fmt:literal $(,$($arg:tt)*)?) => {
-    return Err(error!(@$span, $fmt $(, $($arg)*)?).into())
+    return Err($crate::error!(@$span, $fmt $(, $($arg)*)?).into())
   };
   (@$span:expr, $msg:expr) => {
-    return Err(error!(@$span, $msg).into())
+    return Err($crate::error!(@$span, $msg).into())
   };
 }
 

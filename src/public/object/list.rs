@@ -1,7 +1,7 @@
 use super::*;
 use crate::object::List;
 use crate::public::value::ValueRef;
-use crate::Unbind;
+use crate::{Scope, Unbind};
 
 decl_object_ref! {
   struct List
@@ -25,5 +25,27 @@ impl<'cx> ListRef<'cx> {
       .inner
       .pop()
       .map(|value| unsafe { value.bind_raw::<'cx>() })
+  }
+
+  pub fn get(&self, index: usize) -> Option<ValueRef<'cx>> {
+    self
+      .inner
+      .get(index)
+      .map(|value| unsafe { value.bind_raw::<'cx>() })
+  }
+
+  #[must_use = "`set` returns false if index is out of bounds"]
+  pub fn set(&self, index: usize, value: ValueRef<'cx>) -> bool {
+    self.inner.set(index, value.unbind())
+  }
+}
+
+impl<'cx> Scope<'cx> {
+  pub fn new_list(&self, capacity: usize) -> ListRef<'cx> {
+    self
+      .cx()
+      .inner
+      .alloc(List::with_capacity(capacity))
+      .bind(self.cx())
   }
 }

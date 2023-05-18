@@ -50,10 +50,13 @@ impl List {
     self.data.borrow().get_unchecked(index).clone()
   }
 
-  #[allow(dead_code)] // TODO: use in `index` impl
-  pub fn set(&self, index: usize, value: Value) {
+  #[must_use = "`set` returns false if index is out of bounds"]
+  pub fn set(&self, index: usize, value: Value) -> bool {
     if let Some(slot) = self.data.borrow_mut().get_mut(index) {
       *slot = value;
+      true
+    } else {
+      false
     }
   }
 

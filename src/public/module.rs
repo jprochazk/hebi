@@ -1,14 +1,13 @@
-use std::future;
 use std::future::Future;
 use std::rc::Rc;
 use std::string::String as StdString;
 use std::sync::Arc;
 
-use futures_util::TryFutureExt;
+use futures_util::{FutureExt, TryFutureExt};
 use indexmap::IndexMap;
 
-use crate::object::native::{AsyncCallback, Callback};
-use crate::{AsyncScope, Result, Unbind, Value};
+use crate::object::native::{AsyncCallback, SyncCallback};
+use crate::{IntoValue, Scope, Unbind};
 
 #[derive(Clone)]
 pub struct NativeModule {
@@ -29,7 +28,7 @@ impl NativeModule {
 
 pub(crate) struct NativeModuleData {
   pub(crate) name: StdString,
-  pub(crate) fns: IndexMap<StdString, Callback>,
+  pub(crate) fns: IndexMap<StdString, SyncCallback>,
   pub(crate) async_fns: IndexMap<StdString, AsyncCallback>,
 }
 
@@ -38,25 +37,43 @@ pub struct NativeModuleBuilder {
 }
 
 impl NativeModuleBuilder {
-  pub fn function(mut self, name: impl ToString, f: Callback) -> Self {
-    self.data.fns.insert(name.to_string(), f);
+  pub fn function<'cx, R>(
+    mut self,
+    name: impl ToString,
+    f: impl Fn(Scope<'cx>) -> R + 'static,
+  ) -> Self
+  where
+    R: IntoValue<'cx> + 'static,
+  {
+    self.data.fns.insert(
+      name.to_string(),
+      Rc::new(move |scope| {
+        let scope = unsafe { std::mem::transmute::<_, Scope<'static>>(scope) };
+        let cx = scope.cx();
+        f(scope).into_value(cx).map(|value| value.unbind())
+      }),
+    );
     self
   }
 
-  pub fn async_function<'cx, Fut>(
+  pub fn async_function<'cx, Fut, R>(
     mut self,
     name: impl ToString,
-    f: fn(AsyncScope<'cx>) -> Fut,
+    f: impl Fn(Scope<'cx>) -> Fut + 'static,
   ) -> Self
   where
-    Fut: Future<Output = Result<Value<'cx>>> + 'static,
+    Fut: Future<Output = R> + 'static,
+    R: IntoValue<'cx>,
   {
     self.data.async_fns.insert(
       name.to_string(),
-      Rc::new(move |scope, _| {
+      Rc::new(move |scope| {
+        let scope = unsafe { std::mem::transmute::<_, Scope<'static>>(scope) };
+        let cx = scope.cx();
         Box::pin(
-          f(unsafe { std::mem::transmute::<_, AsyncScope<'static>>(scope) })
-            .and_then(|value| future::ready(Ok(value.unbind()))),
+          f(scope)
+            .map(|value| value.into_value(cx))
+            .map_ok(|value| value.unbind()),
         )
       }),
     );

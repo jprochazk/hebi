@@ -1,23 +1,14 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hebi::module::NativeModule;
-use hebi::{Hebi, IntoValue, Result, Scope, Value};
+use hebi::{Hebi, Result, Scope};
 
-fn example<'cx>(scope: &'cx Scope<'cx>) -> Result<Value<'cx>> {
-  let value = 100i32;
-  value.into_value(scope.cx())
+fn example(_: Scope) -> i32 {
+  100i32
 }
 
-fn add1<'cx>(scope: &'cx Scope<'cx>) -> Result<Value<'cx>> {
-  let value = scope
-    .argument(0)
-    .ok_or_else(|| hebi::error!("Missing argument 0"))?;
-  let value = value
-    .as_int()
-    .ok_or_else(|| hebi::error!("First argument must be an integer"))?;
-
-  let value = value + 1;
-
-  value.into_value(scope.cx())
+fn add1(scope: Scope) -> Result<i32> {
+  let value = scope.param::<i32>(0)?;
+  Ok(value + 1)
 }
 
 pub fn benchmark(c: &mut Criterion) {

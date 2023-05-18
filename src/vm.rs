@@ -4,10 +4,12 @@ pub mod dispatch;
 pub mod global;
 pub mod thread;
 
+use std::ptr::NonNull;
+
 use global::Global;
 use module::Module;
 
-use self::thread::Thread;
+use self::thread::{Stack, Thread};
 use crate as hebi;
 use crate::ctx::Context;
 use crate::module::NativeModule;
@@ -20,6 +22,7 @@ use crate::{emit, syntax, Error};
 pub struct Vm {
   pub(crate) cx: Context,
   pub(crate) root: Thread,
+  pub(crate) stack: NonNull<Stack>,
 }
 
 struct DefaultModuleLoader {}
@@ -38,8 +41,9 @@ impl Vm {
   pub fn new() -> Self {
     let cx = Context::default();
     let global = Global::new(&cx, DefaultModuleLoader {});
-    let root = Thread::new(cx.clone(), global);
-    Self { cx, root }
+    let stack = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(Stack::new()))) };
+    let root = Thread::new(cx.clone(), global, stack);
+    Self { cx, root, stack }
   }
 
   pub fn eval(&mut self, code: &str) -> hebi::Result<Value> {
@@ -78,6 +82,12 @@ impl Vm {
       .cx
       .alloc(Module::native(&self.cx, name.clone(), module, module_id));
     registry.insert(module_id, name, module);
+  }
+}
+
+impl Drop for Vm {
+  fn drop(&mut self) {
+    let _ = unsafe { Box::from_raw(self.stack.as_ptr()) };
   }
 }
 

@@ -27,29 +27,41 @@ use crate::object::{
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, object, syntax, AsyncScope, Error, LocalBoxFuture, Scope};
+use crate::{emit, object, syntax, Error, LocalBoxFuture, Scope};
 
 pub struct Thread {
   pub(crate) cx: Context,
   pub(crate) global: Global,
-  pub(crate) call_frames: Vec<Frame>,
-  pub(crate) stack: Vec<Value>,
-  pub(crate) stack_base: usize,
+  pub(crate) stack: NonNull<Stack>,
   acc: Value,
   pc: usize,
   fut: Option<LocalBoxFuture<'static, hebi::Result<Value>>>,
   poll: bool,
 }
 
+pub struct Stack {
+  pub(crate) frames: Vec<Frame>,
+  pub(crate) regs: Vec<Value>,
+  pub(crate) base: usize,
+}
+
+impl Stack {
+  pub fn new() -> Self {
+    Self {
+      frames: Vec::with_capacity(8),
+      regs: Vec::with_capacity(64),
+      base: 0,
+    }
+  }
+}
+
 impl Thread {
-  pub fn new(cx: Context, global: Global) -> Self {
+  pub fn new(cx: Context, global: Global, stack: NonNull<Stack>) -> Self {
     Thread {
       cx,
       global,
 
-      call_frames: Vec::new(),
-      stack: Vec::with_capacity(128),
-      stack_base: 0,
+      stack,
       acc: Value::none(),
       pc: 0,
 
@@ -126,14 +138,14 @@ impl Thread {
   }
 
   fn push_args(&mut self, args: &[Value]) -> Args {
-    let start = self.stack.len();
+    let start = stack!(self).len();
     let count = args.len();
-    self.stack.extend_from_slice(args);
+    stack_mut!(self).extend_from_slice(args);
     Args { start, count }
   }
 
   fn pop_args(&mut self, args: Args) {
-    self.stack.truncate(args.start)
+    stack_mut!(self).truncate(args.start)
   }
 
   /// Args are passed through the stack:
@@ -185,24 +197,23 @@ impl Thread {
     check_args(&function.descriptor.params, false, args.count)?;
 
     self.pc = 0;
-    self.stack_base = self.stack.len();
+    unsafe {
+      self.stack.as_mut().base = self.stack.as_ref().regs.len();
+    }
     // note that this only works because `self` is
     // syntactically guaranteed to only exist in class methods
     // if that guarantee ever disappears, this will break
     if !function.descriptor.params.has_self {
       // this is a regular function, put `function` in slot 0
       // the slot is already reserved by codegen
-      self.stack.push(Value::object(function.clone()));
+      stack_mut!(self).push(Value::object(function.clone()));
     }
     // if the above condition is false, the first arg will be the receiver
-    self
-      .stack
-      .extend_from_within(args.start..args.start + args.count);
-    self
-      .stack
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    stack_mut!(self)
       .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
 
-    self.call_frames.push(Frame {
+    call_frames_mut!(self).push(Frame {
       instructions: function.descriptor.instructions,
       constants: function.descriptor.constants,
       upvalues: function.upvalues.clone(),
@@ -230,17 +241,16 @@ impl Thread {
     check_args(&function.descriptor.params, true, args.count)?;
 
     self.pc = 0;
-    self.stack_base = self.stack.len();
+    unsafe {
+      self.stack.as_mut().base = self.stack.as_ref().regs.len();
+    }
     // receiver is passed implicitly through the `ClassMethod` wrapper
-    self.stack.push(Value::object(method.this()));
-    self
-      .stack
-      .extend_from_within(args.start..args.start + args.count);
-    self
-      .stack
+    stack_mut!(self).push(Value::object(method.this()));
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    stack_mut!(self)
       .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
 
-    self.call_frames.push(Frame {
+    call_frames_mut!(self).push(Frame {
       instructions: function.descriptor.instructions,
       constants: function.descriptor.constants,
       upvalues: function.upvalues.clone(),
@@ -286,7 +296,7 @@ impl Thread {
     function: Ptr<NativeFunction>,
     args: Args,
   ) -> hebi::Result<dispatch::Call> {
-    self.acc = function.call(Scope { thread: self, args })?;
+    self.acc = function.call(Scope::new(self, args))?;
     Ok(dispatch::Call::Continue)
   }
 
@@ -302,14 +312,10 @@ impl Thread {
       );
     }
 
-    let mut thread = Thread::new(self.cx.clone(), self.global.clone());
+    let mut thread = Thread::new(self.cx.clone(), self.global.clone(), self.stack);
     thread.poll = true;
 
-    self.fut.replace(function.call(AsyncScope {
-      thread,
-      args,
-      lifetime: PhantomData,
-    }));
+    self.fut.replace(function.call(Scope::new(self, args)));
 
     Ok(dispatch::Call::Yield)
   }
@@ -420,6 +426,12 @@ pub struct Args {
   pub count: usize,
 }
 
+impl Args {
+  pub fn empty() -> Self {
+    Self { start: 0, count: 0 }
+  }
+}
+
 impl Display for Thread {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "<thread>")
@@ -464,24 +476,23 @@ impl Thread {
   // TODO: get_register_as
   fn get_register(&self, reg: op::Register) -> Value {
     debug_assert!(
-      self.stack_base + reg.index() < self.stack.len(),
+      stack_base!(self) + reg.index() < stack!(self).len(),
       "register out of bounds {reg:?}"
     );
     unsafe {
-      self
-        .stack
-        .get_unchecked(self.stack_base + reg.index())
+      stack!(self)
+        .get_unchecked(stack_base!(self) + reg.index())
         .clone()
     }
   }
 
   fn set_register(&mut self, reg: op::Register, value: Value) {
     debug_assert!(
-      self.stack_base + reg.index() < self.stack.len(),
+      stack_base!(self) + reg.index() < stack!(self).len(),
       "register out of bounds {reg:?}"
     );
     unsafe {
-      let slot = self.stack.get_unchecked_mut(self.stack_base + reg.index());
+      let slot = stack_mut!(self).get_unchecked_mut(stack_base!(self) + reg.index());
       *slot = value;
     };
   }
@@ -1155,7 +1166,7 @@ impl Handler for Thread {
   }
 
   fn op_print_n(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
-    debug_assert!(self.stack_base + start.index() + count.value() < self.stack.len());
+    debug_assert!(stack_base!(self) + start.index() + count.value() < stack!(self).len());
 
     let start = start.index();
     let end = start + count.value();
@@ -1176,7 +1187,7 @@ impl Handler for Thread {
   ) -> hebi::Result<dispatch::Call> {
     let f = self.get_register(callee);
     let args = Args {
-      start: self.stack_base + callee.index() + 1,
+      start: stack_base!(self) + callee.index() + 1,
       count: args.value(),
     };
     self.do_call(f, args, Some(return_addr))
@@ -1185,7 +1196,7 @@ impl Handler for Thread {
   fn op_call0(&mut self, return_addr: usize) -> hebi::Result<dispatch::Call> {
     let f = take(&mut self.acc);
     let args = Args {
-      start: self.stack.len(),
+      start: stack!(self).len(),
       count: 0,
     };
     self.do_call(f, args, Some(return_addr))
@@ -1203,14 +1214,15 @@ impl Handler for Thread {
     // return value is in the accumulator
 
     // pop frame
-    let frame = self.call_frames.pop().unwrap();
+    let frame = call_frames_mut!(self).pop().unwrap();
 
     // truncate stack
-    self.stack.truncate(self.stack.len() - frame.frame_size);
+    let truncate_to = stack!(self).len() - frame.frame_size;
+    stack_mut!(self).truncate(truncate_to);
 
-    Ok(match self.call_frames.last() {
+    Ok(match call_frames!(self).last() {
       Some(current_frame) => {
-        self.stack_base -= current_frame.frame_size;
+        *stack_base_mut!(self) -= current_frame.frame_size;
         if let Some(return_addr) = frame.return_addr {
           // restore pc
           self.pc = return_addr;

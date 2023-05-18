@@ -6,7 +6,7 @@ mod macros;
 use std::marker::PhantomData;
 
 use self::module::NativeModule;
-use self::value::ValueRef;
+use self::value::{FromValuePack, ValueRef};
 use crate::object::{Ptr, Table as OwnedTable};
 use crate::vm::thread::{Args, Thread};
 use crate::vm::Vm;
@@ -21,6 +21,7 @@ pub use crate::fail;
 pub use crate::object::module::Loader;
 pub use crate::object::native::LocalBoxFuture;
 pub use crate::public::object::list::ListRef as List;
+pub use crate::public::object::string::StringRef as Str;
 pub use crate::public::object::table::TableRef as Table;
 pub use crate::public::object::AnyRef as Any;
 pub use crate::public::value::{FromValue, IntoValue, ValueRef as Value};
@@ -70,10 +71,7 @@ impl Hebi {
   }
 
   pub fn scope(&mut self) -> Scope {
-    Scope {
-      thread: &mut self.vm.root,
-      args: Args { start: 0, count: 0 },
-    }
+    Scope::new(&self.vm.root, Args::empty())
   }
 
   pub fn register(&mut self, module: &NativeModule) {
@@ -84,19 +82,29 @@ impl Hebi {
 #[derive(Clone)]
 pub struct Context<'cx> {
   #[allow(dead_code)] // will be used eventually in `IntoValue`/`FromValue` impls
-  pub(crate) cx: crate::ctx::Context,
+  pub(crate) inner: crate::ctx::Context,
   pub(crate) lifetime: PhantomData<&'cx ()>,
 }
 
 pub struct Scope<'cx> {
-  pub(crate) thread: &'cx mut Thread,
+  pub(crate) thread: Thread,
   pub(crate) args: Args,
+  pub(crate) lifetime: PhantomData<&'cx ()>,
 }
 
 impl<'cx> Scope<'cx> {
+  pub(crate) fn new(parent: &Thread, args: Args) -> Self {
+    let thread = Thread::new(parent.cx.clone(), parent.global.clone(), parent.stack);
+    Scope {
+      thread,
+      args,
+      lifetime: PhantomData,
+    }
+  }
+
   pub fn cx(&self) -> Context<'cx> {
     Context {
-      cx: self.thread.cx.clone(),
+      inner: self.thread.cx.clone(),
       lifetime: PhantomData,
     }
   }
@@ -105,13 +113,21 @@ impl<'cx> Scope<'cx> {
     self.args.count
   }
 
-  pub fn argument(&self, n: usize) -> Option<ValueRef> {
-    self
-      .thread
-      .stack
+  pub fn params<T: FromValuePack<'cx>>(&self) -> Result<T::Output> {
+    let stack = unsafe { self.thread.stack.as_ref() };
+    let args = &stack.regs[self.args.start..self.args.start + self.args.count];
+    T::from_value_pack(args, self.cx())
+  }
+
+  pub fn param<T: FromValue<'cx>>(&self, n: usize) -> Result<T> {
+    let stack = unsafe { self.thread.stack.as_ref() };
+    let value = stack
+      .regs
       .get(self.args.start + n)
       .cloned()
-      .map(|v| unsafe { v.bind_raw::<'cx>() })
+      .ok_or_else(|| error!("missing argument {n}"))?;
+    let value = unsafe { value.bind_raw::<'cx>() };
+    T::from_value(value, self.cx())
   }
 
   pub fn call(&mut self, value: ValueRef<'cx>, args: &[ValueRef<'cx>]) -> Result<ValueRef<'cx>> {
@@ -119,41 +135,6 @@ impl<'cx> Scope<'cx> {
       .thread
       .call(value.unbind(), <_>::unbind_slice(args))
       .map(|value| unsafe { value.bind_raw::<'cx>() })
-  }
-
-  pub fn globals(&self) -> Globals {
-    Globals {
-      table: self.thread.global.globals().clone(),
-      lifetime: core::marker::PhantomData,
-    }
-  }
-}
-
-pub struct AsyncScope<'cx> {
-  pub(crate) thread: Thread,
-  pub(crate) args: Args,
-  pub(crate) lifetime: PhantomData<&'cx ()>,
-}
-
-impl<'cx> AsyncScope<'cx> {
-  pub fn cx(&self) -> Context<'cx> {
-    Context {
-      cx: self.thread.cx.clone(),
-      lifetime: PhantomData,
-    }
-  }
-
-  pub fn num_args(&self) -> usize {
-    self.args.count
-  }
-
-  pub fn argument(&self, n: usize) -> Option<ValueRef> {
-    self
-      .thread
-      .stack
-      .get(self.args.start + n)
-      .cloned()
-      .map(|v| unsafe { v.bind_raw::<'cx>() })
   }
 
   pub async fn call_async(
