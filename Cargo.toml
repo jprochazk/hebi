@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
+# TODO: fix --no-default-features
 default = ["nanbox", "__check_recursion_limit", "__assert_snapshots"]
 
 # public features
