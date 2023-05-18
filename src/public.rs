@@ -3,10 +3,17 @@
 #[macro_use]
 mod macros;
 
+use std::future::Future;
 use std::marker::PhantomData;
+use std::ops::Deref;
+use std::pin::Pin;
+
+use futures_util::TryFutureExt;
 
 use self::value::{FromValuePack, ValueRef};
+use crate::object::native::NativeClassInstance;
 use crate::object::{Ptr, Table as OwnedTable};
+use crate::value::Value as OwnedValue;
 use crate::vm::thread::{Args, Thread};
 use crate::vm::Vm;
 
@@ -46,21 +53,47 @@ pub struct Hebi {
 // will never be accessed from two or more threads at the same time.
 unsafe impl Send for Hebi {}
 
+struct ForceSendFuture<F: Future<Output = Result<OwnedValue>>> {
+  fut: F,
+}
+impl<F: Future<Output = Result<OwnedValue>>> ForceSendFuture<F> {
+  pub unsafe fn new(fut: F) -> Self {
+    Self { fut }
+  }
+}
+unsafe impl<F: Future<Output = Result<OwnedValue>>> Send for ForceSendFuture<F> {}
+impl<F> Future for ForceSendFuture<F>
+where
+  F: Future<Output = Result<OwnedValue>>,
+{
+  type Output = F::Output;
+
+  fn poll(
+    self: std::pin::Pin<&mut Self>,
+    cx: &mut std::task::Context<'_>,
+  ) -> std::task::Poll<Self::Output> {
+    let this = unsafe { self.get_unchecked_mut() };
+    let fut = unsafe { Pin::new_unchecked(&mut this.fut) };
+    fut.poll(cx)
+  }
+}
+
 impl Hebi {
   pub fn new() -> Self {
     Self { vm: Vm::new() }
   }
 
   pub fn eval<'cx>(&'cx mut self, code: &str) -> Result<ValueRef<'cx>> {
-    self.vm.eval(code).map(|v| unsafe { v.bind_raw::<'cx>() })
+    let value = self.vm.eval(code)?;
+    Ok(unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub async fn eval_async<'cx>(&'cx mut self, code: &str) -> Result<ValueRef<'cx>> {
-    self
-      .vm
-      .eval_async(code)
-      .await
-      .map(|v| unsafe { v.bind_raw::<'cx>() })
+  pub fn eval_async<'cx>(
+    &'cx mut self,
+    code: &'cx str,
+  ) -> impl Future<Output = Result<ValueRef<'cx>>> + Send + 'cx {
+    let fut = self.vm.eval_async(code);
+    unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
   pub fn globals(&self) -> Globals {
@@ -154,6 +187,39 @@ impl<'cx> Scope<'cx> {
       table: self.thread.global.globals().clone(),
       lifetime: core::marker::PhantomData,
     }
+  }
+}
+
+impl<'cx> Context<'cx> {
+  pub fn new_instance<T>(&self, value: T) -> Result<Value<'cx>> {
+    // TODO: type map
+    todo!()
+  }
+}
+
+pub struct This<'cx, T> {
+  pub(crate) inner: Ptr<NativeClassInstance>,
+  lifetime: PhantomData<&'cx T>,
+}
+
+impl<'cx, T: 'static> This<'cx, T> {
+  pub fn new(inner: Ptr<NativeClassInstance>) -> Option<Self> {
+    if !inner.instance.is::<T>() {
+      return None;
+    }
+    Some(This {
+      inner,
+      lifetime: PhantomData,
+    })
+  }
+}
+
+impl<'cx, T: 'static> Deref for This<'cx, T> {
+  type Target = T;
+
+  fn deref(&self) -> &Self::Target {
+    debug_assert!(self.inner.instance.is::<T>());
+    unsafe { self.inner.instance.downcast_ref().unwrap_unchecked() }
   }
 }
 

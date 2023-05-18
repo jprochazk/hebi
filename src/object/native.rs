@@ -1,6 +1,10 @@
+use std::any::{Any as StdAny, TypeId};
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 use std::rc::Rc;
+use std::string::String as StdString;
+
+use indexmap::IndexMap;
 
 use super::{Object, Ptr, String};
 use crate::value::Value;
@@ -72,4 +76,74 @@ impl Object for NativeAsyncFunction {
   fn type_name(&self) -> &'static str {
     "NativeAsyncFunction"
   }
+}
+
+#[derive(Debug)]
+pub struct NativeClassInstance {
+  pub instance: Box<dyn StdAny>,
+  pub class: Ptr<NativeClass>,
+}
+
+impl Display for NativeClassInstance {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<native class `{}` instance>", self.class.name)
+  }
+}
+
+impl Object for NativeClassInstance {
+  fn type_name(&self) -> &'static str {
+    "NativeClassInstance"
+  }
+}
+
+#[derive(Debug)]
+pub struct NativeClass {
+  pub name: Ptr<String>,
+  pub init: Option<Ptr<NativeFunction>>,
+  pub fields: IndexMap<Ptr<String>, NativeField>,
+  pub methods: IndexMap<Ptr<String>, NativeMethod>,
+  pub static_methods: IndexMap<Ptr<String>, NativeMethod>,
+}
+
+#[derive(Debug)]
+pub enum NativeMethod {
+  Sync(Ptr<NativeFunction>),
+  Async(Ptr<NativeAsyncFunction>),
+}
+
+#[derive(Debug)]
+pub struct NativeField {
+  pub get: Ptr<NativeFunction>,
+  pub set: Ptr<NativeFunction>,
+}
+
+impl Display for NativeClass {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<native class `{}`>", self.name)
+  }
+}
+
+impl Object for NativeClass {
+  fn type_name(&self) -> &'static str {
+    "NativeClass"
+  }
+}
+
+pub struct NativeClassDescriptor {
+  pub name: StdString,
+  pub type_id: TypeId,
+  pub init: Option<SyncCallback>,
+  pub fields: IndexMap<StdString, NativeFieldDescriptor>,
+  pub methods: IndexMap<StdString, NativeMethodDescriptor>,
+  pub static_methods: IndexMap<StdString, NativeMethodDescriptor>,
+}
+
+pub struct NativeFieldDescriptor {
+  pub get: SyncCallback,
+  pub set: Option<SyncCallback>,
+}
+
+pub enum NativeMethodDescriptor {
+  Sync(SyncCallback),
+  Async(AsyncCallback),
 }

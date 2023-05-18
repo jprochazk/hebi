@@ -1,6 +1,5 @@
 use super::*;
 use crate::object::String;
-use crate::Scope;
 
 decl_object_ref! {
   struct String
@@ -12,8 +11,8 @@ impl<'cx> StringRef<'cx> {
   }
 }
 
-impl<'cx> Scope<'cx> {
+impl<'cx> Context<'cx> {
   pub fn new_string(&self, v: impl ToString) -> StringRef<'cx> {
-    self.cx().inner.alloc(String::owned(v)).bind(self.cx())
+    self.inner.alloc(String::owned(v)).bind(self.clone())
   }
 }
