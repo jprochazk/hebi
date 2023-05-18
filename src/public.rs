@@ -5,7 +5,6 @@ mod macros;
 
 use std::marker::PhantomData;
 
-use self::module::NativeModule;
 use self::value::{FromValuePack, ValueRef};
 use crate::object::{Ptr, Table as OwnedTable};
 use crate::vm::thread::{Args, Thread};
@@ -20,6 +19,7 @@ pub use crate::error::{Error, Result};
 pub use crate::fail;
 pub use crate::object::module::Loader;
 pub use crate::object::native::LocalBoxFuture;
+pub use crate::public::module::NativeModule;
 pub use crate::public::object::list::ListRef as List;
 pub use crate::public::object::string::StringRef as Str;
 pub use crate::public::object::table::TableRef as Table;
