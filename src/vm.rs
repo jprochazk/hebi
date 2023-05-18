@@ -54,7 +54,7 @@ impl Vm {
     let upvalues = cx.alloc(List::new());
     let main = module.root.clone();
     let main = cx.alloc(Function::new(main, upvalues, module_id));
-    println!("{}", main.descriptor.disassemble());
+    // println!("{}", main.descriptor.disassemble());
     let main = Value::object(main);
 
     self.root.call(main, &[])
@@ -68,7 +68,7 @@ impl Vm {
     let upvalues = cx.alloc(List::new());
     let main = module.root.clone();
     let main = cx.alloc(Function::new(main, upvalues, module_id));
-    println!("{}", main.descriptor.disassemble());
+    // println!("{}", main.descriptor.disassemble());
     let main = Value::object(main);
 
     self.root.call_async(main, &[]).await

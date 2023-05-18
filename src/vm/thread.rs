@@ -384,7 +384,7 @@ impl Thread {
     let module = self.global.module_loader().load(path.as_str())?.to_string();
     let module = syntax::parse(&self.cx, &module).map_err(Error::Syntax)?;
     let module = emit::emit(&self.cx, &module, path.as_str(), false);
-    println!("{}", module.root.disassemble());
+    // println!("{}", module.root.disassemble());
     let main = self.cx.alloc(Function::new(
       module.root.clone(),
       self.cx.alloc(List::new()),
