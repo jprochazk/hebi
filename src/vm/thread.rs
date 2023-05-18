@@ -4,7 +4,6 @@ mod macros;
 mod util;
 
 use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
 use std::mem::take;
 use std::ptr::NonNull;
 
