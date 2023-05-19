@@ -21,8 +21,6 @@ use crate::vm::{global, Vm};
 // public API
 pub mod module;
 pub mod object;
-#[cfg(feature = "serde")]
-pub mod serde;
 pub mod value;
 
 pub use crate::error::{Error, Result};
@@ -34,8 +32,12 @@ pub use crate::public::object::list::ListRef as List;
 pub use crate::public::object::string::StringRef as Str;
 pub use crate::public::object::table::TableRef as Table;
 pub use crate::public::object::AnyRef as Any;
-pub use crate::public::serde::ValueDeserializer;
 pub use crate::public::value::{FromValue, IntoValue, ValueRef as Value};
+
+#[cfg(feature = "serde")]
+pub mod serde;
+#[cfg(feature = "serde")]
+pub use crate::public::serde::ValueDeserializer;
 
 pub struct Hebi {
   vm: Vm,

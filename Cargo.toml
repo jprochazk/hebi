@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
+# TODO: reorganize features to allow --all-features to work (__miri disables tests...)
 # TODO: fix --no-default-features
 default = ["nanbox", "__check_recursion_limit", "__assert_snapshots"]
 
@@ -20,7 +21,7 @@ __check_recursion_limit = []
 __assert_snapshots = []
 
 # feature set used instead of `default` when running tests under miri
-__miri = ["nanbox", "serde"]
+__miri = ["nanbox"]
 
 
 [dependencies]

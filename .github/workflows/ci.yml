@@ -55,14 +55,8 @@ jobs:
       - name: Run tests
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-targets
-
-      - name: Run examples
-        uses: actions-rs/cargo@v1
-        with:
           command: xtask
-          args: examples
+          args: test-all
   miri:
     name: Miri
     runs-on: ubuntu-22.04
@@ -86,5 +80,5 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-permissive-provenance
         run: |
-          cargo miri test --no-default-features -F __miri
+          cargo miri test --no-default-features -F __miri -F serde
 
