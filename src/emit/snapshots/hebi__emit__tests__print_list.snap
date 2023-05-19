@@ -6,15 +6,15 @@ expression: snapshot
 print [0, 1, 2]
 
 # Func:
-function `main` (registers: 3, length: 17, constants: 0)
+function `main` (registers: 4, length: 17, constants: 0)
 .code
   0  | load_smi 0
-  2  | store r0
+  2  | store r1
   4  | load_smi 1
-  6  | store r1
+  6  | store r2
   8  | load_smi 2
-  10 | store r2
-  12 | make_list r0 3
+  10 | store r3
+  12 | make_list r1 3
   15 | print
   16 | return
 

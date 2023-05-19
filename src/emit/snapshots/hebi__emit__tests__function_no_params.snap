@@ -17,7 +17,7 @@ function `test` (registers: 1, length: 2, constants: 0)
 
 
 
-function `main` (registers: 0, length: 8, constants: 2)
+function `main` (registers: 1, length: 8, constants: 2)
 .code
   0 | make_fn [0]; <function `test` descriptor>
   2 | store_global [1]; test

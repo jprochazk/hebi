@@ -9,15 +9,15 @@ class T(U):
 
 
 # Func:
-function `main` (registers: 3, length: 18, constants: 3)
+function `main` (registers: 4, length: 18, constants: 3)
 .code
   0  | load_global [1]; U
-  2  | store r0
+  2  | store r1
   4  | load_smi 0
-  6  | store r1
+  6  | store r2
   8  | load_smi 1
-  10 | store r2
-  12 | make_data_class_derived [0] r0; <class `T` descriptor>
+  10 | store r3
+  12 | make_data_class_derived [0] r1; <class `T` descriptor>
   15 | store_global [2]; T
   17 | return
 

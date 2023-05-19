@@ -28,22 +28,22 @@ function `test` (registers: 5, length: 22, constants: 1)
 
 
 
-function `main` (registers: 3, length: 31, constants: 2)
+function `main` (registers: 4, length: 31, constants: 2)
 .code
   0  | make_fn [0]; <function `test` descriptor>
   2  | store_global [1]; test
   4  | load_global [1]; test
-  6  | store r0
+  6  | store r1
   8  | load_smi 1
-  10 | store r1
-  12 | call r0 1
+  10 | store r2
+  12 | call r1 1
   15 | load_global [1]; test
-  17 | store r0
+  17 | store r1
   19 | load_smi 1
-  21 | store r1
+  21 | store r2
   23 | load_smi 2
-  25 | store r2
-  27 | call r0 2
+  25 | store r3
+  27 | call r1 2
   30 | return
 
 

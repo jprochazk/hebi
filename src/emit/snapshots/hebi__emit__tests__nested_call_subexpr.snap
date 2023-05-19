@@ -7,39 +7,39 @@ expression: snapshot
 
 
 # Func:
-function `main` (registers: 13, length: 66, constants: 3)
+function `main` (registers: 14, length: 66, constants: 3)
 .code
   0  | load_smi 0
-  2  | store r0
+  2  | store r1
   4  | load_global [0]; a
-  6  | store r1
+  6  | store r2
   8  | load_smi 1
-  10 | store r4
+  10 | store r5
   12 | load_global [1]; b
-  14 | store r5
+  14 | store r6
   16 | load_smi 2
-  18 | store r8
+  18 | store r9
   20 | load_global [2]; c
-  22 | store r9
+  22 | store r10
   24 | load_smi 3
-  26 | store r12
+  26 | store r13
   28 | load_smi 4
-  30 | add r12
-  32 | store r10
+  30 | add r13
+  32 | store r11
   34 | load_smi 5
-  36 | store r11
-  38 | call r9 2
-  41 | add r8
-  43 | store r6
+  36 | store r12
+  38 | call r10 2
+  41 | add r9
+  43 | store r7
   45 | load_smi 6
-  47 | store r7
-  49 | call r5 2
-  52 | add r4
-  54 | store r2
+  47 | store r8
+  49 | call r6 2
+  52 | add r5
+  54 | store r3
   56 | load_smi 7
-  58 | store r3
-  60 | call r1 2
-  63 | add r0
+  58 | store r4
+  60 | call r2 2
+  63 | add r1
   65 | return
 
 

@@ -12,7 +12,7 @@ else:
 
 
 # Func:
-function `main` (registers: 0, length: 20, constants: 7)
+function `main` (registers: 1, length: 20, constants: 7)
 .code
   0  | load_true
   1  | jump_if_false 7

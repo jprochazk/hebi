@@ -28,7 +28,7 @@ function `f3` (registers: 7, length: 26, constants: 4)
 
 
 
-function `main` (registers: 0, length: 5, constants: 2)
+function `main` (registers: 1, length: 5, constants: 2)
 .code
   0 | make_fn [0]; <function `f3` descriptor>
   2 | store_global [1]; f3

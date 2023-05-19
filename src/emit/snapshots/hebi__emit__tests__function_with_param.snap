@@ -19,15 +19,15 @@ function `test` (registers: 2, length: 5, constants: 0)
 
 
 
-function `main` (registers: 2, length: 16, constants: 2)
+function `main` (registers: 3, length: 16, constants: 2)
 .code
   0  | make_fn [0]; <function `test` descriptor>
   2  | store_global [1]; test
   4  | load_global [1]; test
-  6  | store r0
+  6  | store r1
   8  | load_smi 0
-  10 | store r1
-  12 | call r0 1
+  10 | store r2
+  12 | call r1 1
   15 | return
 
 

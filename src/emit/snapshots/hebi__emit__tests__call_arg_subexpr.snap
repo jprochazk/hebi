@@ -6,16 +6,16 @@ expression: snapshot
 f(a+b)
 
 # Func:
-function `main` (registers: 3, length: 18, constants: 3)
+function `main` (registers: 4, length: 18, constants: 3)
 .code
   0  | load_global [0]; f
-  2  | store r0
+  2  | store r1
   4  | load_global [1]; a
-  6  | store r2
+  6  | store r3
   8  | load_global [2]; b
-  10 | add r2
-  12 | store r1
-  14 | call r0 1
+  10 | add r3
+  12 | store r2
+  14 | call r1 1
   17 | return
 
 

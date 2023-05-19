@@ -76,7 +76,7 @@ function `test4` (registers: 5, length: 20, constants: 5)
 
 
 
-function `main` (registers: 0, length: 17, constants: 8)
+function `main` (registers: 1, length: 17, constants: 8)
 .code
   0  | make_fn [0]; <function `test0` descriptor>
   2  | store_global [1]; test0

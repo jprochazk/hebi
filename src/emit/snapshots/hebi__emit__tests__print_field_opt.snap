@@ -9,7 +9,7 @@ print ?v.a.b.c
 
 
 # Func:
-function `main` (registers: 0, length: 18, constants: 4)
+function `main` (registers: 1, length: 18, constants: 4)
 .code
   0  | make_table_empty
   1  | store_global [0]; v

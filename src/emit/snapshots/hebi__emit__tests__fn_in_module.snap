@@ -29,7 +29,7 @@ function `get` (registers: 1, length: 5, constants: 0)
 
 
 
-function `main` (registers: 0, length: 13, constants: 2)
+function `main` (registers: 1, length: 13, constants: 2)
 .code
   0  | load_smi 100
   2  | store_module_var 0

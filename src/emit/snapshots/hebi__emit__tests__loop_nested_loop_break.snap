@@ -10,7 +10,7 @@ loop:
 
 
 # Func:
-function `main` (registers: 0, length: 9, constants: 2)
+function `main` (registers: 1, length: 9, constants: 2)
 .code
   0 | jump 4
   2 | jump_loop 2

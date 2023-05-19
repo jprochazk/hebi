@@ -8,19 +8,19 @@ for i in 0..=10:
 
 
 # Func:
-function `main` (registers: 2, length: 29, constants: 2)
+function `main` (registers: 3, length: 29, constants: 2)
 .code
   0  | load_smi 0
-  2  | store r0
+  2  | store r1
   4  | load_smi 10
-  6  | store r1
-  8  | load r1
-  10 | cmp_le r0
+  6  | store r2
+  8  | load r2
+  10 | cmp_le r1
   12 | jump_if_false 16
   14 | jump 10
   16 | load_smi 1
-  18 | add r0
-  20 | store r0
+  18 | add r1
+  20 | store r1
   22 | jump_loop 14
   24 | jump_loop 8
   26 | jump_loop 10

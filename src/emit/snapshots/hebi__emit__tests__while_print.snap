@@ -8,7 +8,7 @@ while true:
 
 
 # Func:
-function `main` (registers: 0, length: 9, constants: 2)
+function `main` (registers: 1, length: 9, constants: 2)
 .code
   0 | load_true
   1 | jump_if_false 7

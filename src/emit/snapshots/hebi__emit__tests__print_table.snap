@@ -6,21 +6,21 @@ expression: snapshot
 print { a: 0, b: 1, c: 2 }
 
 # Func:
-function `main` (registers: 6, length: 29, constants: 3)
+function `main` (registers: 7, length: 29, constants: 3)
 .code
   0  | load_const [0]; a
-  2  | store r0
+  2  | store r1
   4  | load_smi 0
-  6  | store r1
+  6  | store r2
   8  | load_const [1]; b
-  10 | store r2
+  10 | store r3
   12 | load_smi 1
-  14 | store r3
+  14 | store r4
   16 | load_const [2]; c
-  18 | store r4
+  18 | store r5
   20 | load_smi 2
-  22 | store r5
-  24 | make_table r0 3
+  22 | store r6
+  24 | make_table r1 3
   27 | print
   28 | return
 
