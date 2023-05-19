@@ -56,6 +56,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --all-targets
+
+      - name: Run examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: xtask
+          args: examples
   miri:
     name: Miri
     runs-on: ubuntu-22.04

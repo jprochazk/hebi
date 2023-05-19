@@ -9,5 +9,9 @@ miri *ARGS:
 example *ARGS:
   cargo run --example {{ARGS}}
 
-all-examples *ARGS:
-  
+examples *ARGS:
+  cargo xtask examples {{ARGS}}
+
+test:
+  cargo test --all-targets
+  just examples
