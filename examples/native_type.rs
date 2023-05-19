@@ -57,6 +57,7 @@ fn main() {
             .cx()
             .new_instance(CircleClass(RefCell::new(Circle::unit())))
         })
+        .finish()
     })
     .finish();
 
