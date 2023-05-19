@@ -23,9 +23,8 @@ async fn main() {
   let result = hebi
     .eval_async(
       r#"
-import http
-
-http.get("https://jsonplaceholder.typicode.com/todos/1")
+from http import get
+get("https://jsonplaceholder.typicode.com/todos/1")
 "#,
     )
     .await

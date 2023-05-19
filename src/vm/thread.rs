@@ -22,7 +22,7 @@ use crate::object::native::{
   NativeAsyncFunction, NativeClass, NativeClassInstance, NativeFunction,
 };
 use crate::object::{
-  ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
+  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
   Table,
 };
 use crate::value::constant::Constant;
@@ -111,7 +111,10 @@ impl Thread {
       return Err(e);
     };
     loop {
-      self.run()?;
+      if let Err(e) = self.run() {
+        self.pop_args(args);
+        return Err(e);
+      };
       match self.async_frame.take() {
         Some(frame) => match frame.fut.await {
           Ok(value) => {
@@ -185,7 +188,15 @@ impl Thread {
       self.call_function(function, args, return_addr)
     } else if object.is::<ClassMethod>() {
       let method = unsafe { object.cast_unchecked::<ClassMethod>() };
-      self.call_method(method, args, return_addr)
+      if method.this().is::<NativeClassInstance>() {
+        let this = unsafe { method.this().cast_unchecked::<NativeClassInstance>() };
+        let function = method.function();
+        self.call_native_method(this, function, args)
+      } else {
+        let this = method.this();
+        let function = method.function();
+        self.call_method(this, function, args, return_addr)
+      }
     } else if object.is::<ClassType>() {
       let class = unsafe { object.cast_unchecked::<ClassType>() };
       self.init_class(class, args)
@@ -225,8 +236,11 @@ impl Thread {
     }
     // if the above condition is false, the first arg will be the receiver
     stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    stack_mut!(self)
-      .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
+    let mut remainder = function.descriptor.frame_size - args.count;
+    if !function.descriptor.params.has_self {
+      remainder -= 1;
+    }
+    stack_mut!(self).extend((0..remainder).map(|_| Value::none()));
 
     call_frames_mut!(self).push(Frame {
       instructions: function.descriptor.instructions,
@@ -248,30 +262,12 @@ impl Thread {
 
   fn call_method(
     &mut self,
-    method: Ptr<ClassMethod>,
+    this: Ptr<Any>,
+    function: Ptr<Any>,
     args: Args,
     return_addr: Option<usize>,
   ) -> hebi::Result<dispatch::Call> {
-    if method.this().is::<NativeClassInstance>() {
-      let start = stack!(self).len();
-      let count = args.count + 1;
-
-      stack_mut!(self).push(Value::object(method.this()));
-      stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-
-      let args = Args { start, count };
-
-      let result = if let Some(function) = method.function().clone_cast::<NativeFunction>() {
-        self.call_native_function(function, args)
-      } else {
-        let function = unsafe { method.function().cast_unchecked::<NativeAsyncFunction>() };
-        self.call_native_async_function(function, args)
-      };
-
-      return result;
-    }
-
-    let function = unsafe { method.function().cast_unchecked::<Function>() };
+    let function = unsafe { function.cast_unchecked::<Function>() };
     check_args(&function.descriptor.params, true, args.count)?;
 
     self.pc = 0;
@@ -279,7 +275,7 @@ impl Thread {
       self.stack.as_mut().base = self.stack.as_ref().regs.len();
     }
     // receiver is passed implicitly through the `ClassMethod` wrapper
-    stack_mut!(self).push(Value::object(method.this()));
+    stack_mut!(self).push(Value::object(this));
     stack_mut!(self).extend_from_within(args.start..args.start + args.count);
     stack_mut!(self)
       .extend((0..function.descriptor.frame_size - args.count - 1).map(|_| Value::none()));
@@ -302,6 +298,45 @@ impl Thread {
     )
   }
 
+  // TODO: deduplicate
+  // - do_native_call
+  // - do_native_async_call
+  // - also some kind of push_args-like thing
+
+  fn call_native_method(
+    &mut self,
+    this: Ptr<NativeClassInstance>,
+    function: Ptr<Any>,
+    args: Args,
+  ) -> hebi::Result<dispatch::Call> {
+    let start = stack!(self).len();
+    let count = args.count + 1;
+    stack_mut!(self).push(Value::object(this));
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    let args = Args { start, count };
+
+    if let Some(function) = function.clone_cast::<NativeFunction>() {
+      match function.call(self.get_scope(args)) {
+        Ok(value) => {
+          self.acc = value;
+          self.pop_args(args);
+          Ok(dispatch::Call::Continue)
+        }
+        Err(e) => {
+          self.pop_args(args);
+          Err(e)
+        }
+      }
+    } else {
+      let function = unsafe { function.cast_unchecked::<NativeAsyncFunction>() };
+
+      let fut = function.call(self.get_scope(args));
+      self.async_frame.replace(AsyncFrame { fut, args });
+
+      Ok(dispatch::Call::Yield)
+    }
+  }
+
   fn init_class(&mut self, class: Ptr<ClassType>, args: Args) -> hebi::Result<dispatch::Call> {
     let instance = self
       .global
@@ -310,11 +345,12 @@ impl Thread {
     if let Some(init) = class.init.as_ref() {
       check_args(&init.descriptor.params, true, args.count)?;
 
-      let method = self.global.alloc(ClassMethod::new(
+      self.call_method(
         instance.clone().into_any(),
         init.clone().into_any(),
-      ));
-      self.call_method(method, args, None)?;
+        args,
+        None,
+      )?;
       self.run()?;
     } else if args.count > 0 {
       fail!("expected at most 0 args");
@@ -344,9 +380,22 @@ impl Thread {
     function: Ptr<NativeFunction>,
     args: Args,
   ) -> hebi::Result<dispatch::Call> {
-    self.acc = function.call(self.get_scope(args))?;
-    self.pop_args(args);
-    Ok(dispatch::Call::Continue)
+    // TODO: put this in a function
+    let start = stack!(self).len();
+    let count = args.count;
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    let args = Args { start, count };
+    match function.call(self.get_scope(args)) {
+      Ok(value) => {
+        self.acc = value;
+        self.pop_args(args);
+        Ok(dispatch::Call::Continue)
+      }
+      Err(e) => {
+        self.pop_args(args);
+        Err(e)
+      }
+    }
   }
 
   fn call_native_async_function(
@@ -360,7 +409,10 @@ impl Thread {
         function.name
       );
     }
-
+    let start = stack!(self).len();
+    let count = args.count;
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    let args = Args { start, count };
     let fut = function.call(self.get_scope(args));
     self.async_frame.replace(AsyncFrame { fut, args });
 
@@ -375,9 +427,18 @@ impl Thread {
     let start = stack!(self).len();
     let count = 1;
     stack_mut!(self).push(Value::object(instance));
-    self
-      .call_native_function(getter, Args { start, count })
-      .map(|_| ())
+    let args = Args { start, count };
+    match getter.call(self.get_scope(args)) {
+      Ok(value) => {
+        self.acc = value;
+        self.pop_args(args);
+        Ok(())
+      }
+      Err(e) => {
+        self.pop_args(args);
+        Err(e)
+      }
+    }
   }
 
   fn call_native_field_setter(
@@ -390,9 +451,18 @@ impl Thread {
     let count = 2;
     stack_mut!(self).push(Value::object(instance));
     stack_mut!(self).push(value);
-    self
-      .call_native_function(setter, Args { start, count })
-      .map(|_| ())
+    let args = Args { start, count };
+    match setter.call(self.get_scope(args)) {
+      Ok(value) => {
+        self.acc = value;
+        self.pop_args(args);
+        Ok(())
+      }
+      Err(e) => {
+        self.pop_args(args);
+        Err(e)
+      }
+    }
   }
 
   fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {
