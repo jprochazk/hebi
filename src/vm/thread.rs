@@ -1368,7 +1368,7 @@ impl Handler for Thread {
   }
 
   fn op_print_n(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
-    debug_assert!(stack_base!(self) + start.index() + count.value() < stack!(self).len());
+    debug_assert!(stack_base!(self) + start.index() + count.value() <= stack!(self).len());
 
     let start = start.index();
     let end = start + count.value();
