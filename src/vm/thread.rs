@@ -502,7 +502,6 @@ impl Handler for Thread {
 
   fn op_load(&mut self, reg: op::Register) -> hebi::Result<()> {
     self.acc = self.get_register(reg);
-    println!("load {reg} {}", self.acc);
 
     Ok(())
   }
