@@ -2,8 +2,8 @@ use std::any::{Any as StdAny, TypeId};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::mem::transmute;
-use std::rc::Rc;
 use std::string::String as StdString;
+use std::sync::Arc;
 
 use futures_util::{FutureExt, TryFutureExt};
 use indexmap::IndexMap;
@@ -19,7 +19,7 @@ use crate::{FromValue, IntoValue, Result, Scope, This, Unbind, Value};
 
 #[derive(Clone)]
 pub struct NativeModule {
-  pub(crate) data: Rc<NativeModuleData>,
+  pub(crate) data: Arc<NativeModuleData>,
 }
 
 impl NativeModule {
@@ -50,7 +50,7 @@ impl NativeModuleBuilder {
   pub fn function<'cx, R>(
     mut self,
     name: impl ToString,
-    f: impl Fn(Scope<'cx>) -> R + 'static,
+    f: impl Fn(Scope<'cx>) -> R + Send + Sync + 'static,
   ) -> Self
   where
     R: IntoValue<'cx> + 'static,
@@ -62,7 +62,7 @@ impl NativeModuleBuilder {
   pub fn async_function<'cx, Fut, R>(
     mut self,
     name: impl ToString,
-    f: impl Fn(Scope<'cx>) -> Fut + 'static,
+    f: impl Fn(Scope<'cx>) -> Fut + Send + Sync + 'static,
   ) -> Self
   where
     Fut: Future<Output = R> + 'static,
@@ -93,7 +93,7 @@ impl NativeModuleBuilder {
 
   pub fn finish(self) -> NativeModule {
     NativeModule {
-      data: Rc::new(self.data),
+      data: Arc::new(self.data),
     }
   }
 }
@@ -124,7 +124,7 @@ impl<T: StdAny> NativeClassBuilder<T> {
 
   pub fn field<'cx, G, V>(mut self, name: impl ToString, get: G) -> Self
   where
-    G: Fn(Scope<'cx>, This<'cx, T>) -> V + 'static,
+    G: Fn(Scope<'cx>, This<'cx, T>) -> V + Send + Sync + 'static,
     V: IntoValue<'cx> + 'static,
   {
     self.descriptor.fields.insert(
@@ -139,8 +139,8 @@ impl<T: StdAny> NativeClassBuilder<T> {
 
   pub fn field_mut<'cx, G, S, V>(mut self, name: impl ToString, get: G, set: S) -> Self
   where
-    G: Fn(Scope<'cx>, This<'cx, T>) -> V + 'static,
-    S: Fn(Scope<'cx>, This<'cx, T>, V) -> Result<()> + 'static,
+    G: Fn(Scope<'cx>, This<'cx, T>) -> V + Send + Sync + 'static,
+    S: Fn(Scope<'cx>, This<'cx, T>, V) -> Result<()> + Send + Sync + 'static,
     V: IntoValue<'cx> + FromValue<'cx> + 'static,
   {
     self.descriptor.fields.insert(
@@ -153,7 +153,7 @@ impl<T: StdAny> NativeClassBuilder<T> {
     self
   }
 
-  pub fn init(mut self, f: impl Fn(Scope<'_>) -> Result<T> + 'static) -> Self {
+  pub fn init(mut self, f: impl Fn(Scope<'_>) -> Result<T> + Send + Sync + 'static) -> Self {
     // TODO: type safety
     if self.descriptor.init.is_some() {
       panic!("double init")
@@ -168,7 +168,7 @@ impl<T: StdAny> NativeClassBuilder<T> {
   pub fn method<'cx, R>(
     mut self,
     name: impl ToString,
-    f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + 'static,
+    f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + Send + Sync + 'static,
   ) -> Self
   where
     R: IntoValue<'cx>,
@@ -183,7 +183,7 @@ impl<T: StdAny> NativeClassBuilder<T> {
   pub fn static_method<'cx, R>(
     mut self,
     name: impl ToString,
-    f: impl Fn(Scope<'cx>) -> R + 'static,
+    f: impl Fn(Scope<'cx>) -> R + Send + Sync + 'static,
   ) -> Self
   where
     R: IntoValue<'cx> + 'static,
@@ -196,23 +196,25 @@ impl<T: StdAny> NativeClassBuilder<T> {
   }
 }
 
-fn wrap_fn<'cx, R>(f: impl Fn(Scope<'cx>) -> R + 'static) -> SyncCallback
+fn wrap_fn<'cx, R>(f: impl Fn(Scope<'cx>) -> R + Send + Sync + 'static) -> SyncCallback
 where
   R: IntoValue<'cx> + 'static,
 {
-  Rc::new(move |scope| {
+  Arc::new(move |scope| {
     let scope = unsafe { transmute::<_, Scope<'static>>(scope) };
     let cx = scope.cx();
     f(scope).into_value(cx).map(|value| value.unbind())
   })
 }
 
-fn wrap_async_fn<'cx, Fut, R>(f: impl Fn(Scope<'cx>) -> Fut + 'static) -> AsyncCallback
+fn wrap_async_fn<'cx, Fut, R>(
+  f: impl Fn(Scope<'cx>) -> Fut + Send + Sync + 'static,
+) -> AsyncCallback
 where
   Fut: Future<Output = R> + 'static,
   R: IntoValue<'cx>,
 {
-  Rc::new(move |scope| {
+  Arc::new(move |scope| {
     let scope = unsafe { transmute::<_, Scope<'static>>(scope) };
     let cx = scope.cx();
     Box::pin(unsafe {
@@ -254,12 +256,12 @@ fn extract_this<T: 'static>(scope: Scope<'_>) -> Result<(Scope<'_>, This<'_, T>)
 }
 
 fn wrap_method<'cx, T: 'static, R>(
-  f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + 'static,
+  f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + Send + Sync + 'static,
 ) -> SyncCallback
 where
   R: IntoValue<'cx>,
 {
-  Rc::new(move |scope| {
+  Arc::new(move |scope| {
     let (scope, this) = extract_this::<T>(scope)?;
     let (scope, this) =
       unsafe { transmute::<_, (Scope<'static>, This<'static, T>)>((scope, this)) };
@@ -269,12 +271,12 @@ where
 }
 
 fn wrap_getter<'cx, T: 'static, R>(
-  f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + 'static,
+  f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + Send + Sync + 'static,
 ) -> SyncCallback
 where
   R: IntoValue<'cx> + 'static,
 {
-  Rc::new(move |scope| {
+  Arc::new(move |scope| {
     let (scope, this) = extract_this::<T>(scope)?;
     let (scope, this) =
       unsafe { transmute::<_, (Scope<'static>, This<'static, T>)>((scope, this)) };
@@ -287,12 +289,12 @@ where
 }
 
 fn wrap_setter<'cx, T: 'static, V>(
-  f: impl Fn(Scope<'cx>, This<'cx, T>, V) -> Result<()> + 'static,
+  f: impl Fn(Scope<'cx>, This<'cx, T>, V) -> Result<()> + Send + Sync + 'static,
 ) -> SyncCallback
 where
   V: FromValue<'cx> + 'static,
 {
-  Rc::new(move |scope| {
+  Arc::new(move |scope| {
     let (scope, this) = extract_this::<T>(scope)?;
     let (scope, this) =
       unsafe { transmute::<_, (Scope<'static>, This<'static, T>)>((scope, this)) };

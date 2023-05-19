@@ -1,8 +1,8 @@
 use std::any::{Any as StdAny, TypeId};
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
-use std::rc::Rc;
 use std::string::String as StdString;
+use std::sync::Arc;
 
 use indexmap::IndexMap;
 
@@ -10,7 +10,7 @@ use super::{Object, Ptr, String};
 use crate::value::Value;
 use crate::{Result, Scope};
 
-pub type Callback<R> = Rc<dyn Fn(Scope<'_>) -> R>;
+pub type Callback<R> = Arc<dyn Fn(Scope<'_>) -> R + Send + Sync + 'static>;
 pub type LocalBoxFuture<'a, T> = Pin<Box<dyn core::future::Future<Output = T> + 'a>>;
 
 pub type SyncCallback = Callback<Result<Value>>;
