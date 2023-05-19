@@ -3,6 +3,7 @@
 #[macro_use]
 mod macros;
 
+use std::fmt::Debug;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -109,6 +110,12 @@ impl Hebi {
 
   pub fn register(&mut self, module: &NativeModule) {
     self.vm.register(module)
+  }
+}
+
+impl Debug for Hebi {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Hebi").finish()
   }
 }
 
