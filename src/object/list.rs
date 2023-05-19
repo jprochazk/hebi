@@ -67,6 +67,32 @@ impl List {
     debug_assert!(index < self.len(), "index {index} out of bounds");
     *self.data.borrow_mut().get_mut(index).unwrap_unchecked() = value;
   }
+
+  pub fn iter(&self) -> Iter {
+    Iter {
+      list: self,
+      index: 0,
+    }
+  }
+}
+
+pub struct Iter<'a> {
+  list: &'a List,
+  index: usize,
+}
+
+impl<'a> Iterator for Iter<'a> {
+  type Item = Value;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    match self.list.data.borrow().get(self.index) {
+      Some(value) => {
+        self.index += 1;
+        Some(value.clone())
+      }
+      None => None,
+    }
+  }
 }
 
 impl From<Vec<Value>> for List {

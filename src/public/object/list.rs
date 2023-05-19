@@ -1,7 +1,9 @@
+use std::marker::PhantomData;
+
 use super::*;
-use crate::object::List;
+use crate::object::{list, List};
 use crate::public::value::ValueRef;
-use crate::{Scope, Unbind};
+use crate::{Scope, Unbind, Value};
 
 decl_object_ref! {
   struct List
@@ -37,6 +39,26 @@ impl<'cx> ListRef<'cx> {
   #[must_use = "`set` returns false if index is out of bounds"]
   pub fn set(&self, index: usize, value: ValueRef<'cx>) -> bool {
     self.inner.set(index, value.unbind())
+  }
+
+  pub fn iter<'a>(&'a self) -> Iter<'a, 'cx> {
+    Iter {
+      inner: self.inner.iter(),
+      lifetime: PhantomData,
+    }
+  }
+}
+
+pub struct Iter<'a, 'cx> {
+  inner: list::Iter<'a>,
+  lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'a, 'cx> Iterator for Iter<'a, 'cx> {
+  type Item = Value<'cx>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self.inner.next().map(|v| unsafe { v.bind_raw::<'cx>() })
   }
 }
 

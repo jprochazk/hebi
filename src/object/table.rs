@@ -35,8 +35,8 @@ impl Table {
     self.data.borrow().is_empty()
   }
 
-  pub fn insert(&self, key: Ptr<String>, value: Value) {
-    self.data.borrow_mut().insert(key, value);
+  pub fn insert(&self, key: Ptr<String>, value: Value) -> Option<Value> {
+    self.data.borrow_mut().insert(key, value)
   }
 
   pub fn get<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K) -> Option<Value> {
@@ -71,8 +71,22 @@ impl Table {
     }
   }
 
-  pub fn keys(&self) -> Keys<'_> {
+  pub fn keys(&self) -> Keys {
     Keys {
+      table: self,
+      index: 0,
+    }
+  }
+
+  pub fn values(&self) -> Values {
+    Values {
+      table: self,
+      index: 0,
+    }
+  }
+
+  pub fn entries(&self) -> Entries {
+    Entries {
       table: self,
       index: 0,
     }
@@ -94,16 +108,48 @@ impl<'a> Iterator for Keys<'a> {
   type Item = Ptr<String>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    match self
-      .table
-      .data
-      .borrow()
-      .get_index(self.index)
-      .map(|(key, _)| key.clone())
-    {
-      Some(key) => {
+    match self.table.data.borrow().get_index(self.index) {
+      Some((key, _)) => {
         self.index += 1;
-        Some(key)
+        Some(key.clone())
+      }
+      None => None,
+    }
+  }
+}
+
+pub struct Values<'a> {
+  table: &'a Table,
+  index: usize,
+}
+
+impl<'a> Iterator for Values<'a> {
+  type Item = Value;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    match self.table.data.borrow().get_index(self.index) {
+      Some((_, value)) => {
+        self.index += 1;
+        Some(value.clone())
+      }
+      None => None,
+    }
+  }
+}
+
+pub struct Entries<'a> {
+  table: &'a Table,
+  index: usize,
+}
+
+impl<'a> Iterator for Entries<'a> {
+  type Item = (Ptr<String>, Value);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    match self.table.data.borrow().get_index(self.index) {
+      Some((key, value)) => {
+        self.index += 1;
+        Some((key.clone(), value.clone()))
       }
       None => None,
     }
