@@ -14,11 +14,10 @@ macro_rules! check {
     #[allow(non_snake_case)]
     fn $name() {
       let input = indoc::indoc!($input);
-      let mut hebi = crate::vm::Vm::new();
-      hebi.root.global.set_module_loader(
-        TestModuleLoader::new(&[$(
-          (stringify!($module), indoc::indoc!($code))
-        ),*])
+      let mut hebi = crate::vm::Vm::with_module_loader(
+        TestModuleLoader::new(&[
+          $((stringify!($module), indoc::indoc!($code))),*
+        ])
       );
       let snapshot = format!("{:#?}", hebi.eval(input));
       assert_snapshot!(snapshot);

@@ -9,9 +9,10 @@ use std::ptr::{self, NonNull, Pointee};
 use std::{alloc, mem};
 
 use crate as hebi;
-use crate::ctx::Context;
 use crate::object::{Object, String};
 use crate::value::Value;
+use crate::vm::global::Global;
+use crate::Scope;
 
 type VTable = <dyn Object as Pointee>::Metadata;
 
@@ -124,20 +125,20 @@ impl<T: Object> Object for Ptr<T> {
     to(&self.inner().data);
 
     fn type_name(self: &Self) -> &'static str;
-    fn named_field(self: &Self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>>;
-    fn set_named_field(self: &Self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()>;
-    fn keyed_field(self: &Self, cx: &Context, key: Value) -> hebi::Result<Option<Value>>;
-    fn set_keyed_field(self: &Self, cx: &Context, key: Value, value: Value) -> hebi::Result<()>;
-    fn contains(self: &Self, cx: &Context, item: Value) -> hebi::Result<bool>;
-    fn add(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn subtract(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn multiply(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn divide(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn remainder(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn pow(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn invert(self: &Self, cx: &Context) -> hebi::Result<Value>;
-    fn not(self: &Self, cx: &Context) -> hebi::Result<Value>;
-    fn cmp(self: &Self, cx: &Context, other: Value) -> hebi::Result<Ordering>;
+    fn named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>>;
+    fn set_named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()>;
+    fn keyed_field(self: &Self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>>;
+    fn set_keyed_field(self: &Self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()>;
+    fn contains(self: &Self, scope: Scope<'_>, item: Value) -> hebi::Result<bool>;
+    fn add(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn subtract(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn multiply(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn divide(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn remainder(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn pow(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn invert(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
+    fn not(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
+    fn cmp(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering>;
   }
 }
 
@@ -191,8 +192,8 @@ impl<T> AsRef<T> for Ptr<T> {
   }
 }
 
-impl Context {
-  pub fn alloc<T: Object + 'static>(&self, v: T) -> Ptr<T> {
+impl<T: Object + 'static> Ptr<T> {
+  pub(crate) unsafe fn alloc_raw(v: T) -> Self {
     let object = Box::new(Repr {
       layout: Layout::new::<Repr<T>>(),
       type_id: TypeId::of::<T>(),
@@ -201,8 +202,14 @@ impl Context {
       data: v,
     });
     Ptr {
-      repr: unsafe { NonNull::new_unchecked(Box::into_raw(object)) },
+      repr: NonNull::new_unchecked(Box::into_raw(object)),
     }
+  }
+}
+
+impl Global {
+  pub fn alloc<T: Object + 'static>(&self, v: T) -> Ptr<T> {
+    unsafe { Ptr::alloc_raw(v) }
   }
 }
 
@@ -252,20 +259,20 @@ impl Object for Any {
     to(unsafe { self.as_dyn_object() });
 
     fn type_name(self: &Self) -> &'static str;
-    fn named_field(self: &Self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>>;
-    fn set_named_field(self: &Self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()>;
-    fn keyed_field(self: &Self, cx: &Context, key: Value) -> hebi::Result<Option<Value>>;
-    fn set_keyed_field(self: &Self, cx: &Context, key: Value, value: Value) -> hebi::Result<()>;
-    fn contains(self: &Self, cx: &Context, item: Value) -> hebi::Result<bool>;
-    fn add(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn subtract(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn multiply(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn divide(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn remainder(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn pow(self: &Self, cx: &Context, other: Value) -> hebi::Result<Value>;
-    fn invert(self: &Self, cx: &Context) -> hebi::Result<Value>;
-    fn not(self: &Self, cx: &Context) -> hebi::Result<Value>;
-    fn cmp(self: &Self, cx: &Context, other: Value) -> hebi::Result<Ordering>;
+    fn named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>>;
+    fn set_named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()>;
+    fn keyed_field(self: &Self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>>;
+    fn set_keyed_field(self: &Self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()>;
+    fn contains(self: &Self, scope: Scope<'_>, item: Value) -> hebi::Result<bool>;
+    fn add(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn subtract(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn multiply(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn divide(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn remainder(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn pow(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
+    fn invert(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
+    fn not(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
+    fn cmp(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering>;
   }
 }
 
@@ -377,9 +384,9 @@ mod tests {
   #[allow(clippy::redundant_clone)]
   #[test]
   fn object_repr_refcount() {
-    let cx = Context::for_test();
+    let global = Global::default();
 
-    let foo = cx.alloc(Foo {
+    let foo = global.alloc(Foo {
       value: 100,
       on_drop: Box::new(noop),
     });
@@ -393,9 +400,9 @@ mod tests {
 
   #[test]
   fn object_any_refcount() {
-    let cx = Context::for_test();
+    let global = Global::default();
 
-    let foo = cx
+    let foo = global
       .alloc(Foo {
         value: 100,
         on_drop: Box::new(noop),
@@ -411,9 +418,9 @@ mod tests {
 
   #[test]
   fn ptr_dyn_cast() {
-    let cx = Context::for_test();
+    let global = Global::default();
 
-    let foo = cx.alloc(Foo {
+    let foo = global.alloc(Foo {
       value: 100,
       on_drop: Box::new(noop),
     });
@@ -426,12 +433,12 @@ mod tests {
 
   #[test]
   fn drop_is_called() {
-    let cx = Context::for_test();
+    let global = Global::default();
 
     // static
     {
       let dropped = Rc::new(RefCell::new(false));
-      let foo = cx.alloc(Foo {
+      let foo = global.alloc(Foo {
         value: 100,
         on_drop: Box::new({
           let dropped = dropped.clone();
@@ -445,7 +452,7 @@ mod tests {
     // dynamic
     {
       let dropped = Rc::new(RefCell::new(false));
-      let foo = cx.alloc(Foo {
+      let foo = global.alloc(Foo {
         value: 100,
         on_drop: Box::new({
           let dropped = dropped.clone();
@@ -460,7 +467,7 @@ mod tests {
 
   #[test]
   fn any_casting() {
-    let cx = Context::for_test();
+    let cx = Global::default();
 
     let v = cx.alloc(Bar { value: 100 });
     let v = v.into_any();
@@ -470,9 +477,9 @@ mod tests {
 
   #[test]
   fn debug_and_display_fmt() {
-    let cx = Context::for_test();
+    let global = Global::default();
 
-    let v = cx.alloc(Bar { value: 100 });
+    let v = global.alloc(Bar { value: 100 });
     assert_eq!("Bar { value: 100 }", v.to_string());
     let v = v.into_any();
     assert_eq!("Bar { value: 100 }", v.to_string());

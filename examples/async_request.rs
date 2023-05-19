@@ -6,15 +6,11 @@ async fn main() {
 
   async fn get(scope: Scope<'_>, client: reqwest::Client) -> Result<Str<'_>> {
     let url = scope.param::<Str>(0)?;
-    let response = client
-      .get(url.as_str())
-      .send()
-      .await
-      .map_err(hebi::Error::user)?;
-    let bytes = response.bytes().await.map_err(hebi::Error::user)?;
-    let data = bytes.to_vec();
-    let str = String::from_utf8(data).map_err(hebi::Error::user)?;
-    Ok(scope.cx().new_string(str))
+    let request = client.get(url.as_str());
+    let response = request.send().await.map_err(hebi::Error::user)?;
+    let bytes = response.bytes().await.map_err(hebi::Error::user)?.to_vec();
+    let str = String::from_utf8(bytes).map_err(hebi::Error::user)?;
+    Ok(scope.new_string(str))
   }
 
   let module = NativeModule::builder("http")

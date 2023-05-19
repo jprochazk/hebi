@@ -57,14 +57,12 @@ macro_rules! decl_object_ref {
 
     paste::paste! {
       impl<'cx> $crate::public::object::ObjectRef<'cx> for [<$T Ref>]<'cx> {
-        fn as_any(&self, cx: $crate::public::Context<'cx>) -> $crate::public::object::AnyRef<'cx> {
-          let _ = cx;
+        fn as_any(&self, _: $crate::Global<'cx>) -> $crate::public::object::AnyRef<'cx> {
           let ptr = self.inner.clone().into_any();
           unsafe { ptr.bind_raw::<'cx>() }
         }
 
-        fn from_any(v: crate::public::object::AnyRef<'cx>, cx: $crate::public::Context<'cx>) -> Option<Self> {
-          let _ = cx;
+        fn from_any(v: $crate::public::object::AnyRef<'cx>, _: $crate::Global<'cx>) -> Option<Self> {
           v.inner.cast::<$T>().ok().map(|v| unsafe { v.bind_raw::<'cx>() })
         }
       }

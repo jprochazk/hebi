@@ -6,9 +6,9 @@ use indexmap::IndexMap;
 use super::ptr::{Any, Ptr};
 use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate as hebi;
-use crate::ctx::Context;
-use crate::object;
 use crate::value::Value;
+use crate::vm::global::Global;
+use crate::{object, Scope};
 
 #[derive(Debug)]
 pub struct ClassInstance {
@@ -19,9 +19,9 @@ pub struct ClassInstance {
 }
 
 impl ClassInstance {
-  pub fn new(cx: &Context, type_: &ClassType) -> Self {
+  pub fn new(global: Global, type_: &ClassType) -> Self {
     let name = type_.name.clone();
-    let fields = cx.alloc(type_.fields.copy());
+    let fields = global.alloc(type_.fields.copy());
     for (key, method) in type_.methods.iter() {
       fields.insert(key.clone(), Value::object(method.clone()));
     }
@@ -52,26 +52,25 @@ impl Object for ClassInstance {
 
   fn named_field(
     &self,
-    cx: &crate::ctx::Context,
+    _: Scope<'_>,
     name: Ptr<String>,
   ) -> crate::Result<Option<crate::value::Value>> {
-    let _ = cx;
     Ok(self.fields.get(&name))
   }
 
   fn set_named_field(
     &self,
-    cx: &crate::ctx::Context,
+    scope: Scope<'_>,
     name: Ptr<String>,
     value: crate::value::Value,
   ) -> crate::Result<()> {
     if !self.is_frozen() {
-      self.fields.insert(cx.alloc(String::owned(name)), value);
+      self.fields.insert(scope.alloc(String::owned(name)), value);
       return Ok(());
     }
 
     if !self.fields.set(&name, value) {
-      hebi::fail!("cannot add field `{name}` to frozen class");
+      fail!("cannot add field `{name}` to frozen class");
     }
 
     Ok(())
@@ -97,10 +96,10 @@ impl Object for ClassProxy {
 
   fn named_field(
     &self,
-    cx: &crate::ctx::Context,
+    scope: Scope<'_>,
     name: Ptr<String>,
   ) -> crate::Result<Option<crate::value::Value>> {
-    self.class.named_field(cx, name)
+    self.class.named_field(scope, name)
   }
 
   // TODO: delegate everything to `this`
@@ -185,9 +184,7 @@ impl Object for ClassType {
     "Class"
   }
 
-  fn named_field(&self, cx: &hebi::ctx::Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
-    let _ = cx;
-
+  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
     Ok(self.methods.get(&name).cloned().map(Value::object))
   }
 }

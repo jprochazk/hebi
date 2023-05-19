@@ -7,15 +7,15 @@ use self::indent::IndentStack;
 use super::lexer::TokenKind::*;
 use super::lexer::{Lexer, Token, TokenKind};
 use super::{ast, SyntaxError};
-use crate::ctx::Context;
 use crate::span::{Span, SpannedError};
+use crate::vm::global::Global;
 
 // TODO: `is` and `in`
 // TODO: `async`/`await` - maybe post-MVP
 
-pub fn parse<'src>(cx: &Context, src: &'src str) -> Result<ast::Module<'src>, SyntaxError> {
+pub fn parse(global: Global, src: &str) -> Result<ast::Module, SyntaxError> {
   let lexer = Lexer::new(src);
-  let parser = Parser::new(cx, lexer);
+  let parser = Parser::new(global, lexer);
   parser.module().map_err(SyntaxError::new)
 }
 
@@ -101,8 +101,8 @@ impl Default for Func {
   }
 }
 
-struct Parser<'cx, 'src> {
-  cx: &'cx Context,
+struct Parser<'src> {
+  global: Global,
   module: ast::Module<'src>,
   lex: Lexer<'src>,
   errors: Vec<SpannedError>,
@@ -110,10 +110,10 @@ struct Parser<'cx, 'src> {
   state: State,
 }
 
-impl<'cx, 'src> Parser<'cx, 'src> {
-  fn new(cx: &'cx Context, lex: Lexer<'src>) -> Self {
+impl<'src> Parser<'src> {
+  fn new(global: Global, lex: Lexer<'src>) -> Self {
     Self {
-      cx,
+      global,
       module: ast::Module::new(),
       lex,
       errors: Vec::new(),
@@ -272,7 +272,7 @@ mod indent;
 mod module;
 mod stmt;
 
-impl<'cx, 'a> Parser<'cx, 'a> {
+impl<'a> Parser<'a> {
   // On average, a single parse_XXX() method consumes between 10 and 700 bytes of
   // stack space. Assuming ~50 recursive calls per dive and 700 bytes of stack
   // space per call, we'll require 50 * 700 = 35k bytes of stack space in order

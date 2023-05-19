@@ -1,8 +1,7 @@
 use super::*;
-use crate as hebi;
 use crate::span::Spanned;
 
-impl<'cx, 'src> Parser<'cx, 'src> {
+impl<'src> Parser<'src> {
   pub(super) fn ident(&mut self) -> Result<ast::Ident<'src>, SpannedError> {
     self.expect(Lit_Ident)?;
     Ok(ast::Ident::new(
@@ -13,7 +12,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
   pub(super) fn yield_(&mut self) -> Result<Spanned<ast::Yield<'src>>, SpannedError> {
     if self.state.current_func.is_none() {
-      hebi::fail!(@self.current().span, "yield outside of function");
+      fail!(@self.current().span, "yield outside of function");
     }
 
     self.expect(Kw_Yield)?;

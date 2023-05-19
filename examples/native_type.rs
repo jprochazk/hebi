@@ -36,6 +36,14 @@ fn main() {
           Ok(CircleClass(RefCell::new(Circle::new(center, radius))))
         })
         .field_mut(
+          "radius",
+          |_, this| this.0.borrow().radius,
+          |_, this, value| {
+            this.0.borrow_mut().radius = value;
+            Ok(())
+          },
+        )
+        .field_mut(
           "x",
           |_, this| this.0.borrow().center.0,
           |_, this, value| {
@@ -53,9 +61,7 @@ fn main() {
         )
         .method("area", |_, this| this.0.borrow().area())
         .static_method("unit", |scope| {
-          scope
-            .cx()
-            .new_instance(CircleClass(RefCell::new(Circle::unit())))
+          scope.new_instance(CircleClass(RefCell::new(Circle::unit())))
         })
         .finish()
     })
@@ -69,11 +75,11 @@ fn main() {
       r#"
 from shapes import Circle
 
-c := Circle(20)
+c := Circle(20.0)
 
-print(c.area()) // ~1256
-print(3.14 * (c.radius ** 2)) // ~1256
-print(Circle.unit().area())
+print(c.area()) # ~1256
+print(3.14 * (c.radius ** 2)) # 1256
+print(Circle.area(Circle.unit()))
 "#,
     )
     .unwrap();

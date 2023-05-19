@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
 use super::*;
-use crate as hebi;
 
-impl<'cx, 'src> Parser<'cx, 'src> {
+impl<'src> Parser<'src> {
   pub(super) fn top_level_stmt(&mut self) -> Result<(), SpannedError> {
     self.indent_eq()?;
     let stmt = self.stmt()?;
@@ -221,7 +220,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
       let span = self.previous().span;
       self.bump_if(Tok_Comma);
       if self.state.current_class.is_none() {
-        hebi::fail!(@span, "cannot access `self` outside of class");
+        fail!(@span, "cannot access `self` outside of class");
       }
     }
 
@@ -248,14 +247,14 @@ impl<'cx, 'src> Parser<'cx, 'src> {
   ) -> Result<(), SpannedError> {
     let name = self.ident()?;
     if params.contains(&name) {
-      hebi::fail!(@name.span, "duplicate argument `{name}`");
+      fail!(@name.span, "duplicate argument `{name}`");
     }
     let default = if self.bump_if(Op_Equal) {
       *state = ParamState::Default;
       Some(self.expr()?)
     } else {
       if *state == ParamState::Default {
-        hebi::fail!(
+        fail!(
           @self.previous().span,
           "non-default argument follows default argument",
         );
@@ -348,7 +347,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
-      hebi::fail!(@self.current().span, "fields may not appear after methods",);
+      fail!(@self.current().span, "fields may not appear after methods",);
     }
 
     self.dedent()?;
@@ -392,7 +391,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
   fn return_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_func.is_none() {
-      hebi::fail!(@self.current().span, "return outside of function");
+      fail!(@self.current().span, "return outside of function");
     }
 
     self.expect(Kw_Return)?;
@@ -404,7 +403,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
   fn continue_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_loop.is_none() {
-      hebi::fail!(@self.current().span, "continue outside of loop");
+      fail!(@self.current().span, "continue outside of loop");
     }
 
     self.expect(Kw_Continue)?;
@@ -413,7 +412,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
 
   fn break_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
     if self.state.current_loop.is_none() {
-      hebi::fail!(@self.current().span, "break outside of loop");
+      fail!(@self.current().span, "break outside of loop");
     }
 
     self.expect(Kw_Break)?;
@@ -457,7 +456,7 @@ impl<'cx, 'src> Parser<'cx, 'src> {
             ast::AssignKind::Decl => "invalid variable declaration",
             ast::AssignKind::Op(_) => "invalid assignment target",
           };
-          hebi::fail!(@error_span, "{msg}");
+          fail!(@error_span, "{msg}");
         };
         return Ok(stmt);
       }

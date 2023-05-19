@@ -100,7 +100,8 @@ impl RegAlloc {
   }
 
   pub fn finish(&self) -> (usize, Vec<usize>) {
-    linear_scan(&self.0.borrow().intervals)
+    let state = self.0.borrow();
+    linear_scan(&state.intervals, state.register)
   }
 }
 
@@ -206,9 +207,9 @@ enum Allocation {
 type Free = SortedVec<Reverse<usize>>;
 type Active = HashMap<Entry, (Interval, Allocation)>;
 
-fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
+fn linear_scan(intervals: &[Interval], total_intervals: usize) -> (usize, Vec<usize>) {
   let mut mapping = Vec::new();
-  mapping.resize(intervals.len(), 0usize);
+  mapping.resize(total_intervals, 0usize);
 
   let mut free = Free::new();
   let mut active = Active::new();
@@ -223,7 +224,7 @@ fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
           interval.entry.clone(),
           (interval.clone(), Allocation::Register(register)),
         );
-        mapping.insert(*index, register);
+        mapping[*index] = register;
       }
       Entry::Slice(indices) => {
         let slice = allocate_slice(indices.len(), &mut free, &mut registers);
@@ -232,7 +233,7 @@ fn linear_scan(intervals: &[Interval]) -> (usize, Vec<usize>) {
           (interval.clone(), Allocation::Slice(slice.clone())),
         );
         for (index, register) in indices.clone().zip(slice) {
-          mapping.insert(index, register);
+          mapping[index] = register;
         }
       }
     }
@@ -307,7 +308,7 @@ fn allocate_slice(n: usize, free: &mut Free, registers: &mut usize) -> Range<usi
       let start = slice.last().unwrap().0;
       let _ = free.drain(0..count);
 
-      while end < n {
+      while (end - start) < n {
         end += 1;
         *registers += 1;
       }

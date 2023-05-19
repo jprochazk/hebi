@@ -75,5 +75,5 @@ async fn get(scope: Scope<'_>, client: reqwest::Client) -> hebi::Result<Str<'_>>
   let bytes = response.bytes().await.map_err(hebi::Error::user)?;
   let data = bytes.to_vec();
   let str = String::from_utf8(data).map_err(hebi::Error::user)?;
-  Ok(scope.cx().new_string(str))
+  Ok(scope.new_string(str))
 }

@@ -3,13 +3,14 @@ use std::num::NonZeroU64;
 
 use indexmap::{IndexMap, IndexSet};
 
-use super::native::{NativeAsyncFunction, NativeFunction};
+use super::native::{NativeAsyncFunction, NativeClass, NativeFunction};
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, String, Table};
 use crate as hebi;
-use crate::ctx::Context;
 use crate::module::NativeModule;
 use crate::value::Value;
+use crate::vm::global::Global;
+use crate::Scope;
 
 pub trait Loader {
   fn load(&self, path: &str) -> hebi::Result<&str>;
@@ -66,8 +67,9 @@ impl Registry {
   }
 
   pub fn remove(&mut self, id: ModuleId) -> Option<Ptr<Module>> {
-    // TODO: remove from index
-    self.modules.remove(&id)
+    let module = self.modules.remove(&id)?;
+    self.index.remove(module.name.as_str());
+    Some(module)
   }
 
   pub fn get_by_id(&self, id: ModuleId) -> Option<Ptr<Module>> {
@@ -103,14 +105,14 @@ pub enum ModuleKind {
 
 impl Module {
   pub fn script(
-    cx: &Context,
+    global: Global,
     name: Ptr<String>,
     root: Ptr<Function>,
     module_vars: &IndexSet<Ptr<String>>,
     module_id: ModuleId,
   ) -> Self {
     let module_vars = {
-      let table = cx.alloc(Table::with_capacity(module_vars.len()));
+      let table = global.alloc(Table::with_capacity(module_vars.len()));
       for var in module_vars {
         table.insert(var.clone(), Value::none());
       }
@@ -126,31 +128,36 @@ impl Module {
   }
 
   pub fn native(
-    cx: &Context,
+    global: Global,
     name: Ptr<String>,
     module: &NativeModule,
     module_id: ModuleId,
   ) -> Self {
-    let module_vars = cx.alloc(Table::with_capacity(module.data.fns.len()));
+    let module_vars = global.alloc(Table::with_capacity(module.data.fns.len()));
+
     for (name, f) in module.data.fns.iter() {
-      let name = cx.alloc(String::owned(name.clone()));
-      module_vars.insert(
-        name.clone(),
-        Value::object(cx.alloc(NativeFunction {
-          name,
-          cb: f.clone(),
-        })),
-      );
+      let name = global.alloc(String::owned(name.clone()));
+      let f = Value::object(global.alloc(NativeFunction {
+        name: name.clone(),
+        cb: f.clone(),
+      }));
+      module_vars.insert(name, f);
     }
+
     for (name, f) in module.data.async_fns.iter() {
-      let name = cx.alloc(String::owned(name.clone()));
-      module_vars.insert(
-        name.clone(),
-        Value::object(cx.alloc(NativeAsyncFunction {
-          name,
-          cb: f.clone(),
-        })),
-      );
+      let name = global.alloc(String::owned(name.clone()));
+      let f = Value::object(global.alloc(NativeAsyncFunction {
+        name: name.clone(),
+        cb: f.clone(),
+      }));
+      module_vars.insert(name, f);
+    }
+
+    for (name, desc) in module.data.classes.iter() {
+      let name = global.alloc(String::owned(name.clone()));
+      let class = global.alloc(NativeClass::new(global.clone(), desc));
+      global.register_type_raw(class.type_id, class.clone());
+      module_vars.insert(name, Value::object(class));
     }
 
     Self {
@@ -167,7 +174,7 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(&self, _: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
     Ok(self.module_vars.get(&name))
   }
 }

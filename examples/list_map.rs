@@ -4,7 +4,7 @@ fn main() {
   fn map(mut scope: Scope) -> Result<List> {
     let (list, cb) = scope.params::<(List, Value)>()?;
 
-    let out = scope.cx().new_list(list.len());
+    let out = scope.new_list(list.len());
     for i in 0..list.len() {
       let value = scope.call(cb.clone(), &[list.get(i).unwrap()])?;
       out.push(value);

@@ -45,13 +45,13 @@ pub fn check_args(
   if min > num_args || num_args > max {
     if min == max {
       let plural = if min != 1 { "s" } else { "" };
-      hebi::fail!("expected {min} arg{plural}, got {num_args}")
+      fail!("expected {min} arg{plural}, got {num_args}")
     } else if num_args < min {
       let plural = if min != 1 { "s" } else { "" };
-      hebi::fail!("expected at least {min} arg{plural}, got {num_args}")
+      fail!("expected at least {min} arg{plural}, got {num_args}")
     } else {
       let plural = if max != 1 { "s" } else { "" };
-      hebi::fail!("expected at most {max} arg{plural}, got {num_args}")
+      fail!("expected at most {max} arg{plural}, got {num_args}")
     };
   }
 

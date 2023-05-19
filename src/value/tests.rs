@@ -1,7 +1,7 @@
 use super::*;
-use crate::ctx::Context;
 use crate::object::Object;
 use crate::util::JoinIter;
+use crate::vm::global::Global;
 
 struct Bar {
   value: u64,
@@ -27,13 +27,13 @@ impl Display for Bar {
 
 #[test]
 fn create_value() {
-  let cx = Context::for_test();
+  let global = Global::default();
   let values = [
     Value::float(std::f64::consts::PI),
     Value::int(-1_000_000),
     Value::bool(true),
     Value::none(),
-    Value::object(cx.alloc(Bar { value: 100 })),
+    Value::object(global.alloc(Bar { value: 100 })),
   ];
   let snapshot = format!("[{}]", values.iter().join(", "));
   assert_snapshot!(snapshot);
@@ -41,8 +41,8 @@ fn create_value() {
 
 #[test]
 fn drop_object_value() {
-  let cx = Context::for_test();
-  Value::object(cx.alloc(Bar { value: 100 }));
+  let global = Global::default();
+  Value::object(global.alloc(Bar { value: 100 }));
 }
 
 #[test]
@@ -61,10 +61,10 @@ fn clone_and_drop_values() {
 
 #[test]
 fn clone_and_drop_object_value() {
-  let cx = Context::for_test();
+  let global = Global::default();
 
   // refcount = 1
-  let ptr = cx.alloc(Bar { value: 100 }).into_any();
+  let ptr = global.alloc(Bar { value: 100 }).into_any();
   assert_eq!(ptr.refs(), 1);
 
   // create a value from the pointer

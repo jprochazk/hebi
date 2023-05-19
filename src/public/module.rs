@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::future;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::mem::transmute;
@@ -8,7 +9,6 @@ use std::sync::Arc;
 use futures_util::{FutureExt, TryFutureExt};
 use indexmap::IndexMap;
 
-use super::ForceSendFuture;
 use crate::object::native::{
   AsyncCallback, NativeClassDescriptor, NativeClassInstance, NativeFieldDescriptor,
   NativeMethodDescriptor, SyncCallback,
@@ -78,7 +78,7 @@ impl NativeModuleBuilder {
   pub fn class<T: Send + 'static>(
     mut self,
     name: impl ToString,
-    f: impl FnOnce(NativeClassBuilder<false, T>) -> NativeClassDescriptor,
+    f: impl Fn(NativeClassBuilder<false, T>) -> NativeClassDescriptor + Send + Sync + 'static,
   ) -> Self {
     let name = name.to_string();
     self
@@ -106,8 +106,8 @@ impl<T: Send + 'static> NativeClassBuilder<false, T> {
     f: impl Fn(Scope<'_>) -> Result<T> + Send + Sync + 'static,
   ) -> NativeClassBuilder<true, T> {
     self.descriptor.init = Some(wrap_fn(move |scope| {
-      let cx = scope.cx();
-      cx.new_instance(f(scope)?)
+      let global = scope.global();
+      global.new_instance(f(scope)?)
     }));
     NativeClassBuilder {
       descriptor: self.descriptor,
@@ -181,6 +181,22 @@ impl<const HAS_INIT: bool, T: Send + 'static> NativeClassBuilder<HAS_INIT, T> {
     self
   }
 
+  pub fn async_method<'cx, Fut, R>(
+    mut self,
+    name: impl ToString,
+    f: impl Fn(Scope<'cx>, This<'cx, T>) -> Fut + Send + Sync + 'static,
+  ) -> Self
+  where
+    Fut: Future<Output = R> + 'static,
+    R: IntoValue<'cx>,
+  {
+    self.descriptor.methods.insert(
+      name.to_string(),
+      NativeMethodDescriptor::Async(wrap_async_method(f)),
+    );
+    self
+  }
+
   pub fn static_method<'cx, R>(
     mut self,
     name: impl ToString,
@@ -203,8 +219,8 @@ where
 {
   Arc::new(move |scope| {
     let scope = unsafe { transmute::<_, Scope<'static>>(scope) };
-    let cx = scope.cx();
-    f(scope).into_value(cx).map(|value| value.unbind())
+    let global = scope.global();
+    f(scope).into_value(global).map(|value| value.unbind())
   })
 }
 
@@ -217,14 +233,12 @@ where
 {
   Arc::new(move |scope| {
     let scope = unsafe { transmute::<_, Scope<'static>>(scope) };
-    let cx = scope.cx();
-    Box::pin(unsafe {
-      ForceSendFuture::new(
-        f(scope)
-          .map(|value| value.into_value(cx))
-          .map_ok(|value| value.unbind()),
-      )
-    })
+    let global = scope.global();
+    Box::pin(
+      f(scope)
+        .map(|value| value.into_value(global))
+        .map_ok(|value| value.unbind()),
+    )
   })
 }
 
@@ -266,8 +280,33 @@ where
     let (scope, this) = extract_this::<T>(scope)?;
     let (scope, this) =
       unsafe { transmute::<_, (Scope<'static>, This<'static, T>)>((scope, this)) };
-    let cx = scope.cx();
-    f(scope, this).into_value(cx).map(|value| value.unbind())
+    let global = scope.global();
+    f(scope, this)
+      .into_value(global)
+      .map(|value| value.unbind())
+  })
+}
+
+fn wrap_async_method<'cx, T: Send + 'static, Fut, R>(
+  f: impl Fn(Scope<'cx>, This<'cx, T>) -> Fut + Send + Sync + 'static,
+) -> AsyncCallback
+where
+  Fut: Future<Output = R> + 'static,
+  R: IntoValue<'cx>,
+{
+  Arc::new(move |scope| {
+    let (scope, this) = match extract_this::<T>(scope) {
+      Ok(v) => v,
+      Err(e) => return Box::pin(future::ready(Err(e))),
+    };
+    let (scope, this) =
+      unsafe { transmute::<_, (Scope<'static>, This<'static, T>)>((scope, this)) };
+    let global = scope.global();
+    Box::pin(
+      f(scope, this)
+        .map(|value| value.into_value(global))
+        .map_ok(|value| value.unbind()),
+    )
   })
 }
 
@@ -284,8 +323,10 @@ where
     if scope.args.count > 0 {
       fail!("getter called with argument");
     }
-    let cx = scope.cx();
-    f(scope, this).into_value(cx).map(|value| value.unbind())
+    let global = scope.global();
+    f(scope, this)
+      .into_value(global)
+      .map(|value| value.unbind())
   })
 }
 

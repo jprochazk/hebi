@@ -2,7 +2,6 @@
 mod macros;
 
 use super::*;
-use crate::ctx::Context;
 use crate::syntax;
 
 check!(print_int, r#"print 0"#);

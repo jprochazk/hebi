@@ -5,7 +5,7 @@ use crate::object::Table;
 use crate::util::JoinIter;
 use crate::value::Value;
 
-impl<'cx, 'src> State<'cx, 'src> {
+impl<'src> State<'src> {
   pub(super) fn emit_stmt(&mut self, stmt: &'src ast::Stmt<'src>) {
     match stmt.deref() {
       ast::StmtKind::Var(v) => self.emit_var_stmt(v, stmt.span),
@@ -297,12 +297,12 @@ impl<'cx, 'src> State<'cx, 'src> {
 
     let fields = Table::with_capacity(stmt.members.fields.len());
     for field in stmt.members.fields.iter() {
-      fields.insert(self.cx.intern(field.name.to_string()), Value::none());
+      fields.insert(self.global.intern(field.name.to_string()), Value::none());
     }
-    let fields = self.cx.alloc(fields);
+    let fields = self.global.alloc(fields);
 
-    let class = self.cx.alloc(object::ClassDescriptor {
-      name: self.cx.intern(stmt.name.to_string()),
+    let class = self.global.alloc(object::ClassDescriptor {
+      name: self.global.intern(stmt.name.to_string()),
       methods,
       fields,
     });

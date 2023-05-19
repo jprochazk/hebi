@@ -1,7 +1,7 @@
 use super::*;
 use crate::object::List;
 use crate::public::value::ValueRef;
-use crate::Unbind;
+use crate::{Scope, Unbind};
 
 decl_object_ref! {
   struct List
@@ -40,11 +40,17 @@ impl<'cx> ListRef<'cx> {
   }
 }
 
-impl<'cx> Context<'cx> {
+impl<'cx> Global<'cx> {
   pub fn new_list(&self, capacity: usize) -> ListRef<'cx> {
     self
       .inner
       .alloc(List::with_capacity(capacity))
       .bind(self.clone())
+  }
+}
+
+impl<'cx> Scope<'cx> {
+  pub fn new_list(&self, capacity: usize) -> ListRef<'cx> {
+    self.global().new_list(capacity)
   }
 }

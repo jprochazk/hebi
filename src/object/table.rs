@@ -8,6 +8,7 @@ use super::ptr::Ptr;
 use super::{Object, String};
 use crate as hebi;
 use crate::value::Value;
+use crate::Scope;
 
 #[derive(Default)]
 pub struct Table {
@@ -130,38 +131,25 @@ impl Object for Table {
     "Table"
   }
 
-  fn named_field(
-    &self,
-    cx: &crate::ctx::Context,
-    name: Ptr<String>,
-  ) -> crate::Result<Option<Value>> {
-    let _ = cx;
+  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
     Ok(self.get(&name))
   }
 
-  fn set_named_field(
-    &self,
-    cx: &crate::ctx::Context,
-    name: Ptr<String>,
-    value: Value,
-  ) -> crate::Result<()> {
-    let _ = cx;
+  fn set_named_field(&self, _: Scope<'_>, name: Ptr<String>, value: Value) -> crate::Result<()> {
     self.insert(name, value);
     Ok(())
   }
 
-  fn keyed_field(&self, cx: &crate::ctx::Context, key: Value) -> crate::Result<Option<Value>> {
-    let _ = cx;
+  fn keyed_field(&self, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
     let Some(key) = key.clone().to_object::<String>() else {
-      hebi::fail!("`{key}` is not a string");
+      fail!("`{key}` is not a string");
     };
     Ok(self.get(&key))
   }
 
-  fn set_keyed_field(&self, cx: &hebi::ctx::Context, key: Value, value: Value) -> hebi::Result<()> {
-    let _ = cx;
+  fn set_keyed_field(&self, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
     let Some(key) = key.clone().to_object::<String>() else {
-      hebi::fail!("`{key}` is not a string");
+      fail!("`{key}` is not a string");
     };
     self.insert(key, value);
     Ok(())

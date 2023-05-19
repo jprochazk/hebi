@@ -13,10 +13,10 @@ use futures_util::TryFutureExt;
 
 use self::value::{FromValuePack, ValueRef};
 use crate::object::native::NativeClassInstance;
-use crate::object::{Ptr, Table as OwnedTable};
+use crate::object::{Object, Ptr, Table as OwnedTable};
 use crate::value::Value as OwnedValue;
 use crate::vm::thread::{Args, Thread};
-use crate::vm::Vm;
+use crate::vm::{global, Vm};
 
 // public API
 pub mod module;
@@ -120,12 +120,12 @@ impl Debug for Hebi {
 }
 
 #[derive(Clone)]
-pub struct Context<'cx> {
-  #[allow(dead_code)] // will be used eventually in `IntoValue`/`FromValue` impls
-  pub(crate) inner: crate::ctx::Context,
+pub struct Global<'cx> {
+  pub(crate) inner: global::Global,
   pub(crate) lifetime: PhantomData<&'cx ()>,
 }
 
+#[derive(Clone)]
 pub struct Scope<'cx> {
   pub(crate) thread: Thread,
   pub(crate) args: Args,
@@ -134,7 +134,7 @@ pub struct Scope<'cx> {
 
 impl<'cx> Scope<'cx> {
   pub(crate) fn new(parent: &Thread, args: Args) -> Self {
-    let thread = Thread::new(parent.cx.clone(), parent.global.clone(), parent.stack);
+    let thread = Thread::new(parent.global.clone(), parent.stack);
     Scope {
       thread,
       args,
@@ -142,9 +142,17 @@ impl<'cx> Scope<'cx> {
     }
   }
 
-  pub fn cx(&self) -> Context<'cx> {
-    Context {
-      inner: self.thread.cx.clone(),
+  pub(crate) fn alloc<T: Object>(&self, v: T) -> Ptr<T> {
+    self.thread.global.alloc(v)
+  }
+
+  /* pub(crate) fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<String> {
+    self.thread.global.intern(s)
+  } */
+
+  pub fn global(&self) -> Global<'cx> {
+    Global {
+      inner: self.thread.global.clone(),
       lifetime: PhantomData,
     }
   }
@@ -156,7 +164,7 @@ impl<'cx> Scope<'cx> {
   pub fn params<T: FromValuePack<'cx>>(&self) -> Result<T::Output> {
     let stack = unsafe { self.thread.stack.as_ref() };
     let args = &stack.regs[self.args.start..self.args.start + self.args.count];
-    T::from_value_pack(args, self.cx())
+    T::from_value_pack(args, self.global())
   }
 
   pub fn param<T: FromValue<'cx>>(&self, n: usize) -> Result<T> {
@@ -167,7 +175,7 @@ impl<'cx> Scope<'cx> {
       .cloned()
       .ok_or_else(|| error!("missing argument {n}"))?;
     let value = unsafe { value.bind_raw::<'cx>() };
-    T::from_value(value, self.cx())
+    T::from_value(value, self.global())
   }
 
   pub fn call(&mut self, value: ValueRef<'cx>, args: &[ValueRef<'cx>]) -> Result<ValueRef<'cx>> {
@@ -197,10 +205,23 @@ impl<'cx> Scope<'cx> {
   }
 }
 
-impl<'cx> Context<'cx> {
+impl<'cx> Global<'cx> {
   pub fn new_instance<T: Send + 'static>(&self, value: T) -> Result<Value<'cx>> {
-    // TODO: type map
-    todo!()
+    let instance = match self.inner.get_type::<T>() {
+      Some(ty) => NativeClassInstance {
+        instance: Box::new(value),
+        class: ty,
+      },
+      None => fail!("`{}` is not a registered type", std::any::type_name::<T>()),
+    };
+    let instance = OwnedValue::object(self.inner.alloc(instance));
+    Ok(unsafe { instance.bind_raw::<'cx>() })
+  }
+}
+
+impl<'cx> Scope<'cx> {
+  pub fn new_instance<T: Send + 'static>(&self, value: T) -> Result<Value<'cx>> {
+    self.global().new_instance(value)
   }
 }
 
@@ -258,8 +279,8 @@ pub(crate) trait Bind: Sized {
 
   unsafe fn bind_raw<'cx>(self) -> Self::Ref<'cx>;
 
-  fn bind<'cx>(self, scope: Context<'cx>) -> Self::Ref<'cx> {
-    let _ = scope;
+  fn bind<'cx>(self, global: Global<'cx>) -> Self::Ref<'cx> {
+    let _ = global;
     unsafe { Self::bind_raw::<'cx>(self) }
   }
 
@@ -267,8 +288,8 @@ pub(crate) trait Bind: Sized {
     unsafe { std::mem::transmute::<&[Self], &[Self::Ref<'cx>]>(slice) }
   }
 
-  fn bind_slice<'a, 'cx>(slice: &'a [Self], scope: Context<'cx>) -> &'a [Self::Ref<'cx>] {
-    let _ = scope;
+  fn bind_slice<'a, 'cx>(slice: &'a [Self], global: Global<'cx>) -> &'a [Self::Ref<'cx>] {
+    let _ = global;
     Self::bind_raw_slice(slice)
   }
 }

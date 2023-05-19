@@ -1,7 +1,7 @@
 use super::*;
 use crate::value::constant::NonNaNFloat;
 
-impl<'cx, 'src> State<'cx, 'src> {
+impl<'src> State<'src> {
   pub fn emit_expr(&mut self, expr: &'src ast::Expr<'src>) {
     match &**expr {
       ast::ExprKind::Literal(v) => self.emit_literal_expr(v, expr.span),

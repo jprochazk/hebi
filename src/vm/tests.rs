@@ -936,3 +936,20 @@ check! {
     result
   "#
 }
+
+/*
+TODO: more tests
+
+- loops (for, while, loop)
+  - continue, break
+- native modules
+  - functions
+  - async functions
+  - classes
+  - class methods
+  - async class methods
+  - class methods (static call)
+  - async class methods (static call)
+  - class static methods
+  - class static async methods
+*/

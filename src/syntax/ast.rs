@@ -676,10 +676,9 @@ pub fn for_loop_stmt<'src>(
 
 pub mod lit {
   use super::*;
-  use crate::ctx::Context;
   use crate::span::{Span, SpannedError};
 
-  pub fn none<'src>(_: &Context, s: impl Into<Span>) -> Expr<'src> {
+  pub fn none<'src>(s: impl Into<Span>) -> Expr<'src> {
     let s = s.into();
     Expr::new(s, ExprKind::Literal(Box::new(Literal::None)))
   }

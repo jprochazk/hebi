@@ -20,98 +20,104 @@ pub use ptr::{Any, Ptr};
 pub use string::String;
 pub use table::Table;
 
+use self::class::{ClassInstance, ClassMethod, ClassProxy};
+use self::native::{NativeAsyncFunction, NativeClassInstance, NativeFunction};
 use crate as hebi;
-use crate::ctx::Context;
 use crate::value::Value;
+use crate::Scope;
 
+// TODO: impl this on Ptr<T> instead of T
 pub trait Object: DynAny + Debug + Display {
   fn type_name(&self) -> &'static str;
 
-  fn named_field(&self, cx: &Context, name: Ptr<String>) -> hebi::Result<Option<Value>> {
-    let _ = cx;
-    hebi::fail!("cannot get field `{name}`")
+  fn named_field(&self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+    let _ = scope;
+    fail!("cannot get field `{name}`")
   }
 
-  fn set_named_field(&self, cx: &Context, name: Ptr<String>, value: Value) -> hebi::Result<()> {
-    let _ = cx;
+  fn set_named_field(&self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()> {
+    let _ = scope;
     let _ = value;
-    hebi::fail!("cannot set field `{name}`")
+    fail!("cannot set field `{name}`")
   }
 
-  fn keyed_field(&self, cx: &Context, key: Value) -> hebi::Result<Option<Value>> {
-    let _ = cx;
-    hebi::fail!("cannot get index `{key}`")
+  fn keyed_field(&self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>> {
+    let _ = scope;
+    fail!("cannot get index `{key}`")
   }
 
-  fn set_keyed_field(&self, cx: &Context, key: Value, value: Value) -> hebi::Result<()> {
-    let _ = cx;
+  fn set_keyed_field(&self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
+    let _ = scope;
     let _ = value;
-    hebi::fail!("cannot set index `{key}`")
+    fail!("cannot set index `{key}`")
   }
 
-  fn contains(&self, cx: &Context, item: Value) -> hebi::Result<bool> {
-    let _ = cx;
+  fn contains(&self, scope: Scope<'_>, item: Value) -> hebi::Result<bool> {
+    let _ = scope;
     let _ = item;
-    hebi::fail!("cannot get item `{item}`")
+    fail!("cannot get item `{item}`")
   }
 
-  fn add(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn add(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `+`")
+    fail!("`{self}` does not support `+`")
   }
 
-  fn subtract(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn subtract(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `-`")
+    fail!("`{self}` does not support `-`")
   }
 
-  fn multiply(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn multiply(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `*`")
+    fail!("`{self}` does not support `*`")
   }
 
-  fn divide(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn divide(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `/`")
+    fail!("`{self}` does not support `/`")
   }
 
-  fn remainder(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn remainder(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `%`")
+    fail!("`{self}` does not support `%`")
   }
 
-  fn pow(&self, cx: &Context, other: Value) -> hebi::Result<Value> {
-    let _ = cx;
+  fn pow(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support `**`")
+    fail!("`{self}` does not support `**`")
   }
 
-  fn invert(&self, cx: &Context) -> hebi::Result<Value> {
-    let _ = cx;
-    hebi::fail!("`{self}` does not support unary `-`")
+  fn invert(&self, scope: Scope<'_>) -> hebi::Result<Value> {
+    let _ = scope;
+    fail!("`{self}` does not support unary `-`")
   }
 
-  fn not(&self, cx: &Context) -> hebi::Result<Value> {
-    let _ = cx;
-    hebi::fail!("`{self}` does not support `!`")
+  fn not(&self, scope: Scope<'_>) -> hebi::Result<Value> {
+    let _ = scope;
+    fail!("`{self}` does not support `!`")
   }
 
-  fn cmp(&self, cx: &Context, other: Value) -> hebi::Result<Ordering> {
-    let _ = cx;
+  fn cmp(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering> {
+    let _ = scope;
     let _ = other;
-    hebi::fail!("`{self}` does not support comparison")
+    fail!("`{self}` does not support comparison")
   }
 }
 
 pub fn is_callable(v: &Ptr<Any>) -> bool {
-  v.is::<function::Function>() || v.is::<class::ClassMethod>()
+  v.is::<Function>()
+    || v.is::<ClassMethod>()
+    || v.is::<NativeFunction>()
+    || v.is::<NativeAsyncFunction>()
 }
 
 pub fn is_class(v: &Ptr<Any>) -> bool {
-  v.is::<class::ClassInstance>() || v.is::<class::ClassProxy>()
+  v.is::<ClassInstance>() || v.is::<ClassProxy>() || v.is::<NativeClassInstance>()
 }

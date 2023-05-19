@@ -109,18 +109,18 @@ macro_rules! binary {
       let $rhs = unsafe { $rhs.to_float_unchecked() };
       $f64_expr
     } else if $lhs.is_bool() && $rhs.is_bool() {
-      hebi::fail!("cannot {} `bool`", stringify!($op))
+      fail!("cannot {} `bool`", stringify!($op))
     } else if $lhs.is_none() && $rhs.is_none() {
-      hebi::fail!("cannot {} `none`", stringify!($op))
+      fail!("cannot {} `none`", stringify!($op))
     } else if $lhs.is_object() && $rhs.is_object() {
       let $lhs = unsafe { $lhs.to_any_unchecked() };
       let $rhs = unsafe { $rhs.to_any_unchecked() };
       if $lhs.ty() != $rhs.ty() {
-        hebi::fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+        fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
       }
       $any_expr
     } else {
-      hebi::fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+      fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
     }
   }};
 }

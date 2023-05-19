@@ -15,11 +15,12 @@ use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
 use crate as hebi;
 use crate::bytecode::opcode as op;
-use crate::ctx::Context;
 use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
-use crate::object::native::{NativeAsyncFunction, NativeFunction};
+use crate::object::native::{
+  NativeAsyncFunction, NativeClass, NativeClassInstance, NativeFunction,
+};
 use crate::object::{
   ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
   Table,
@@ -29,13 +30,25 @@ use crate::value::Value;
 use crate::{emit, object, syntax, Error, LocalBoxFuture, Scope};
 
 pub struct Thread {
-  pub(crate) cx: Context,
   pub(crate) global: Global,
   pub(crate) stack: NonNull<Stack>,
   acc: Value,
   pc: usize,
-  fut: Option<LocalBoxFuture<'static, hebi::Result<Value>>>,
+  async_frame: Option<AsyncFrame>,
   poll: bool,
+}
+
+impl Clone for Thread {
+  fn clone(&self) -> Self {
+    Self {
+      global: self.global.clone(),
+      stack: self.stack,
+      acc: self.acc.clone(),
+      pc: self.pc,
+      async_frame: None,
+      poll: self.poll,
+    }
+  }
 }
 
 pub struct Stack {
@@ -55,16 +68,15 @@ impl Stack {
 }
 
 impl Thread {
-  pub fn new(cx: Context, global: Global, stack: NonNull<Stack>) -> Self {
+  pub fn new(global: Global, stack: NonNull<Stack>) -> Self {
     Thread {
-      cx,
       global,
 
       stack,
       acc: Value::none(),
       pc: 0,
 
-      fut: None,
+      async_frame: None,
       poll: false,
     }
   }
@@ -100,10 +112,11 @@ impl Thread {
     };
     loop {
       self.run()?;
-      match self.fut.take() {
-        Some(fut) => match fut.await {
+      match self.async_frame.take() {
+        Some(frame) => match frame.fut.await {
           Ok(value) => {
             self.acc = value;
+            self.pop_args(frame.args);
           }
           Err(e) => {
             self.pop_args(args);
@@ -164,7 +177,7 @@ impl Thread {
   ) -> hebi::Result<dispatch::Call> {
     let object = match value.try_to_any() {
       Ok(f) => f,
-      Err(f) => hebi::fail!("cannot call value `{f}`"),
+      Err(f) => fail!("cannot call value `{f}`"),
     };
 
     if object.is::<Function>() {
@@ -182,8 +195,11 @@ impl Thread {
     } else if object.is::<NativeAsyncFunction>() {
       let function = unsafe { object.cast_unchecked::<NativeAsyncFunction>() };
       self.call_native_async_function(function, args)
+    } else if object.is::<NativeClass>() {
+      let class = unsafe { object.cast_unchecked::<NativeClass>() };
+      self.init_native_class(class, args)
     } else {
-      hebi::fail!("cannot call object `{object}`")
+      fail!("cannot call object `{object}`")
     }
   }
 
@@ -236,6 +252,25 @@ impl Thread {
     args: Args,
     return_addr: Option<usize>,
   ) -> hebi::Result<dispatch::Call> {
+    if method.this().is::<NativeClassInstance>() {
+      let start = stack!(self).len();
+      let count = args.count + 1;
+
+      stack_mut!(self).push(Value::object(method.this()));
+      stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+
+      let args = Args { start, count };
+
+      let result = if let Some(function) = method.function().clone_cast::<NativeFunction>() {
+        self.call_native_function(function, args)
+      } else {
+        let function = unsafe { method.function().cast_unchecked::<NativeAsyncFunction>() };
+        self.call_native_async_function(function, args)
+      };
+
+      return result;
+    }
+
     let function = unsafe { method.function().cast_unchecked::<Function>() };
     check_args(&function.descriptor.params, true, args.count)?;
 
@@ -247,7 +282,7 @@ impl Thread {
     stack_mut!(self).push(Value::object(method.this()));
     stack_mut!(self).extend_from_within(args.start..args.start + args.count);
     stack_mut!(self)
-      .extend((0..function.descriptor.frame_size - args.count).map(|_| Value::none()));
+      .extend((0..function.descriptor.frame_size - args.count - 1).map(|_| Value::none()));
 
     call_frames_mut!(self).push(Frame {
       instructions: function.descriptor.instructions,
@@ -268,19 +303,21 @@ impl Thread {
   }
 
   fn init_class(&mut self, class: Ptr<ClassType>, args: Args) -> hebi::Result<dispatch::Call> {
-    let instance = self.cx.alloc(ClassInstance::new(&self.cx, &class));
+    let instance = self
+      .global
+      .alloc(ClassInstance::new(self.global.clone(), &class));
 
     if let Some(init) = class.init.as_ref() {
       check_args(&init.descriptor.params, true, args.count)?;
 
-      let method = self.cx.alloc(ClassMethod::new(
+      let method = self.global.alloc(ClassMethod::new(
         instance.clone().into_any(),
         init.clone().into_any(),
       ));
       self.call_method(method, args, None)?;
       self.run()?;
     } else if args.count > 0 {
-      hebi::fail!("expected at most 0 args");
+      fail!("expected at most 0 args");
     }
 
     instance.is_frozen.set(true);
@@ -290,12 +327,25 @@ impl Thread {
     Ok(dispatch::Call::Continue)
   }
 
+  fn init_native_class(
+    &mut self,
+    class: Ptr<NativeClass>,
+    args: Args,
+  ) -> hebi::Result<dispatch::Call> {
+    let Some(init) = class.init.clone() else {
+      fail!("native class `{}` has no initializer", class.name);
+    };
+
+    self.call_native_function(init, args)
+  }
+
   fn call_native_function(
     &mut self,
     function: Ptr<NativeFunction>,
     args: Args,
   ) -> hebi::Result<dispatch::Call> {
-    self.acc = function.call(Scope::new(self, args))?;
+    self.acc = function.call(self.get_scope(args))?;
+    self.pop_args(args);
     Ok(dispatch::Call::Continue)
   }
 
@@ -305,18 +355,44 @@ impl Thread {
     args: Args,
   ) -> hebi::Result<dispatch::Call> {
     if !self.poll {
-      hebi::fail!(
+      fail!(
         "cannot call async function `{}` in a non-async context",
         function.name
       );
     }
 
-    let mut thread = Thread::new(self.cx.clone(), self.global.clone(), self.stack);
-    thread.poll = true;
-
-    self.fut.replace(function.call(Scope::new(self, args)));
+    let fut = function.call(self.get_scope(args));
+    self.async_frame.replace(AsyncFrame { fut, args });
 
     Ok(dispatch::Call::Yield)
+  }
+
+  fn call_native_field_getter(
+    &mut self,
+    instance: Ptr<NativeClassInstance>,
+    getter: Ptr<NativeFunction>,
+  ) -> hebi::Result<()> {
+    let start = stack!(self).len();
+    let count = 1;
+    stack_mut!(self).push(Value::object(instance));
+    self
+      .call_native_function(getter, Args { start, count })
+      .map(|_| ())
+  }
+
+  fn call_native_field_setter(
+    &mut self,
+    instance: Ptr<NativeClassInstance>,
+    setter: Ptr<NativeFunction>,
+    value: Value,
+  ) -> hebi::Result<()> {
+    let start = stack!(self).len();
+    let count = 2;
+    stack_mut!(self).push(Value::object(instance));
+    stack_mut!(self).push(value);
+    self
+      .call_native_function(setter, Args { start, count })
+      .map(|_| ())
   }
 
   fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {
@@ -335,9 +411,9 @@ impl Thread {
       let slot = unsafe { upvalues.get_unchecked_mut(i) };
       *slot = value;
     }
-    let upvalues = self.cx.alloc(List::from(upvalues));
+    let upvalues = self.global.alloc(List::from(upvalues));
 
-    self.cx.alloc(Function::new(
+    self.global.alloc(Function::new(
       desc,
       upvalues,
       current_call_frame!(self).module_id,
@@ -351,7 +427,7 @@ impl Thread {
     parent: Option<Ptr<ClassType>>,
   ) -> Ptr<ClassType> {
     let mut init = None;
-    let fields = fields.unwrap_or_else(|| self.cx.alloc(Table::new()));
+    let fields = fields.unwrap_or_else(|| self.global.alloc(Table::new()));
     let mut methods = IndexMap::with_capacity(desc.methods.len());
     for (key, desc) in desc.methods.iter() {
       let method = self.make_fn(desc.clone());
@@ -360,7 +436,7 @@ impl Thread {
       }
       methods.insert(key.clone(), method);
     }
-    self.cx.alloc(ClassType::new(
+    self.global.alloc(ClassType::new(
       desc.name.clone(),
       init,
       fields,
@@ -370,52 +446,56 @@ impl Thread {
   }
 
   fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
-    if let Some((module_id, module)) = self.global.module_registry().get_by_name(path.as_str()) {
+    if let Some((module_id, module)) = self.global.get_module_by_name(path.as_str()) {
       // module is in cache
-      if self.global.module_visited_set().contains(&module_id) {
-        hebi::fail!("attempted to import partially initialized module {path}");
+      if self.global.is_module_visited(module_id) {
+        fail!("attempted to import partially initialized module {path}");
       }
       return Ok(module);
     }
 
     // module is not in cache, actually load it
-    let module_id = self.global.module_registry_mut().next_module_id();
+    let module_id = self.global.next_module_id();
     // TODO: native modules
-    let module = self.global.module_loader().load(path.as_str())?.to_string();
-    let module = syntax::parse(&self.cx, &module).map_err(Error::Syntax)?;
-    let module = emit::emit(&self.cx, &module, path.as_str(), false);
+    let module = self.global.load_module(path.as_str())?.to_string();
+    let module = syntax::parse(self.global.clone(), &module).map_err(Error::Syntax)?;
+    let module = emit::emit(self.global.clone(), &module, path.as_str(), false);
     // println!("{}", module.root.disassemble());
-    let main = self.cx.alloc(Function::new(
+    let main = self.global.alloc(Function::new(
       module.root.clone(),
-      self.cx.alloc(List::new()),
+      self.global.alloc(List::new()),
       module_id,
     ));
-    let module = self.cx.alloc(Module::script(
-      &self.cx,
+    let module = self.global.alloc(Module::script(
+      self.global.clone(),
       path.clone(),
       main,
       &module.module_vars,
       module_id,
     ));
-    self
-      .global
-      .module_registry_mut()
-      .insert(module_id, path, module.clone());
-    self.global.module_visited_set_mut().insert(module_id);
+    self.global.define_module(module_id, path, module.clone());
 
     let ModuleKind::Script { root } = &module.kind else {
-      hebi::fail!("expected module kind to be `script`");
+      fail!("expected module kind to be `script`");
     };
 
     let result = match self.call(Value::object(root.clone()), &[]) {
       Ok(_) => Ok(module),
       Err(e) => {
-        self.global.module_registry_mut().remove(module_id);
+        self.global.finish_module(module_id, false);
         Err(e)
       }
     };
-    self.global.module_visited_set_mut().remove(&module_id);
+    self.global.finish_module(module_id, true);
     result
+  }
+
+  fn get_empty_scope(&self) -> Scope {
+    self.get_scope(Args::empty())
+  }
+
+  fn get_scope(&self, args: Args) -> Scope {
+    Scope::new(self, args)
   }
 }
 
@@ -451,6 +531,11 @@ impl Object for Thread {
   fn type_name(&self) -> &'static str {
     "Thread"
   }
+}
+
+pub(crate) struct AsyncFrame {
+  fut: LocalBoxFuture<'static, hebi::Result<Value>>,
+  args: Args,
 }
 
 pub(crate) struct Frame {
@@ -546,17 +631,17 @@ impl Handler for Thread {
 
   fn op_load_module_var(&mut self, idx: op::ModuleVar) -> hebi::Result<()> {
     let module_id = current_call_frame!(self).module_id;
-    let module = match self.global.module_registry().get_by_id(module_id) {
+    let module = match self.global.get_module_by_id(module_id) {
       Some(module) => module,
       None => {
-        hebi::fail!("failed to get module {module_id}");
+        fail!("failed to get module {module_id}");
       }
     };
 
     let value = match module.module_vars.get_index(idx.index()) {
       Some(value) => value,
       None => {
-        hebi::fail!("failed to get module variable {idx}");
+        fail!("failed to get module variable {idx}");
       }
     };
 
@@ -567,10 +652,10 @@ impl Handler for Thread {
 
   fn op_store_module_var(&mut self, idx: op::ModuleVar) -> hebi::Result<()> {
     let module_id = current_call_frame!(self).module_id;
-    let module = match self.global.module_registry().get_by_id(module_id) {
+    let module = match self.global.get_module_by_id(module_id) {
       Some(module) => module,
       None => {
-        hebi::fail!("failed to get module {module_id}");
+        fail!("failed to get module {module_id}");
       }
     };
 
@@ -578,7 +663,7 @@ impl Handler for Thread {
 
     let success = module.module_vars.set_index(idx.index(), value.clone());
     if !success {
-      hebi::fail!("failed to set module variable {idx} (value={value})");
+      fail!("failed to set module variable {idx} (value={value})");
     };
 
     Ok(())
@@ -588,7 +673,7 @@ impl Handler for Thread {
     let name = self.get_constant_object::<String>(name);
     let value = match self.global.globals().get(&name) {
       Some(value) => value,
-      None => hebi::fail!("undefined global {name}"),
+      None => fail!("undefined global {name}"),
     };
     self.acc = value;
 
@@ -607,10 +692,25 @@ impl Handler for Thread {
     let name = self.get_constant_object::<String>(name);
     let receiver = take(&mut self.acc);
 
+    if let Some(instance) = receiver.clone().to_object::<NativeClassInstance>() {
+      if let Some(field) = instance.class.fields.get(name.as_str()) {
+        // call sets `acc`
+        return self.call_native_field_getter(instance.clone(), field.get.clone());
+      } else if let Some(method) = instance.class.methods.get(name.as_str()) {
+        self.acc = Value::object(self.global.alloc(ClassMethod::new(
+          instance.clone().into_any(),
+          method.to_object(),
+        )));
+        return Ok(());
+      } else {
+        fail!("failed to get field `{name}` on value `{instance}`")
+      }
+    }
+
     let value = if let Some(object) = receiver.clone().to_any() {
-      match object.named_field(&self.cx, name.clone())? {
+      match object.named_field(self.get_empty_scope(), name.clone())? {
         Some(value) => value,
-        None => hebi::fail!("failed to get field `{name}` on value `{object}`"),
+        None => fail!("failed to get field `{name}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -619,7 +719,7 @@ impl Handler for Thread {
 
     if let (Some(object), Some(value)) = (receiver.to_any(), value.clone().to_any()) {
       if object::is_class(&object) && object::is_callable(&value) {
-        self.acc = Value::object(self.cx.alloc(ClassMethod::new(object, value)));
+        self.acc = Value::object(self.global.alloc(ClassMethod::new(object, value)));
         return Ok(());
       }
     }
@@ -638,8 +738,29 @@ impl Handler for Thread {
       return Ok(());
     }
 
+    if let Some(instance) = receiver.clone().to_object::<NativeClassInstance>() {
+      if let Some(getter) = instance
+        .class
+        .fields
+        .get(name.as_str())
+        .map(|f| f.get.clone())
+      {
+        // call sets `acc`
+        return self.call_native_field_getter(instance.clone(), getter);
+      } else if let Some(method) = instance.class.methods.get(name.as_str()) {
+        self.acc = Value::object(self.global.alloc(ClassMethod::new(
+          instance.clone().into_any(),
+          method.to_object(),
+        )));
+        return Ok(());
+      } else {
+        self.acc = Value::none();
+        return Ok(());
+      }
+    }
+
     let value = if let Some(object) = receiver.clone().to_any() {
-      match object.named_field(&self.cx, name)? {
+      match object.named_field(self.get_empty_scope(), name)? {
         Some(value) => value,
         None => Value::none(),
       }
@@ -650,7 +771,7 @@ impl Handler for Thread {
 
     if let (Some(object), Some(value)) = (receiver.to_any(), value.clone().to_any()) {
       if object::is_class(&object) && object::is_callable(&value) {
-        self.acc = Value::object(self.cx.alloc(ClassMethod::new(object, value)));
+        self.acc = Value::object(self.global.alloc(ClassMethod::new(object, value)));
         return Ok(());
       }
     }
@@ -662,11 +783,24 @@ impl Handler for Thread {
 
   fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<String>(name);
-    let object = self.get_register(obj);
+    let receiver = self.get_register(obj);
     let value = take(&mut self.acc);
 
-    if let Some(object) = object.to_any() {
-      object.set_named_field(&self.cx, name, value)?;
+    if let Some(instance) = receiver.clone().to_object::<NativeClassInstance>() {
+      if let Some(setter) = instance
+        .class
+        .fields
+        .get(name.as_str())
+        .and_then(|f| f.set.clone())
+      {
+        return self.call_native_field_setter(instance.clone(), setter, value);
+      } else {
+        fail!("cannot set field `{name}` on value `{instance}`");
+      }
+    }
+
+    if let Some(object) = receiver.to_any() {
+      object.set_named_field(self.get_empty_scope(), name, value)?;
     } else {
       // TODO: fields on primitives
       todo!()
@@ -680,9 +814,9 @@ impl Handler for Thread {
     let key = take(&mut self.acc);
 
     let value = if let Some(object) = object.to_any() {
-      match object.keyed_field(&self.cx, key.clone())? {
+      match object.keyed_field(self.get_empty_scope(), key.clone())? {
         Some(value) => value,
-        None => hebi::fail!("failed to get field `{key}` on value `{object}`"),
+        None => fail!("failed to get field `{key}` on value `{object}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -704,7 +838,7 @@ impl Handler for Thread {
     }
 
     let value = if let Some(object) = object.to_any() {
-      match object.keyed_field(&self.cx, key)? {
+      match object.keyed_field(self.get_empty_scope(), key)? {
         Some(value) => value,
         None => Value::none(),
       }
@@ -724,7 +858,7 @@ impl Handler for Thread {
     let value = take(&mut self.acc);
 
     if let Some(object) = object.to_any() {
-      object.set_keyed_field(&self.cx, key, value)?;
+      object.set_keyed_field(self.get_empty_scope(), key, value)?;
     } else {
       // TODO: fields on primitives
       todo!()
@@ -749,7 +883,7 @@ impl Handler for Thread {
     let this = self.get_register(op::Register(0));
 
     let Some(this) = this.to_any() else {
-      hebi::fail!("`self` is not a class instance");
+      fail!("`self` is not a class instance");
     };
 
     let proxy = if let Some(proxy) = this.clone_cast::<ClassProxy>() {
@@ -763,10 +897,10 @@ impl Handler for Thread {
         class: this.parent.clone().unwrap(),
       }
     } else {
-      hebi::fail!("{this} is not a class");
+      fail!("{this} is not a class");
     };
 
-    self.acc = Value::object(self.cx.alloc(proxy));
+    self.acc = Value::object(self.global.alloc(proxy));
 
     Ok(())
   }
@@ -821,9 +955,9 @@ impl Handler for Thread {
     let parent = take(&mut self.acc);
 
     let Some(parent) = parent.clone().to_object::<ClassType>() else {
-      hebi::fail!("{parent} is not a class");
+      fail!("{parent} is not a class");
     };
-    let fields = self.cx.alloc(parent.fields.copy());
+    let fields = self.global.alloc(parent.fields.copy());
     let class = self.make_class(desc, Some(fields), Some(parent));
 
     self.acc = Value::object(class);
@@ -834,7 +968,7 @@ impl Handler for Thread {
   fn op_make_data_class(&mut self, desc: op::Constant, parts: op::Register) -> hebi::Result<()> {
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
 
-    let fields = self.cx.alloc(Table::with_capacity(desc.fields.len()));
+    let fields = self.global.alloc(Table::with_capacity(desc.fields.len()));
     for (offset, key) in desc.fields.keys().enumerate() {
       let value = self.get_register(parts.offset(offset));
       fields.insert(key, value);
@@ -855,10 +989,10 @@ impl Handler for Thread {
     let parent = self.get_register(parts);
 
     let Some(parent) = parent.clone().to_object::<ClassType>() else {
-      hebi::fail!("{parent} is not a class");
+      fail!("{parent} is not a class");
     };
 
-    let fields = self.cx.alloc(parent.fields.copy());
+    let fields = self.global.alloc(parent.fields.copy());
     for (offset, key) in desc.fields.keys().enumerate() {
       let value = self.get_register(parts.offset(1 + offset));
       fields.insert(key, value);
@@ -875,12 +1009,12 @@ impl Handler for Thread {
     for reg in start.iter(count, 1) {
       list.push(self.get_register(reg));
     }
-    self.acc = Value::object(self.cx.alloc(list));
+    self.acc = Value::object(self.global.alloc(list));
     Ok(())
   }
 
   fn op_make_list_empty(&mut self) -> hebi::Result<()> {
-    self.acc = Value::object(self.cx.alloc(List::new()));
+    self.acc = Value::object(self.global.alloc(List::new()));
     Ok(())
   }
 
@@ -891,17 +1025,17 @@ impl Handler for Thread {
       let value = self.get_register(reg.offset(1));
 
       let Some(key) = key.clone().to_any().and_then(|v| v.cast::<String>().ok()) else {
-        hebi::fail!( "`{key}` is not a string");
+        fail!( "`{key}` is not a string");
       };
 
       table.insert(key, value);
     }
-    self.acc = Value::object(self.cx.alloc(table));
+    self.acc = Value::object(self.global.alloc(table));
     Ok(())
   }
 
   fn op_make_table_empty(&mut self) -> hebi::Result<()> {
-    self.acc = Value::object(self.cx.alloc(Table::new()));
+    self.acc = Value::object(self.global.alloc(Table::new()));
     Ok(())
   }
 
@@ -982,7 +1116,7 @@ impl Handler for Thread {
         if rhs != 0 {
           Value::float(lhs as f64 / rhs as f64)
         } else {
-          hebi::fail!("cannot divide int by zero")
+          fail!("cannot divide int by zero")
         }
       },
       f64 => Value::float(lhs / rhs),
@@ -1000,7 +1134,7 @@ impl Handler for Thread {
         if rhs != 0 {
           Value::float(lhs as f64 % rhs as f64)
         } else {
-          hebi::fail!("cannot divide int by zero")
+          fail!("cannot divide int by zero")
         }
       },
       f64 => Value::float(lhs % rhs),
@@ -1031,9 +1165,9 @@ impl Handler for Thread {
       let value = unsafe { value.to_float_unchecked() };
       Value::float(-value)
     } else if value.is_bool() {
-      hebi::fail!("cannot invert `bool`")
+      fail!("cannot invert `bool`")
     } else if value.is_none() {
-      hebi::fail!("cannot invert `none`")
+      fail!("cannot invert `none`")
     } else if value.is_object() {
       let _ = unsafe { value.to_any_unchecked() };
       todo!()
@@ -1144,10 +1278,10 @@ impl Handler for Thread {
     let rhs = take(&mut self.acc);
 
     let Some(rhs) = rhs.clone().to_any() else {
-      hebi::fail!("`{rhs}` is not an object");
+      fail!("`{rhs}` is not an object");
     };
 
-    let result = rhs.contains(&self.cx, lhs)?;
+    let result = rhs.contains(self.get_empty_scope(), lhs)?;
     self.acc = Value::bool(result);
     Ok(())
   }

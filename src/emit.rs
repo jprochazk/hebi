@@ -23,61 +23,66 @@ use self::regalloc::{RegAlloc, Register, Slice};
 use crate::bytecode::builder::{BytecodeBuilder, InsertConstant, LoopHeader, MultiLabel};
 use crate::bytecode::opcode::symbolic::*;
 use crate::bytecode::opcode::{self as op};
-use crate::ctx::Context;
 use crate::object;
 use crate::object::function;
 use crate::object::ptr::Ptr;
 use crate::span::Span;
 use crate::syntax::ast;
+use crate::vm::global::Global;
 
-pub fn emit<'cx, 'src>(
-  cx: &'cx Context,
+pub fn emit<'src>(
+  global: Global,
   ast: &'src ast::Module<'src>,
   name: impl Into<Cow<'src, str>>,
   is_root: bool,
 ) -> Ptr<object::ModuleDescriptor> {
   let name = name.into();
 
-  let mut module = State::new(cx, ast, name.clone(), is_root).emit_module();
+  let mut module = State::new(global.clone(), ast, name.clone(), is_root).emit_module();
 
-  let name = cx.alloc(object::String::owned(name));
+  let name = global.alloc(object::String::owned(name));
   // NOTE: no need to handle `.upvalues` here,
   // because the module root never has any upvalues
   let root = module.functions.pop().unwrap().finish().ptr;
   let module_vars = module.vars;
 
-  cx.alloc(object::ModuleDescriptor {
+  global.alloc(object::ModuleDescriptor {
     name,
     root,
     module_vars,
   })
 }
 
-struct State<'cx, 'src> {
-  cx: &'cx Context,
+struct State<'src> {
+  global: Global,
   ast: &'src ast::Module<'src>,
-  module: Module<'cx, 'src>,
+  module: Module<'src>,
 }
 
-impl<'cx, 'src> State<'cx, 'src> {
+impl<'src> State<'src> {
   fn new(
-    cx: &'cx Context,
+    global: Global,
     ast: &'src ast::Module<'src>,
     name: impl Into<Cow<'src, str>>,
     is_root: bool,
   ) -> Self {
     Self {
-      cx,
+      global: global.clone(),
       ast,
       module: Module {
         is_root,
         vars: IndexSet::new(),
-        functions: vec![Function::new(cx, name, function::Params::default(), false)],
+        functions: vec![Function::new(
+          global,
+          name,
+          function::Params::default(),
+          false,
+        )],
       },
     }
   }
 
-  fn current_function(&mut self) -> &mut Function<'cx, 'src> {
+  fn current_function(&mut self) -> &mut Function<'src> {
     self.module.functions.last_mut().unwrap()
   }
 
@@ -90,7 +95,7 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn constant_name(&mut self, string: impl ToString) -> op::Constant {
-    let string = self.cx.intern(string.to_string());
+    let string = self.global.intern(string.to_string());
     self.builder().constant_pool_builder().insert(string)
   }
 
@@ -138,7 +143,7 @@ impl<'cx, 'src> State<'cx, 'src> {
   }
 
   fn declare_module_var(&mut self, name: impl Into<Cow<'src, str>>) -> op::ModuleVar {
-    let name = self.cx.intern(name.into().to_string());
+    let name = self.global.intern(name.into().to_string());
     let index = self.module.vars.len() as u32;
     self.module.vars.insert(name);
     op::ModuleVar(index)
@@ -244,7 +249,7 @@ impl<'cx, 'src> State<'cx, 'src> {
 
   fn emit_function(&mut self, func: &'src ast::Func<'src>) -> EmittedFunction<'src> {
     self.module.functions.push(Function::new(
-      self.cx,
+      self.global.clone(),
       func.name.lexeme(),
       function::Params::from_ast_func(func),
       func.has_yield,
@@ -316,11 +321,13 @@ impl<'cx, 'src> State<'cx, 'src> {
     function
   }
 
-  fn emit_module(mut self) -> Module<'cx, 'src> {
+  fn emit_module(mut self) -> Module<'src> {
+    let callee = self.alloc_register();
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
     self.builder().emit(Return, 0..0);
+    callee.access();
 
     self.module
   }
@@ -345,10 +352,10 @@ impl function::Params {
   }
 }
 
-struct Module<'cx, 'src> {
+struct Module<'src> {
   is_root: bool,
   vars: IndexSet<Ptr<object::String>>,
-  functions: Vec<Function<'cx, 'src>>,
+  functions: Vec<Function<'src>>,
 }
 
 struct EmittedFunction<'src> {
@@ -356,8 +363,8 @@ struct EmittedFunction<'src> {
   upvalues: Upvalues<'src>,
 }
 
-struct Function<'cx, 'src> {
-  cx: &'cx Context,
+struct Function<'src> {
+  global: Global,
 
   is_generator: bool,
 
@@ -376,15 +383,15 @@ struct Function<'cx, 'src> {
   inner_functions: Vec<Ptr<object::FunctionDescriptor>>,
 }
 
-impl<'cx, 'src> Function<'cx, 'src> {
+impl<'src> Function<'src> {
   fn new(
-    cx: &'cx Context,
+    global: Global,
     name: impl Into<Cow<'src, str>>,
     params: function::Params,
     is_generator: bool,
   ) -> Self {
     Self {
-      cx,
+      global,
 
       is_generator,
 
@@ -453,8 +460,8 @@ impl<'cx, 'src> Function<'cx, 'src> {
       }
     }
 
-    let ptr = self.cx.alloc(object::FunctionDescriptor::new(
-      self.cx.intern(self.name.to_string()),
+    let ptr = self.global.alloc(object::FunctionDescriptor::new(
+      self.global.intern(self.name.to_string()),
       self.is_generator,
       self.params,
       self

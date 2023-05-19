@@ -9,7 +9,6 @@ pub mod macros;
 mod util;
 
 mod bytecode;
-mod ctx;
 mod emit;
 mod error;
 mod object;
