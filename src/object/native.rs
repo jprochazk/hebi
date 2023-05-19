@@ -80,7 +80,7 @@ impl Object for NativeAsyncFunction {
 
 #[derive(Debug)]
 pub struct NativeClassInstance {
-  pub instance: Box<dyn StdAny>,
+  pub instance: Box<dyn StdAny + Send>,
   pub class: Ptr<NativeClass>,
 }
 
@@ -130,12 +130,12 @@ impl Object for NativeClass {
 }
 
 pub struct NativeClassDescriptor {
-  pub name: StdString,
-  pub type_id: TypeId,
-  pub init: Option<SyncCallback>,
-  pub fields: IndexMap<StdString, NativeFieldDescriptor>,
-  pub methods: IndexMap<StdString, NativeMethodDescriptor>,
-  pub static_methods: IndexMap<StdString, NativeMethodDescriptor>,
+  pub(crate) name: StdString,
+  pub(crate) type_id: TypeId,
+  pub(crate) init: Option<SyncCallback>,
+  pub(crate) fields: IndexMap<StdString, NativeFieldDescriptor>,
+  pub(crate) methods: IndexMap<StdString, NativeMethodDescriptor>,
+  pub(crate) static_methods: IndexMap<StdString, NativeMethodDescriptor>,
 }
 
 pub struct NativeFieldDescriptor {

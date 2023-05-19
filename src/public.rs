@@ -198,18 +198,18 @@ impl<'cx> Scope<'cx> {
 }
 
 impl<'cx> Context<'cx> {
-  pub fn new_instance<T>(&self, value: T) -> Result<Value<'cx>> {
+  pub fn new_instance<T: Send + 'static>(&self, value: T) -> Result<Value<'cx>> {
     // TODO: type map
     todo!()
   }
 }
 
-pub struct This<'cx, T> {
+pub struct This<'cx, T: Send> {
   pub(crate) inner: Ptr<NativeClassInstance>,
   lifetime: PhantomData<&'cx T>,
 }
 
-impl<'cx, T: 'static> This<'cx, T> {
+impl<'cx, T: Send + 'static> This<'cx, T> {
   pub fn new(inner: Ptr<NativeClassInstance>) -> Option<Self> {
     if !inner.instance.is::<T>() {
       return None;
@@ -221,7 +221,7 @@ impl<'cx, T: 'static> This<'cx, T> {
   }
 }
 
-impl<'cx, T: 'static> Deref for This<'cx, T> {
+impl<'cx, T: Send + 'static> Deref for This<'cx, T> {
   type Target = T;
 
   fn deref(&self) -> &Self::Target {

@@ -1,4 +1,4 @@
-use std::any::{Any as StdAny, TypeId};
+use std::any::TypeId;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::mem::transmute;
@@ -75,19 +75,16 @@ impl NativeModuleBuilder {
     self
   }
 
-  pub fn class<T>(
+  pub fn class<T: Send + 'static>(
     mut self,
     name: impl ToString,
-    f: impl FnOnce(NativeClassBuilder<T>) -> NativeClassBuilder<T>,
-  ) -> Self
-  where
-    T: StdAny,
-  {
+    f: impl FnOnce(NativeClassBuilder<false, T>) -> NativeClassDescriptor,
+  ) -> Self {
     let name = name.to_string();
     self
       .data
       .classes
-      .insert(name.clone(), f(NativeClassBuilder::new(name)).finish());
+      .insert(name.clone(), f(NativeClassBuilder::new(name)));
     self
   }
 
@@ -98,12 +95,28 @@ impl NativeModuleBuilder {
   }
 }
 
-pub struct NativeClassBuilder<T: StdAny> {
+pub struct NativeClassBuilder<const HAS_INIT: bool, T: Send> {
   descriptor: NativeClassDescriptor,
   ty: PhantomData<fn() -> T>,
 }
 
-impl<T: StdAny> NativeClassBuilder<T> {
+impl<T: Send + 'static> NativeClassBuilder<false, T> {
+  pub fn init(
+    mut self,
+    f: impl Fn(Scope<'_>) -> Result<T> + Send + Sync + 'static,
+  ) -> NativeClassBuilder<true, T> {
+    self.descriptor.init = Some(wrap_fn(move |scope| {
+      let cx = scope.cx();
+      cx.new_instance(f(scope)?)
+    }));
+    NativeClassBuilder {
+      descriptor: self.descriptor,
+      ty: self.ty,
+    }
+  }
+}
+
+impl<const HAS_INIT: bool, T: Send + 'static> NativeClassBuilder<HAS_INIT, T> {
   pub fn new(name: StdString) -> Self {
     Self {
       descriptor: NativeClassDescriptor {
@@ -118,7 +131,7 @@ impl<T: StdAny> NativeClassBuilder<T> {
     }
   }
 
-  fn finish(self) -> NativeClassDescriptor {
+  pub fn finish(self) -> NativeClassDescriptor {
     self.descriptor
   }
 
@@ -150,18 +163,6 @@ impl<T: StdAny> NativeClassBuilder<T> {
         set: Some(wrap_setter(set)),
       },
     );
-    self
-  }
-
-  pub fn init(mut self, f: impl Fn(Scope<'_>) -> Result<T> + Send + Sync + 'static) -> Self {
-    // TODO: type safety
-    if self.descriptor.init.is_some() {
-      panic!("double init")
-    }
-    self.descriptor.init = Some(wrap_fn(move |scope| {
-      let cx = scope.cx();
-      cx.new_instance(f(scope)?)
-    }));
     self
   }
 
@@ -227,7 +228,7 @@ where
   })
 }
 
-fn extract_this<T: 'static>(scope: Scope<'_>) -> Result<(Scope<'_>, This<'_, T>)> {
+fn extract_this<T: Send + 'static>(scope: Scope<'_>) -> Result<(Scope<'_>, This<'_, T>)> {
   let this = scope
     .param::<Value>(0)?
     .unbind()
@@ -255,7 +256,7 @@ fn extract_this<T: 'static>(scope: Scope<'_>) -> Result<(Scope<'_>, This<'_, T>)
   Ok((scope, this))
 }
 
-fn wrap_method<'cx, T: 'static, R>(
+fn wrap_method<'cx, T: Send + 'static, R>(
   f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + Send + Sync + 'static,
 ) -> SyncCallback
 where
@@ -270,7 +271,7 @@ where
   })
 }
 
-fn wrap_getter<'cx, T: 'static, R>(
+fn wrap_getter<'cx, T: Send + 'static, R>(
   f: impl Fn(Scope<'cx>, This<'cx, T>) -> R + Send + Sync + 'static,
 ) -> SyncCallback
 where
@@ -288,7 +289,7 @@ where
   })
 }
 
-fn wrap_setter<'cx, T: 'static, V>(
+fn wrap_setter<'cx, T: Send + 'static, V>(
   f: impl Fn(Scope<'cx>, This<'cx, T>, V) -> Result<()> + Send + Sync + 'static,
 ) -> SyncCallback
 where
