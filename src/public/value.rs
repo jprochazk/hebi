@@ -239,3 +239,19 @@ impl_from_value_pack!(A, B, C, D, E, F, G, H, I);
 impl_from_value_pack!(A, B, C, D, E, F, G, H, I, J);
 impl_from_value_pack!(A, B, C, D, E, F, G, H, I, J, K);
 impl_from_value_pack!(A, B, C, D, E, F, G, H, I, J, K, L);
+
+#[cfg(feature = "serde")]
+mod serde {
+  use ::serde::Serialize;
+
+  use super::*;
+
+  impl<'cx> Serialize for ValueRef<'cx> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+      S: ::serde::Serializer,
+    {
+      self.inner.serialize(serializer)
+    }
+  }
+}

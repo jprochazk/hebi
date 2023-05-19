@@ -446,6 +446,8 @@ dependencies = [
  "logos",
  "paste",
  "reqwest",
+ "serde",
+ "serde_json",
  "stacker",
  "tokio",
  "tokio-util",

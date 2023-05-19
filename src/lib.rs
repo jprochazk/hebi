@@ -12,6 +12,8 @@ mod bytecode;
 mod emit;
 mod error;
 mod object;
+#[cfg(feature = "serde")]
+mod serde;
 pub mod span;
 mod syntax;
 mod value;
