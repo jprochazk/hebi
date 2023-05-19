@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
-use std::process::ExitCode;
-use std::{env, fs, path, process};
+use std::process::{Command, ExitCode, ExitStatus};
+use std::{env, fs, path};
 
 fn main() -> ExitCode {
   match try_main() {
@@ -24,13 +24,11 @@ fn try_main() -> Result<()> {
   }
 }
 
+#[rustfmt::skip]
 fn print_help() {
   eprintln!(
-    "\
-Tasks:
-
-examples     run all examples
-"
+"Tasks:
+  examples  Run all examples."
   )
 }
 
@@ -52,22 +50,12 @@ fn examples() -> Result<()> {
   }
 
   for example in examples {
-    let result = process::Command::new("cargo")
-      .arg("run")
+    cargo("run")
       .arg("--example")
       .arg(&example)
       .spawn()?
-      .wait()?;
-
-    if !result.success() {
-      return Err(
-        format!(
-          "Process exited with error code {}",
-          result.code().unwrap_or(-1)
-        )
-        .into(),
-      );
-    }
+      .wait()?
+      .check()?;
   }
 
   Ok(())
@@ -79,4 +67,30 @@ fn project_root() -> path::PathBuf {
     .nth(1)
     .unwrap()
     .to_path_buf()
+}
+
+fn cargo(command: impl AsRef<OsStr>) -> Command {
+  let mut process = Command::new(env!("CARGO"));
+  process.arg(command);
+  process
+}
+
+trait CheckStatus {
+  fn check(&self) -> Result<()>;
+}
+
+impl CheckStatus for ExitStatus {
+  fn check(&self) -> Result<()> {
+    if !self.success() {
+      Err(
+        format!(
+          "Process exited with error code {}",
+          self.code().unwrap_or(-1)
+        )
+        .into(),
+      )
+    } else {
+      Ok(())
+    }
+  }
 }
