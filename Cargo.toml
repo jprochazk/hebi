@@ -25,18 +25,20 @@ __miri = ["nanbox"]
 
 [dependencies]
 beef = "0.5.2"
-futures-util = "0.3.28"
 indexmap = "1.9.3"
 logos = "0.13.0"
 paste = "1.0.12"
 stacker = "0.1.15"
+futures-util = "0.3.28"
 
 [dev-dependencies]
 indoc = "2.0.1"
 insta = "1.29.0"
 criterion = "0.4"
-tokio = { version = "1.28.1", features = ["macros", "rt", "time"] }
+tokio = { version = "1.28.1", features = ["macros", "rt", "time", "rt-multi-thread"] }
 reqwest = "0.11.18"
+tokio-util = { version = "0.7.8", features = ["rt"] }
+flume = "0.10.14"
 
 [profile.dev.package]
 insta = { opt-level = 3 }

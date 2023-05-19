@@ -1,6 +1,6 @@
 use hebi::{Hebi, NativeModule, Result, Scope, Str};
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() {
   let client = reqwest::Client::default();
 

@@ -3,7 +3,7 @@ use std::time::Duration;
 use hebi::module::NativeModule;
 use hebi::{Hebi, Scope};
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() {
   async fn example(_: Scope<'_>) -> i32 {
     tokio::time::sleep(Duration::from_millis(10)).await;
