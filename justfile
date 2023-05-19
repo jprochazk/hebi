@@ -5,3 +5,9 @@ snap *ARGS:
 
 miri *ARGS:
   MIRIFLAGS='-Zmiri-tree-borrows -Zmiri-permissive-provenance' cargo miri {{ARGS}} --no-default-features -F __miri
+
+example *ARGS:
+  cargo run --example {{ARGS}}
+
+all-examples *ARGS:
+  
