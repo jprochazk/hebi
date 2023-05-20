@@ -5,11 +5,12 @@ pub fn run(args: &[String]) -> Result<()> {
   cargo("insta")
     .args([
       "test",
-      "-F",
+      "--features",
       "serde",
       "--review",
       "--delete-unreferenced-snapshots",
       "--no-ignore",
+      "--",
     ])
     .args(args.iter())
     .spawn()?

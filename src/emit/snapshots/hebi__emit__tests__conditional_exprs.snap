@@ -12,38 +12,46 @@ fn test2(a, b):
 
 
 # Func:
-function `test0` (registers: 3, length: 8, constants: 1)
-.code
-  0 | load r1
-  2 | jump_if_false 4
-  4 | load r2
-  6 | load_none
-  7 | return
-
-
-
-function `test1` (registers: 3, length: 10, constants: 2)
-.code
-  0  | load r1
-  2  | jump_if_false 4
-  4  | jump 4
-  6  | load r2
-  8  | load_none
-  9  | return
-
-
-
-function `test2` (registers: 4, length: 15, constants: 2)
+function `test0` (registers: 4, length: 16, constants: 2)
 .code
   0  | load r1
   2  | store r3
-  4  | is_none
-  5  | jump_if_false 6
-  7  | load r2
-  9  | jump 4
-  11 | load r3
-  13 | load_none
-  14 | return
+  4  | load r3
+  6  | jump_if_false 6
+  8  | load r2
+  10 | jump 4
+  12 | load r3
+  14 | load_none
+  15 | return
+
+
+
+function `test1` (registers: 4, length: 16, constants: 2)
+.code
+  0  | load r1
+  2  | store r3
+  4  | load r3
+  6  | jump_if_false 6
+  8  | load r3
+  10 | jump 4
+  12 | load r2
+  14 | load_none
+  15 | return
+
+
+
+function `test2` (registers: 4, length: 17, constants: 2)
+.code
+  0  | load r1
+  2  | store r3
+  4  | load r3
+  6  | is_none
+  7  | jump_if_false 6
+  9  | load r2
+  11 | jump 4
+  13 | load r3
+  15 | load_none
+  16 | return
 
 
 

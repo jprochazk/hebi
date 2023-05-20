@@ -937,6 +937,41 @@ check! {
   "#
 }
 
+check! {
+  more_optional_access,
+  r#"
+    "a" ?? "b"
+  "#
+}
+
+check! {
+  logical_or_expr_return_lhs,
+  r#"
+    "a" || "b"
+  "#
+}
+
+check! {
+  logical_or_expr_return_rhs,
+  r#"
+    false || "b"
+  "#
+}
+
+check! {
+  logical_and_expr_return_rhs,
+  r#"
+    "a" && "b"
+  "#
+}
+
+check! {
+  logical_and_expr_return_lhs,
+  r#"
+    false && "b"
+  "#
+}
+
 /*
 TODO: more tests
 

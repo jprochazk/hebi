@@ -14,65 +14,107 @@ fn test4(a, b, c, d):
 
 
 # Func:
-function `test0` (registers: 5, length: 18, constants: 4)
+function `test0` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
-  2  | jump_if_false 4
-  4  | load r2
-  6  | jump_if_false 4
-  8  | jump 8
-  10 | load r3
-  12 | jump_if_false 4
-  14 | load r4
-  16 | load_none
-  17 | return
+  2  | store r6
+  4  | load r6
+  6  | jump_if_false 6
+  8  | load r2
+  10 | jump 4
+  12 | load r6
+  14 | store r5
+  16 | load r5
+  18 | jump_if_false 6
+  20 | load r5
+  22 | jump 16
+  24 | load r3
+  26 | store r5
+  28 | load r5
+  30 | jump_if_false 6
+  32 | load r4
+  34 | jump 4
+  36 | load r5
+  38 | load_none
+  39 | return
 
 
 
-function `test1` (registers: 5, length: 18, constants: 4)
+function `test1` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
-  2  | jump_if_false 4
-  4  | load r2
-  6  | jump_if_false 4
-  8  | jump 8
-  10 | load r3
-  12 | jump_if_false 4
-  14 | load r4
-  16 | load_none
-  17 | return
+  2  | store r6
+  4  | load r6
+  6  | jump_if_false 6
+  8  | load r2
+  10 | jump 4
+  12 | load r6
+  14 | store r5
+  16 | load r5
+  18 | jump_if_false 6
+  20 | load r5
+  22 | jump 16
+  24 | load r3
+  26 | store r5
+  28 | load r5
+  30 | jump_if_false 6
+  32 | load r4
+  34 | jump 4
+  36 | load r5
+  38 | load_none
+  39 | return
 
 
 
-function `test3` (registers: 5, length: 20, constants: 5)
+function `test3` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
-  2  | jump_if_false 4
-  4  | jump 8
-  6  | load r2
-  8  | jump_if_false 4
-  10 | load r3
-  12 | jump_if_false 4
-  14 | jump 4
-  16 | load r4
-  18 | load_none
-  19 | return
+  2  | store r6
+  4  | load r6
+  6  | jump_if_false 6
+  8  | load r6
+  10 | jump 16
+  12 | load r2
+  14 | store r6
+  16 | load r6
+  18 | jump_if_false 6
+  20 | load r3
+  22 | jump 4
+  24 | load r6
+  26 | store r5
+  28 | load r5
+  30 | jump_if_false 6
+  32 | load r5
+  34 | jump 4
+  36 | load r4
+  38 | load_none
+  39 | return
 
 
 
-function `test4` (registers: 5, length: 20, constants: 5)
+function `test4` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
-  2  | jump_if_false 4
-  4  | jump 8
-  6  | load r2
-  8  | jump_if_false 4
-  10 | load r3
-  12 | jump_if_false 4
-  14 | jump 4
-  16 | load r4
-  18 | load_none
-  19 | return
+  2  | store r6
+  4  | load r6
+  6  | jump_if_false 6
+  8  | load r6
+  10 | jump 16
+  12 | load r2
+  14 | store r6
+  16 | load r6
+  18 | jump_if_false 6
+  20 | load r3
+  22 | jump 4
+  24 | load r6
+  26 | store r5
+  28 | load r5
+  30 | jump_if_false 6
+  32 | load r5
+  34 | jump 4
+  36 | load r4
+  38 | load_none
+  39 | return
 
 
 

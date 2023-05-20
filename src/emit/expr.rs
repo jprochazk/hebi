@@ -134,10 +134,17 @@ impl<'src> State<'src> {
           if v:
             v = <right>
         */
+        let lhs = self.alloc_register();
+        let use_lhs = self.builder().label("lhs");
         let end = self.builder().label("end");
         self.emit_expr(&expr.left);
-        self.builder().emit_jump_if_false(&end, span);
+        self.emit_store(lhs.clone(), expr.left.span);
+        self.emit_load(lhs.clone(), expr.left.span);
+        self.builder().emit_jump_if_false(&use_lhs, span);
         self.emit_expr(&expr.right);
+        self.builder().emit_jump(&end, span);
+        self.builder().bind_label(use_lhs);
+        self.emit_load(lhs, expr.left.span);
         self.builder().bind_label(end);
       }
       ast::BinaryOp::Or => {
@@ -147,10 +154,14 @@ impl<'src> State<'src> {
           if !v:
             v = <right>
         */
+        let lhs = self.alloc_register();
         let rhs = self.builder().label("rhs");
         let end = self.builder().label("end");
         self.emit_expr(&expr.left);
+        self.emit_store(lhs.clone(), expr.left.span);
+        self.emit_load(lhs.clone(), expr.left.span);
         self.builder().emit_jump_if_false(&rhs, span);
+        self.emit_load(lhs, expr.left.span);
         self.builder().emit_jump(&end, span);
         self.builder().bind_label(rhs);
         self.emit_expr(&expr.right);
@@ -168,6 +179,7 @@ impl<'src> State<'src> {
         let lhs = self.alloc_register();
         self.emit_expr(&expr.left);
         self.emit_store(lhs.clone(), expr.left.span);
+        self.emit_load(lhs.clone(), expr.left.span);
         self.builder().emit(IsNone, span);
         self.builder().emit_jump_if_false(&use_lhs, span);
         self.emit_expr(&expr.right);
