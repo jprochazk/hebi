@@ -83,6 +83,33 @@ impl Serialize for String {
   }
 }
 
+const MAX_SAFE_INT: f64 = 9007199254740991_f64;
+const MIN_SAFE_INT: f64 = -9007199254740991_f64;
+
+macro_rules! try_to_f64 {
+  ($ty:ty, $v:expr) => {{
+    let v = $v;
+    let fv = v as f64;
+    if fv < MIN_SAFE_INT {
+      Err(serde::de::Error::custom(format!(
+        "{} is out of bounds ({} < {})",
+        std::any::type_name::<$ty>(),
+        v,
+        MIN_SAFE_INT
+      )))
+    } else if fv > MAX_SAFE_INT {
+      Err(serde::de::Error::custom(format!(
+        "{} is out of bounds ({} < {})",
+        std::any::type_name::<$ty>(),
+        v,
+        MAX_SAFE_INT
+      )))
+    } else {
+      Ok(fv)
+    }
+  }};
+}
+
 pub struct ValueDeserializer {
   pub global: Global,
 }
@@ -194,9 +221,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     E: serde::de::Error,
   {
     if v < i32::MIN as i64 || v > i32::MAX as i64 {
-      Err(serde::de::Error::custom(
-        "i64 out of bounds, maximum is i32::MAX",
-      ))
+      try_to_f64!(i64, v).map(Value::float)
     } else {
       Ok(Value::int(v as i32))
     }
@@ -207,9 +232,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     E: serde::de::Error,
   {
     if v < i32::MIN as i128 || v > i32::MAX as i128 {
-      Err(serde::de::Error::custom(
-        "i64 out of bounds, maximum is i32::MAX",
-      ))
+      try_to_f64!(i128, v).map(Value::float)
     } else {
       Ok(Value::int(v as i32))
     }
@@ -234,9 +257,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     E: serde::de::Error,
   {
     if v > i32::MAX as u32 {
-      Err(serde::de::Error::custom(
-        "u32 out of bounds, maximum is i32::MAX",
-      ))
+      try_to_f64!(u32, v).map(Value::float)
     } else {
       Ok(Value::int(v as i32))
     }
@@ -247,9 +268,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     E: serde::de::Error,
   {
     if v > i32::MAX as u64 {
-      Err(serde::de::Error::custom(
-        "u64 out of bounds, maximum is i32::MAX",
-      ))
+      try_to_f64!(u64, v).map(Value::float)
     } else {
       Ok(Value::int(v as i32))
     }
@@ -260,9 +279,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     E: serde::de::Error,
   {
     if v > i32::MAX as u128 {
-      Err(serde::de::Error::custom(
-        "u128 out of bounds, maximum is i32::MAX",
-      ))
+      try_to_f64!(u128, v).map(Value::float)
     } else {
       Ok(Value::int(v as i32))
     }
@@ -426,4 +443,22 @@ impl<'de> Visitor<'de> for ValueVisitor {
     ))
   }
   */
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn deserialize_int() {
+    let global = Global::default();
+
+    let json = r#"5360574452"#;
+
+    let value = ValueDeserializer { global }
+      .deserialize(&mut serde_json::Deserializer::from_str(json))
+      .unwrap();
+
+    assert_eq!(value.to_float(), Some(5360574452_f64));
+  }
 }
