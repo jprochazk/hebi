@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 
 use super::module::ModuleId;
 use super::ptr::Ptr;
-use super::{List, Object, String};
+use super::{List, Object, Str};
 use crate::bytecode::{disasm, opcode as op};
 use crate::value::constant::Constant;
 
@@ -65,7 +65,7 @@ impl Display for Generator {
 }
 
 pub struct FunctionDescriptor {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub is_generator: bool,
   pub params: Params,
   pub upvalues: RefCell<Vec<Upvalue>>,
@@ -87,7 +87,7 @@ fn vec_to_nonnull_ptr<T>(v: Vec<T>) -> NonNull<[T]> {
 
 impl FunctionDescriptor {
   pub fn new(
-    name: Ptr<String>,
+    name: Ptr<Str>,
     is_generator: bool,
     params: Params,
     upvalues: Vec<Upvalue>,
@@ -114,11 +114,11 @@ impl FunctionDescriptor {
     self.disassemble_inner(None)
   }
 
-  pub fn disassemble_as_method(&self, class_name: Ptr<String>) -> Disassembly {
+  pub fn disassemble_as_method(&self, class_name: Ptr<Str>) -> Disassembly {
     self.disassemble_inner(Some(class_name))
   }
 
-  fn disassemble_inner(&self, class_name: Option<Ptr<String>>) -> Disassembly {
+  fn disassemble_inner(&self, class_name: Option<Ptr<Str>>) -> Disassembly {
     Disassembly {
       function: self,
       class_name,
@@ -128,7 +128,7 @@ impl FunctionDescriptor {
 
 pub struct Disassembly<'a> {
   function: &'a FunctionDescriptor,
-  class_name: Option<Ptr<String>>,
+  class_name: Option<Ptr<Str>>,
 }
 
 impl<'a> Display for Disassembly<'a> {

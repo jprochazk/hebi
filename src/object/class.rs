@@ -4,7 +4,7 @@ use std::fmt::Display;
 use indexmap::IndexMap;
 
 use super::ptr::{Any, Ptr};
-use super::{Function, FunctionDescriptor, Object, String, Table};
+use super::{Function, FunctionDescriptor, Object, Str, Table};
 use crate as hebi;
 use crate::value::Value;
 use crate::vm::global::Global;
@@ -12,7 +12,7 @@ use crate::{object, Scope};
 
 #[derive(Debug)]
 pub struct ClassInstance {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub fields: Ptr<Table>,
   pub parent: Option<Ptr<ClassType>>,
   pub is_frozen: Cell<bool>,
@@ -53,7 +53,7 @@ impl Object for ClassInstance {
   fn named_field(
     this: Ptr<Self>,
     _: Scope<'_>,
-    name: Ptr<String>,
+    name: Ptr<Str>,
   ) -> crate::Result<Option<crate::value::Value>> {
     Ok(this.fields.get(&name))
   }
@@ -61,11 +61,11 @@ impl Object for ClassInstance {
   fn set_named_field(
     this: Ptr<Self>,
     scope: Scope<'_>,
-    name: Ptr<String>,
+    name: Ptr<Str>,
     value: crate::value::Value,
   ) -> crate::Result<()> {
     if !this.is_frozen() {
-      this.fields.insert(scope.alloc(String::owned(name)), value);
+      this.fields.insert(scope.alloc(Str::owned(name)), value);
       return Ok(());
     }
 
@@ -98,7 +98,7 @@ impl Object for ClassProxy {
   fn named_field(
     this: Ptr<Self>,
     scope: Scope<'_>,
-    name: Ptr<String>,
+    name: Ptr<Str>,
   ) -> crate::Result<Option<crate::value::Value>> {
     this.class.named_field(scope, name)
   }
@@ -153,19 +153,19 @@ generate_vtable!(ClassMethod);
 
 #[derive(Debug)]
 pub struct ClassType {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub init: Option<Ptr<Function>>,
   pub fields: Ptr<Table>,
-  pub methods: IndexMap<Ptr<String>, Ptr<Function>>,
+  pub methods: IndexMap<Ptr<Str>, Ptr<Function>>,
   pub parent: Option<Ptr<ClassType>>,
 }
 
 impl ClassType {
   pub fn new(
-    name: Ptr<String>,
+    name: Ptr<Str>,
     init: Option<Ptr<Function>>,
     fields: Ptr<Table>,
-    methods: IndexMap<Ptr<String>, Ptr<Function>>,
+    methods: IndexMap<Ptr<Str>, Ptr<Function>>,
     parent: Option<Ptr<ClassType>>,
   ) -> Self {
     Self {
@@ -189,7 +189,7 @@ impl Object for ClassType {
     "Class"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
     Ok(this.methods.get(&name).cloned().map(Value::object))
   }
 }
@@ -198,8 +198,8 @@ generate_vtable!(ClassType);
 
 #[derive(Debug)]
 pub struct ClassDescriptor {
-  pub name: Ptr<String>,
-  pub methods: IndexMap<Ptr<String>, Ptr<FunctionDescriptor>>,
+  pub name: Ptr<Str>,
+  pub methods: IndexMap<Ptr<Str>, Ptr<FunctionDescriptor>>,
   pub fields: Ptr<Table>,
 }
 

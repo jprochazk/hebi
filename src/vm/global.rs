@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::DefaultModuleLoader;
 use crate::object::module::{Module, ModuleId};
 use crate::object::native::NativeClass;
-use crate::object::{module, Ptr, String, Table};
+use crate::object::{module, Ptr, Str, Table};
 use crate::Result;
 
 #[derive(Clone)]
@@ -22,7 +22,7 @@ pub struct State {
   module_registry: RefCell<module::Registry>,
   module_loader: Box<dyn module::Loader>,
   module_visited_set: RefCell<IndexSet<ModuleId>>,
-  string_table: RefCell<IndexMap<Cow<'static, str>, Ptr<String>>>,
+  string_table: RefCell<IndexMap<Cow<'static, str>, Ptr<Str>>>,
   type_map: RefCell<IndexMap<TypeId, Ptr<NativeClass>>>,
 }
 
@@ -77,7 +77,7 @@ impl Global {
     self.module_loader.load(path)
   }
 
-  pub fn define_module(&self, module_id: ModuleId, name: Ptr<String>, module: Ptr<Module>) {
+  pub fn define_module(&self, module_id: ModuleId, name: Ptr<Str>, module: Ptr<Module>) {
     self
       .module_registry
       .borrow_mut()
@@ -85,14 +85,14 @@ impl Global {
     self.module_visited_set.borrow_mut().insert(module_id);
   }
 
-  pub fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<String> {
+  pub fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<Str> {
     let s = s.into();
 
     if let Some(s) = self.inner.string_table.borrow().get(&s) {
       return s.clone();
     }
 
-    let v = self.alloc(String::owned(s.clone()));
+    let v = self.alloc(Str::owned(s.clone()));
     self.inner.string_table.borrow_mut().insert(s, v.clone());
     v
   }

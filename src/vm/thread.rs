@@ -22,7 +22,7 @@ use crate::object::native::{
   NativeAsyncFunction, NativeClass, NativeClassInstance, NativeFunction,
 };
 use crate::object::{
-  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, String, Table,
+  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, Str, Table,
   Type,
 };
 use crate::value::constant::Constant;
@@ -516,7 +516,7 @@ impl Thread {
     ))
   }
 
-  fn load_module(&mut self, path: Ptr<String>, return_addr: usize) -> hebi::Result<dispatch::Call> {
+  fn load_module(&mut self, path: Ptr<Str>, return_addr: usize) -> hebi::Result<dispatch::Call> {
     if let Some((module_id, module)) = self.global.get_module_by_name(path.as_str()) {
       // module is in cache
       if self.global.is_module_visited(module_id) {
@@ -732,7 +732,7 @@ impl Handler for Thread {
   }
 
   fn op_load_global(&mut self, name: op::Constant) -> hebi::Result<()> {
-    let name = self.get_constant_object::<String>(name);
+    let name = self.get_constant_object::<Str>(name);
     let value = match self.global.globals().get(&name) {
       Some(value) => value,
       None => fail!("undefined global {name}"),
@@ -743,7 +743,7 @@ impl Handler for Thread {
   }
 
   fn op_store_global(&mut self, name: op::Constant) -> hebi::Result<()> {
-    let name = self.get_constant_object::<String>(name);
+    let name = self.get_constant_object::<Str>(name);
     let value = take(&mut self.acc);
     self.global.globals().insert(name, value);
 
@@ -751,7 +751,7 @@ impl Handler for Thread {
   }
 
   fn op_load_field(&mut self, name: op::Constant) -> hebi::Result<()> {
-    let name = self.get_constant_object::<String>(name);
+    let name = self.get_constant_object::<Str>(name);
     let receiver = take(&mut self.acc);
 
     if let Some(instance) = receiver.clone().to_object::<NativeClassInstance>() {
@@ -792,7 +792,7 @@ impl Handler for Thread {
   }
 
   fn op_load_field_opt(&mut self, name: op::Constant) -> hebi::Result<()> {
-    let name = self.get_constant_object::<String>(name);
+    let name = self.get_constant_object::<Str>(name);
     let receiver = take(&mut self.acc);
 
     if receiver.is_none() {
@@ -844,7 +844,7 @@ impl Handler for Thread {
   }
 
   fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> hebi::Result<()> {
-    let name = self.get_constant_object::<String>(name);
+    let name = self.get_constant_object::<Str>(name);
     let receiver = self.get_register(obj);
     let value = take(&mut self.acc);
 
@@ -1090,7 +1090,7 @@ impl Handler for Thread {
       let key = self.get_register(reg);
       let value = self.get_register(reg.offset(1));
 
-      let Some(key) = key.clone().to_any().and_then(|v| v.cast::<String>().ok()) else {
+      let Some(key) = key.clone().to_any().and_then(|v| v.cast::<Str>().ok()) else {
         fail!( "`{key}` is not a string");
       };
 
@@ -1401,7 +1401,7 @@ impl Handler for Thread {
   }
 
   fn op_import(&mut self, path: op::Constant, return_addr: usize) -> hebi::Result<dispatch::Call> {
-    let path = self.get_constant_object::<String>(path);
+    let path = self.get_constant_object::<Str>(path);
     self.load_module(path, return_addr)
   }
 

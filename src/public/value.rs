@@ -163,7 +163,7 @@ where
 
 impl<'cx> FromValue<'cx> for String {
   fn from_value(value: ValueRef<'cx>, _: Global<'cx>) -> Result<Self> {
-    let Some(str) = value.unbind().to_object::<crate::object::String>() else {
+    let Some(str) = value.unbind().to_object::<crate::object::Str>() else {
       fail!("value is not a string")
     };
     Ok(str.as_str().to_string())

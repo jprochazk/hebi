@@ -7,12 +7,12 @@ use std::ops::Deref;
 use super::Value;
 use crate::bytecode::opcode as op;
 use crate::object::ptr::Ptr;
-use crate::object::{ClassDescriptor, FunctionDescriptor, String};
+use crate::object::{ClassDescriptor, FunctionDescriptor, Str};
 
 #[derive(Debug, Clone)]
 pub enum Constant {
   Reserved,
-  String(Ptr<String>),
+  String(Ptr<Str>),
   Function(Ptr<FunctionDescriptor>),
   Class(Ptr<ClassDescriptor>),
   Offset(op::Offset),

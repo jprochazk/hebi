@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use super::native::{NativeAsyncFunction, NativeClass, NativeFunction};
 use super::ptr::Ptr;
-use super::{Function, FunctionDescriptor, Object, String, Table};
+use super::{Function, FunctionDescriptor, Object, Str, Table};
 use crate as hebi;
 use crate::module::NativeModule;
 use crate::value::Value;
@@ -42,7 +42,7 @@ impl Display for ModuleId {
 
 pub struct Registry {
   pub next_module_id: NonZeroU64,
-  pub index: IndexMap<Ptr<String>, ModuleId>,
+  pub index: IndexMap<Ptr<Str>, ModuleId>,
   pub modules: IndexMap<ModuleId, Ptr<Module>>,
 }
 
@@ -61,7 +61,7 @@ impl Registry {
     temp
   }
 
-  pub fn insert(&mut self, id: ModuleId, name: Ptr<String>, module: Ptr<Module>) {
+  pub fn insert(&mut self, id: ModuleId, name: Ptr<Str>, module: Ptr<Module>) {
     self.index.insert(name, id);
     self.modules.insert(id, module);
   }
@@ -92,7 +92,7 @@ impl Default for Registry {
 #[derive(Debug)]
 pub struct Module {
   pub module_id: ModuleId,
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub module_vars: Ptr<Table>,
   pub kind: ModuleKind,
 }
@@ -106,9 +106,9 @@ pub enum ModuleKind {
 impl Module {
   pub fn script(
     global: Global,
-    name: Ptr<String>,
+    name: Ptr<Str>,
     root: Ptr<Function>,
-    module_vars: &IndexSet<Ptr<String>>,
+    module_vars: &IndexSet<Ptr<Str>>,
     module_id: ModuleId,
   ) -> Self {
     let module_vars = {
@@ -129,14 +129,14 @@ impl Module {
 
   pub fn native(
     global: Global,
-    name: Ptr<String>,
+    name: Ptr<Str>,
     module: &NativeModule,
     module_id: ModuleId,
   ) -> Self {
     let module_vars = global.alloc(Table::with_capacity(module.data.fns.len()));
 
     for (name, f) in module.data.fns.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let f = Value::object(global.alloc(NativeFunction {
         name: name.clone(),
         cb: f.clone(),
@@ -145,7 +145,7 @@ impl Module {
     }
 
     for (name, f) in module.data.async_fns.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let f = Value::object(global.alloc(NativeAsyncFunction {
         name: name.clone(),
         cb: f.clone(),
@@ -154,7 +154,7 @@ impl Module {
     }
 
     for (name, desc) in module.data.classes.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let class = global.alloc(NativeClass::new(global.clone(), desc));
       global.register_type_raw(class.type_id, class.clone());
       module_vars.insert(name, Value::object(class));
@@ -174,7 +174,7 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
     Ok(this.module_vars.get(&name))
   }
 }
@@ -189,9 +189,9 @@ impl Display for Module {
 
 #[derive(Debug)]
 pub struct ModuleDescriptor {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub root: Ptr<FunctionDescriptor>,
-  pub module_vars: IndexSet<Ptr<String>>,
+  pub module_vars: IndexSet<Ptr<Str>>,
 }
 
 impl Object for ModuleDescriptor {

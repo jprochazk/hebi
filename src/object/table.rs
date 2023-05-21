@@ -5,14 +5,14 @@ use std::hash::Hash;
 use indexmap::{Equivalent, IndexMap};
 
 use super::ptr::Ptr;
-use super::{Object, String};
+use super::{Object, Str};
 use crate as hebi;
 use crate::value::Value;
 use crate::Scope;
 
 #[derive(Default)]
 pub struct Table {
-  data: RefCell<IndexMap<Ptr<String>, Value>>,
+  data: RefCell<IndexMap<Ptr<Str>, Value>>,
 }
 
 impl Table {
@@ -35,15 +35,15 @@ impl Table {
     self.data.borrow().is_empty()
   }
 
-  pub fn insert(&self, key: Ptr<String>, value: Value) -> Option<Value> {
+  pub fn insert(&self, key: Ptr<Str>, value: Value) -> Option<Value> {
     self.data.borrow_mut().insert(key, value)
   }
 
-  pub fn get<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K) -> Option<Value> {
+  pub fn get<K: Equivalent<Ptr<Str>> + ?Sized + Hash>(&self, key: &K) -> Option<Value> {
     self.data.borrow().get(key).cloned()
   }
 
-  pub fn set<K: Equivalent<Ptr<String>> + ?Sized + Hash>(&self, key: &K, value: Value) -> bool {
+  pub fn set<K: Equivalent<Ptr<Str>> + ?Sized + Hash>(&self, key: &K, value: Value) -> bool {
     if let Some(slot) = self.data.borrow_mut().get_mut(key) {
       *slot = value;
       true
@@ -105,7 +105,7 @@ pub struct Keys<'a> {
 }
 
 impl<'a> Iterator for Keys<'a> {
-  type Item = Ptr<String>;
+  type Item = Ptr<Str>;
 
   fn next(&mut self) -> Option<Self::Item> {
     match self.table.data.borrow().get_index(self.index) {
@@ -143,7 +143,7 @@ pub struct Entries<'a> {
 }
 
 impl<'a> Iterator for Entries<'a> {
-  type Item = (Ptr<String>, Value);
+  type Item = (Ptr<Str>, Value);
 
   fn next(&mut self) -> Option<Self::Item> {
     match self.table.data.borrow().get_index(self.index) {
@@ -178,14 +178,14 @@ impl Object for Table {
   }
 
   fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
-    let Some(key) = key.clone().to_object::<String>() else {
+    let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };
     Ok(this.get(&key))
   }
 
   fn set_keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
-    let Some(key) = key.clone().to_object::<String>() else {
+    let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };
     this.insert(key, value);

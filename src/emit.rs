@@ -5,17 +5,6 @@ mod expr;
 mod regalloc;
 mod stmt;
 
-// TODO:
-// - (optimization) constant pool compaction
-// - (optimization) basic blocks
-// - (optimization) elide last instruction (clobbered read)
-// - (optimization) peephole with last 2 instructions
-// - actually write emit for all AST nodes
-
-// TODO: emit_store/emit_load helpers
-// should accept Register, use with `.get()`
-// TODO: put comma between disassembly operands
-
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
@@ -40,7 +29,7 @@ pub fn emit<'src>(
 
   let mut module = State::new(global.clone(), ast, name.clone(), is_root).emit_module();
 
-  let name = global.alloc(object::String::owned(name));
+  let name = global.alloc(object::Str::owned(name));
   // NOTE: no need to handle `.upvalues` here,
   // because the module root never has any upvalues
   let root = module.functions.pop().unwrap().finish().ptr;
@@ -302,7 +291,6 @@ impl<'src> State<'src> {
     }
 
     // all functions return `none` by default
-    // TODO: only emit this if `exit_seen` is false
     let end_span = func
       .body
       .last()
@@ -357,7 +345,7 @@ impl function::Params {
 
 struct Module<'src> {
   is_root: bool,
-  vars: IndexSet<Ptr<object::String>>,
+  vars: IndexSet<Ptr<object::Str>>,
   functions: Vec<Function<'src>>,
 }
 

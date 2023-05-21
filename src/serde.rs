@@ -3,7 +3,7 @@ use std::string::String as StdString;
 use serde::de::{DeserializeSeed, Visitor};
 use serde::ser::{Serialize, SerializeMap, SerializeSeq};
 
-use crate::object::{List, Ptr, String, Table};
+use crate::object::{List, Ptr, Str, Table};
 use crate::value::Value;
 use crate::vm::global::Global;
 
@@ -26,8 +26,8 @@ impl Serialize for Value {
     } else if self.is_object() {
       let value = unsafe { self.clone().to_any_unchecked() };
 
-      if value.is::<String>() {
-        let value = unsafe { value.cast_unchecked::<String>() };
+      if value.is::<Str>() {
+        let value = unsafe { value.cast_unchecked::<Str>() };
         value.serialize(serializer)
       } else if value.is::<Table>() {
         let value = unsafe { value.cast_unchecked::<Table>() };
@@ -74,7 +74,7 @@ impl Serialize for List {
   }
 }
 
-impl Serialize for String {
+impl Serialize for Str {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
     S: serde::Serializer,
@@ -132,7 +132,7 @@ struct StringDeserializer {
 }
 
 impl<'de> DeserializeSeed<'de> for StringDeserializer {
-  type Value = Ptr<String>;
+  type Value = Ptr<Str>;
 
   fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
   where
@@ -143,7 +143,7 @@ impl<'de> DeserializeSeed<'de> for StringDeserializer {
     }
 
     impl<'de> Visitor<'de> for V {
-      type Value = Ptr<String>;
+      type Value = Ptr<Str>;
 
       fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a string")
@@ -153,21 +153,21 @@ impl<'de> DeserializeSeed<'de> for StringDeserializer {
       where
         E: serde::de::Error,
       {
-        Ok(self.global.alloc(String::owned(v)))
+        Ok(self.global.alloc(Str::owned(v)))
       }
 
       fn visit_string<E>(self, v: StdString) -> Result<Self::Value, E>
       where
         E: serde::de::Error,
       {
-        Ok(self.global.alloc(String::owned(v)))
+        Ok(self.global.alloc(Str::owned(v)))
       }
 
       fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
       where
         E: serde::de::Error,
       {
-        Ok(self.global.alloc(String::owned(v)))
+        Ok(self.global.alloc(Str::owned(v)))
       }
     }
 
@@ -303,28 +303,28 @@ impl<'de> Visitor<'de> for ValueVisitor {
   where
     E: serde::de::Error,
   {
-    Ok(Value::object(self.global.alloc(String::owned(v))))
+    Ok(Value::object(self.global.alloc(Str::owned(v))))
   }
 
   fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
   where
     E: serde::de::Error,
   {
-    Ok(Value::object(self.global.alloc(String::owned(v))))
+    Ok(Value::object(self.global.alloc(Str::owned(v))))
   }
 
   fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
   where
     E: serde::de::Error,
   {
-    Ok(Value::object(self.global.alloc(String::owned(v))))
+    Ok(Value::object(self.global.alloc(Str::owned(v))))
   }
 
   fn visit_string<E>(self, v: StdString) -> Result<Self::Value, E>
   where
     E: serde::de::Error,
   {
-    Ok(Value::object(self.global.alloc(String::owned(v))))
+    Ok(Value::object(self.global.alloc(Str::owned(v))))
   }
 
   // TODO: some kind of Bytes object?

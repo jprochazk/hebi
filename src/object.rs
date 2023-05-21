@@ -72,7 +72,7 @@ declare_object_trait! {
     fn named_field(
       this: Ptr<Self>,
       scope: Scope<'_>,
-      name: Ptr<String>
+      name: Ptr<Str>
     ) -> Result<Option<Value>> {
       let _ = scope;
       fail!("cannot get field `{name}`")
@@ -81,7 +81,7 @@ declare_object_trait! {
     fn set_named_field(
       this: Ptr<Self>,
       scope: Scope<'_>,
-      name: Ptr<String>,
+      name: Ptr<Str>,
       value: Value
     ) -> Result<()> {
       let _ = scope;
@@ -194,7 +194,7 @@ pub use function::{Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor};
 pub use ptr::{Any, Ptr};
-pub use string::String;
+pub use string::Str;
 pub use table::Table;
 
 use self::class::{ClassInstance, ClassMethod, ClassProxy};

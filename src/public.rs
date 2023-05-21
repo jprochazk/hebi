@@ -29,7 +29,7 @@ pub use crate::object::module::Loader;
 pub use crate::object::native::LocalBoxFuture;
 pub use crate::public::module::NativeModule;
 pub use crate::public::object::list::ListRef as List;
-pub use crate::public::object::string::StringRef as Str;
+pub use crate::public::object::string::StrRef as Str;
 pub use crate::public::object::table::TableRef as Table;
 pub use crate::public::object::AnyRef as Any;
 pub use crate::public::value::{FromValue, IntoValue, ValueRef as Value};

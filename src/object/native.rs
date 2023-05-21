@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 
-use super::{Any, Object, Ptr, String};
+use super::{Any, Object, Ptr, Str};
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::{Result, Scope};
@@ -18,7 +18,7 @@ pub type SyncCallback = Callback<Result<Value>>;
 pub type AsyncCallback = Callback<LocalBoxFuture<'static, Result<Value>>>;
 
 pub struct NativeFunction {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub cb: SyncCallback,
 }
 
@@ -51,7 +51,7 @@ impl Object for NativeFunction {
 generate_vtable!(NativeFunction);
 
 pub struct NativeAsyncFunction {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub cb: AsyncCallback,
 }
 
@@ -105,17 +105,17 @@ generate_vtable!(NativeClassInstance);
 
 #[derive(Debug)]
 pub struct NativeClass {
-  pub name: Ptr<String>,
+  pub name: Ptr<Str>,
   pub type_id: TypeId,
   pub init: Option<Ptr<NativeFunction>>,
-  pub fields: IndexMap<Ptr<String>, NativeField>,
-  pub methods: IndexMap<Ptr<String>, NativeMethod>,
-  pub static_methods: IndexMap<Ptr<String>, NativeMethod>,
+  pub fields: IndexMap<Ptr<Str>, NativeField>,
+  pub methods: IndexMap<Ptr<Str>, NativeMethod>,
+  pub static_methods: IndexMap<Ptr<Str>, NativeMethod>,
 }
 
 impl NativeClass {
   pub fn new(global: Global, desc: &NativeClassDescriptor) -> Self {
-    let name = global.alloc(String::owned(desc.name.clone()));
+    let name = global.alloc(Str::owned(desc.name.clone()));
 
     let type_id = desc.type_id;
 
@@ -128,7 +128,7 @@ impl NativeClass {
 
     let mut fields = IndexMap::with_capacity(desc.fields.len());
     for (name, desc) in desc.fields.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let field = NativeField {
         get: global.alloc(NativeFunction {
           name: global.intern("__get__"),
@@ -146,14 +146,14 @@ impl NativeClass {
 
     let mut methods = IndexMap::with_capacity(desc.methods.len());
     for (name, desc) in desc.methods.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let method = NativeMethod::new(global.clone(), name.clone(), desc.clone());
       methods.insert(name, method);
     }
 
     let mut static_methods = IndexMap::with_capacity(desc.static_methods.len());
     for (name, desc) in desc.static_methods.iter() {
-      let name = global.alloc(String::owned(name.clone()));
+      let name = global.alloc(Str::owned(name.clone()));
       let method = NativeMethod::new(global.clone(), name.clone(), desc.clone());
       static_methods.insert(name, method);
     }
@@ -180,7 +180,7 @@ impl Object for NativeClass {
     "NativeClass"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> crate::Result<Option<Value>> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
       Ok(Some(Value::object(method.to_object())))
     } else if let Some(method) = this.methods.get(name.as_str()) {
@@ -200,7 +200,7 @@ pub enum NativeMethod {
 }
 
 impl NativeMethod {
-  pub fn new(global: Global, name: Ptr<String>, method: NativeMethodDescriptor) -> Self {
+  pub fn new(global: Global, name: Ptr<Str>, method: NativeMethodDescriptor) -> Self {
     match method {
       NativeMethodDescriptor::Sync(method) => Self::Sync(global.alloc(NativeFunction {
         name,

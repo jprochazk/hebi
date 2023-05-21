@@ -13,7 +13,7 @@ use self::thread::{Stack, Thread};
 use crate as hebi;
 use crate::module::NativeModule;
 use crate::object::module::ModuleId;
-use crate::object::{module, Function, List, String};
+use crate::object::{module, Function, List, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
 use crate::{emit, syntax, Error};
@@ -59,14 +59,14 @@ impl Vm {
     let upvalues = self.global.alloc(List::new());
     let main = module.root.clone();
     let main = self.global.alloc(Function::new(main, upvalues, module_id));
-    // println!("{}", main.descriptor.disassemble());
+    println!("{}", main.descriptor.disassemble());
     let main = Value::object(main);
 
     self.root.call(main, &[]).await
   }
 
   pub fn register(&mut self, module: &NativeModule) {
-    let name = self.global.alloc(String::owned(module.data.name.clone()));
+    let name = self.global.alloc(Str::owned(module.data.name.clone()));
     let module_id = self.root.global.next_module_id();
     let module = self.global.alloc(Module::native(
       self.global.clone(),

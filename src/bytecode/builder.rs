@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use super::opcode::symbolic::*;
 use super::opcode::{self as op, Instruction, Opcode};
 use super::operands::{Operand, Width};
-use crate::object::{Any, ClassDescriptor, FunctionDescriptor, Ptr, String};
+use crate::object::{Any, ClassDescriptor, FunctionDescriptor, Ptr, Str};
 use crate::span::Span;
 use crate::value::constant::{Constant, NonNaNFloat};
 
@@ -358,7 +358,7 @@ macro_rules! insert_constant_object {
   };
 }
 
-insert_constant_object!(String, String);
+insert_constant_object!(Str, String);
 insert_constant_object!(FunctionDescriptor, Function);
 insert_constant_object!(ClassDescriptor, Class);
 
