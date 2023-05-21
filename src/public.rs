@@ -13,7 +13,7 @@ use futures_util::TryFutureExt;
 
 use self::value::{FromValuePack, ValueRef};
 use crate::object::native::NativeClassInstance;
-use crate::object::{Object, Ptr, Table as OwnedTable};
+use crate::object::{Ptr, Table as OwnedTable, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm::thread::{Args, Thread};
 use crate::vm::{global, Vm};
@@ -147,7 +147,7 @@ impl<'cx> Scope<'cx> {
     }
   }
 
-  pub(crate) fn alloc<T: Object>(&self, v: T) -> Ptr<T> {
+  pub(crate) fn alloc<T: Type>(&self, v: T) -> Ptr<T> {
     self.thread.global.alloc(v)
   }
 

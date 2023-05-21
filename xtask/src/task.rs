@@ -1,6 +1,9 @@
 use crate::Result;
 
-const HELP: &str = "\
+const HELP: &str = "
+Usage:
+  xtask <task> <args>
+
 Tasks:
   examples : run all examples
   snap     : run snapshot tests in review mode
@@ -17,7 +20,7 @@ pub mod template;
 pub mod test_all;
 
 pub fn print_help() -> Result<()> {
-  eprint!("{HELP}");
+  eprintln!("{HELP}");
   Ok(())
 }
 

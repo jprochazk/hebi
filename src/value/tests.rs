@@ -1,5 +1,5 @@
 use super::*;
-use crate::object::Object;
+use crate::object::{Object, Ptr};
 use crate::util::JoinIter;
 use crate::vm::global::Global;
 
@@ -8,10 +8,12 @@ struct Bar {
 }
 
 impl Object for Bar {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Bar"
   }
 }
+
+generate_vtable!(Bar);
 
 impl Debug for Bar {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

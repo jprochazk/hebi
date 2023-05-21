@@ -1,6 +1,5 @@
 // TODO: get rid of this somehow
 // it's only used in `value/object.rs` to access the vtable of a `dyn Object`
-#![feature(ptr_metadata)]
 
 #[macro_use]
 pub mod macros;
@@ -8,10 +7,12 @@ pub mod macros;
 #[macro_use]
 mod util;
 
+#[macro_use]
+mod object;
+
 mod bytecode;
 mod emit;
 mod error;
-mod object;
 #[cfg(feature = "serde")]
 mod serde;
 pub mod span;
@@ -24,8 +25,10 @@ pub use public::*;
 
 /*
 - [x] remove `__miri` feature and put args in `xtask miri` instead (`--filter` for running only specific tests)
-  - should unlock `--all-features`
-- [ ] change ptr repr to use manual vtable + static object trait
+  - [x] should unlock `--all-features`
+- [x] change ptr repr to use manual vtable + static object trait
+- [x] remove Table `named_field`, it should be reserved for methods
+- [ ] move all field access/index access/etc. to delegate to the object trait
 - [ ] vm fully async
   - [x] stackless import
   - [ ] stackless class init

@@ -30,10 +30,12 @@ impl Function {
 }
 
 impl Object for Function {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Function"
   }
 }
+
+generate_vtable!(Function);
 
 impl Display for Function {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -49,10 +51,12 @@ pub struct Generator {
 }
 
 impl Object for Generator {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Generator"
   }
 }
+
+generate_vtable!(Generator);
 
 impl Display for Generator {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -186,10 +190,12 @@ impl Drop for FunctionDescriptor {
 }
 
 impl Object for FunctionDescriptor {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "FunctionDescriptor"
   }
 }
+
+generate_vtable!(FunctionDescriptor);
 
 impl Display for FunctionDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

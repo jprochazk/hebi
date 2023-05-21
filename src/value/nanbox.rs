@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::mem;
 
 use crate::object::ptr::{Any, Ptr};
-use crate::object::Object;
+use crate::object::{Object, Type};
 
 mod mask {
   //! Generic mask bits
@@ -225,11 +225,11 @@ impl Value {
   }
   */
 
-  pub fn to_object<T: Object>(self) -> Option<Ptr<T>> {
+  pub fn to_object<T: Type>(self) -> Option<Ptr<T>> {
     self.try_to_object().ok()
   }
 
-  pub fn try_to_object<T: Object>(self) -> Result<Ptr<T>, Value> {
+  pub fn try_to_object<T: Type>(self) -> Result<Ptr<T>, Value> {
     self.try_to_any()?.cast::<T>().map_err(Value::object)
   }
 

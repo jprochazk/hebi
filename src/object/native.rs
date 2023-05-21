@@ -43,10 +43,12 @@ impl Display for NativeFunction {
 }
 
 impl Object for NativeFunction {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeFunction"
   }
 }
+
+generate_vtable!(NativeFunction);
 
 pub struct NativeAsyncFunction {
   pub name: Ptr<String>,
@@ -74,10 +76,12 @@ impl Display for NativeAsyncFunction {
 }
 
 impl Object for NativeAsyncFunction {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeAsyncFunction"
   }
 }
+
+generate_vtable!(NativeAsyncFunction);
 
 #[derive(Debug)]
 pub struct NativeClassInstance {
@@ -92,18 +96,12 @@ impl Display for NativeClassInstance {
 }
 
 impl Object for NativeClassInstance {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeClassInstance"
   }
-
-  fn named_field(&self, _: Scope<'_>, _: Ptr<String>) -> crate::Result<Option<Value>> {
-    panic!("named field access on native class instances should go through the VM")
-  }
-
-  fn set_named_field(&self, _: Scope<'_>, _: Ptr<String>, _: Value) -> crate::Result<()> {
-    panic!("named field access on native class instances should go through the VM")
-  }
 }
+
+generate_vtable!(NativeClassInstance);
 
 #[derive(Debug)]
 pub struct NativeClass {
@@ -178,20 +176,22 @@ impl Display for NativeClass {
 }
 
 impl Object for NativeClass {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeClass"
   }
 
-  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
-    if let Some(method) = self.static_methods.get(name.as_str()) {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
+    if let Some(method) = this.static_methods.get(name.as_str()) {
       Ok(Some(Value::object(method.to_object())))
-    } else if let Some(method) = self.methods.get(name.as_str()) {
+    } else if let Some(method) = this.methods.get(name.as_str()) {
       Ok(Some(Value::object(method.to_object())))
     } else {
       Ok(None)
     }
   }
 }
+
+generate_vtable!(NativeClass);
 
 #[derive(Debug)]
 pub enum NativeMethod {

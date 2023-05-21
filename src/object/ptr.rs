@@ -1,44 +1,38 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::cell::Cell;
-use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
-use std::ptr::{self, NonNull, Pointee};
+use std::ptr::{self, NonNull};
 use std::{alloc, mem};
 
-use crate as hebi;
-use crate::object::{Object, String};
-use crate::value::Value;
+use super::{Type, VTable};
 use crate::vm::global::Global;
-use crate::Scope;
-
-type VTable = <dyn Object as Pointee>::Metadata;
+use crate::Result;
 
 // TODO: identity eq specialization similar to `std::rc::Rc`
 
 #[repr(C)]
-struct Repr<T> {
-  // TODO: can we get rid of layout here?
+struct Repr<T: Sized + 'static> {
   layout: Layout,
   type_id: TypeId,
   refs: Cell<u64>,
-  vtable: VTable,
+  vtable: &'static super::VTable<T>,
   data: T,
 }
 
-pub struct Ptr<T> {
+pub struct Ptr<T: Sized + 'static> {
   repr: NonNull<Repr<T>>,
 }
 
-impl<T> Ptr<T> {
-  fn inner(&self) -> &Repr<T> {
+impl<T: Sized + 'static> Ptr<T> {
+  fn repr(&self) -> &Repr<T> {
     unsafe { self.repr.as_ref() }
   }
 
   pub(crate) fn refs(&self) -> u64 {
-    self.inner().refs.get()
+    self.repr().refs.get()
   }
 
   pub(crate) fn into_addr(self) -> usize {
@@ -67,11 +61,6 @@ impl<T> Ptr<T> {
     repr.refs.set(repr.refs.get() + 1);
   }
 
-  /* pub(crate) unsafe fn decref_addr(addr: usize) {
-    let ptr = unsafe { NonNull::new_unchecked(addr as *mut Repr<T>) };
-    Self::decref(ptr)
-  } */
-
   unsafe fn decref(ptr: NonNull<Repr<T>>) {
     let repr = unsafe { ptr.as_ref() };
     repr.refs.set(repr.refs.get() - 1);
@@ -86,27 +75,27 @@ impl<T> Ptr<T> {
   }
 
   pub fn ty(&self) -> TypeId {
-    self.inner().type_id
+    self.repr().type_id
   }
 }
 
-impl<T> Deref for Ptr<T> {
+impl<T: Sized + 'static> Deref for Ptr<T> {
   type Target = T;
 
   fn deref(&self) -> &Self::Target {
-    &self.inner().data
+    &self.repr().data
   }
 }
 
-impl<T> Drop for Ptr<T> {
+impl<T: Sized + 'static> Drop for Ptr<T> {
   fn drop(&mut self) {
     if self.refs() > 1 {
       unsafe { Self::decref(self.repr) };
     } else {
-      unsafe { ptr::drop_in_place(&mut self.repr.as_mut().data as *mut _) };
+      unsafe { ptr::drop_in_place((&mut self.repr.as_mut().data) as *mut _) };
 
       let ptr = self.repr.as_ptr() as *mut u8;
-      let layout = self.inner().layout;
+      let layout = self.repr().layout;
       // TODO: replace with `alloc::Global.deallocate` when `alloc::Global` is stable
       unsafe { alloc::dealloc(ptr, layout) }
     }
@@ -120,43 +109,21 @@ impl<T> Clone for Ptr<T> {
   }
 }
 
-impl<T: Object> Object for Ptr<T> {
-  __delegate! {
-    to(&self.inner().data);
-
-    fn type_name(self: &Self) -> &'static str;
-    fn named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>>;
-    fn set_named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()>;
-    fn keyed_field(self: &Self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>>;
-    fn set_keyed_field(self: &Self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()>;
-    fn contains(self: &Self, scope: Scope<'_>, item: Value) -> hebi::Result<bool>;
-    fn add(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn subtract(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn multiply(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn divide(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn remainder(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn pow(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn invert(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
-    fn not(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
-    fn cmp(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering>;
-  }
-}
-
 impl<T: Debug> Debug for Ptr<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    Debug::fmt(&self.inner().data, f)
+    Debug::fmt(&self.repr().data, f)
   }
 }
 
 impl<T: Display> Display for Ptr<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    Display::fmt(&self.inner().data, f)
+    Display::fmt(&self.repr().data, f)
   }
 }
 
 impl<T: PartialEq> PartialEq for Ptr<T> {
   fn eq(&self, other: &Self) -> bool {
-    self.inner().data == other.inner().data
+    self.repr().data == other.repr().data
   }
 }
 
@@ -164,19 +131,19 @@ impl<T: Eq> Eq for Ptr<T> {}
 
 impl<T: PartialOrd> PartialOrd for Ptr<T> {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    self.inner().data.partial_cmp(&other.inner().data)
+    self.repr().data.partial_cmp(&other.repr().data)
   }
 }
 
 impl<T: Ord> Ord for Ptr<T> {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.inner().data.cmp(&other.inner().data)
+    self.repr().data.cmp(&other.repr().data)
   }
 }
 
 impl<T: Hash> Hash for Ptr<T> {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.inner().data.hash(state);
+    self.repr().data.hash(state);
   }
 }
 
@@ -192,13 +159,13 @@ impl<T> AsRef<T> for Ptr<T> {
   }
 }
 
-impl<T: Object + 'static> Ptr<T> {
+impl<T: Type + 'static> Ptr<T> {
   pub(crate) unsafe fn alloc_raw(v: T) -> Self {
     let object = Box::new(Repr {
       layout: Layout::new::<Repr<T>>(),
       type_id: TypeId::of::<T>(),
       refs: Cell::new(1),
-      vtable: ptr::metadata(&v as &dyn Object),
+      vtable: <T as Type>::vtable(),
       data: v,
     });
     Ptr {
@@ -208,7 +175,7 @@ impl<T: Object + 'static> Ptr<T> {
 }
 
 impl Global {
-  pub fn alloc<T: Object + 'static>(&self, v: T) -> Ptr<T> {
+  pub fn alloc<T: Type + 'static>(&self, v: T) -> Ptr<T> {
     unsafe { Ptr::alloc_raw(v) }
   }
 }
@@ -228,93 +195,75 @@ macro_rules! offset_of {
 }
 
 pub struct Any {
-  _private: (),
+  __: (),
 }
 
 impl Any {
-  unsafe fn get_repr_ptr(&self) -> *const Repr<()> {
+  pub(crate) unsafe fn vtable(&self) -> &'static VTable<()> {
+    std::ptr::read(std::ptr::addr_of!((*self.repr_raw()).vtable))
+  }
+
+  unsafe fn repr_raw(&self) -> *const Repr<()> {
     let data_offset = offset_of!(Repr<()>, data);
     let ptr = self as *const Any as *const u8;
     ptr.sub(data_offset) as *const Repr<()>
-  }
-
-  unsafe fn as_dyn_object_ptr(&self) -> *const dyn Object {
-    let ptr = self.get_repr_ptr();
-    ptr::from_raw_parts::<dyn Object>(ptr::addr_of!((*ptr).data), (*ptr).vtable)
-  }
-
-  unsafe fn as_dyn_object(&self) -> &dyn Object {
-    &*self.as_dyn_object_ptr()
   }
 }
 
 impl Drop for Any {
   fn drop(&mut self) {
-    unsafe { ptr::drop_in_place(self.as_dyn_object_ptr() as *mut dyn Object) }
-  }
-}
-
-impl Object for Any {
-  __delegate! {
-    to(unsafe { self.as_dyn_object() });
-
-    fn type_name(self: &Self) -> &'static str;
-    fn named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>>;
-    fn set_named_field(self: &Self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()>;
-    fn keyed_field(self: &Self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>>;
-    fn set_keyed_field(self: &Self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()>;
-    fn contains(self: &Self, scope: Scope<'_>, item: Value) -> hebi::Result<bool>;
-    fn add(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn subtract(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn multiply(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn divide(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn remainder(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn pow(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Value>;
-    fn invert(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
-    fn not(self: &Self, scope: Scope<'_>) -> hebi::Result<Value>;
-    fn cmp(self: &Self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering>;
+    unsafe {
+      let drop_in_place = self.vtable().drop_in_place;
+      drop_in_place(self as *mut Any as *mut ());
+    }
   }
 }
 
 impl Debug for Any {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let this = unsafe { self.as_dyn_object() };
-    Debug::fmt(this, f)
+    unsafe {
+      let debug_fmt = self.vtable().debug_fmt;
+      let this = self as *const Any as *const ();
+      (debug_fmt)(this, f)
+    }
   }
 }
 
 impl Display for Any {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let this = unsafe { self.as_dyn_object() };
-    Display::fmt(this, f)
+    unsafe {
+      let display_fmt = self.vtable().display_fmt;
+      let this = self as *const Any as *const ();
+      (display_fmt)(this, f)
+    }
   }
 }
 
-impl<T: Object> Ptr<T> {
+impl<T: Sized + 'static> Ptr<T> {
   pub fn into_any(self) -> Ptr<Any> {
     unsafe { mem::transmute::<Ptr<T>, Ptr<Any>>(self) }
   }
 }
 
 impl Ptr<Any> {
-  pub fn is<T: Object>(&self) -> bool {
-    self.inner().type_id == TypeId::of::<T>()
+  pub fn is<T: Type>(&self) -> bool {
+    self.repr().type_id == TypeId::of::<T>()
   }
 
-  pub fn cast<T: Object>(self) -> Result<Ptr<T>, Ptr<Any>> {
+  pub fn cast<T: Type>(self) -> Result<Ptr<T>, Ptr<Any>> {
     match self.is::<T>() {
       true => Ok(unsafe { self.cast_unchecked() }),
       false => Err(self),
     }
   }
 
-  pub fn clone_cast<T: Object>(&self) -> Option<Ptr<T>> {
+  pub fn clone_cast<T: Type>(&self) -> Option<Ptr<T>> {
     self.clone().cast().ok()
   }
 
   /// # Safety
   /// - `self.is::<T>()` must be `true`
-  pub unsafe fn cast_unchecked<T: Object>(self) -> Ptr<T> {
+  pub unsafe fn cast_unchecked<T: Type>(self) -> Ptr<T> {
     debug_assert!(
       self.is::<T>(),
       "object is not an instance of {}",
@@ -330,17 +279,20 @@ mod tests {
   use std::rc::Rc;
 
   use super::*;
+  use crate::object::Object;
 
   struct Foo {
-    value: u64,
+    value: i32,
     on_drop: Box<dyn FnMut()>,
   }
 
   impl Object for Foo {
-    fn type_name(&self) -> &'static str {
+    fn type_name(_: Ptr<Self>) -> &'static str {
       "Foo"
     }
   }
+
+  generate_vtable!(Foo);
 
   impl Debug for Foo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -364,14 +316,16 @@ mod tests {
   struct Bar {
     // it's not dead, we're using it via the `Debug` impl
     #[allow(dead_code)]
-    value: u64,
+    value: i32,
   }
 
   impl Object for Bar {
-    fn type_name(&self) -> &'static str {
+    fn type_name(_: Ptr<Self>) -> &'static str {
       "Bar"
     }
   }
+
+  generate_vtable!(Bar);
 
   impl Display for Bar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

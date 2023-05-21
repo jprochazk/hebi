@@ -24,11 +24,16 @@ pub fn is_truthy(value: Value) -> bool {
 }
 
 pub fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
-  debug_assert!(
-    index < std::ptr::metadata(ptr),
-    "index out of bounds {index}"
-  );
-  let value = unsafe { std::mem::ManuallyDrop::new(std::ptr::read((ptr as *mut T).add(index))) };
+  #[allow(dead_code)]
+  struct Components<T> {
+    ptr: *mut T,
+    len: usize,
+  }
+  let Components { ptr, len } = unsafe { std::mem::transmute::<_, Components<T>>(ptr) };
+
+  debug_assert!(index < len, "index out of bounds {index}");
+
+  let value = unsafe { std::mem::ManuallyDrop::new(std::ptr::read(ptr.add(index))) };
   std::mem::ManuallyDrop::into_inner(value.clone())
 }
 

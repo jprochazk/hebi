@@ -115,8 +115,6 @@ impl Debug for List {
   }
 }
 
-impl Object for List {
-  fn type_name(&self) -> &'static str {
-    "List"
-  }
-}
+impl Object for List {}
+
+generate_vtable!(List);

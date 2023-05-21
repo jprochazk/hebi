@@ -1,113 +1,167 @@
-pub mod class;
-pub mod function;
-pub mod list;
-pub mod module;
-pub mod native;
-pub mod string;
-pub mod table;
+macro_rules! declare_object_trait {
+  (trait $Object:ident -> $VTable:ident, $generate_vtable:ident {
+    $(fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty $body:block)*
+  }) => {
+    #[repr(C)]
+    pub struct $VTable<T: Sized + 'static> {
+      pub(crate) drop_in_place: unsafe fn(*mut T),
+      pub(crate) display_fmt: fn(*const T, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+      pub(crate) debug_fmt: fn(*const T, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
 
-pub(crate) mod ptr;
+      $(pub(crate) $name : fn($this: Ptr<T>, $($arg:$ty),*) -> $ret),*
+    }
 
-use std::any::Any as DynAny;
-use std::cmp::Ordering;
-use std::fmt::{Debug, Display};
+    pub trait $Object: Debug + Display + Sized + 'static {
+      $(
+        #[allow(unused_variables)]
+        fn $name($this: Ptr<Self>, $($arg:$ty),*) -> $ret $body
+      )*
+    }
 
-pub use class::{ClassDescriptor, ClassType};
-pub use function::{Function, FunctionDescriptor};
-pub use list::List;
-pub use module::{Module, ModuleDescriptor};
-pub use ptr::{Any, Ptr};
-pub use string::String;
-pub use table::Table;
+    impl<T: $Object + Sized + 'static> $crate::object::ptr::Ptr<T> {
+      $(
+        pub fn $name(&self, $($arg:$ty),*) -> $ret {
+          <T as $Object>::$name(self.clone(), $($arg),*)
+        }
+      )*
+    }
 
-use self::class::{ClassInstance, ClassMethod, ClassProxy};
-use self::native::{NativeAsyncFunction, NativeClassInstance, NativeFunction};
-use crate as hebi;
-use crate::value::Value;
-use crate::Scope;
+    impl $Object for $crate::object::ptr::Any {
+      $(
+        fn $name(this: Ptr<$crate::object::ptr::Any>, $($arg:$ty),*) -> $ret {
+          let method = unsafe { this.vtable() }.$name;
+          let this = unsafe {
+            ::core::mem::transmute::<Ptr<$crate::object::ptr::Any>, Ptr<()>>(this)
+          };
+          (method)(this, $($arg),*)
+        }
+      )*
+    }
 
-// TODO: impl this on Ptr<T> instead of T
-pub trait Object: DynAny + Debug + Display {
-  fn type_name(&self) -> &'static str;
+    macro_rules! $generate_vtable {
+      ($T:ident) => {
+        impl $crate::object::Type for $T {
+          fn vtable() -> &'static $crate::object::VTable<Self> {
+            static VTABLE: $crate::object::VTable<$T> = $crate::object::VTable {
+              drop_in_place: ::std::ptr::drop_in_place::<$T>,
+              display_fmt: |ptr, f| <$T as ::std::fmt::Display>::fmt(unsafe { &*ptr }, f),
+              debug_fmt: |ptr, f| <$T as ::std::fmt::Debug>::fmt(unsafe { &*ptr }, f),
 
-  fn named_field(&self, scope: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
-    let _ = scope;
-    fail!("cannot get field `{name}`")
-  }
+              $($name: <$T as $crate::object::Object>::$name),*
+            };
 
-  fn set_named_field(&self, scope: Scope<'_>, name: Ptr<String>, value: Value) -> hebi::Result<()> {
-    let _ = scope;
-    let _ = value;
-    fail!("cannot set field `{name}`")
-  }
+            &VTABLE
+          }
+        }
+      }
+    }
+  };
+}
 
-  fn keyed_field(&self, scope: Scope<'_>, key: Value) -> hebi::Result<Option<Value>> {
-    let _ = scope;
-    fail!("cannot get index `{key}`")
-  }
+pub trait Type: Sized + Object {
+  fn vtable() -> &'static VTable<Self>;
+}
 
-  fn set_keyed_field(&self, scope: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
-    let _ = scope;
-    let _ = value;
-    fail!("cannot set index `{key}`")
-  }
+declare_object_trait! {
+  trait Object -> VTable, generate_vtable {
 
-  fn contains(&self, scope: Scope<'_>, item: Value) -> hebi::Result<bool> {
-    let _ = scope;
-    let _ = item;
-    fail!("cannot get item `{item}`")
-  }
+    fn type_name(this: Ptr<Self>,) -> &'static str {
+      "Unknown"
+    }
 
-  fn add(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `+`")
-  }
+    fn named_field(
+      this: Ptr<Self>,
+      scope: Scope<'_>,
+      name: Ptr<String>
+    ) -> Result<Option<Value>> {
+      let _ = scope;
+      fail!("cannot get field `{name}`")
+    }
 
-  fn subtract(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `-`")
-  }
+    fn set_named_field(
+      this: Ptr<Self>,
+      scope: Scope<'_>,
+      name: Ptr<String>,
+      value: Value
+    ) -> Result<()> {
+      let _ = scope;
+      let _ = value;
+      fail!("cannot set field `{name}`")
+    }
 
-  fn multiply(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `*`")
-  }
+    fn keyed_field(this: Ptr<Self>, scope: Scope<'_>, key: Value) -> Result<Option<Value>> {
+      let _ = scope;
+      fail!("cannot get index `{key}`")
+    }
 
-  fn divide(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `/`")
-  }
+    fn set_keyed_field(
+      this: Ptr<Self>,
+      scope: Scope<'_>,
+      key: Value,
+      value: Value
+    ) -> Result<()> {
+      let _ = scope;
+      let _ = value;
+      fail!("cannot set index `{key}`")
+    }
 
-  fn remainder(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `%`")
-  }
+    fn contains(this: Ptr<Self>, scope: Scope<'_>, item: Value) -> Result<bool> {
+      let _ = scope;
+      let _ = item;
+      fail!("cannot get item `{item}`")
+    }
 
-  fn pow(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Value> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support `**`")
-  }
+    fn add(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `+`")
+    }
 
-  fn invert(&self, scope: Scope<'_>) -> hebi::Result<Value> {
-    let _ = scope;
-    fail!("`{self}` does not support unary `-`")
-  }
+    fn subtract(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `-`")
+    }
 
-  fn not(&self, scope: Scope<'_>) -> hebi::Result<Value> {
-    let _ = scope;
-    fail!("`{self}` does not support `!`")
-  }
+    fn multiply(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `*`")
+    }
 
-  fn cmp(&self, scope: Scope<'_>, other: Value) -> hebi::Result<Ordering> {
-    let _ = scope;
-    let _ = other;
-    fail!("`{self}` does not support comparison")
+    fn divide(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `/`")
+    }
+
+    fn remainder(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `%`")
+    }
+
+    fn pow(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support `**`")
+    }
+
+    fn invert(this: Ptr<Self>, scope: Scope<'_>) -> Result<Value> {
+      let _ = scope;
+      fail!("`{this}` does not support unary `-`")
+    }
+
+    fn not(this: Ptr<Self>, scope: Scope<'_>) -> Result<Value> {
+      let _ = scope;
+      fail!("`{this}` does not support `!`")
+    }
+
+    fn cmp(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Ordering> {
+      let _ = scope;
+      let _ = other;
+      fail!("`{this}` does not support comparison")
+    }
   }
 }
 
@@ -121,3 +175,29 @@ pub fn is_callable(v: &Ptr<Any>) -> bool {
 pub fn is_class(v: &Ptr<Any>) -> bool {
   v.is::<ClassInstance>() || v.is::<ClassProxy>() || v.is::<NativeClassInstance>()
 }
+
+pub mod class;
+pub mod function;
+pub mod list;
+pub mod module;
+pub mod native;
+pub mod string;
+pub mod table;
+
+pub(crate) mod ptr;
+
+use std::cmp::Ordering;
+use std::fmt::{Debug, Display};
+
+pub use class::{ClassDescriptor, ClassType};
+pub use function::{Function, FunctionDescriptor};
+pub use list::List;
+pub use module::{Module, ModuleDescriptor};
+pub use ptr::{Any, Ptr};
+pub use string::String;
+pub use table::Table;
+
+use self::class::{ClassInstance, ClassMethod, ClassProxy};
+use self::native::{NativeAsyncFunction, NativeClassInstance, NativeFunction};
+use crate::value::Value;
+use crate::{Result, Scope};

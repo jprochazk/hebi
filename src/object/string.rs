@@ -31,10 +31,12 @@ impl String {
 }
 
 impl Object for String {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "String"
   }
 }
+
+generate_vtable!(String);
 
 impl Display for String {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

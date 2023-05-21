@@ -173,31 +173,39 @@ impl Debug for Table {
 }
 
 impl Object for Table {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Table"
   }
 
-  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
-    Ok(self.get(&name))
+  // TODO: remove this
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
+    Ok(this.get(&name))
   }
 
-  fn set_named_field(&self, _: Scope<'_>, name: Ptr<String>, value: Value) -> crate::Result<()> {
-    self.insert(name, value);
+  fn set_named_field(
+    this: Ptr<Self>,
+    _: Scope<'_>,
+    name: Ptr<String>,
+    value: Value,
+  ) -> crate::Result<()> {
+    this.insert(name, value);
     Ok(())
   }
 
-  fn keyed_field(&self, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
+  fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
     let Some(key) = key.clone().to_object::<String>() else {
       fail!("`{key}` is not a string");
     };
-    Ok(self.get(&key))
+    Ok(this.get(&key))
   }
 
-  fn set_keyed_field(&self, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
+  fn set_keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
     let Some(key) = key.clone().to_object::<String>() else {
       fail!("`{key}` is not a string");
     };
-    self.insert(key, value);
+    this.insert(key, value);
     Ok(())
   }
 }
+
+generate_vtable!(Table);

@@ -46,36 +46,37 @@ impl Display for ClassInstance {
 }
 
 impl Object for ClassInstance {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Instance"
   }
 
   fn named_field(
-    &self,
+    this: Ptr<Self>,
     _: Scope<'_>,
     name: Ptr<String>,
   ) -> crate::Result<Option<crate::value::Value>> {
-    Ok(self.fields.get(&name))
+    Ok(this.fields.get(&name))
   }
 
   fn set_named_field(
-    &self,
+    this: Ptr<Self>,
     scope: Scope<'_>,
     name: Ptr<String>,
     value: crate::value::Value,
   ) -> crate::Result<()> {
-    if !self.is_frozen() {
-      self.fields.insert(scope.alloc(String::owned(name)), value);
+    if !this.is_frozen() {
+      this.fields.insert(scope.alloc(String::owned(name)), value);
       return Ok(());
     }
 
-    if !self.fields.set(&name, value) {
+    if !this.fields.set(&name, value) {
       fail!("cannot add field `{name}` to frozen class");
     }
 
     Ok(())
   }
 }
+generate_vtable!(ClassInstance);
 
 #[derive(Debug)]
 pub struct ClassProxy {
@@ -90,20 +91,22 @@ impl Display for ClassProxy {
 }
 
 impl Object for ClassProxy {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Instance"
   }
 
   fn named_field(
-    &self,
+    this: Ptr<Self>,
     scope: Scope<'_>,
     name: Ptr<String>,
   ) -> crate::Result<Option<crate::value::Value>> {
-    self.class.named_field(scope, name)
+    this.class.named_field(scope, name)
   }
 
   // TODO: delegate everything to `this`
 }
+
+generate_vtable!(ClassProxy);
 
 #[derive(Debug)]
 pub struct ClassMethod {
@@ -141,10 +144,12 @@ impl Display for ClassMethod {
 }
 
 impl Object for ClassMethod {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Method"
   }
 }
+
+generate_vtable!(ClassMethod);
 
 #[derive(Debug)]
 pub struct ClassType {
@@ -180,14 +185,16 @@ impl Display for ClassType {
 }
 
 impl Object for ClassType {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Class"
   }
 
-  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
-    Ok(self.methods.get(&name).cloned().map(Value::object))
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+    Ok(this.methods.get(&name).cloned().map(Value::object))
   }
 }
+
+generate_vtable!(ClassType);
 
 #[derive(Debug)]
 pub struct ClassDescriptor {
@@ -203,7 +210,9 @@ impl Display for ClassDescriptor {
 }
 
 impl Object for ClassDescriptor {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "ClassDescriptor"
   }
 }
+
+generate_vtable!(ClassDescriptor);

@@ -170,18 +170,20 @@ impl Module {
 }
 
 impl Object for Module {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Module"
   }
 
-  fn named_field(&self, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
-    Ok(self.module_vars.get(&name))
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> hebi::Result<Option<Value>> {
+    Ok(this.module_vars.get(&name))
   }
 }
 
+generate_vtable!(Module);
+
 impl Display for Module {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "<module `{}`>", self.type_name())
+    write!(f, "<module `{}`>", self.name)
   }
 }
 
@@ -193,10 +195,12 @@ pub struct ModuleDescriptor {
 }
 
 impl Object for ModuleDescriptor {
-  fn type_name(&self) -> &'static str {
+  fn type_name(_: Ptr<Self>) -> &'static str {
     "Module Descriptor"
   }
 }
+
+generate_vtable!(ModuleDescriptor);
 
 impl Display for ModuleDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

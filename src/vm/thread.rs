@@ -22,8 +22,8 @@ use crate::object::native::{
   NativeAsyncFunction, NativeClass, NativeClassInstance, NativeFunction,
 };
 use crate::object::{
-  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, String,
-  Table,
+  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, String, Table,
+  Type,
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
@@ -595,12 +595,6 @@ impl Debug for Thread {
   }
 }
 
-impl Object for Thread {
-  fn type_name(&self) -> &'static str {
-    "Thread"
-  }
-}
-
 pub(crate) struct AsyncFrame {
   fut: LocalBoxFuture<'static, hebi::Result<Value>>,
   args: Args,
@@ -620,7 +614,7 @@ impl Thread {
     clone_from_raw_slice(current_call_frame!(self).constants.as_ptr(), idx.index())
   }
 
-  fn get_constant_object<T: Object>(&self, idx: op::Constant) -> Ptr<T> {
+  fn get_constant_object<T: Type>(&self, idx: op::Constant) -> Ptr<T> {
     let object = self.get_constant(idx).into_value();
     unsafe { object.to_any_unchecked().cast_unchecked::<T>() }
   }
