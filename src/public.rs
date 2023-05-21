@@ -104,8 +104,15 @@ impl Hebi {
 
   pub fn globals(&self) -> Globals {
     Globals {
-      table: self.vm.root.global.globals().clone(),
+      table: self.vm.global.globals().clone(),
       lifetime: core::marker::PhantomData,
+    }
+  }
+
+  pub fn global(&self) -> Global {
+    Global {
+      inner: self.vm.root.global.clone(),
+      lifetime: PhantomData,
     }
   }
 
@@ -195,7 +202,7 @@ impl<'cx> Scope<'cx> {
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub fn globals(&self) -> Globals {
+  pub fn globals(&self) -> Globals<'cx> {
     Globals {
       table: self.thread.global.globals().clone(),
       lifetime: core::marker::PhantomData,
@@ -219,6 +226,12 @@ impl<'cx> Global<'cx> {
 
 impl<'cx> Scope<'cx> {
   pub fn new_instance<T: Send + 'static>(&self, value: T) -> Result<Value<'cx>> {
+    self.global().new_instance(value)
+  }
+}
+
+impl Hebi {
+  pub fn new_instance<T: Send + 'static>(&self, value: T) -> Result<Value> {
     self.global().new_instance(value)
   }
 }
@@ -262,8 +275,8 @@ impl<'cx> Globals<'cx> {
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub fn set(&self, key: &str, value: Value<'cx>) {
-    self.table.set(key, value.unbind());
+  pub fn set(&self, key: Str<'cx>, value: Value<'cx>) {
+    self.table.insert(key.unbind(), value.unbind());
   }
 }
 

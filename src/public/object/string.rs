@@ -1,6 +1,6 @@
 use super::*;
 use crate::object::{Ptr, Str as OwnedStr};
-use crate::Scope;
+use crate::{Hebi, Scope};
 
 decl_ref! {
   struct Str(Ptr<OwnedStr>)
@@ -22,6 +22,12 @@ impl<'cx> Global<'cx> {
 
 impl<'cx> Scope<'cx> {
   pub fn new_string(&self, v: impl ToString) -> Str<'cx> {
+    self.global().new_string(v)
+  }
+}
+
+impl Hebi {
+  pub fn new_string(&self, v: impl ToString) -> Str {
     self.global().new_string(v)
   }
 }

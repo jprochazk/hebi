@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::*;
 use crate::object::{list, List as OwnedList, Ptr};
-use crate::{Scope, Unbind, Value};
+use crate::{Hebi, Scope, Unbind, Value};
 
 decl_ref! {
   struct List(Ptr<OwnedList>)
@@ -74,6 +74,12 @@ impl<'cx> Global<'cx> {
 
 impl<'cx> Scope<'cx> {
   pub fn new_list(&self, capacity: usize) -> List<'cx> {
+    self.global().new_list(capacity)
+  }
+}
+
+impl Hebi {
+  pub fn new_list(&self, capacity: usize) -> List {
     self.global().new_list(capacity)
   }
 }

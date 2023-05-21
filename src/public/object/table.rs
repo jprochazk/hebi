@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::*;
 use crate::object::{table, Ptr, Table as OwnedTable};
-use crate::{Scope, Str, Unbind, Value};
+use crate::{Hebi, Scope, Str, Unbind, Value};
 
 decl_ref! {
   struct Table(Ptr<OwnedTable>)
@@ -105,6 +105,12 @@ impl<'cx> Global<'cx> {
 
 impl<'cx> Scope<'cx> {
   pub fn new_table(&self, capacity: usize) -> Table<'cx> {
+    self.global().new_table(capacity)
+  }
+}
+
+impl Hebi {
+  pub fn new_table(&self, capacity: usize) -> Table {
     self.global().new_table(capacity)
   }
 }
