@@ -72,13 +72,9 @@ jobs:
       - name: Cache
         uses: Swatinem/rust-cache@v2
 
-      # NOTE: https://github.com/rust-lang/miri/issues/654
-      # Miri is *extremely* slow in certain workloads, such as calling `Vec::push` repeatedly.
-      # Instead of running all tests under miri, we only run the parts which contain unsafe code.
-      # This is configured per test module via the `#[cfg]` attribute.
       - name: Run miri tests
-        env:
-          MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-permissive-provenance
-        run: |
-          cargo miri test --no-default-features -F __miri -F serde
+        uses: actions-rs/cargo@v1
+        with:
+          command: xtask
+          args: miri test
 
