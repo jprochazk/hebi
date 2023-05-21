@@ -13,7 +13,8 @@
     - [ ] remove `super.init()` and replace with calling the proxy (`super()`)
 - [ ] fix `from m import a, b, c` bug
 - [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
-- [ ] fix `scope.params` will panic if given the wrong number of args
+- [x] fix `scope.params` will panic if given the wrong number of args
+- [x] comma between disassembly operands
 - [ ] change `This` to support any value (?)
 
 - [ ] for iter loops
@@ -25,7 +26,6 @@
 - [ ] timeout feature (abort signal, Arc<AtomicBool> or similar)
 - [ ] semicolons (`;` for stmt, `;;` for block)
 - [ ] report code locations (intern spans, track in hashmap of `offset->span_id`)
-- [ ] comma between disassembly operands
 - [ ] codegen optimizations
   - [ ] dead code elimination (using basic blocks)
   - [ ] constant pool compaction

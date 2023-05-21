@@ -22,7 +22,7 @@ function `main` (registers: 5, length: 28, constants: 3)
   18 | store r3
   20 | load r1
   22 | store r4
-  24 | print_n r3 2
+  24 | print_n r3, 2
   27 | return
 
 

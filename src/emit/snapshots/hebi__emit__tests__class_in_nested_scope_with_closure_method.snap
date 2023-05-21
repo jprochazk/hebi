@@ -21,7 +21,7 @@ function `T.test` (registers: 2, length: 14, constants: 1)
   3  | store r0
   5  | load_upvalue ^0
   7  | store r1
-  9  | print_n r0 2
+  9  | print_n r0, 2
   12 | load_none
   13 | return
 
@@ -33,7 +33,7 @@ function `test` (registers: 2, length: 15, constants: 1)
   2  | store r0
   4  | load_smi 0
   6  | store r1
-  8  | make_data_class [0] r1; <class `T` descriptor>
+  8  | make_data_class [0], r1; <class `T` descriptor>
   11 | store r0
   13 | load_none
   14 | return

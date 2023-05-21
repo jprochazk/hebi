@@ -18,7 +18,7 @@ function `T.test` (registers: 2, length: 14, constants: 2)
   3  | store r0
   5  | load_global [1]; u
   7  | store r1
-  9  | print_n r0 2
+  9  | print_n r0, 2
   12 | load_none
   13 | return
 
@@ -30,7 +30,7 @@ function `main` (registers: 2, length: 14, constants: 3)
   2  | store_global [0]; u
   4  | load_smi 0
   6  | store r1
-  8  | make_data_class [1] r1; <class `T` descriptor>
+  8  | make_data_class [1], r1; <class `T` descriptor>
   11 | store_global [2]; T
   13 | return
 

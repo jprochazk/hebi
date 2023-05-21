@@ -28,17 +28,17 @@ function `main` (registers: 14, length: 66, constants: 3)
   32 | store r11
   34 | load_smi 5
   36 | store r12
-  38 | call r10 2
+  38 | call r10, 2
   41 | add r9
   43 | store r7
   45 | load_smi 6
   47 | store r8
-  49 | call r6 2
+  49 | call r6, 2
   52 | add r5
   54 | store r3
   56 | load_smi 7
   58 | store r4
-  60 | call r2 2
+  60 | call r2, 2
   63 | add r1
   65 | return
 

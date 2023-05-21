@@ -27,7 +27,7 @@ function `main` (registers: 3, length: 16, constants: 2)
   6  | store r1
   8  | load_smi 0
   10 | store r2
-  12 | call r1 1
+  12 | call r1, 1
   15 | return
 
 

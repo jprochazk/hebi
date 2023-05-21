@@ -22,7 +22,7 @@ function `test` (registers: 5, length: 22, constants: 1)
   11 | store r3
   13 | load r2
   15 | store r4
-  17 | print_n r3 2
+  17 | print_n r3, 2
   20 | load_none
   21 | return
 
@@ -36,14 +36,14 @@ function `main` (registers: 4, length: 31, constants: 2)
   6  | store r1
   8  | load_smi 1
   10 | store r2
-  12 | call r1 1
+  12 | call r1, 1
   15 | load_global [1]; test
   17 | store r1
   19 | load_smi 1
   21 | store r2
   23 | load_smi 2
   25 | store r3
-  27 | call r1 2
+  27 | call r1, 2
   30 | return
 
 

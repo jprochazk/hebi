@@ -20,7 +20,7 @@ function `main` (registers: 7, length: 29, constants: 3)
   18 | store r5
   20 | load_smi 2
   22 | store r6
-  24 | make_table r1 3
+  24 | make_table r1, 3
   27 | print
   28 | return
 

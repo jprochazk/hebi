@@ -24,7 +24,7 @@ function `main` (registers: 3, length: 41, constants: 4)
   16 | store r1
   18 | load_global [0]; v
   20 | store r2
-  22 | print_n r1 2
+  22 | print_n r1, 2
   25 | load_global [0]; v
   27 | store r1
   29 | load_smi 1

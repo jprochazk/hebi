@@ -15,7 +15,7 @@ function `main` (registers: 3, length: 36, constants: 2)
   2  | store r1
   4  | load_smi 0
   6  | store r2
-  8  | make_table r1 1
+  8  | make_table r1, 1
   11 | store_global [1]; v
   13 | load_global [1]; v
   15 | store r1
@@ -27,7 +27,7 @@ function `main` (registers: 3, length: 36, constants: 2)
   26 | load_const [0]; a
   28 | store r2
   30 | load_smi 1
-  32 | store_index r1 r2
+  32 | store_index r1, r2
   35 | return
 
 

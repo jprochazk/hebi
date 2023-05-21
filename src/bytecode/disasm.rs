@@ -32,7 +32,7 @@ impl<'a> Display for Instruction<'a> {
 
     write!(f, "{width}{name}")?;
     if !operands.is_empty() {
-      write!(f, " {}", operands.iter().join(" "))?;
+      write!(f, " {}", operands.iter().join(", "))?;
     }
     if let Some(constant) = constant {
       write!(f, "; {constant}")?;
