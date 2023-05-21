@@ -52,20 +52,7 @@ impl Vm {
     }
   }
 
-  pub fn eval(&mut self, code: &str) -> hebi::Result<Value> {
-    let ast = syntax::parse(self.global.clone(), code).map_err(Error::Syntax)?;
-    let module = emit::emit(self.global.clone(), &ast, "__main__", true);
-    let module_id = ModuleId::global();
-    let upvalues = self.global.alloc(List::new());
-    let main = module.root.clone();
-    let main = self.global.alloc(Function::new(main, upvalues, module_id));
-    println!("{}", main.descriptor.disassemble());
-    let main = Value::object(main);
-
-    self.root.call(main, &[])
-  }
-
-  pub async fn eval_async(&mut self, code: &str) -> hebi::Result<Value> {
+  pub async fn eval(&mut self, code: &str) -> hebi::Result<Value> {
     let ast = syntax::parse(self.global.clone(), code).map_err(Error::Syntax)?;
     let module = emit::emit(self.global.clone(), &ast, "__main__", true);
     let module_id = ModuleId::global();
@@ -75,7 +62,7 @@ impl Vm {
     // println!("{}", main.descriptor.disassemble());
     let main = Value::object(main);
 
-    self.root.call_async(main, &[]).await
+    self.root.call(main, &[]).await
   }
 
   pub fn register(&mut self, module: &NativeModule) {

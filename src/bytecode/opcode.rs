@@ -41,6 +41,7 @@ instructions! {
   MakeClassDerived(desc: Constant),
   MakeDataClass(desc: Constant, parts: Register),
   MakeDataClassDerived(desc: Constant, parts: Register),
+  FinalizeClass,
   // TODO: MakeListConst / MakeTableConst for statically known values
   MakeList(start: Register, count: Count),
   MakeListEmpty,
@@ -72,7 +73,8 @@ instructions! {
   PrintN(start: Register, count: Count),
   Call(callee: Register, args: Count),
   Call0,
-  Import(path: Constant, dst: Register),
+  Import(path: Constant),
+  FinalizeModule,
   Return,
   Yield,
 }

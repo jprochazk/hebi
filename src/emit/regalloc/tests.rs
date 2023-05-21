@@ -9,12 +9,12 @@ fn simple() {
 
   let a = regalloc.alloc();
   let b = regalloc.alloc();
-  a.access();
-  b.access();
-  b.access();
+  let _ = a.access();
+  let _ = b.access();
+  let _ = b.access();
   let c = regalloc.alloc();
-  c.access();
-  b.access();
+  let _ = c.access();
+  let _ = b.access();
 
   let (registers, map) = regalloc.finish();
 
@@ -27,14 +27,14 @@ fn overlapping() {
 
   let a = regalloc.alloc();
   let b = regalloc.alloc();
-  a.access();
+  let _ = a.access();
   let c = regalloc.alloc();
   let d = regalloc.alloc();
   let e = regalloc.alloc();
-  e.access();
-  d.access();
-  c.access();
-  b.access();
+  let _ = e.access();
+  let _ = d.access();
+  let _ = c.access();
+  let _ = b.access();
 
   let (registers, map) = regalloc.finish();
 

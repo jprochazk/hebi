@@ -19,21 +19,21 @@ fn register_patching() {
   builder.emit(Load {
     reg: Register(65536) 
   }, 0..0);
-  builder.emit(Import {
-    path: Constant(0),
-    dst: Register(0),
+  builder.emit(MakeDataClass {
+    desc: Constant(0),
+    parts: Register(0),
   }, 0..0);
-  builder.emit(Import {
-    path: Constant(0),
-    dst: Register(1),
+  builder.emit(MakeDataClass {
+    desc: Constant(0),
+    parts: Register(1),
   }, 0..0);
-  builder.emit(Import {
-    path: Constant(0),
-    dst: Register(256),
+  builder.emit(MakeDataClass {
+    desc: Constant(0),
+    parts: Register(256),
   }, 0..0);
-  builder.emit(Import {
-    path: Constant(0),
-    dst: Register(65536),
+  builder.emit(MakeDataClass {
+    desc: Constant(0),
+    parts: Register(65536),
   }, 0..0);
 
   let map = vec![127usize; 65537];
@@ -47,10 +47,10 @@ fn register_patching() {
       Opcode::Load as u8, /*register*/ 1,
       Opcode::Wide16 as u8, Opcode::Load as u8, /*register*/ 0, 1,
       Opcode::Wide32 as u8, Opcode::Load as u8, /*register*/ 0, 0, 1, 0,
-      Opcode::Import as u8, /*path*/ 0, /*destination*/ 0,
-      Opcode::Import as u8, /*path*/ 0, /*destination*/ 1,
-      Opcode::Wide16 as u8, Opcode::Import as u8, /*path*/ 0, 0, /*destination*/ 0, 1,
-      Opcode::Wide32 as u8, Opcode::Import as u8, /*path*/ 0, 0, 0, 0, /*destination*/ 0, 0, 1, 0,
+      Opcode::MakeDataClass as u8, /*path*/ 0, /*destination*/ 0,
+      Opcode::MakeDataClass as u8, /*path*/ 0, /*destination*/ 1,
+      Opcode::Wide16 as u8, Opcode::MakeDataClass as u8, /*path*/ 0, 0, /*destination*/ 0, 1,
+      Opcode::Wide32 as u8, Opcode::MakeDataClass as u8, /*path*/ 0, 0, 0, 0, /*destination*/ 0, 0, 1, 0,
     ]
   );
 
@@ -63,10 +63,10 @@ fn register_patching() {
       Opcode::Load as u8, /*register*/ 127,
       Opcode::Wide16 as u8, Opcode::Load as u8, /*register*/ 127, 0,
       Opcode::Wide32 as u8, Opcode::Load as u8, /*register*/ 127, 0, 0, 0,
-      Opcode::Import as u8, /*path*/ 0, /*destination*/ 127,
-      Opcode::Import as u8, /*path*/ 0, /*destination*/ 127,
-      Opcode::Wide16 as u8, Opcode::Import as u8, /*path*/ 0, 0, /*destination*/ 127, 0,
-      Opcode::Wide32 as u8, Opcode::Import as u8, /*path*/ 0, 0, 0, 0, /*destination*/ 127, 0, 0, 0,
+      Opcode::MakeDataClass as u8, /*path*/ 0, /*destination*/ 127,
+      Opcode::MakeDataClass as u8, /*path*/ 0, /*destination*/ 127,
+      Opcode::Wide16 as u8, Opcode::MakeDataClass as u8, /*path*/ 0, 0, /*destination*/ 127, 0,
+      Opcode::Wide32 as u8, Opcode::MakeDataClass as u8, /*path*/ 0, 0, 0, 0, /*destination*/ 127, 0, 0, 0,
     ]
   );
 }

@@ -81,7 +81,7 @@ impl Thread {
     }
   }
 
-  pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
+  /* pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
     let poll = self.poll;
     self.poll = false;
 
@@ -99,9 +99,9 @@ impl Thread {
     self.poll = poll;
 
     Ok(take(&mut self.acc))
-  }
+  } */
 
-  pub async fn call_async(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
+  pub async fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
     let poll = self.poll;
     self.poll = true;
 
@@ -337,6 +337,7 @@ impl Thread {
     }
   }
 
+  // TODO: change to not recurse
   fn init_class(&mut self, class: Ptr<ClassType>, args: Args) -> hebi::Result<dispatch::Call> {
     let instance = self
       .global
@@ -345,7 +346,7 @@ impl Thread {
     if let Some(init) = class.init.as_ref() {
       check_args(&init.descriptor.params, true, args.count)?;
 
-      self.call_method(
+      let _ = self.call_method(
         instance.clone().into_any(),
         init.clone().into_any(),
         args,
@@ -515,13 +516,14 @@ impl Thread {
     ))
   }
 
-  fn load_module(&mut self, path: Ptr<String>) -> hebi::Result<Ptr<Module>> {
+  fn load_module(&mut self, path: Ptr<String>, return_addr: usize) -> hebi::Result<dispatch::Call> {
     if let Some((module_id, module)) = self.global.get_module_by_name(path.as_str()) {
       // module is in cache
       if self.global.is_module_visited(module_id) {
         fail!("attempted to import partially initialized module {path}");
       }
-      return Ok(module);
+      self.acc = Value::object(module);
+      return Ok(dispatch::Call::Continue);
     }
 
     // module is not in cache, actually load it
@@ -549,15 +551,11 @@ impl Thread {
       fail!("expected module kind to be `script`");
     };
 
-    let result = match self.call(Value::object(root.clone()), &[]) {
-      Ok(_) => Ok(module),
-      Err(e) => {
-        self.global.finish_module(module_id, false);
-        Err(e)
-      }
-    };
-    self.global.finish_module(module_id, true);
-    result
+    self.do_call(
+      Value::object(root.clone()),
+      Args::empty(),
+      Some(return_addr),
+    )
   }
 
   fn get_empty_scope(&self) -> Scope {
@@ -1074,6 +1072,10 @@ impl Handler for Thread {
     Ok(())
   }
 
+  fn op_finalize_class(&mut self) -> Result<(), Self::Error> {
+    todo!()
+  }
+
   fn op_make_list(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
     let list = List::with_capacity(count.value());
     for reg in start.iter(count, 1) {
@@ -1404,10 +1406,17 @@ impl Handler for Thread {
     self.do_call(f, args, Some(return_addr))
   }
 
-  fn op_import(&mut self, path: op::Constant, dst: op::Register) -> hebi::Result<()> {
+  fn op_import(&mut self, path: op::Constant, return_addr: usize) -> hebi::Result<dispatch::Call> {
     let path = self.get_constant_object::<String>(path);
-    let module = self.load_module(path)?;
-    self.set_register(dst, Value::object(module));
+    self.load_module(path, return_addr)
+  }
+
+  fn op_finalize_module(&mut self) -> Result<(), Self::Error> {
+    let module_id = current_call_frame!(self).module_id;
+    self.global.finish_module(module_id, true);
+
+    let module = unsafe { self.global.get_module_by_id(module_id).unwrap_unchecked() };
+    self.acc = Value::object(module);
 
     Ok(())
   }

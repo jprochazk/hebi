@@ -8,21 +8,22 @@ print a, b
 
 
 # Func:
-function `main` (registers: 5, length: 27, constants: 3)
+function `main` (registers: 5, length: 28, constants: 3)
 .code
-  0  | import [0] r1; test
-  3  | load r1
-  5  | load_field [1]; a
-  7  | store r2
-  9  | load r1
-  11 | load_field [2]; b
-  13 | store r1
-  15 | load r2
-  17 | store r3
-  19 | load r1
-  21 | store r4
-  23 | print_n r3 2
-  26 | return
+  0  | import [0]; test
+  2  | store r1
+  4  | load r1
+  6  | load_field [1]; a
+  8  | store r2
+  10 | load r1
+  12 | load_field [2]; b
+  14 | store r1
+  16 | load r2
+  18 | store r3
+  20 | load r1
+  22 | store r4
+  24 | print_n r3 2
+  27 | return
 
 
 

@@ -10,33 +10,35 @@ print b1, b2
 
 
 # Func:
-function `main` (registers: 7, length: 53, constants: 6)
+function `main` (registers: 7, length: 55, constants: 6)
 .code
-  0  | import [0] r1; test.a0
-  3  | load r1
-  5  | load_field [1]; a1
-  7  | store r2
-  9  | load r1
-  11 | load_field [2]; a2
-  13 | store r1
-  15 | import [3] r3; test.b0
-  18 | load r3
-  20 | load_field [4]; b1
-  22 | store r4
-  24 | load r3
-  26 | load_field [5]; b2
-  28 | store r3
-  30 | load r2
-  32 | store r5
-  34 | load r1
-  36 | store r6
-  38 | print_n r5 2
-  41 | load r4
-  43 | store r5
-  45 | load r3
-  47 | store r6
-  49 | print_n r5 2
-  52 | return
+  0  | import [0]; test.a0
+  2  | store r1
+  4  | load r1
+  6  | load_field [1]; a1
+  8  | store r2
+  10 | load r1
+  12 | load_field [2]; a2
+  14 | store r1
+  16 | import [3]; test.b0
+  18 | store r3
+  20 | load r3
+  22 | load_field [4]; b1
+  24 | store r4
+  26 | load r3
+  28 | load_field [5]; b2
+  30 | store r3
+  32 | load r2
+  34 | store r5
+  36 | load r1
+  38 | store r6
+  40 | print_n r5 2
+  43 | load r4
+  45 | store r5
+  47 | load r3
+  49 | store r6
+  51 | print_n r5 2
+  54 | return
 
 
 

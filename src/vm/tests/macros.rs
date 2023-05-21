@@ -1,25 +1,25 @@
 macro_rules! check {
   ($name:ident, $input:literal) => {
-    #[test]
+    #[tokio::test]
     #[allow(non_snake_case)]
-    fn $name() {
+    async fn $name() {
       let input = indoc::indoc!($input);
       let mut hebi = crate::vm::Vm::new();
-      let snapshot = format!("{:#?}", hebi.eval(input));
+      let snapshot = format!("{:#?}", hebi.eval(input).await);
       assert_snapshot!(snapshot);
     }
   };
   (module $name:ident, { $($module:ident: $code:literal),* }, $input:literal) => {
-    #[test]
+    #[tokio::test]
     #[allow(non_snake_case)]
-    fn $name() {
+    async fn $name() {
       let input = indoc::indoc!($input);
       let mut hebi = crate::vm::Vm::with_module_loader(
         TestModuleLoader::new(&[
           $((stringify!($module), indoc::indoc!($code))),*
         ])
       );
-      let snapshot = format!("{:#?}", hebi.eval(input));
+      let snapshot = format!("{:#?}", hebi.eval(input).await);
       assert_snapshot!(snapshot);
     }
   };

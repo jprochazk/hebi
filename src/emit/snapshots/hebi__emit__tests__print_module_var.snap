@@ -8,13 +8,14 @@ print v
 
 
 # Func:
-function `main` (registers: 1, length: 8, constants: 0)
+function `main` (registers: 1, length: 9, constants: 0)
 .code
   0 | load_smi 0
   2 | store_module_var 0
   4 | load_module_var 0
   6 | print
-  7 | return
+  7 | finalize_module
+  8 | return
 
 
 

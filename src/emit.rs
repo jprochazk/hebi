@@ -326,8 +326,11 @@ impl<'src> State<'src> {
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
+    if !self.module.is_root {
+      self.builder().emit(FinalizeModule, 0..0);
+    }
     self.builder().emit(Return, 0..0);
-    callee.access();
+    let _ = callee.access();
 
     self.module
   }
@@ -488,7 +491,7 @@ impl<'src> Upvalues<'src> {
   fn finish(&self) {
     for upvalue in self.0.values() {
       if let UpvalueSource::Register(register) = &upvalue.src {
-        register.access();
+        let _ = register.access();
       }
     }
   }

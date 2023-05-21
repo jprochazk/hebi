@@ -90,7 +90,7 @@ impl Hebi {
   }
 
   pub fn eval<'cx>(&'cx mut self, code: &str) -> Result<ValueRef<'cx>> {
-    let value = self.vm.eval(code)?;
+    let value = pollster::block_on(self.vm.eval(code))?;
     Ok(unsafe { value.bind_raw::<'cx>() })
   }
 
@@ -98,7 +98,7 @@ impl Hebi {
     &'cx mut self,
     code: &'cx str,
   ) -> impl Future<Output = Result<ValueRef<'cx>>> + Send + 'cx {
-    let fut = self.vm.eval_async(code);
+    let fut = self.vm.eval(code);
     unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
@@ -183,21 +183,15 @@ impl<'cx> Scope<'cx> {
     T::from_value(value, self.global())
   }
 
-  pub fn call(&mut self, value: ValueRef<'cx>, args: &[ValueRef<'cx>]) -> Result<ValueRef<'cx>> {
-    self
-      .thread
-      .call(value.unbind(), <_>::unbind_slice(args))
-      .map(|value| unsafe { value.bind_raw::<'cx>() })
-  }
-
-  pub async fn call_async(
+  // TODO: does this also need to be force-Send?
+  pub async fn call(
     &mut self,
     value: ValueRef<'cx>,
     args: &[ValueRef<'cx>],
   ) -> Result<ValueRef<'cx>> {
     self
       .thread
-      .call_async(value.unbind(), <_>::unbind_slice(args))
+      .call(value.unbind(), <_>::unbind_slice(args))
       .await
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }

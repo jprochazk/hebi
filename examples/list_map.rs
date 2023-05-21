@@ -1,19 +1,21 @@
 use hebi::{Hebi, List, NativeModule, Result, Scope, Value};
 
 fn main() {
-  fn map(mut scope: Scope) -> Result<List> {
+  async fn map(mut scope: Scope<'_>) -> Result<List<'_>> {
     let (list, cb) = scope.params::<(List, Value)>()?;
 
     let out = scope.new_list(list.len());
     for i in 0..list.len() {
-      let value = scope.call(cb.clone(), &[list.get(i).unwrap()])?;
+      let value = scope.call(cb.clone(), &[list.get(i).unwrap()]).await?;
       out.push(value);
     }
 
     Ok(out)
   }
 
-  let module = NativeModule::builder("test").function("map", map).finish();
+  let module = NativeModule::builder("test")
+    .async_function("map", map)
+    .finish();
 
   let mut hebi = Hebi::new();
   hebi.register(&module);

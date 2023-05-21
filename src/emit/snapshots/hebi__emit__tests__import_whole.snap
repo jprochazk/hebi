@@ -8,13 +8,14 @@ print test.symbol
 
 
 # Func:
-function `main` (registers: 2, length: 9, constants: 2)
+function `main` (registers: 2, length: 10, constants: 2)
 .code
-  0 | import [0] r1; test
-  3 | load r1
-  5 | load_field [1]; symbol
-  7 | print
-  8 | return
+  0  | import [0]; test
+  2  | store r1
+  4  | load r1
+  6  | load_field [1]; symbol
+  8  | print
+  9  | return
 
 
 

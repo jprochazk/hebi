@@ -125,7 +125,7 @@ fn emit_forward_jump_16bit() {
 
   // fill constant pool to force 16-bit index
   for _ in 0..u8::MAX as u16 + 1 {
-    builder.constant_pool_builder().insert(op::Offset(0));
+    let _ = builder.constant_pool_builder().insert(op::Offset(0));
   }
 
   let test = builder.label("test");
@@ -164,7 +164,7 @@ fn emit_forward_jump_16bit_overflow() {
 
   // fill constant pool to force 16-bit index
   for _ in 0..u8::MAX as u16 + 1 {
-    builder.constant_pool_builder().insert(op::Offset(0));
+    let _ = builder.constant_pool_builder().insert(op::Offset(0));
   }
 
   let test = builder.label("test");
@@ -207,7 +207,7 @@ fn emit_forward_jump_32bit() {
 
   // fill constant pool to force 32-bit index
   for _ in 0..u16::MAX as u32 + 1 {
-    builder.constant_pool_builder().insert(op::Offset(0));
+    let _ = builder.constant_pool_builder().insert(op::Offset(0));
   }
 
   let test = builder.label("test");

@@ -57,7 +57,7 @@ macro_rules! read_operands {
 }
 
 macro_rules! get_pc {
-  ($ip:ident, $bc:ident) => {
-    ($ip as usize) - ($bc.as_ptr() as *mut u8 as usize)
+  ($ip:ident, $code:ident) => {
+    ($ip as usize) - ($code.as_ptr() as *mut u8 as usize)
   };
 }

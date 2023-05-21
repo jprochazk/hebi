@@ -171,6 +171,11 @@ pub fn dispatch<T: Handler>(
           handler.op_make_data_class_derived(desc, parts)?;
           continue;
         }
+        Opcode::FinalizeClass => {
+          let () = read_operands!(FinalizeClass, ip, end, width);
+          handler.op_finalize_class()?;
+          continue;
+        }
         Opcode::MakeList => {
           let (start, count) = read_operands!(MakeList, ip, end, width);
           handler.op_make_list(start, count)?;
@@ -330,8 +335,7 @@ pub fn dispatch<T: Handler>(
           #[allow(unused_assignments)]
           let (callee, args) = read_operands!(Call, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
-          let result = handler.op_call(return_addr, callee, args)?;
-          match result {
+          match handler.op_call(return_addr, callee, args)? {
             Call::LoadFrame(new_frame) => {
               bytecode = new_frame.bytecode;
               pc = new_frame.pc;
@@ -346,8 +350,7 @@ pub fn dispatch<T: Handler>(
           #[allow(unused_assignments)]
           let () = read_operands!(Call0, ip, end, width);
           let return_addr = get_pc!(ip, bytecode);
-          let result = handler.op_call0(return_addr)?;
-          match result {
+          match handler.op_call0(return_addr)? {
             Call::LoadFrame(new_frame) => {
               bytecode = new_frame.bytecode;
               pc = new_frame.pc;
@@ -358,8 +361,21 @@ pub fn dispatch<T: Handler>(
           }
         }
         Opcode::Import => {
-          let (path, dst) = read_operands!(Import, ip, end, width);
-          handler.op_import(path, dst)?;
+          let (path,) = read_operands!(Import, ip, end, width);
+          let return_addr = get_pc!(ip, bytecode);
+          match handler.op_import(path, return_addr)? {
+            Call::LoadFrame(new_frame) => {
+              bytecode = new_frame.bytecode;
+              pc = new_frame.pc;
+              continue 'load_frame;
+            }
+            Call::Continue => continue,
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
+          }
+        }
+        Opcode::FinalizeModule => {
+          let () = read_operands!(FinalizeModule, ip, end, width);
+          handler.op_finalize_module()?;
           continue;
         }
         Opcode::Return => {
@@ -390,6 +406,7 @@ pub enum ControlFlow {
   Yield(usize),
 }
 
+#[must_use]
 pub enum Jump {
   Skip,
   Move(op::Offset),
@@ -400,6 +417,7 @@ pub struct LoadFrame {
   pub pc: usize,
 }
 
+#[must_use]
 pub enum Call {
   LoadFrame(LoadFrame),
   Continue,
@@ -412,6 +430,7 @@ impl From<LoadFrame> for Call {
   }
 }
 
+#[must_use]
 pub enum Return {
   LoadFrame(LoadFrame),
   Yield,
@@ -460,6 +479,7 @@ pub trait Handler {
     desc: op::Constant,
     parts: op::Register,
   ) -> Result<(), Self::Error>;
+  fn op_finalize_class(&mut self) -> Result<(), Self::Error>;
   fn op_make_list(&mut self, start: op::Register, count: op::Count) -> Result<(), Self::Error>;
   fn op_make_list_empty(&mut self) -> Result<(), Self::Error>;
   fn op_make_table(&mut self, start: op::Register, count: op::Count) -> Result<(), Self::Error>;
@@ -495,7 +515,8 @@ pub trait Handler {
     args: op::Count,
   ) -> Result<Call, Self::Error>;
   fn op_call0(&mut self, return_addr: usize) -> Result<Call, Self::Error>;
-  fn op_import(&mut self, path: op::Constant, dst: op::Register) -> Result<(), Self::Error>;
+  fn op_import(&mut self, path: op::Constant, return_addr: usize) -> Result<Call, Self::Error>;
+  fn op_finalize_module(&mut self) -> Result<(), Self::Error>;
   fn op_return(&mut self) -> Result<Return, Self::Error>;
   fn op_yield(&mut self) -> Result<(), Self::Error>;
 }

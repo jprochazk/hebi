@@ -126,8 +126,8 @@ impl<'src> State<'src> {
     let (latch, end) = self.emit_loop_body((latch, end), &stmt.body);
     self.builder().emit_jump_loop(&latch, range.span());
 
-    end_register.access();
-    item_register.access();
+    let _ = end_register.access();
+    let _ = item_register.access();
 
     self.builder().bind_label(end);
     self.current_function().leave_scope();
@@ -190,8 +190,8 @@ impl<'src> State<'src> {
     let (latch, end) = self.emit_loop_body((latch, end), &stmt.body);
     self.builder().emit_jump_loop(&latch, iter.span);
 
-    iter_register.access();
-    item_register.access();
+    let _ = iter_register.access();
+    let _ = item_register.access();
 
     self.builder().bind_label(end);
     self.current_function().leave_scope();
@@ -396,25 +396,15 @@ impl<'src> State<'src> {
         let path = self.constant_name(path);
         let dst = self.alloc_register();
         self.declare_local(name.lexeme(), dst.clone());
-        self.builder().emit(
-          Import {
-            path,
-            dst: dst.access(),
-          },
-          span,
-        );
+        self.builder().emit(Import { path }, span);
+        self.builder().emit(Store { reg: dst.access() }, span);
       }
       ast::Import::Symbols { path, symbols } => {
         let path = path.iter().map(|p| p.as_ref()).join(".");
         let path = self.constant_name(path);
         let temp = self.alloc_register();
-        self.builder().emit(
-          Import {
-            path,
-            dst: temp.access(),
-          },
-          span,
-        );
+        self.builder().emit(Import { path }, span);
+        self.builder().emit(Store { reg: temp.access() }, span);
 
         for symbol in symbols {
           let name = symbol.alias.as_ref().unwrap_or(&symbol.name);

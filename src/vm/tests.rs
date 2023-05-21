@@ -785,11 +785,11 @@ check! {
   "#
 }
 
-#[test]
-fn subsequent_eval() {
+#[tokio::test]
+async fn subsequent_eval() {
   let mut hebi = Vm::new();
-  hebi.eval("v := 0").unwrap();
-  let value = hebi.eval("v").unwrap().to_int();
+  hebi.eval("v := 0").await.unwrap();
+  let value = hebi.eval("v").await.unwrap().to_int();
   assert_eq!(value, Some(0));
 }
 
