@@ -116,7 +116,7 @@ impl Hebi {
     }
   }
 
-  pub fn scope(&mut self) -> Scope {
+  pub fn scope(&self) -> Scope {
     Scope::new(&self.vm.root, Args::empty())
   }
 
