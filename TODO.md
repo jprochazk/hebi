@@ -15,7 +15,6 @@
 - [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
 - [x] fix `scope.params` will panic if given the wrong number of args
 - [x] comma between disassembly operands
-- [ ] change `This` to support any value (?)
 
 - [ ] for iter loops
 - [ ] generators
