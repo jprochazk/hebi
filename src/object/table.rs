@@ -177,21 +177,6 @@ impl Object for Table {
     "Table"
   }
 
-  // TODO: remove this
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<String>) -> crate::Result<Option<Value>> {
-    Ok(this.get(&name))
-  }
-
-  fn set_named_field(
-    this: Ptr<Self>,
-    _: Scope<'_>,
-    name: Ptr<String>,
-    value: Value,
-  ) -> crate::Result<()> {
-    this.insert(name, value);
-    Ok(())
-  }
-
   fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
     let Some(key) = key.clone().to_object::<String>() else {
       fail!("`{key}` is not a string");
