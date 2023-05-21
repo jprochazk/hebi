@@ -168,7 +168,10 @@ impl<'cx> Scope<'cx> {
 
   pub fn params<T: FromValuePack<'cx>>(&self) -> Result<T::Output> {
     let stack = unsafe { self.thread.stack.as_ref() };
-    let args = &stack.regs[self.args.start..self.args.start + self.args.count];
+    let args = stack
+      .regs
+      .get(self.args.start..self.args.start + self.args.count)
+      .ok_or_else(|| error!("expected {} args, got {}", T::len(), self.args.count))?;
     T::from_value_pack(args, self.global())
   }
 

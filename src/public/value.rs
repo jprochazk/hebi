@@ -178,6 +178,7 @@ impl<'cx> IntoValue<'cx> for String {
 pub trait FromValuePack<'cx> {
   type Output: Sized;
   fn from_value_pack(args: &[value::Value], global: Global<'cx>) -> Result<Self::Output>;
+  fn len() -> usize;
 }
 
 impl<'cx> FromValuePack<'cx> for () {
@@ -189,6 +190,10 @@ impl<'cx> FromValuePack<'cx> for () {
       fail!("expected at most 0 args, got {}", args.len());
     }
     Ok(())
+  }
+
+  fn len() -> usize {
+    0
   }
 }
 
@@ -204,12 +209,14 @@ macro_rules! impl_from_value_pack {
 
       #[allow(non_snake_case)]
       fn from_value_pack(args: &[$crate::value::Value], global: Global<'cx>) -> Result<Self::Output> {
-        const NUM_ARGS: usize = __count!($($T)*);
-        if args.len() > NUM_ARGS {
-          fail!("expected at most {NUM_ARGS} args, got {}", args.len());
+        let num_args = args.len();
+        let expected_num_args = Self::len();
+
+        if num_args > expected_num_args {
+          fail!("expected at most {expected_num_args} args, got {num_args}");
         }
-        if args.len() < NUM_ARGS {
-          fail!("expected at least {NUM_ARGS} args, got {}", args.len());
+        if num_args < expected_num_args {
+          fail!("expected at least {expected_num_args} args, got {num_args}");
         }
 
         let mut offset = 0;
@@ -221,6 +228,11 @@ macro_rules! impl_from_value_pack {
         let _ = offset;
 
         Ok(($($T,)*))
+      }
+
+      #[inline]
+      fn len() -> usize {
+        __count!($($T)*)
       }
     }
   };

@@ -1,6 +1,5 @@
 use super::*;
 use crate::object::{Function as OwnedFunction, Ptr};
-use crate::Unbind;
 
 decl_ref! {
   struct Function(Ptr<OwnedFunction>)
