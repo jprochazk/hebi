@@ -1,25 +1,27 @@
 use super::*;
-use crate::object::Str;
+use crate::object::{Ptr, Str as OwnedStr};
 use crate::Scope;
 
-decl_object_ref! {
-  struct Str
+decl_ref! {
+  struct Str(Ptr<OwnedStr>)
 }
 
-impl<'cx> StrRef<'cx> {
+impl_object_ref!(Str, OwnedStr);
+
+impl<'cx> Str<'cx> {
   pub fn as_str(&self) -> &str {
     self.inner.as_str()
   }
 }
 
 impl<'cx> Global<'cx> {
-  pub fn new_string(&self, v: impl ToString) -> StrRef<'cx> {
-    self.inner.alloc(Str::owned(v)).bind(self.clone())
+  pub fn new_string(&self, v: impl ToString) -> Str<'cx> {
+    self.inner.alloc(OwnedStr::owned(v)).bind(self.clone())
   }
 }
 
 impl<'cx> Scope<'cx> {
-  pub fn new_string(&self, v: impl ToString) -> StrRef<'cx> {
+  pub fn new_string(&self, v: impl ToString) -> Str<'cx> {
     self.global().new_string(v)
   }
 }

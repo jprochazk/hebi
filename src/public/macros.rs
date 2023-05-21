@@ -1,15 +1,5 @@
 macro_rules! decl_ref {
-  (struct $T:ident) => {
-    paste::paste! {
-      decl_ref!(__final [<$T Ref>], $T);
-    }
-  };
   (struct $name:ident($inner:ty)) => {
-    paste::paste! {
-      decl_ref!(__final [<$name Ref>], $inner);
-    }
-  };
-  (__final $name:ident, $inner:ty) => {
     #[derive(Clone)]
     #[repr(C)]
     pub struct $name<'cx> {
@@ -49,26 +39,22 @@ macro_rules! decl_ref {
   };
 }
 
-macro_rules! decl_object_ref {
-  (struct $T:ident) => {
-    decl_ref! {
-      struct $T(Ptr<$T>)
-    }
-
-    paste::paste! {
-      impl<'cx> $crate::public::object::ObjectRef<'cx> for [<$T Ref>]<'cx> {
-        fn as_any(&self, _: $crate::Global<'cx>) -> $crate::public::object::AnyRef<'cx> {
-          let ptr = self.inner.clone().into_any();
-          unsafe { ptr.bind_raw::<'cx>() }
-        }
-
-        fn from_any(v: $crate::public::object::AnyRef<'cx>, _: $crate::Global<'cx>) -> Option<Self> {
-          v.inner.cast::<$T>().ok().map(|v| unsafe { v.bind_raw::<'cx>() })
-        }
+macro_rules! impl_object_ref {
+  ($T:ident, $Owned:ty) => {
+    impl<'cx> $crate::public::object::ObjectRef<'cx> for $T<'cx> {
+      fn as_any(&self, _: $crate::Global<'cx>) -> $crate::public::object::Any<'cx> {
+        let ptr = self.inner.clone().into_any();
+        unsafe { ptr.bind_raw::<'cx>() }
       }
 
-
-      impl<'cx> $crate::public::object::private::Sealed for [<$T Ref>]<'cx> {}
+      fn from_any(v: $crate::public::object::Any<'cx>, _: $crate::Global<'cx>) -> Option<Self> {
+        v.inner
+          .cast::<$Owned>()
+          .ok()
+          .map(|v| unsafe { v.bind_raw::<'cx>() })
+      }
     }
+
+    impl<'cx> $crate::public::object::private::Sealed for $T<'cx> {}
   };
 }

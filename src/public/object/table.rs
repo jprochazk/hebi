@@ -1,14 +1,16 @@
 use std::marker::PhantomData;
 
 use super::*;
-use crate::object::{table, Table};
+use crate::object::{table, Ptr, Table as OwnedTable};
 use crate::{Scope, Str, Unbind, Value};
 
-decl_object_ref! {
-  struct Table
+decl_ref! {
+  struct Table(Ptr<OwnedTable>)
 }
 
-impl<'cx> TableRef<'cx> {
+impl_object_ref!(Table, OwnedTable);
+
+impl<'cx> Table<'cx> {
   pub fn len(&self) -> usize {
     self.inner.len()
   }
@@ -93,16 +95,16 @@ impl<'a, 'cx> Iterator for Entries<'a, 'cx> {
 }
 
 impl<'cx> Global<'cx> {
-  pub fn new_table(&self, capacity: usize) -> TableRef<'cx> {
+  pub fn new_table(&self, capacity: usize) -> Table<'cx> {
     self
       .inner
-      .alloc(Table::with_capacity(capacity))
+      .alloc(OwnedTable::with_capacity(capacity))
       .bind(self.clone())
   }
 }
 
 impl<'cx> Scope<'cx> {
-  pub fn new_table(&self, capacity: usize) -> TableRef<'cx> {
+  pub fn new_table(&self, capacity: usize) -> Table<'cx> {
     self.global().new_table(capacity)
   }
 }

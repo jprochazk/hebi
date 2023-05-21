@@ -5,35 +5,35 @@ pub mod table;
 
 use std::fmt::{Debug, Display};
 
-use crate::object::{Any, Ptr};
+use crate::object::{self, Ptr};
 use crate::{Bind, Global};
 
 decl_ref! {
-  struct Any(Ptr<Any>)
+  struct Any(Ptr<object::Any>)
 }
 
-impl<'cx> AnyRef<'cx> {
+impl<'cx> Any<'cx> {
   pub fn cast<T: ObjectRef<'cx>>(self, global: Global<'cx>) -> Option<T> {
     T::from_any(self, global)
   }
 }
 
-impl<'cx> ObjectRef<'cx> for AnyRef<'cx> {
-  fn as_any(&self, _: Global<'cx>) -> AnyRef<'cx> {
+impl<'cx> ObjectRef<'cx> for Any<'cx> {
+  fn as_any(&self, _: Global<'cx>) -> Any<'cx> {
     let ptr = self.inner.clone().into_any();
     unsafe { ptr.bind_raw::<'cx>() }
   }
 
-  fn from_any(v: AnyRef<'cx>, _: Global<'cx>) -> Option<Self> {
+  fn from_any(v: Any<'cx>, _: Global<'cx>) -> Option<Self> {
     Some(v)
   }
 }
 
-impl<'cx> private::Sealed for AnyRef<'cx> {}
+impl<'cx> private::Sealed for Any<'cx> {}
 
 pub trait ObjectRef<'cx>: private::Sealed + Sized + Debug + Display {
-  fn as_any(&self, global: Global<'cx>) -> AnyRef<'cx>;
-  fn from_any(v: AnyRef<'cx>, global: Global<'cx>) -> Option<Self>;
+  fn as_any(&self, global: Global<'cx>) -> Any<'cx>;
+  fn from_any(v: Any<'cx>, global: Global<'cx>) -> Option<Self>;
 
   // TODO: add same methods as `Object` and delegate
 }

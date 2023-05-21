@@ -1,15 +1,16 @@
 use std::marker::PhantomData;
 
 use super::*;
-use crate::object::{list, List};
-use crate::public::value::ValueRef;
+use crate::object::{list, List as OwnedList, Ptr};
 use crate::{Scope, Unbind, Value};
 
-decl_object_ref! {
-  struct List
+decl_ref! {
+  struct List(Ptr<OwnedList>)
 }
 
-impl<'cx> ListRef<'cx> {
+impl_object_ref!(List, OwnedList);
+
+impl<'cx> List<'cx> {
   pub fn len(&self) -> usize {
     self.inner.len()
   }
@@ -18,18 +19,18 @@ impl<'cx> ListRef<'cx> {
     self.inner.is_empty()
   }
 
-  pub fn push(&self, value: ValueRef<'cx>) {
+  pub fn push(&self, value: Value<'cx>) {
     self.inner.push(value.unbind());
   }
 
-  pub fn pop(&self) -> Option<ValueRef<'cx>> {
+  pub fn pop(&self) -> Option<Value<'cx>> {
     self
       .inner
       .pop()
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub fn get(&self, index: usize) -> Option<ValueRef<'cx>> {
+  pub fn get(&self, index: usize) -> Option<Value<'cx>> {
     self
       .inner
       .get(index)
@@ -37,7 +38,7 @@ impl<'cx> ListRef<'cx> {
   }
 
   #[must_use = "`set` returns false if index is out of bounds"]
-  pub fn set(&self, index: usize, value: ValueRef<'cx>) -> bool {
+  pub fn set(&self, index: usize, value: Value<'cx>) -> bool {
     self.inner.set(index, value.unbind())
   }
 
@@ -63,16 +64,16 @@ impl<'a, 'cx> Iterator for Iter<'a, 'cx> {
 }
 
 impl<'cx> Global<'cx> {
-  pub fn new_list(&self, capacity: usize) -> ListRef<'cx> {
+  pub fn new_list(&self, capacity: usize) -> List<'cx> {
     self
       .inner
-      .alloc(List::with_capacity(capacity))
+      .alloc(OwnedList::with_capacity(capacity))
       .bind(self.clone())
   }
 }
 
 impl<'cx> Scope<'cx> {
-  pub fn new_list(&self, capacity: usize) -> ListRef<'cx> {
+  pub fn new_list(&self, capacity: usize) -> List<'cx> {
     self.global().new_list(capacity)
   }
 }

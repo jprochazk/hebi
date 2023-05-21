@@ -159,7 +159,7 @@ impl<T> AsRef<T> for Ptr<T> {
   }
 }
 
-impl<T: Type + 'static> Ptr<T> {
+impl<T: Type + Sized + 'static> Ptr<T> {
   pub(crate) unsafe fn alloc_raw(v: T) -> Self {
     let object = Box::new(Repr {
       layout: Layout::new::<Repr<T>>(),

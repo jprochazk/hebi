@@ -1,8 +1,11 @@
 use super::*;
-use crate::object::Function;
+use crate::object::{Function as OwnedFunction, Ptr};
+use crate::Unbind;
 
-decl_object_ref! {
-  struct Function
+decl_ref! {
+  struct Function(Ptr<OwnedFunction>)
 }
 
-impl<'cx> FunctionRef<'cx> {}
+impl_object_ref!(Function, OwnedFunction);
+
+impl<'cx> Function<'cx> {}

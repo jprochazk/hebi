@@ -12,8 +12,7 @@
           only way is to call the class type
     - [ ] remove `super.init()` and replace with calling the proxy (`super()`)
 - [ ] fix `from m import a, b, c` bug
-- [ ] rename internal `hebi::String` to `hebi::Str`
-- [ ] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
+- [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
 - [ ] fix `scope.params` will panic if given the wrong number of args
 - [ ] change `This` to support any value (?)
 

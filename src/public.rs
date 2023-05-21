@@ -11,7 +11,7 @@ use std::pin::Pin;
 
 use futures_util::TryFutureExt;
 
-use self::value::{FromValuePack, ValueRef};
+use self::value::FromValuePack;
 use crate::object::native::NativeClassInstance;
 use crate::object::{Ptr, Table as OwnedTable, Type};
 use crate::value::Value as OwnedValue;
@@ -28,11 +28,11 @@ pub use crate::fail;
 pub use crate::object::module::Loader;
 pub use crate::object::native::LocalBoxFuture;
 pub use crate::public::module::NativeModule;
-pub use crate::public::object::list::ListRef as List;
-pub use crate::public::object::string::StrRef as Str;
-pub use crate::public::object::table::TableRef as Table;
-pub use crate::public::object::AnyRef as Any;
-pub use crate::public::value::{FromValue, IntoValue, ValueRef as Value};
+pub use crate::public::object::list::List;
+pub use crate::public::object::string::Str;
+pub use crate::public::object::table::Table;
+pub use crate::public::object::Any;
+pub use crate::public::value::{FromValue, IntoValue, Value};
 
 #[cfg(feature = "serde")]
 pub mod serde;
@@ -89,7 +89,7 @@ impl Hebi {
     Self { vm: Vm::new() }
   }
 
-  pub fn eval<'cx>(&'cx mut self, code: &str) -> Result<ValueRef<'cx>> {
+  pub fn eval<'cx>(&'cx mut self, code: &str) -> Result<Value<'cx>> {
     let value = pollster::block_on(self.vm.eval(code))?;
     Ok(unsafe { value.bind_raw::<'cx>() })
   }
@@ -97,7 +97,7 @@ impl Hebi {
   pub fn eval_async<'cx>(
     &'cx mut self,
     code: &'cx str,
-  ) -> impl Future<Output = Result<ValueRef<'cx>>> + Send + 'cx {
+  ) -> impl Future<Output = Result<Value<'cx>>> + Send + 'cx {
     let fut = self.vm.eval(code);
     unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
@@ -184,11 +184,7 @@ impl<'cx> Scope<'cx> {
   }
 
   // TODO: does this also need to be force-Send?
-  pub async fn call(
-    &mut self,
-    value: ValueRef<'cx>,
-    args: &[ValueRef<'cx>],
-  ) -> Result<ValueRef<'cx>> {
+  pub async fn call(&mut self, value: Value<'cx>, args: &[Value<'cx>]) -> Result<Value<'cx>> {
     self
       .thread
       .call(value.unbind(), <_>::unbind_slice(args))
@@ -256,14 +252,14 @@ pub struct Globals<'cx> {
 }
 
 impl<'cx> Globals<'cx> {
-  pub fn get(&self, key: &str) -> Option<ValueRef<'cx>> {
+  pub fn get(&self, key: &str) -> Option<Value<'cx>> {
     self
       .table
       .get(key)
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub fn set(&self, key: &str, value: ValueRef<'cx>) {
+  pub fn set(&self, key: &str, value: Value<'cx>) {
     self.table.set(key, value.unbind());
   }
 }
