@@ -34,7 +34,7 @@ async fn main() {
 import http
 
 response := http.get("https://jsonplaceholder.typicode.com/todos/1")
-print "title: ", response.title, " id: ", response.userId
+print "title: ", response["title"], " id: ", response["userId"]
 response
 "#,
     )
