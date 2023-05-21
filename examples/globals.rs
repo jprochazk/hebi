@@ -20,6 +20,12 @@ fn main() {
     (100i32).into_value(hebi.global()).unwrap(),
   );
 
+  let scope = hebi.scope();
+  hebi.globals().set(
+    scope.new_string("value"),
+    scope.new_string("test").into_value(scope.global()).unwrap(),
+  );
+
   let result = hebi
     .eval(
       r#"
