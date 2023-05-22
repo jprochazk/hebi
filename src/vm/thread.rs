@@ -512,7 +512,6 @@ impl Thread {
     let module = self.global.load_module(path.as_str())?.to_string();
     let module = syntax::parse(self.global.clone(), &module).map_err(Error::Syntax)?;
     let module = codegen::emit(self.global.clone(), &module, path.as_str(), false);
-    // println!("{}", module.root.disassemble());
     let main = self.global.alloc(Function::new(
       module.root.clone(),
       self.global.alloc(List::new()),
@@ -1338,7 +1337,6 @@ impl Handler for Thread {
   }
 
   fn op_print(&mut self) -> hebi::Result<()> {
-    // TODO: allow setting output writer
     println!("{}", take(&mut self.acc));
     Ok(())
   }
@@ -1364,7 +1362,6 @@ impl Handler for Thread {
     args: op::Count,
   ) -> hebi::Result<dispatch::Call> {
     let f = self.get_register(callee);
-    println!("call {callee}, {args}; {f:?}");
     let args = Args {
       start: stack_base!(self) + callee.index() + 1,
       count: args.value(),
