@@ -319,9 +319,16 @@ Followed by the arguments `5` and `10`
 The registers for the function and arguments are allocated before any of them are emitted.
 The bytecode emitter ensures these registers are contiguous.
 
-TODO: upvalues
-TODO: variable resolution
-TODO: modules/module variables
+TODO: 
+- upvalues
+- variable resolution
+- modules/module variables
+- method calls
+- native calls
+- native async calls
+- module loading
+- class initialization
+- registers, accumulator
 
 ## Resources
 
