@@ -19,16 +19,16 @@
 - [x] rename `emit` to `codegen`
 - [x] print to configurable writer
 - [x] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
+- [x] list indexing
+- [ ] ops on builtins
+- [ ] methods on builtins
 
 - [ ] for iter loops
 - [ ] generators
-- [x] list indexing
 - [ ] f-strings
-- [ ] ops on builtins
-- [ ] methods on builtins
+- [ ] report code locations (intern spans, track in hashmap of `offset->span_id`)
 - [ ] timeout feature (abort signal, `Arc<AtomicBool>` or similar)
 - [ ] semicolons (`;` for stmt, `;;` for block)
-- [ ] report code locations (intern spans, track in hashmap of `offset->span_id`)
 - [ ] codegen optimizations
   - [ ] dead code elimination (using basic blocks)
   - [ ] constant pool compaction

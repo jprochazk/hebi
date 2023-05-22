@@ -10,16 +10,32 @@ impl<'cx> Value<'cx> {
     self.inner.clone().to_float()
   }
 
+  pub fn is_float(&self) -> bool {
+    self.inner.is_float()
+  }
+
   pub fn as_int(&self) -> Option<i32> {
     self.inner.clone().to_int()
+  }
+
+  pub fn is_int(&self) -> bool {
+    self.inner.is_int()
   }
 
   pub fn as_bool(&self) -> Option<bool> {
     self.inner.clone().to_bool()
   }
 
+  pub fn is_bool(&self) -> bool {
+    self.inner.is_bool()
+  }
+
   pub fn as_none(&self) -> Option<()> {
     self.inner.clone().to_none()
+  }
+
+  pub fn is_none(&self) -> bool {
+    self.inner.is_none()
   }
 
   pub fn as_object<T: ObjectRef<'cx>>(&self, global: Global<'cx>) -> Option<T> {
@@ -31,6 +47,10 @@ impl<'cx> Value<'cx> {
       // SAFETY: `self` is already bound to 'cx
       unsafe { v.bind_raw::<'cx>() }
     })
+  }
+
+  pub fn is_object(&self) -> bool {
+    self.inner.is_object()
   }
 }
 
@@ -120,6 +140,19 @@ where
     match self {
       Some(value) => value.into_value(global),
       None => Ok(value::Value::none().bind(global)),
+    }
+  }
+}
+
+impl<'cx, T> FromValue<'cx> for Option<T>
+where
+  T: FromValue<'cx>,
+{
+  fn from_value(value: Value<'cx>, global: Global<'cx>) -> Result<Self> {
+    if value.is_none() {
+      Ok(None)
+    } else {
+      T::from_value(value, global).map(Some)
     }
   }
 }
