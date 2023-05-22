@@ -102,3 +102,6 @@ impl_tuple_len_for!(A, B, C, D, E, F);
 impl_tuple_len_for!(A, B, C, D, E, F, G);
 impl_tuple_len_for!(A, B, C, D, E, F, G, H);
 impl_tuple_len_for!(A, B, C, D, E, F, G, H, I);
+
+pub const MAX_SAFE_INT: f64 = 9007199254740991_f64;
+pub const MIN_SAFE_INT: f64 = -9007199254740991_f64;

@@ -972,6 +972,41 @@ check! {
   "#
 }
 
+check! {
+  list_indexing_zero,
+  r#"
+    [0, 1, 2][0]
+  "#
+}
+
+check! {
+  list_indexing_positive,
+  r#"
+    [0, 1, 2][1]
+  "#
+}
+
+check! {
+  list_indexing_negative,
+  r#"
+    [0, 1, 2][-1]
+  "#
+}
+
+check! {
+  list_indexing_invalid,
+  r#"
+    [0, 1, 2]["yo"]
+  "#
+}
+
+check! {
+  list_indexing_oob,
+  r#"
+    [0, 1, 2][100]
+  "#
+}
+
 /*
 TODO: more tests
 

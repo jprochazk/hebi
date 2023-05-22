@@ -91,7 +91,7 @@ declare_object_trait! {
 
     fn keyed_field(this: Ptr<Self>, scope: Scope<'_>, key: Value) -> Result<Option<Value>> {
       let _ = scope;
-      fail!("cannot get index `{key}`")
+      fail!("`{this}` does not support `[]`")
     }
 
     fn set_keyed_field(
@@ -102,13 +102,13 @@ declare_object_trait! {
     ) -> Result<()> {
       let _ = scope;
       let _ = value;
-      fail!("cannot set index `{key}`")
+      fail!("`{this}` does not support `[]=`")
     }
 
     fn contains(this: Ptr<Self>, scope: Scope<'_>, item: Value) -> Result<bool> {
       let _ = scope;
       let _ = item;
-      fail!("cannot get item `{item}`")
+      fail!("`{this}` does not support `in`")
     }
 
     fn add(this: Ptr<Self>, scope: Scope<'_>, other: Value) -> Result<Value> {

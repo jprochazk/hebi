@@ -1,0 +1,15 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Err(
+    Vm(
+        SpannedError {
+            span: Span {
+                start: 0,
+                end: 0,
+            },
+            message: "index `100` out of bounds, len was `3`",
+        },
+    ),
+)

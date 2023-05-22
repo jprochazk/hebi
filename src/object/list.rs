@@ -3,7 +3,9 @@ use std::fmt::{Debug, Display};
 use std::vec::Vec;
 
 use super::Object;
+use crate::util::MAX_SAFE_INT;
 use crate::value::Value;
+use crate::Result;
 
 #[derive(Default)]
 pub struct List {
@@ -115,6 +117,50 @@ impl Debug for List {
   }
 }
 
-impl Object for List {}
+impl Object for List {
+  fn keyed_field(this: super::Ptr<Self>, _: crate::Scope<'_>, key: Value) -> Result<Option<Value>> {
+    let len = this.len();
+    let index = to_index(key.clone(), len)?;
+    let value = this
+      .get(index)
+      .ok_or_else(|| error!("index `{key}` out of bounds, len was `{len}`"))?;
+    Ok(Some(value))
+  }
+
+  fn set_keyed_field(
+    this: super::Ptr<Self>,
+    _: crate::Scope<'_>,
+    key: Value,
+    value: Value,
+  ) -> Result<()> {
+    let len = this.len();
+    let index = to_index(key.clone(), len)?;
+    if !this.set(index, value) {
+      fail!("index `{key}` out of bounds, len was `{len}`");
+    };
+    Ok(())
+  }
+}
+
+fn to_index(index: Value, len: usize) -> Result<usize> {
+  let index = if index.is_int() {
+    let index = unsafe { index.to_int().unwrap_unchecked() };
+    if index.is_negative() {
+      len - ((-index) as usize)
+    } else {
+      index as usize
+    }
+  } else if index.is_float() {
+    let index = unsafe { index.to_float().unwrap_unchecked() };
+    if !index.is_finite() || index > MAX_SAFE_INT || index.fract() != 0.0 {
+      fail!("`{index}` is not a valid index")
+    }
+    index as usize
+  } else {
+    fail!("`{index}` is not a valid index")
+  };
+
+  Ok(index)
+}
 
 generate_vtable!(List);

@@ -4,6 +4,7 @@ use serde::de::{DeserializeSeed, Visitor};
 use serde::ser::{Serialize, SerializeMap, SerializeSeq};
 
 use crate::object::{List, Ptr, Str, Table};
+use crate::util::{MAX_SAFE_INT, MIN_SAFE_INT};
 use crate::value::Value;
 use crate::vm::global::Global;
 
@@ -82,9 +83,6 @@ impl Serialize for Str {
     serializer.serialize_str(self.as_str())
   }
 }
-
-const MAX_SAFE_INT: f64 = 9007199254740991_f64;
-const MIN_SAFE_INT: f64 = -9007199254740991_f64;
 
 macro_rules! try_to_f64 {
   ($ty:ty, $v:expr) => {{
