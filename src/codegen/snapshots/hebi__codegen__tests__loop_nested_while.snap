@@ -1,0 +1,25 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+loop:
+  while true:
+    continue
+  continue
+
+
+# Func:
+function `main` (registers: 1, length: 12, constants: 1)
+.code
+  0  | load_true
+  1  | jump_if_false 6
+  3  | jump_loop 3
+  5  | jump_loop 5
+  7  | jump_loop 7
+  9  | jump_loop 9
+  11 | return
+
+
+
+

@@ -27,7 +27,7 @@ use crate::object::{
 };
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{emit, object, syntax, Error, LocalBoxFuture, Scope};
+use crate::{codegen, object, syntax, Error, LocalBoxFuture, Scope};
 
 pub struct Thread {
   pub(crate) global: Global,
@@ -531,7 +531,7 @@ impl Thread {
     // TODO: native modules
     let module = self.global.load_module(path.as_str())?.to_string();
     let module = syntax::parse(self.global.clone(), &module).map_err(Error::Syntax)?;
-    let module = emit::emit(self.global.clone(), &module, path.as_str(), false);
+    let module = codegen::emit(self.global.clone(), &module, path.as_str(), false);
     // println!("{}", module.root.disassemble());
     let main = self.global.alloc(Function::new(
       module.root.clone(),

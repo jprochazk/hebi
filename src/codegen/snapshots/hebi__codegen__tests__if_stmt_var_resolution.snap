@@ -1,0 +1,29 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+if a:
+  b := a
+  print b
+else:
+  print b
+
+
+# Func:
+function `main` (registers: 1, length: 17, constants: 4)
+.code
+  0  | load_global [0]; a
+  2  | jump_if_false 11
+  4  | load_global [0]; a
+  6  | store_global [2]; b
+  8  | load_global [2]; b
+  10 | print
+  11 | jump 5
+  13 | load_global [2]; b
+  15 | print
+  16 | return
+
+
+
+

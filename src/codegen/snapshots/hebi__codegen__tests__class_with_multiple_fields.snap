@@ -1,0 +1,24 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+class T:
+  a = 0
+  b = 1
+
+
+# Func:
+function `main` (registers: 3, length: 14, constants: 2)
+.code
+  0  | load_smi 0
+  2  | store r1
+  4  | load_smi 1
+  6  | store r2
+  8  | make_data_class [0], r1; <class `T` descriptor>
+  11 | store_global [1]; T
+  13 | return
+
+
+
+

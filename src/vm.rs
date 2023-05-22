@@ -16,7 +16,7 @@ use crate::object::module::ModuleId;
 use crate::object::{module, Function, List, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
-use crate::{emit, syntax, Error};
+use crate::{codegen, syntax, Error};
 
 pub struct Vm {
   pub(crate) global: Global,
@@ -54,7 +54,7 @@ impl Vm {
 
   pub async fn eval(&mut self, code: &str) -> hebi::Result<Value> {
     let ast = syntax::parse(self.global.clone(), code).map_err(Error::Syntax)?;
-    let module = emit::emit(self.global.clone(), &ast, "__main__", true);
+    let module = codegen::emit(self.global.clone(), &ast, "__main__", true);
     let module_id = ModuleId::global();
     let upvalues = self.global.alloc(List::new());
     let main = module.root.clone();

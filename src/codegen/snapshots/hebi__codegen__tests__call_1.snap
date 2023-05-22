@@ -1,0 +1,20 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+f(0)
+
+# Func:
+function `main` (registers: 3, length: 12, constants: 1)
+.code
+  0  | load_global [0]; f
+  2  | store r1
+  4  | load_smi 0
+  6  | store r2
+  8  | call r1, 1
+  11 | return
+
+
+
+

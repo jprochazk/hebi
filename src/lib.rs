@@ -8,7 +8,7 @@ mod util;
 mod object;
 
 mod bytecode;
-mod emit;
+mod codegen;
 mod error;
 #[cfg(feature = "serde")]
 mod serde;

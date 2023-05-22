@@ -1,0 +1,30 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+fn test():
+  pass
+
+test()
+
+
+# Func:
+function `test` (registers: 1, length: 2, constants: 0)
+.code
+  0 | load_none
+  1 | return
+
+
+
+function `main` (registers: 1, length: 8, constants: 2)
+.code
+  0 | make_fn [0]; <function `test` descriptor>
+  2 | store_global [1]; test
+  4 | load_global [1]; test
+  6 | call0
+  7 | return
+
+
+
+

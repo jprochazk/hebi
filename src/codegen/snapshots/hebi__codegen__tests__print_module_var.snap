@@ -1,0 +1,22 @@
+---
+source: src/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+v := 0
+print v
+
+
+# Func:
+function `main` (registers: 1, length: 9, constants: 0)
+.code
+  0 | load_smi 0
+  2 | store_module_var 0
+  4 | load_module_var 0
+  6 | print
+  7 | finalize_module
+  8 | return
+
+
+
+
