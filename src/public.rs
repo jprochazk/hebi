@@ -13,7 +13,7 @@ use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
 use crate::object::native::NativeClassInstance;
-use crate::object::{Ptr, Table as OwnedTable, Type};
+use crate::object::{Ptr, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm::thread::{Args, Thread};
 use crate::vm::{global, Vm};
@@ -102,22 +102,11 @@ impl Hebi {
     unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
-  pub fn globals(&self) -> Globals {
-    Globals {
-      table: self.vm.global.globals().clone(),
-      lifetime: core::marker::PhantomData,
-    }
-  }
-
   pub fn global(&self) -> Global {
     Global {
       inner: self.vm.root.global.clone(),
       lifetime: PhantomData,
     }
-  }
-
-  pub fn scope(&self) -> Scope {
-    Scope::new(&self.vm.root, Args::empty())
   }
 
   pub fn register(&mut self, module: &NativeModule) {
@@ -135,6 +124,19 @@ impl Debug for Hebi {
 pub struct Global<'cx> {
   pub(crate) inner: global::Global,
   pub(crate) lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'cx> Global<'cx> {
+  pub fn get(&self, key: &str) -> Option<Value<'cx>> {
+    self
+      .inner
+      .get(key)
+      .map(|value| unsafe { value.bind_raw::<'cx>() })
+  }
+
+  pub fn set(&self, key: Str<'cx>, value: Value<'cx>) {
+    self.inner.set(key.unbind(), value.unbind());
+  }
 }
 
 #[derive(Clone)]
@@ -201,13 +203,6 @@ impl<'cx> Scope<'cx> {
       .await
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
-
-  pub fn globals(&self) -> Globals<'cx> {
-    Globals {
-      table: self.thread.global.globals().clone(),
-      lifetime: core::marker::PhantomData,
-    }
-  }
 }
 
 impl<'cx> Global<'cx> {
@@ -259,24 +254,6 @@ impl<'cx, T: Send + 'static> Deref for This<'cx, T> {
   fn deref(&self) -> &Self::Target {
     debug_assert!(self.inner.instance.is::<T>());
     unsafe { self.inner.instance.downcast_ref().unwrap_unchecked() }
-  }
-}
-
-pub struct Globals<'cx> {
-  pub(crate) table: Ptr<OwnedTable>,
-  lifetime: core::marker::PhantomData<&'cx ()>,
-}
-
-impl<'cx> Globals<'cx> {
-  pub fn get(&self, key: &str) -> Option<Value<'cx>> {
-    self
-      .table
-      .get(key)
-      .map(|value| unsafe { value.bind_raw::<'cx>() })
-  }
-
-  pub fn set(&self, key: Str<'cx>, value: Value<'cx>) {
-    self.table.insert(key.unbind(), value.unbind());
   }
 }
 

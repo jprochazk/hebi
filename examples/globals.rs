@@ -3,8 +3,8 @@ use hebi::{Hebi, IntoValue, NativeModule, Result, Scope};
 fn main() {
   fn example(scope: Scope) -> Result<()> {
     scope
-      .globals()
-      .set(scope.new_string("in_native_fn"), scope.param(0)?);
+      .global()
+      .set(scope.new_string("internal"), scope.param(0)?);
     Ok(())
   }
 
@@ -15,26 +15,21 @@ fn main() {
   let mut hebi = Hebi::new();
   hebi.register(&module);
 
-  hebi.globals().set(
+  hebi.global().set(
     hebi.new_string("external"),
     (100i32).into_value(hebi.global()).unwrap(),
   );
 
-  let scope = hebi.scope();
-  hebi.globals().set(
-    scope.new_string("value"),
-    scope.new_string("test").into_value(scope.global()).unwrap(),
-  );
-
-  let result = hebi
+  hebi
     .eval(
       r#"
 from test import example
-example(external)
-in_native_fn
+
+example(50)
+
+print "external: ", external
+print "internal: ", internal
 "#,
     )
     .unwrap();
-
-  println!("Result is: {result}");
 }

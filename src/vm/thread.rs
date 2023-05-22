@@ -733,7 +733,7 @@ impl Handler for Thread {
 
   fn op_load_global(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<Str>(name);
-    let value = match self.global.globals().get(&name) {
+    let value = match self.global.get(&name) {
       Some(value) => value,
       None => fail!("undefined global {name}"),
     };
@@ -745,7 +745,7 @@ impl Handler for Thread {
   fn op_store_global(&mut self, name: op::Constant) -> hebi::Result<()> {
     let name = self.get_constant_object::<Str>(name);
     let value = take(&mut self.acc);
-    self.global.globals().insert(name, value);
+    self.global.set(name, value);
 
     Ok(())
   }
@@ -1359,7 +1359,7 @@ impl Handler for Thread {
 
   fn op_print(&mut self) -> hebi::Result<()> {
     // TODO: allow setting output writer
-    println!("{}", self.acc);
+    println!("{}", take(&mut self.acc));
     Ok(())
   }
 

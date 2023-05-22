@@ -10,6 +10,7 @@ use super::DefaultModuleLoader;
 use crate::object::module::{Module, ModuleId};
 use crate::object::native::NativeClass;
 use crate::object::{module, Ptr, Str, Table};
+use crate::value::Value;
 use crate::Result;
 
 #[derive(Clone)]
@@ -46,8 +47,12 @@ impl Global {
     }
   }
 
-  pub fn globals(&self) -> &Ptr<Table> {
-    &self.globals
+  pub fn get(&self, key: &str) -> Option<Value> {
+    self.globals.get(key)
+  }
+
+  pub fn set(&self, key: Ptr<Str>, value: Value) {
+    self.globals.insert(key, value);
   }
 
   pub fn is_module_visited(&self, module_id: ModuleId) -> bool {

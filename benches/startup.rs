@@ -12,22 +12,50 @@ fn add1(scope: Scope) -> Result<i32> {
 }
 
 pub fn benchmark(c: &mut Criterion) {
+  let modules = (0..100)
+    .map(|i| {
+      NativeModule::builder(format!("module_{i}"))
+        .function("example", example)
+        .function("add1", add1)
+        .finish()
+    })
+    .collect::<Vec<_>>();
+
   c.bench_function("startup empty", |b| {
     b.iter(|| {
       black_box(Hebi::new());
     })
   });
 
-  c.bench_function("startup 1 module", |b| {
+  c.bench_function("startup + register 1 module", |b| {
     b.iter(|| {
       let mut hebi = Hebi::new();
 
-      let module = NativeModule::builder("test")
-        .function("example", example)
-        .function("add1", add1)
-        .finish();
+      hebi.register(&modules[0]);
 
-      hebi.register(&module);
+      black_box(hebi);
+    })
+  });
+
+  c.bench_function("startup + register 10 modules", |b| {
+    b.iter(|| {
+      let mut hebi = Hebi::new();
+
+      for module in modules[0..10].iter() {
+        hebi.register(module);
+      }
+
+      black_box(hebi);
+    })
+  });
+
+  c.bench_function("startup + register 100 modules", |b| {
+    b.iter(|| {
+      let mut hebi = Hebi::new();
+
+      for module in modules.iter() {
+        hebi.register(module);
+      }
 
       black_box(hebi);
     })
