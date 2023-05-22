@@ -1,0 +1,30 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Object(
+        Function {
+            descriptor: FunctionDescriptor {
+                name: "format",
+                params: Params {
+                    has_self: false,
+                    min: 3,
+                    max: 3,
+                },
+                upvalues: RefCell {
+                    value: [],
+                },
+                frame_size: 4,
+                instructions: 5,
+                constants: 0,
+            },
+            upvalues: [],
+            module_id: ModuleId(
+                Some(
+                    2,
+                ),
+            ),
+        },
+    ),
+)

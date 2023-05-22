@@ -567,7 +567,7 @@ impl Thread {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Args {
   pub start: usize,
   pub count: usize,
@@ -878,7 +878,7 @@ impl Handler for Thread {
     let value = if let Some(object) = object.to_any() {
       match object.keyed_field(self.get_empty_scope(), key.clone())? {
         Some(value) => value,
-        None => fail!("failed to get field `{key}` on value `{object}`"),
+        None => fail!("failed to get field `{key}` on value `{object:?}`"),
       }
     } else {
       // TODO: fields on primitives
@@ -1384,6 +1384,7 @@ impl Handler for Thread {
     args: op::Count,
   ) -> hebi::Result<dispatch::Call> {
     let f = self.get_register(callee);
+    println!("call {callee}, {args}; {f:?}");
     let args = Args {
       start: stack_base!(self) + callee.index() + 1,
       count: args.value(),

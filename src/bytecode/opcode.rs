@@ -101,7 +101,7 @@ impl Register {
       start: self,
       count,
       current_offset: 0,
-      stride,
+      stride: stride as u32,
     }
   }
 }
@@ -110,7 +110,7 @@ pub struct RegisterIter {
   start: Register,
   count: Count,
   current_offset: u32,
-  stride: usize,
+  stride: u32,
 }
 
 impl Iterator for RegisterIter {
@@ -118,8 +118,8 @@ impl Iterator for RegisterIter {
 
   fn next(&mut self) -> Option<Self::Item> {
     let reg = Register(self.start.0 + self.current_offset);
-    if self.current_offset < self.count.0 {
-      self.current_offset += self.stride as u32;
+    if self.current_offset < self.count.0 * self.stride {
+      self.current_offset += self.stride;
       Some(reg)
     } else {
       None

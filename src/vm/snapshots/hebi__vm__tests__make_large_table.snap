@@ -1,0 +1,49 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+Ok(
+    Object(
+        {
+            "version": Object(
+                "0.3.3",
+            ),
+            "update_time": Float(
+                1684753441.253474,
+            ),
+            "data": Object(
+                [
+                    Object(
+                        {
+                            "flight_id": Object(
+                                "306364ca",
+                            ),
+                            "flight": None,
+                            "callsign": Object(
+                                "REDEYE6",
+                            ),
+                            "squawk": None,
+                            "clicks": Int(
+                                1092,
+                            ),
+                            "from_iata": Object(
+                                "RMS",
+                            ),
+                            "from_city": Object(
+                                "Ramstein",
+                            ),
+                            "to_iata": None,
+                            "to_city": None,
+                            "model": Object(
+                                "B703",
+                            ),
+                            "type": Object(
+                                "Boeing E-8C",
+                            ),
+                        },
+                    ),
+                ],
+            ),
+        },
+    ),
+)

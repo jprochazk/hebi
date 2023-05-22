@@ -126,8 +126,9 @@ impl<'src> State<'src> {
     let key = (function.scope, name);
     if let Some(var) = function.locals.get_mut(&key) {
       *var = register;
-    } else {
-      function.locals.insert(key, register);
+    } else if let Some(local) = function.locals.insert(key, register.clone()) {
+      let _ = local.access();
+      local.ensure_non_overlapping(register);
     }
   }
 
@@ -311,9 +312,11 @@ impl<'src> State<'src> {
 
   fn emit_module(mut self) -> Module<'src> {
     let callee = self.alloc_register();
+    self.current_function().enter_scope();
     for stmt in self.ast.body.iter() {
       self.emit_stmt(stmt);
     }
+    self.current_function().leave_scope();
     if !self.module.is_root {
       self.builder().emit(FinalizeModule, 0..0);
     }
@@ -408,6 +411,14 @@ impl<'src> Function<'src> {
   }
 
   fn leave_scope(&mut self) {
+    let current_scope = self.scope;
+    self.locals.retain(|(scope, _), register| {
+      let retain = *scope != current_scope;
+      if !retain {
+        let _ = register.access();
+      }
+      retain
+    });
     self.scope.0 -= 1;
   }
 

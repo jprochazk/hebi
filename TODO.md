@@ -11,12 +11,14 @@
     - [ ] user cannot access initializer (to call it again)
           only way is to call the class type
     - [ ] remove `super.init()` and replace with calling the proxy (`super()`)
-- [ ] fix `from m import a, b, c` bug
+- [x] fix `from m import a, b, c` bug
 - [x] unify globals/global
 - [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
 - [x] fix `scope.params` will panic if given the wrong number of args
 - [x] comma between disassembly operands
 - [ ] rename `emit` to `codegen`
+- [ ] print to configurable writer
+- [ ] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
 
 - [ ] for iter loops
 - [ ] generators
@@ -24,7 +26,7 @@
 - [ ] f-strings
 - [ ] ops on builtins
 - [ ] methods on builtins
-- [ ] timeout feature (abort signal, Arc<AtomicBool> or similar)
+- [ ] timeout feature (abort signal, `Arc<AtomicBool>` or similar)
 - [ ] semicolons (`;` for stmt, `;;` for block)
 - [ ] report code locations (intern spans, track in hashmap of `offset->span_id`)
 - [ ] codegen optimizations
@@ -32,3 +34,8 @@
   - [ ] constant pool compaction
   - [ ] elide previous instruction for clobbered reads
   - [ ] peephole previous 2 instructions
+    - [ ] mov
+    - [ ] invoke
+- [ ] inspect dispatch loop codegen (should be a jump table)
+- [ ] inline caching
+- [ ] quickening

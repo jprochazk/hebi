@@ -134,6 +134,73 @@ impl Register {
       RegisterKind::Ref { item } => item.access(),
     }
   }
+
+  fn index(&self) -> usize {
+    match &self.0 {
+      RegisterKind::Direct {
+        state: _,
+        index,
+        register: _,
+      } => *index,
+      RegisterKind::Ref { item } => item.slice.index,
+    }
+  }
+
+  /// Extend the lifetime of `a` to just before the start of the lifetime of
+  /// `b`.
+  pub fn ensure_non_overlapping(&self, other: Register) {
+    //        v
+    // │ a━━━━●
+    // │      b━━━━●
+    // ┕━━━━━━━━━━━━
+    //
+    //       v
+    // │ a━━━●
+    // │      b━━━━●
+    // ┕━━━━━━━━━━━━
+
+    fn ensure_non_overlapping_impl(state: &mut State, this: usize, other: usize) {
+      let temp = state.intervals[this].end;
+      state.intervals[this].end = state.intervals[other].start - 1;
+      state.intervals[other].start = temp;
+    }
+
+    debug_assert!(self.check_overlap(other.clone()));
+
+    let other_index = other.index();
+
+    match &self.0 {
+      RegisterKind::Direct {
+        state,
+        index,
+        register: _,
+      } => ensure_non_overlapping_impl(&mut state.borrow_mut(), *index, other_index),
+      RegisterKind::Ref { item } => ensure_non_overlapping_impl(
+        &mut item.slice.state.borrow_mut(),
+        item.slice.index,
+        other_index,
+      ),
+    }
+  }
+
+  pub fn check_overlap(&self, other: Register) -> bool {
+    fn check_overlap_impl(state: &State, a: usize, b: usize) -> bool {
+      state.intervals[a].end >= state.intervals[b].start
+    }
+
+    let other_index = other.index();
+
+    match &self.0 {
+      RegisterKind::Direct {
+        state,
+        index,
+        register: _,
+      } => check_overlap_impl(&state.borrow(), *index, other_index),
+      RegisterKind::Ref { item } => {
+        check_overlap_impl(&item.slice.state.borrow(), item.slice.index, other_index)
+      }
+    }
+  }
 }
 
 #[derive(Clone)]

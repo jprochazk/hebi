@@ -1,0 +1,41 @@
+---
+source: src/emit/tests.rs
+expression: snapshot
+---
+# Input:
+fn test():
+  if true:
+    v := 0
+    v := 0
+    b := 0
+    print b
+
+
+# Func:
+function `test` (registers: 2, length: 22, constants: 2)
+.code
+  0  | load_true
+  1  | jump_if_false 19
+  3  | load_smi 0
+  5  | store r0
+  7  | load_smi 0
+  9  | store r0
+  11 | load_smi 0
+  13 | store r1
+  15 | load r1
+  17 | print
+  18 | jump 2
+  20 | load_none
+  21 | return
+
+
+
+function `main` (registers: 1, length: 5, constants: 2)
+.code
+  0 | make_fn [0]; <function `test` descriptor>
+  2 | store_global [1]; test
+  4 | return
+
+
+
+

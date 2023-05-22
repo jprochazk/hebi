@@ -579,3 +579,15 @@ check! {
       return value
   "#
 }
+
+check! {
+  variable_scope_lifetime,
+  r#"
+    fn test():
+      if true:
+        v := 0
+        v := 0
+        b := 0
+        print b
+  "#
+}

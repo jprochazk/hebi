@@ -1007,6 +1007,98 @@ check! {
   "#
 }
 
+check! {
+  make_large_table,
+  r#"
+    {
+      version: "0.3.3",
+      update_time: 1684753441.253474,
+      data: [
+        {
+          flight_id: "306364ca",
+          flight: none,
+          callsign: "REDEYE6",
+          squawk: none,
+          clicks: 1092,
+          from_iata: "RMS",
+          from_city: "Ramstein",
+          to_iata: none,
+          to_city: none,
+          model: "B703",
+          type: "Boeing E-8C"
+        }
+      ]
+    }
+  "#
+}
+
+check! {
+  module
+  regression__variable_scope_ends_too_early,
+  {
+    http: r#"
+      fn fetch(url, opts):
+        return {
+          version: "0.3.3",
+          update_time: 1684753441.253474,
+          data: [
+            {
+              flight_id: "306364ca",
+              flight: none,
+              callsign: "REDEYE6",
+              squawk: none,
+              clicks: 1092,
+              from_iata: "RMS",
+              from_city: "Ramstein",
+              to_iata: none,
+              to_city: none,
+              model: "B703",
+              type: "Boeing E-8C"
+            }
+          ]
+        }
+    "#,
+    utils: r#"
+      fn get_element(list, index):
+        return list[index]
+      fn format(fmt, a, b):
+        return fmt
+      fn len(list):
+        return 1
+      fn join(list, sep):
+        return "joined"
+      fn push(list, item):
+        pass
+    "#
+  },
+  r#"
+    from http import fetch
+    from utils import get_element, format, len, join, push
+
+    top_flights := fetch("https://flightradar24.com/flights/most-tracked", {format: "json"})
+    data := top_flights["data"]
+
+    i := 0
+    flights := []
+
+    while i < len(data):
+      flight = get_element(data, i)
+
+      callsign := ?flight["callsign"] ?? "Unknown"
+      from_city := ?flight["from_city"] ?? "N/A"
+      to_city := ?flight["to_city"] ?? "N/A"
+
+      __format = format
+      flight_info := format("{} {}", from_city, to_city)
+      print(flight_info)
+
+      i = i + 1
+
+    join(flights, ", ")
+    __format # should be the `format` function
+  "#
+}
+
 /*
 TODO: more tests
 
