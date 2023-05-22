@@ -12,8 +12,9 @@ use module::Module;
 use self::thread::{Stack, Thread};
 use crate as hebi;
 use crate::module::NativeModule;
+use crate::object::function::Disassembly;
 use crate::object::module::ModuleId;
-use crate::object::{module, Function, List, Str};
+use crate::object::{module, Function, List, Ptr, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
 use crate::{codegen, syntax, Error};
@@ -53,16 +54,23 @@ impl Vm {
   }
 
   pub async fn eval(&mut self, code: &str) -> hebi::Result<Value> {
+    let chunk = self.compile(code)?;
+    self.run(chunk).await
+  }
+
+  pub fn compile(&self, code: &str) -> hebi::Result<Chunk> {
     let ast = syntax::parse(self.global.clone(), code).map_err(Error::Syntax)?;
     let module = codegen::emit(self.global.clone(), &ast, "__main__", true);
     let module_id = ModuleId::global();
     let upvalues = self.global.alloc(List::new());
     let main = module.root.clone();
     let main = self.global.alloc(Function::new(main, upvalues, module_id));
-    // println!("{}", main.descriptor.disassemble());
-    let main = Value::object(main);
 
-    self.root.call(main, &[]).await
+    Ok(Chunk { main })
+  }
+
+  pub async fn run(&mut self, chunk: Chunk) -> hebi::Result<Value> {
+    self.root.call(Value::object(chunk.main.clone()), &[]).await
   }
 
   pub fn register(&mut self, module: &NativeModule) {
@@ -76,6 +84,17 @@ impl Vm {
     ));
     self.root.global.define_module(module_id, name, module);
     self.root.global.finish_module(module_id, true);
+  }
+}
+
+#[derive(Clone)]
+pub struct Chunk {
+  main: Ptr<Function>,
+}
+
+impl Chunk {
+  pub fn disassemble(&self) -> Disassembly {
+    self.main.descriptor.disassemble()
   }
 }
 

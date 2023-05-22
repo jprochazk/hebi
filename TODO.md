@@ -16,9 +16,9 @@
 - [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
 - [x] fix `scope.params` will panic if given the wrong number of args
 - [x] comma between disassembly operands
-- [ ] rename `emit` to `codegen`
+- [x] rename `emit` to `codegen`
 - [ ] print to configurable writer
-- [ ] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
+- [x] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
 
 - [ ] for iter loops
 - [ ] generators

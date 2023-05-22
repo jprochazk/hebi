@@ -81,26 +81,6 @@ impl Thread {
     }
   }
 
-  /* pub fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
-    let poll = self.poll;
-    self.poll = false;
-
-    let args = self.push_args(args);
-    if let Err(e) = self.do_call(f, args, None) {
-      self.pop_args(args);
-      return Err(e);
-    };
-    if let Err(e) = self.run() {
-      self.pop_args(args);
-      return Err(e);
-    };
-    self.pop_args(args);
-
-    self.poll = poll;
-
-    Ok(take(&mut self.acc))
-  } */
-
   pub async fn call(&mut self, f: Value, args: &[Value]) -> hebi::Result<Value> {
     let poll = self.poll;
     self.poll = true;

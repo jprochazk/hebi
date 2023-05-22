@@ -12,9 +12,11 @@ use std::pin::Pin;
 use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
+use crate::object::function::Disassembly;
 use crate::object::native::NativeClassInstance;
 use crate::object::{Ptr, Type};
 use crate::value::Value as OwnedValue;
+use crate::vm;
 use crate::vm::thread::{Args, Thread};
 use crate::vm::{global, Vm};
 
@@ -89,16 +91,40 @@ impl Hebi {
     Self { vm: Vm::new() }
   }
 
-  pub fn eval<'cx>(&'cx mut self, code: &str) -> Result<Value<'cx>> {
-    let value = pollster::block_on(self.vm.eval(code))?;
-    Ok(unsafe { value.bind_raw::<'cx>() })
+  pub fn eval<'cx, 'src>(&'cx mut self, code: &'src str) -> Result<Value<'cx>>
+  where
+    'src: 'cx,
+  {
+    pollster::block_on(self.eval_async(code))
   }
 
-  pub fn eval_async<'cx>(
+  pub fn eval_async<'cx, 'src>(
     &'cx mut self,
-    code: &'cx str,
-  ) -> impl Future<Output = Result<Value<'cx>>> + Send + 'cx {
+    code: &'src str,
+  ) -> impl Future<Output = Result<Value<'cx>>> + Send + 'cx
+  where
+    'src: 'cx,
+  {
     let fut = self.vm.eval(code);
+    unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
+  }
+
+  pub fn compile<'cx>(&self, code: &str) -> Result<Chunk<'cx>> {
+    self.vm.compile(code).map(|chunk| Chunk {
+      inner: chunk,
+      lifetime: PhantomData,
+    })
+  }
+
+  pub fn run<'cx>(&'cx mut self, chunk: Chunk<'cx>) -> Result<Value<'cx>> {
+    pollster::block_on(self.run_async(chunk))
+  }
+
+  pub fn run_async<'cx>(
+    &'cx mut self,
+    chunk: Chunk<'cx>,
+  ) -> impl Future<Output = Result<Value<'cx>>> + Send + 'cx {
+    let fut = self.vm.run(chunk.inner);
     unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
@@ -117,6 +143,18 @@ impl Hebi {
 impl Debug for Hebi {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Hebi").finish()
+  }
+}
+
+#[derive(Clone)]
+pub struct Chunk<'cx> {
+  pub(crate) inner: vm::Chunk,
+  pub(crate) lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'cx> Chunk<'cx> {
+  pub fn disassemble(&self) -> Disassembly {
+    self.inner.disassemble()
   }
 }
 

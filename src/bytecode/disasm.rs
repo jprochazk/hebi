@@ -68,18 +68,23 @@ impl<'a> Display for Disassembly<'a> {
       let (instruction, remainder) = symbolic::decode(current_remainder).ok_or(std::fmt::Error)?;
       let size = (remainder.as_ptr() as usize) - (current_remainder.as_ptr() as usize);
       current_remainder = remainder;
+      let newline = if !current_remainder.is_empty() {
+        "\n"
+      } else {
+        ""
+      };
       if self.offsets {
-        writeln!(
+        write!(
           f,
-          "{:padding$}{offset: <offset_width$} | {}",
+          "{:padding$}{offset: <offset_width$} | {}{newline}",
           "",
           instruction.disassemble(self.constants),
           padding = self.padding
         )?;
       } else {
-        writeln!(
+        write!(
           f,
-          "{:padding$}{}",
+          "{:padding$}{}{newline}",
           "",
           instruction.disassemble(self.constants),
           padding = self.padding
