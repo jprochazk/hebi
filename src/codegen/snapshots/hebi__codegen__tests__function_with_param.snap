@@ -18,7 +18,6 @@ function `test` (registers: 2, length: 5, constants: 0)
   4 | return
 
 
-
 function `main` (registers: 3, length: 16, constants: 2)
 .code
   0  | make_fn [0]; <function `test` descriptor>
@@ -29,7 +28,6 @@ function `main` (registers: 3, length: 16, constants: 2)
   10 | store r2
   12 | call r1, 1
   15 | return
-
 
 
 

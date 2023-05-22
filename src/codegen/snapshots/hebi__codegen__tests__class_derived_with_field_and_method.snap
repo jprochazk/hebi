@@ -19,7 +19,6 @@ function `T.test` (registers: 1, length: 6, constants: 1)
   5 | return
 
 
-
 function `main` (registers: 3, length: 14, constants: 3)
 .code
   0  | load_global [1]; U
@@ -29,7 +28,6 @@ function `main` (registers: 3, length: 14, constants: 3)
   8  | make_data_class_derived [0], r1; <class `T` descriptor>
   11 | store_global [2]; T
   13 | return
-
 
 
 

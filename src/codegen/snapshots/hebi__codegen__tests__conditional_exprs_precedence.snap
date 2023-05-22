@@ -39,7 +39,6 @@ function `test0` (registers: 7, length: 40, constants: 6)
   39 | return
 
 
-
 function `test1` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
@@ -63,7 +62,6 @@ function `test1` (registers: 7, length: 40, constants: 6)
   36 | load r5
   38 | load_none
   39 | return
-
 
 
 function `test3` (registers: 7, length: 40, constants: 6)
@@ -91,7 +89,6 @@ function `test3` (registers: 7, length: 40, constants: 6)
   39 | return
 
 
-
 function `test4` (registers: 7, length: 40, constants: 6)
 .code
   0  | load r1
@@ -117,7 +114,6 @@ function `test4` (registers: 7, length: 40, constants: 6)
   39 | return
 
 
-
 function `main` (registers: 1, length: 17, constants: 8)
 .code
   0  | make_fn [0]; <function `test0` descriptor>
@@ -129,7 +125,6 @@ function `main` (registers: 1, length: 17, constants: 8)
   12 | make_fn [6]; <function `test4` descriptor>
   14 | store_global [7]; test4
   16 | return
-
 
 
 

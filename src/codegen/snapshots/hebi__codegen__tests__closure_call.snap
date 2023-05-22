@@ -23,7 +23,6 @@ function `b` (registers: 1, length: 5, constants: 0)
   4 | return
 
 
-
 function `a` (registers: 1, length: 13, constants: 1)
 .code
   0  | load_smi 0
@@ -36,7 +35,6 @@ function `a` (registers: 1, length: 13, constants: 1)
   12 | return
 
 
-
 function `main` (registers: 1, length: 9, constants: 2)
 .code
   0 | make_fn [0]; <function `a` descriptor>
@@ -45,7 +43,6 @@ function `main` (registers: 1, length: 9, constants: 2)
   6 | call0
   7 | call0
   8 | return
-
 
 
 

@@ -25,7 +25,6 @@ function `test0` (registers: 4, length: 16, constants: 2)
   15 | return
 
 
-
 function `test1` (registers: 4, length: 16, constants: 2)
 .code
   0  | load r1
@@ -37,7 +36,6 @@ function `test1` (registers: 4, length: 16, constants: 2)
   12 | load r2
   14 | load_none
   15 | return
-
 
 
 function `test2` (registers: 4, length: 17, constants: 2)
@@ -54,7 +52,6 @@ function `test2` (registers: 4, length: 17, constants: 2)
   16 | return
 
 
-
 function `main` (registers: 1, length: 13, constants: 6)
 .code
   0  | make_fn [0]; <function `test0` descriptor>
@@ -64,7 +61,6 @@ function `main` (registers: 1, length: 13, constants: 6)
   8  | make_fn [4]; <function `test2` descriptor>
   10 | store_global [5]; test2
   12 | return
-
 
 
 

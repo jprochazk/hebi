@@ -26,7 +26,6 @@ function `test` (registers: 3, length: 17, constants: 1)
   16 | return
 
 
-
 function `main` (registers: 1, length: 8, constants: 2)
 .code
   0 | make_fn [0]; <function `test` descriptor>
@@ -34,7 +33,6 @@ function `main` (registers: 1, length: 8, constants: 2)
   4 | load_global [1]; test
   6 | call0
   7 | return
-
 
 
 

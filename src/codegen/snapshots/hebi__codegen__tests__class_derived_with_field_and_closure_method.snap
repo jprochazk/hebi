@@ -23,7 +23,6 @@ function `T.test` (registers: 2, length: 14, constants: 2)
   13 | return
 
 
-
 function `main` (registers: 3, length: 18, constants: 4)
 .code
   0  | load_smi 0
@@ -35,7 +34,6 @@ function `main` (registers: 3, length: 18, constants: 4)
   12 | make_data_class_derived [1], r1; <class `T` descriptor>
   15 | store_global [3]; T
   17 | return
-
 
 
 

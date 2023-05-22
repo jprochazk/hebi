@@ -26,7 +26,6 @@ function `T.test` (registers: 2, length: 14, constants: 1)
   13 | return
 
 
-
 function `test` (registers: 2, length: 15, constants: 1)
 .code
   0  | load_smi 0
@@ -39,13 +38,11 @@ function `test` (registers: 2, length: 15, constants: 1)
   14 | return
 
 
-
 function `main` (registers: 1, length: 5, constants: 2)
 .code
   0 | make_fn [0]; <function `test` descriptor>
   2 | store_global [1]; test
   4 | return
-
 
 
 
