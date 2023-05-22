@@ -1,7 +1,7 @@
-use hebi::{Hebi, IntoValue, NativeModule, Result, Scope};
+use hebi::{Hebi, IntoValue, NativeModule, Scope};
 
 fn main() {
-  fn example(scope: Scope) -> Result<()> {
+  fn example(scope: Scope) -> hebi::Result<()> {
     scope
       .global()
       .set(scope.new_string("internal"), scope.param(0)?);

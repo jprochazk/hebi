@@ -3,7 +3,8 @@
 #[macro_use]
 mod macros;
 
-use std::fmt::Debug;
+use std::cell::RefMut;
+use std::fmt::{Debug, Display};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -17,8 +18,9 @@ use crate::object::native::NativeClassInstance;
 use crate::object::{Ptr, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm;
+use crate::vm::global::{Input, Output};
 use crate::vm::thread::{Args, Thread};
-use crate::vm::{global, Vm};
+use crate::vm::{global, Config, Vm};
 
 // public API
 pub mod module;
@@ -27,7 +29,7 @@ pub mod value;
 
 pub use crate::error::{Error, Result};
 pub use crate::fail;
-pub use crate::object::module::Loader;
+pub use crate::object::module::ModuleLoader;
 pub use crate::object::native::LocalBoxFuture;
 pub use crate::public::module::NativeModule;
 pub use crate::public::object::list::List;
@@ -41,6 +43,7 @@ pub mod serde;
 #[cfg(feature = "serde")]
 pub use crate::public::serde::ValueDeserializer;
 
+#[derive(Default)]
 pub struct Hebi {
   vm: Vm,
 }
@@ -86,9 +89,82 @@ where
   }
 }
 
+pub struct HebiBuilder<M, I, O> {
+  module_loader: Option<Box<dyn crate::object::module::ModuleLoader>>,
+  input: Option<Box<dyn crate::vm::global::Input>>,
+  output: Option<Box<dyn crate::vm::global::Output>>,
+  __: PhantomData<(M, I, O)>,
+}
+
+pub struct HasModuleLoader {
+  __: (),
+}
+impl<I, O> HebiBuilder<(), I, O> {
+  pub fn module_loader(
+    self,
+    module_loader: impl ModuleLoader + 'static,
+  ) -> HebiBuilder<HasModuleLoader, I, O> {
+    HebiBuilder {
+      module_loader: Some(Box::new(module_loader)),
+      input: self.input,
+      output: self.output,
+      __: PhantomData,
+    }
+  }
+}
+
+pub struct HasInput {
+  __: (),
+}
+impl<M, O> HebiBuilder<M, (), O> {
+  pub fn input(self, input: impl Input + 'static) -> HebiBuilder<M, HasInput, O> {
+    HebiBuilder {
+      module_loader: self.module_loader,
+      input: Some(Box::new(input)),
+      output: self.output,
+      __: PhantomData,
+    }
+  }
+}
+
+pub struct HasOutput {
+  __: (),
+}
+impl<M, I> HebiBuilder<M, I, ()> {
+  pub fn output(self, output: impl Output + 'static) -> HebiBuilder<M, I, HasOutput> {
+    HebiBuilder {
+      module_loader: self.module_loader,
+      input: self.input,
+      output: Some(Box::new(output)),
+      __: PhantomData,
+    }
+  }
+}
+
+impl<M, I, O> HebiBuilder<M, I, O> {
+  pub fn finish(self) -> Hebi {
+    Hebi {
+      vm: Vm::with_config(Config {
+        module_loader: self.module_loader,
+        input: self.input,
+        output: self.output,
+      }),
+    }
+  }
+}
+
 impl Hebi {
   pub fn new() -> Self {
-    Self { vm: Vm::new() }
+    Self { vm: Vm::default() }
+  }
+
+  pub fn builder() -> HebiBuilder<(), (), ()> {
+    HebiBuilder {
+      module_loader: None,
+      input: None,
+      output: None,
+      __: PhantomData,
+    }
   }
 
   pub fn eval<'cx, 'src>(&'cx mut self, code: &'src str) -> Result<Value<'cx>>
@@ -174,6 +250,24 @@ impl<'cx> Global<'cx> {
 
   pub fn set(&self, key: Str<'cx>, value: Value<'cx>) {
     self.inner.set(key.unbind(), value.unbind());
+  }
+
+  pub fn print(&self, f: impl Display) -> Result<()> {
+    write!(&mut self.inner.io().output.borrow_mut(), "{f}").map_err(Error::user)
+  }
+
+  pub fn println(&self, f: impl Display) -> Result<()> {
+    writeln!(&mut self.inner.io().output.borrow_mut(), "{f}").map_err(Error::user)
+  }
+
+  pub fn output(&mut self) -> RefMut<'_, dyn Output> {
+    RefMut::map(self.inner.io().output.borrow_mut(), |output| {
+      output.as_mut()
+    })
+  }
+
+  pub fn input(&mut self) -> RefMut<'_, dyn Input> {
+    RefMut::map(self.inner.io().input.borrow_mut(), |input| input.as_mut())
   }
 }
 

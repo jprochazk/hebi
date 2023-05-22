@@ -1,11 +1,11 @@
-use hebi::{Hebi, NativeModule, Result, Scope};
+use hebi::{Hebi, NativeModule, Scope};
 
 fn main() {
   fn example(_: Scope) -> i32 {
     100i32
   }
 
-  fn add1(scope: Scope) -> Result<i32> {
+  fn add1(scope: Scope) -> hebi::Result<i32> {
     let value = scope.param::<i32>(0)?;
     Ok(value + 1)
   }

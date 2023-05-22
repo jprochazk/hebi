@@ -12,7 +12,7 @@ use crate::value::Value;
 use crate::vm::global::Global;
 use crate::Scope;
 
-pub trait Loader {
+pub trait ModuleLoader {
   fn load(&self, path: &str) -> hebi::Result<&str>;
 }
 

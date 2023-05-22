@@ -9,6 +9,7 @@ use std::ptr::NonNull;
 use global::Global;
 use module::Module;
 
+use self::global::{Input, Output};
 use self::thread::{Stack, Thread};
 use crate as hebi;
 use crate::module::NativeModule;
@@ -17,7 +18,7 @@ use crate::object::module::ModuleId;
 use crate::object::{module, Function, List, Ptr, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
-use crate::{codegen, syntax, Error};
+use crate::{codegen, syntax, Error, ModuleLoader};
 
 pub struct Vm {
   pub(crate) global: Global,
@@ -27,7 +28,7 @@ pub struct Vm {
 
 struct DefaultModuleLoader {}
 
-impl module::Loader for DefaultModuleLoader {
+impl module::ModuleLoader for DefaultModuleLoader {
   // TODO: return user error
   fn load(&self, path: &str) -> hebi::Result<&str> {
     Err(Error::Vm(SpannedError::new(
@@ -37,13 +38,43 @@ impl module::Loader for DefaultModuleLoader {
   }
 }
 
-impl Vm {
-  pub fn new() -> Self {
-    Self::with_module_loader(DefaultModuleLoader {})
-  }
+pub struct Config {
+  pub module_loader: Option<Box<dyn ModuleLoader>>,
+  pub input: Option<Box<dyn Input>>,
+  pub output: Option<Box<dyn Output>>,
+}
 
-  pub fn with_module_loader(module_loader: impl module::Loader + 'static) -> Self {
-    let global = Global::new(module_loader);
+impl Config {
+  fn resolve(self) -> (Box<dyn ModuleLoader>, Box<dyn Input>, Box<dyn Output>) {
+    (
+      self
+        .module_loader
+        .unwrap_or_else(|| Box::new(DefaultModuleLoader {})),
+      self.input.unwrap_or_else(|| Box::new(std::io::stdin())),
+      self.output.unwrap_or_else(|| Box::new(std::io::stdout())),
+    )
+  }
+}
+
+impl Default for Config {
+  fn default() -> Self {
+    Self {
+      module_loader: Some(Box::new(DefaultModuleLoader {})),
+      input: Some(Box::new(std::io::stdin())),
+      output: Some(Box::new(std::io::stdout())),
+    }
+  }
+}
+
+impl Default for Vm {
+  fn default() -> Self {
+    Self::with_config(Config::default())
+  }
+}
+
+impl Vm {
+  pub fn with_config(config: Config) -> Self {
+    let global = Global::new(config);
     let stack = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(Stack::new()))) };
     let root = Thread::new(global.clone(), stack);
     Self {

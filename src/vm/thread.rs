@@ -25,6 +25,7 @@ use crate::object::{
   Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, Str, Table,
   Type,
 };
+use crate::util::JoinIter;
 use crate::value::constant::Constant;
 use crate::value::Value;
 use crate::{codegen, object, syntax, Error, LocalBoxFuture, Scope};
@@ -1337,20 +1338,17 @@ impl Handler for Thread {
   }
 
   fn op_print(&mut self) -> hebi::Result<()> {
-    println!("{}", take(&mut self.acc));
+    let mut output = self.global.io().output.borrow_mut();
+    writeln!(&mut output, "{}", take(&mut self.acc)).map_err(Error::user)?;
     Ok(())
   }
 
   fn op_print_n(&mut self, start: op::Register, count: op::Count) -> hebi::Result<()> {
     debug_assert!(stack_base!(self) + start.index() + count.value() <= stack!(self).len());
 
-    let start = start.index();
-    let end = start + count.value();
-    for index in start..end {
-      let value = self.get_register(op::Register(index as u32));
-      print!("{value}");
-    }
-    println!();
+    let mut output = self.global.io().output.borrow_mut();
+    let values = stack!(self)[start.index()..start.index() + count.value()].iter();
+    writeln!(&mut output, "{}", values.join("\n")).map_err(Error::user)?;
 
     Ok(())
   }

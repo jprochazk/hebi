@@ -17,7 +17,7 @@
 - [x] fix `scope.params` will panic if given the wrong number of args
 - [x] comma between disassembly operands
 - [x] rename `emit` to `codegen`
-- [ ] print to configurable writer
+- [x] print to configurable writer
 - [x] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
 
 - [ ] for iter loops

@@ -111,7 +111,7 @@ impl TestModuleLoader {
   }
 }
 
-impl module::Loader for TestModuleLoader {
+impl module::ModuleLoader for TestModuleLoader {
   fn load(&self, path: &str) -> hebi::Result<&str> {
     match self.modules.get(path).copied() {
       Some(module) => Ok(module),
@@ -787,7 +787,7 @@ check! {
 
 #[tokio::test]
 async fn subsequent_eval() {
-  let mut hebi = Vm::new();
+  let mut hebi = Vm::default();
   hebi.eval("v := 0").await.unwrap();
   let value = hebi.eval("v").await.unwrap().to_int();
   assert_eq!(value, Some(0));

@@ -4,8 +4,8 @@ macro_rules! check {
     #[allow(non_snake_case)]
     async fn $name() {
       let input = indoc::indoc!($input);
-      let mut hebi = crate::vm::Vm::new();
-      let snapshot = format!("{:#?}", hebi.eval(input).await);
+      let mut hebi = crate::Hebi::default();
+      let snapshot = format!("{:#?}", hebi.eval_async(input).await);
       assert_snapshot!(snapshot);
     }
   };
@@ -14,12 +14,12 @@ macro_rules! check {
     #[allow(non_snake_case)]
     async fn $name() {
       let input = indoc::indoc!($input);
-      let mut hebi = crate::vm::Vm::with_module_loader(
+      let mut hebi = crate::Hebi::builder().module_loader(
         TestModuleLoader::new(&[
           $((stringify!($module), indoc::indoc!($code))),*
         ])
-      );
-      let snapshot = format!("{:#?}", hebi.eval(input).await);
+      ).finish();
+      let snapshot = format!("{:#?}", hebi.eval_async(input).await);
       assert_snapshot!(snapshot);
     }
   };

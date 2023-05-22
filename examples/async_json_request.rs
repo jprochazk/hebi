@@ -4,12 +4,12 @@ fn main() {}
 #[cfg(feature = "serde")]
 #[tokio::main]
 async fn main() {
-  use hebi::{Hebi, NativeModule, Result, Scope, Str, Value, ValueDeserializer};
+  use hebi::{Hebi, NativeModule, Scope, Str, Value, ValueDeserializer};
   use serde::de::DeserializeSeed;
 
   let client = reqwest::Client::default();
 
-  async fn get(scope: Scope<'_>, client: reqwest::Client) -> Result<Value<'_>> {
+  async fn get(scope: Scope<'_>, client: reqwest::Client) -> hebi::Result<Value<'_>> {
     let url = scope.param::<Str>(0)?;
     let request = client.get(url.as_str());
     let response = request.send().await.map_err(hebi::Error::user)?;

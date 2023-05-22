@@ -6,7 +6,7 @@ use std::rc::Rc;
 use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
-use super::DefaultModuleLoader;
+use super::Config;
 use crate::object::module::{Module, ModuleId};
 use crate::object::native::NativeClass;
 use crate::object::{module, Ptr, Str, Table};
@@ -18,28 +18,77 @@ pub struct Global {
   inner: Rc<State>,
 }
 
+pub trait IoBase: Send + Sync + 'static {
+  fn as_any(&self) -> &dyn std::any::Any;
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
+}
+
+impl<T: Send + Sync + 'static> IoBase for T {
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
+  }
+
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+    self
+  }
+}
+
+pub trait Output: std::io::Write + IoBase {}
+impl<T: std::io::Write + IoBase> Output for T {}
+
+pub trait Input: std::io::Read + IoBase {}
+impl<T: std::io::Read + IoBase> Input for T {}
+
 pub struct State {
   globals: Ptr<Table>,
+  io: Io,
   module_registry: RefCell<module::Registry>,
-  module_loader: Box<dyn module::Loader>,
+  module_loader: Box<dyn module::ModuleLoader>,
   module_visited_set: RefCell<IndexSet<ModuleId>>,
   string_table: RefCell<IndexMap<Cow<'static, str>, Ptr<Str>>>,
   type_map: RefCell<IndexMap<TypeId, Ptr<NativeClass>>>,
 }
 
+pub struct Io {
+  pub(crate) input: RefCell<Box<dyn Input>>,
+  pub(crate) output: RefCell<Box<dyn Output>>,
+}
+
+impl Io {
+  pub fn new(input: Box<dyn Input>, output: Box<dyn Output>) -> Self {
+    Self {
+      input: RefCell::new(Box::new(input)),
+      output: RefCell::new(Box::new(output)),
+    }
+  }
+}
+
+impl Default for Io {
+  fn default() -> Self {
+    Self::new(Box::new(std::io::stdin()), Box::new(std::io::stdout()))
+  }
+}
+
 impl Default for Global {
   fn default() -> Self {
-    Self::new(DefaultModuleLoader {})
+    Self::new(Config::default())
   }
 }
 
 impl Global {
-  pub fn new(module_loader: impl module::Loader + 'static) -> Self {
+  pub fn new(config: Config) -> Self {
+    let (module_loader, input, output) = config.resolve();
+    let io = Io {
+      input: RefCell::new(input),
+      output: RefCell::new(output),
+    };
+
     Self {
       inner: Rc::new(State {
         globals: unsafe { Ptr::alloc_raw(Table::with_capacity(0)) },
+        io,
         module_registry: RefCell::new(module::Registry::new()),
-        module_loader: Box::new(module_loader),
+        module_loader,
         module_visited_set: RefCell::new(IndexSet::new()),
         string_table: RefCell::new(IndexMap::new()),
         type_map: RefCell::new(IndexMap::new()),
@@ -117,6 +166,10 @@ impl Global {
       .borrow()
       .get(&TypeId::of::<T>())
       .cloned()
+  }
+
+  pub fn io(&self) -> &Io {
+    &self.inner.io
   }
 }
 
