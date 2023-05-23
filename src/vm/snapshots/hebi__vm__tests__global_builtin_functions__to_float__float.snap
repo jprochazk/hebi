@@ -3,14 +3,12 @@ source: src/vm/tests.rs
 expression: snapshot
 ---
 # Source:
-class T:
-  v = 10
-T().v
+to_float(10.5)
 
 
 # Result:
 Ok(
-    Int(
-        10,
+    Float(
+        10.5,
     ),
 )

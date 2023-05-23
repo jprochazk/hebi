@@ -2,6 +2,11 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+import test
+
+
+# Result:
 Err(
     Syntax(
         SyntaxError {

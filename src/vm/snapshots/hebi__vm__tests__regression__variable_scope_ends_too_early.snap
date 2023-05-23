@@ -2,6 +2,34 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+from http import fetch
+from utils import get_element, format, len, join, push
+
+top_flights := fetch("https://flightradar24.com/flights/most-tracked", {format: "json"})
+data := top_flights["data"]
+
+i := 0
+flights := []
+
+while i < len(data):
+  flight = get_element(data, i)
+
+  callsign := ?flight["callsign"] ?? "Unknown"
+  from_city := ?flight["from_city"] ?? "N/A"
+  to_city := ?flight["to_city"] ?? "N/A"
+
+  __format = format
+  flight_info := format("{} {}", from_city, to_city)
+  print(flight_info)
+
+  i = i + 1
+
+join(flights, ", ")
+__format # should be the `format` function
+
+
+# Result:
 Ok(
     Object(
         Function {
@@ -28,3 +56,7 @@ Ok(
         },
     ),
 )
+
+# Output:
+{} {}
+

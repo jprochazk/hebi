@@ -2,6 +2,15 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  v = 0
+  fn test_0(self): pass
+  fn test_1(self): pass
+T()
+
+
+# Result:
 Ok(
     Object(
         ClassInstance {

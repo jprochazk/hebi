@@ -2,6 +2,14 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  v = 0
+class U(T): pass
+U()
+
+
+# Result:
 Ok(
     Object(
         ClassInstance {

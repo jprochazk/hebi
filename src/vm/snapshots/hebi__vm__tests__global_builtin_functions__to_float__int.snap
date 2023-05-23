@@ -2,8 +2,13 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+to_float(10)
+
+
+# Result:
 Ok(
-    Int(
-        3,
+    Float(
+        10.0,
     ),
 )

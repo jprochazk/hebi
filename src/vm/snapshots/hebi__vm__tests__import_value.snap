@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+import test
+test.value
+
+
+# Result:
 Ok(
     Int(
         100,

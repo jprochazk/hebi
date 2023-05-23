@@ -2,6 +2,16 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T: pass
+class U(T):
+  v = 0
+  fn test_0(self): pass
+  fn test_1(self): pass
+U()
+
+
+# Result:
 Ok(
     Object(
         ClassInstance {

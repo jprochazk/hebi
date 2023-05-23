@@ -2,6 +2,13 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  v = 0
+T
+
+
+# Result:
 Ok(
     Object(
         ClassType {

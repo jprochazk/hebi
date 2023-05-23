@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := {a: {b: 10}}
+v["a"]["b"]
+
+
+# Result:
 Ok(
     Int(
         10,

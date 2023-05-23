@@ -2,6 +2,17 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  fn test(self, v=5):
+    return v
+class U(T):
+  fn test(self, v):
+    return super.test(v)
+U().test(none)
+
+
+# Result:
 Ok(
     Int(
         5,

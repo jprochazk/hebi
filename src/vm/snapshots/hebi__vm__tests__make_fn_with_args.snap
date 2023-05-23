@@ -2,6 +2,14 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+fn test(v):
+  return v
+
+test
+
+
+# Result:
 Ok(
     Object(
         Function {

@@ -2,6 +2,11 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+"a" && "b"
+
+
+# Result:
 Ok(
     Object(
         "b",

@@ -2,6 +2,18 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  v = 0
+  fn test(self):
+    return self.v
+class U(T):
+  fn test(self):
+    return super.test()
+U().test()
+
+
+# Result:
 Ok(
     Int(
         0,

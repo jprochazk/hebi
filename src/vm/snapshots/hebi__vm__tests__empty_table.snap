@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := {}
+v
+
+
+# Result:
 Ok(
     Object(
         {},

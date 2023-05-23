@@ -2,6 +2,16 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+fn test(v):
+  if v: return "yo"
+  else: return test(true)
+
+test(true)
+test(false)
+
+
+# Result:
 Ok(
     Object(
         "yo",

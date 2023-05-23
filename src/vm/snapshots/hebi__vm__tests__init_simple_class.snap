@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T: pass
+T()
+
+
+# Result:
 Ok(
     Object(
         ClassInstance {

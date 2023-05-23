@@ -2,6 +2,17 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := true
+result := none
+if v:
+  result = "true"
+else:
+  result = "false"
+result
+
+
+# Result:
 Ok(
     Object(
         "true",

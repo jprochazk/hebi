@@ -2,6 +2,29 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+{
+  version: "0.3.3",
+  update_time: 1684753441.253474,
+  data: [
+    {
+      flight_id: "306364ca",
+      flight: none,
+      callsign: "REDEYE6",
+      squawk: none,
+      clicks: 1092,
+      from_iata: "RMS",
+      from_city: "Ramstein",
+      to_iata: none,
+      to_city: none,
+      model: "B703",
+      type: "Boeing E-8C"
+    }
+  ]
+}
+
+
+# Result:
 Ok(
     Object(
         {

@@ -2,6 +2,21 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class A:
+  fn test(self, v):
+    return v + 1
+class B(A):
+  fn test(self, v):
+    return super.test(v) + 1
+class C(B):
+  fn test(self, v):
+    return super.test(v) + 1
+
+C().test(0)
+
+
+# Result:
 Ok(
     Int(
         3,

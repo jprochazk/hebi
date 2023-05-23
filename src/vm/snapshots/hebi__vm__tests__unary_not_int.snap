@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := 0
+!v
+
+
+# Result:
 Ok(
     Bool(
         true,

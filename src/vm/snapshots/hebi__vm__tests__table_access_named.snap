@@ -2,6 +2,12 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := {a: 10}
+v.a
+
+
+# Result:
 Err(
     Vm(
         SpannedError {

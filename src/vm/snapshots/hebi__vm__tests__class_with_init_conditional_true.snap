@@ -2,6 +2,15 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  fn init(self, v, set):
+    if set:
+      self.v = v
+?T(10, true).v
+
+
+# Result:
 Ok(
     Int(
         10,

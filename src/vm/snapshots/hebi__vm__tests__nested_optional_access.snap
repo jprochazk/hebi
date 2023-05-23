@@ -2,6 +2,13 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+v := none
+
+?v.a["b"].c ?? "test"
+
+
+# Result:
 Ok(
     Object(
         "test",

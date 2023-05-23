@@ -2,6 +2,20 @@
 source: src/vm/tests.rs
 expression: snapshot
 ---
+# Source:
+class T:
+  v = 10
+  fn set(self, v):
+    self.v = v
+  fn get(self):
+    return self.v
+
+t := T()
+t.set(20)
+t.get()
+
+
+# Result:
 Ok(
     Int(
         20,
