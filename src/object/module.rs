@@ -187,7 +187,7 @@ impl Object for Module {
   }
 }
 
-generate_vtable!(Module);
+declare_object_type!(Module);
 
 impl Display for Module {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -208,7 +208,7 @@ impl Object for ModuleDescriptor {
   }
 }
 
-generate_vtable!(ModuleDescriptor);
+declare_object_type!(ModuleDescriptor);
 
 impl Display for ModuleDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

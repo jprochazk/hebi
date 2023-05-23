@@ -233,6 +233,23 @@ impl Value {
     self.try_to_any()?.cast::<T>().map_err(Value::object)
   }
 
+  /// # Safety
+  /// - `self.to_object::<T>().is_some()` must be `true`
+  pub unsafe fn to_object_unchecked<T: Type>(self) -> Ptr<T> {
+    debug_assert!(
+      self.is_object(),
+      "value is not an instance of {}",
+      std::any::type_name::<T>()
+    );
+    let object = self.to_any_unchecked();
+    debug_assert!(
+      object.is::<T>(),
+      "value is not an instance of {}",
+      std::any::type_name::<T>()
+    );
+    object.cast_unchecked()
+  }
+
   pub fn to_any(self) -> Option<Ptr<Any>> {
     self.try_to_any().ok()
   }

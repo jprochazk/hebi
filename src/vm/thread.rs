@@ -14,6 +14,7 @@ use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
 use crate::bytecode::opcode as op;
+use crate::object::builtin::BuiltinMethod;
 use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
@@ -177,6 +178,9 @@ impl Thread {
         let function = method.function();
         self.call_method(this, function, args, return_addr)
       }
+    } else if object.is::<BuiltinMethod>() {
+      let method = unsafe { object.cast_unchecked::<BuiltinMethod>() };
+      self.call_builtin_method(method, args)
     } else if object.is::<ClassType>() {
       let class = unsafe { object.cast_unchecked::<ClassType>() };
       self.init_class(class, args)
@@ -315,6 +319,22 @@ impl Thread {
 
       Ok(dispatch::Call::Yield)
     }
+  }
+
+  fn call_builtin_method(
+    &mut self,
+    method: Ptr<BuiltinMethod>,
+    args: Args,
+  ) -> Result<dispatch::Call> {
+    // TODO: put this in a function
+    let start = stack!(self).len();
+    let count = args.count;
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    let args = Args { start, count };
+    let result = method.call(self.get_scope(args));
+    self.pop_args(args);
+    self.acc = result?;
+    Ok(dispatch::Call::Continue)
   }
 
   // TODO: change to not recurse

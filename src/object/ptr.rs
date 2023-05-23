@@ -292,7 +292,7 @@ mod tests {
     }
   }
 
-  generate_vtable!(Foo);
+  declare_object_type!(Foo);
 
   impl Debug for Foo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -325,7 +325,7 @@ mod tests {
     }
   }
 
-  generate_vtable!(Bar);
+  declare_object_type!(Bar);
 
   impl Display for Bar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

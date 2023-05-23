@@ -204,4 +204,4 @@ impl Object for Table {
   }
 }
 
-generate_vtable!(Table);
+declare_object_type!(Table);

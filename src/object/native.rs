@@ -49,7 +49,7 @@ impl Object for NativeFunction {
   }
 }
 
-generate_vtable!(NativeFunction);
+declare_object_type!(NativeFunction);
 
 pub struct NativeAsyncFunction {
   pub name: Ptr<Str>,
@@ -82,7 +82,7 @@ impl Object for NativeAsyncFunction {
   }
 }
 
-generate_vtable!(NativeAsyncFunction);
+declare_object_type!(NativeAsyncFunction);
 
 #[derive(Debug)]
 pub struct NativeClassInstance {
@@ -157,7 +157,7 @@ impl Object for NativeClassInstance {
   }
 }
 
-generate_vtable!(NativeClassInstance);
+declare_object_type!(NativeClassInstance);
 
 #[derive(Debug)]
 pub struct NativeClass {
@@ -261,7 +261,7 @@ impl Object for NativeClass {
   }
 }
 
-generate_vtable!(NativeClass);
+declare_object_type!(NativeClass);
 
 #[derive(Debug)]
 pub enum NativeMethod {

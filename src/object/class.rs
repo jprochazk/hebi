@@ -103,7 +103,7 @@ impl Object for ClassInstance {
     Ok(())
   }
 }
-generate_vtable!(ClassInstance);
+declare_object_type!(ClassInstance);
 
 #[derive(Debug)]
 pub struct ClassProxy {
@@ -150,7 +150,7 @@ impl Object for ClassProxy {
   // TODO: delegate everything to `this`
 }
 
-generate_vtable!(ClassProxy);
+declare_object_type!(ClassProxy);
 
 #[derive(Debug)]
 pub struct ClassMethod {
@@ -193,7 +193,7 @@ impl Object for ClassMethod {
   }
 }
 
-generate_vtable!(ClassMethod);
+declare_object_type!(ClassMethod);
 
 #[derive(Debug)]
 pub struct ClassType {
@@ -249,7 +249,7 @@ impl Object for ClassType {
   }
 }
 
-generate_vtable!(ClassType);
+declare_object_type!(ClassType);
 
 #[derive(Debug)]
 pub struct ClassDescriptor {
@@ -270,4 +270,4 @@ impl Object for ClassDescriptor {
   }
 }
 
-generate_vtable!(ClassDescriptor);
+declare_object_type!(ClassDescriptor);

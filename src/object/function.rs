@@ -35,7 +35,7 @@ impl Object for Function {
   }
 }
 
-generate_vtable!(Function);
+declare_object_type!(Function);
 
 impl Display for Function {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -56,7 +56,7 @@ impl Object for Generator {
   }
 }
 
-generate_vtable!(Generator);
+declare_object_type!(Generator);
 
 impl Display for Generator {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -195,7 +195,7 @@ impl Object for FunctionDescriptor {
   }
 }
 
-generate_vtable!(FunctionDescriptor);
+declare_object_type!(FunctionDescriptor);
 
 impl Display for FunctionDescriptor {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

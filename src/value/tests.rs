@@ -13,7 +13,7 @@ impl Object for Bar {
   }
 }
 
-generate_vtable!(Bar);
+declare_object_type!(Bar);
 
 impl Debug for Bar {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

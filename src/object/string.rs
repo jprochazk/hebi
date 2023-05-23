@@ -36,7 +36,7 @@ impl Object for Str {
   }
 }
 
-generate_vtable!(Str);
+declare_object_type!(Str);
 
 impl Display for Str {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

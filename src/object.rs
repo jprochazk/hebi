@@ -1,5 +1,5 @@
 macro_rules! declare_object_trait {
-  (trait $Object:ident -> $VTable:ident, $generate_vtable:ident {
+  (trait $Object:ident -> $VTable:ident, $declare_object_type:ident {
     $(fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty $body:block)*
   }) => {
     #[repr(C)]
@@ -38,7 +38,7 @@ macro_rules! declare_object_trait {
       )*
     }
 
-    macro_rules! $generate_vtable {
+    macro_rules! $declare_object_type {
       ($T:ident) => {
         impl $crate::object::Type for $T {
           fn vtable() -> &'static $crate::object::VTable<Self> {
@@ -63,7 +63,7 @@ pub trait Type: Sized + Object {
 }
 
 declare_object_trait! {
-  trait Object -> VTable, generate_vtable {
+  trait Object -> VTable, declare_object_type {
 
     fn type_name(this: Ptr<Self>,) -> &'static str {
       "Unknown"
@@ -189,6 +189,9 @@ pub fn is_callable(v: &Ptr<Any>) -> bool {
 pub fn is_class(v: &Ptr<Any>) -> bool {
   v.is::<ClassInstance>() || v.is::<ClassProxy>() || v.is::<NativeClassInstance>()
 }
+
+#[macro_use]
+pub mod builtin;
 
 pub mod class;
 pub mod function;

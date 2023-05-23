@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::vec::Vec;
 
+use super::builtin::BuiltinMethod;
 use super::{Object, Ptr};
 use crate::util::{MAX_SAFE_INT, MIN_SAFE_INT};
 use crate::value::Value;
@@ -118,7 +119,33 @@ impl Debug for List {
 }
 
 impl Object for List {
-  fn keyed_field(this: super::Ptr<Self>, _: crate::Scope<'_>, key: Value) -> Result<Value> {
+  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<super::Str>) -> Result<Value> {
+    let method = match name.as_str() {
+      "len" => builtin_callback!(|this, _| { Ok(Value::int(this.len() as i32)) }),
+      _ => fail!("`{this}` has no field `{name}`"),
+    };
+
+    Ok(Value::object(unsafe {
+      scope.alloc(BuiltinMethod::new(Value::object(this), method))
+    }))
+  }
+
+  fn named_field_opt(
+    this: Ptr<Self>,
+    scope: Scope<'_>,
+    name: Ptr<super::Str>,
+  ) -> Result<Option<Value>> {
+    let method = match name.as_str() {
+      "len" => builtin_callback!(|this, _| { Ok(Value::int(this.len() as i32)) }),
+      _ => return Ok(None),
+    };
+
+    Ok(Some(Value::object(unsafe {
+      scope.alloc(BuiltinMethod::new(Value::object(this), method))
+    })))
+  }
+
+  fn keyed_field(this: Ptr<Self>, _: crate::Scope<'_>, key: Value) -> Result<Value> {
     let len = this.len();
     let index = to_index(key.clone(), len)?;
     let value = this
@@ -133,12 +160,7 @@ impl Object for List {
     Ok(this.get(index))
   }
 
-  fn set_keyed_field(
-    this: super::Ptr<Self>,
-    _: crate::Scope<'_>,
-    key: Value,
-    value: Value,
-  ) -> Result<()> {
+  fn set_keyed_field(this: Ptr<Self>, _: crate::Scope<'_>, key: Value, value: Value) -> Result<()> {
     let len = this.len();
     let index = to_index(key.clone(), len)?;
     if !this.set(index, value) {
@@ -167,4 +189,4 @@ fn to_index(index: Value, len: usize) -> Result<usize> {
   fail!("`{index}` is not a valid index")
 }
 
-generate_vtable!(List);
+declare_object_type!(List);

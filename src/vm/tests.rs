@@ -1043,6 +1043,14 @@ check! {
 }
 
 check! {
+  builtin_method_list_len,
+  r#"
+    v := [0, 1, 2]
+    v.len()
+  "#
+}
+
+check! {
   make_large_table,
   r#"
     {
