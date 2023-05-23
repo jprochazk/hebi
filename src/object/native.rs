@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 
+use super::class::ClassMethod;
 use super::{Any, Object, Ptr, Str};
 use crate::value::Value;
 use crate::vm::global::Global;
@@ -99,6 +100,61 @@ impl Object for NativeClassInstance {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeClassInstance"
   }
+
+  fn named_field(this: Ptr<Self>, mut scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
+      scope
+        .thread
+        .call_native_field_getter(this.clone(), getter.clone())
+    } else if let Some(method) = this.class.methods.get(name.as_str()) {
+      Ok(Value::object(scope.alloc(ClassMethod::new(
+        this.clone().into_any(),
+        method.to_object(),
+      ))))
+    } else {
+      fail!("`{this}` has no field `{name}`")
+    }
+  }
+
+  fn named_field_opt(
+    this: Ptr<Self>,
+    mut scope: Scope<'_>,
+    name: Ptr<Str>,
+  ) -> Result<Option<Value>> {
+    if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
+      scope
+        .thread
+        .call_native_field_getter(this.clone(), getter.clone())
+        .map(Some)
+    } else if let Some(method) = this.class.methods.get(name.as_str()) {
+      Ok(Some(Value::object(scope.alloc(ClassMethod::new(
+        this.clone().into_any(),
+        method.to_object(),
+      )))))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn set_named_field(
+    this: Ptr<Self>,
+    mut scope: Scope<'_>,
+    name: Ptr<Str>,
+    value: Value,
+  ) -> Result<()> {
+    if let Some(setter) = this
+      .class
+      .fields
+      .get(name.as_str())
+      .and_then(|field| field.set.as_ref())
+    {
+      scope
+        .thread
+        .call_native_field_setter(this.clone(), setter.clone(), value)
+    } else {
+      fail!("`{this}` has no field `{name}`")
+    }
+  }
 }
 
 generate_vtable!(NativeClassInstance);
@@ -180,7 +236,21 @@ impl Object for NativeClass {
     "NativeClass"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> crate::Result<Option<Value>> {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    if let Some(method) = this.static_methods.get(name.as_str()) {
+      Ok(Value::object(method.to_object()))
+    } else if let Some(method) = this.methods.get(name.as_str()) {
+      Ok(Value::object(method.to_object()))
+    } else {
+      fail!("failed to get field `{name}`")
+    }
+  }
+
+  fn named_field_opt(
+    this: Ptr<Self>,
+    _: Scope<'_>,
+    name: Ptr<Str>,
+  ) -> crate::Result<Option<Value>> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
       Ok(Some(Value::object(method.to_object())))
     } else if let Some(method) = this.methods.get(name.as_str()) {

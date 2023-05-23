@@ -27,8 +27,8 @@ from test import example
 
 example(50)
 
-print "external: ", external
-print "internal: ", internal
+print "external:", external
+print "internal:", internal
 "#,
     )
     .unwrap();

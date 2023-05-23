@@ -73,9 +73,18 @@ declare_object_trait! {
       this: Ptr<Self>,
       scope: Scope<'_>,
       name: Ptr<Str>
+    ) -> Result<Value> {
+      let _ = scope;
+      fail!("`{this}` does not support field access")
+    }
+
+    fn named_field_opt(
+      this: Ptr<Self>,
+      scope: Scope<'_>,
+      name: Ptr<Str>
     ) -> Result<Option<Value>> {
       let _ = scope;
-      fail!("cannot get field `{name}`")
+      fail!("`{this}` does not support field access")
     }
 
     fn set_named_field(
@@ -86,10 +95,15 @@ declare_object_trait! {
     ) -> Result<()> {
       let _ = scope;
       let _ = value;
-      fail!("cannot set field `{name}`")
+      fail!("`{this}` does not support field access")
     }
 
-    fn keyed_field(this: Ptr<Self>, scope: Scope<'_>, key: Value) -> Result<Option<Value>> {
+    fn keyed_field(this: Ptr<Self>, scope: Scope<'_>, key: Value) -> Result<Value> {
+      let _ = scope;
+      fail!("`{this}` does not support `[]`")
+    }
+
+    fn keyed_field_opt(this: Ptr<Self>, scope: Scope<'_>, key: Value) -> Result<Option<Value>> {
       let _ = scope;
       fail!("`{this}` does not support `[]`")
     }

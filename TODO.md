@@ -3,7 +3,7 @@
   - [x] should unlock `--all-features`
 - [x] change ptr repr to use manual vtable + static object trait
 - [x] remove Table `named_field`, it should be reserved for methods
-- [ ] move all field access/index access/etc. to delegate to the object trait
+- [x] move all field access/index access/etc. to delegate to the object trait
 - [ ] vm fully async
   - [x] stackless import
   - [ ] stackless class init
@@ -20,12 +20,19 @@
 - [x] print to configurable writer
 - [x] allow printing disassembly (add option to compile snippet and explicitly run it -> expose `disassemble` on it)
 - [x] list indexing
+- [x] list index oob should return None instead of error (improve error message)
+- [x] to_index should check MIN_SAFE_INT
 - [ ] ops on builtins
 - [ ] methods on builtins
 
 - [ ] for iter loops
 - [ ] generators
 - [ ] f-strings
+- [ ] `is`
+- [ ] `in`
+- [ ] exceptions (try/catch)
+  - [ ] script-land inheritable error type
+- [ ] inherit from native class
 - [ ] report code locations (intern spans, track in hashmap of `offset->span_id`)
 - [ ] timeout feature (abort signal, `Arc<AtomicBool>` or similar)
 - [ ] semicolons (`;` for stmt, `;;` for block)
@@ -34,8 +41,14 @@
   - [ ] constant pool compaction
   - [ ] elide previous instruction for clobbered reads
   - [ ] peephole previous 2 instructions
-    - [ ] mov
-    - [ ] invoke
+    - [ ] load + store -> mov
+    - [ ] load_field + call -> invoke
+    - [ ] (load_smi 1) + add -> add1
+  - [ ] specializations
+    - [ ] load rN -> loadN, for N in 0 to some max bound
+    - [ ] store rN -> storeN, for N in 0 to some max bound
 - [ ] inspect dispatch loop codegen (should be a jump table)
 - [ ] inline caching
+  - per-function IC
+  - reserve IC slot in codegen
 - [ ] quickening

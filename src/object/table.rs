@@ -8,7 +8,7 @@ use super::ptr::Ptr;
 use super::{Object, Str};
 use crate as hebi;
 use crate::value::Value;
-use crate::Scope;
+use crate::{Result, Scope};
 
 #[derive(Default)]
 pub struct Table {
@@ -177,11 +177,22 @@ impl Object for Table {
     "Table"
   }
 
-  fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> crate::Result<Option<Value>> {
+  fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> Result<Value> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };
-    Ok(this.get(&key))
+    let value = this
+      .get(key.as_str())
+      .ok_or_else(|| error!("`{this}` has no index `{key}`"))?;
+    Ok(value)
+  }
+
+  fn keyed_field_opt(this: Ptr<Self>, _: Scope<'_>, key: Value) -> Result<Option<Value>> {
+    let Some(key) = key.clone().to_object::<Str>() else {
+      fail!("`{key}` is not a string");
+    };
+    let value = this.get(key.as_str());
+    Ok(value)
   }
 
   fn set_keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {

@@ -835,14 +835,6 @@ check! {
 }
 
 check! {
-  table_nested_access_named,
-  r#"
-    v := {a: {b: 10}}
-    v.a.b
-  "#
-}
-
-check! {
   table_nested_access_keyed,
   r#"
     v := {a: {b: 10}}
@@ -1004,6 +996,41 @@ check! {
   list_indexing_oob,
   r#"
     [0, 1, 2][100]
+  "#
+}
+
+check! {
+  list_indexing_zero_opt,
+  r#"
+    ?[0, 1, 2][0]
+  "#
+}
+
+check! {
+  list_indexing_positive_opt,
+  r#"
+    ?[0, 1, 2][1]
+  "#
+}
+
+check! {
+  list_indexing_negative_opt,
+  r#"
+    ?[0, 1, 2][-1]
+  "#
+}
+
+check! {
+  list_indexing_invalid_opt,
+  r#"
+    ?[0, 1, 2]["yo"]
+  "#
+}
+
+check! {
+  list_indexing_oob_opt,
+  r#"
+    ?[0, 1, 2][100]
   "#
 }
 

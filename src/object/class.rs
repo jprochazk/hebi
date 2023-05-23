@@ -8,7 +8,7 @@ use super::{Function, FunctionDescriptor, Object, Str, Table};
 use crate as hebi;
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::{object, Scope};
+use crate::{object, Result, Scope};
 
 #[derive(Debug)]
 pub struct ClassInstance {
@@ -50,27 +50,54 @@ impl Object for ClassInstance {
     "Instance"
   }
 
-  fn named_field(
-    this: Ptr<Self>,
-    _: Scope<'_>,
-    name: Ptr<Str>,
-  ) -> crate::Result<Option<crate::value::Value>> {
-    Ok(this.fields.get(&name))
+  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    let value = this
+      .fields
+      .get(&name)
+      .ok_or_else(|| error!("`{this}` has no field `{name}`"))?;
+
+    // bind functions
+    if let Some(object) = value.clone().to_any() {
+      if object::is_callable(&object) {
+        return Ok(Value::object(
+          scope.alloc(ClassMethod::new(this.into_any(), object)),
+        ));
+      }
+    }
+
+    Ok(value)
+  }
+
+  fn named_field_opt(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+    let value = this.fields.get(&name);
+
+    // bind functions
+    if let Some(value) = value.clone() {
+      if let Some(object) = value.to_any() {
+        if object::is_callable(&object) {
+          return Ok(Some(Value::object(
+            scope.alloc(ClassMethod::new(this.into_any(), object)),
+          )));
+        }
+      }
+    }
+
+    Ok(value)
   }
 
   fn set_named_field(
     this: Ptr<Self>,
     scope: Scope<'_>,
     name: Ptr<Str>,
-    value: crate::value::Value,
-  ) -> crate::Result<()> {
+    value: Value,
+  ) -> Result<()> {
     if !this.is_frozen() {
       this.fields.insert(scope.alloc(Str::owned(name)), value);
       return Ok(());
     }
 
     if !this.fields.set(&name, value) {
-      fail!("cannot add field `{name}` to frozen class");
+      fail!("`{this}` has no field `{name}`");
     }
 
     Ok(())
@@ -95,12 +122,29 @@ impl Object for ClassProxy {
     "Instance"
   }
 
-  fn named_field(
-    this: Ptr<Self>,
-    scope: Scope<'_>,
-    name: Ptr<Str>,
-  ) -> crate::Result<Option<crate::value::Value>> {
-    this.class.named_field(scope, name)
+  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    let method = this
+      .class
+      .methods
+      .get(name.as_str())
+      .cloned()
+      .ok_or_else(|| error!("failed to get field `{name}`"))?;
+
+    Ok(Value::object(
+      scope.alloc(ClassMethod::new(this.into_any(), method.into_any())),
+    ))
+  }
+
+  fn named_field_opt(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+    let method = this
+      .class
+      .methods
+      .get(name.as_str())
+      .cloned()
+      .map(|method| scope.alloc(ClassMethod::new(this.into_any(), method.into_any())))
+      .map(Value::object);
+
+    Ok(method)
   }
 
   // TODO: delegate everything to `this`
@@ -189,8 +233,19 @@ impl Object for ClassType {
     "Class"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
-    Ok(this.methods.get(&name).cloned().map(Value::object))
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Value> {
+    let value = this
+      .methods
+      .get(&name)
+      .cloned()
+      .map(Value::object)
+      .ok_or_else(|| error!("failed to get field `{name}`"))?;
+    Ok(value)
+  }
+
+  fn named_field_opt(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+    let value = this.methods.get(&name).cloned().map(Value::object);
+    Ok(value)
   }
 }
 

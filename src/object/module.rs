@@ -174,7 +174,15 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
+  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Value> {
+    let value = this
+      .module_vars
+      .get(&name)
+      .ok_or_else(|| error!("module `{}` has no export `{}`", this.name, name))?;
+    Ok(value)
+  }
+
+  fn named_field_opt(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
     Ok(this.module_vars.get(&name))
   }
 }
