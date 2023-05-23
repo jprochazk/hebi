@@ -10,7 +10,6 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
 
-use beef::lean::Cow;
 use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
@@ -27,6 +26,8 @@ use crate::vm::{global, Config, Vm};
 pub mod module;
 pub mod object;
 pub mod value;
+
+pub use beef::lean::Cow;
 
 pub use crate::error::{Error, Result};
 pub use crate::fail;

@@ -27,6 +27,7 @@
 - [x] for iter loops (list)
 - [ ] fix "invalid indentation" errors in parser which should be more specific
 
+- [ ] tuples
 - [ ] generators
 - [ ] f-strings
 - [ ] `is`

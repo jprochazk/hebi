@@ -112,9 +112,9 @@ impl TestModuleLoader {
 }
 
 impl module::ModuleLoader for TestModuleLoader {
-  fn load(&self, path: &str) -> hebi::Result<&str> {
+  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>> {
     match self.modules.get(path).copied() {
-      Some(module) => Ok(module),
+      Some(module) => Ok(Cow::borrowed(module)),
       None => Err(Error::Vm(SpannedError::new(
         format!("module `{path}` not found"),
         None,

@@ -6,6 +6,7 @@ pub mod thread;
 
 use std::ptr::NonNull;
 
+use beef::lean::Cow;
 use global::Global;
 use module::Module;
 
@@ -30,7 +31,7 @@ struct DefaultModuleLoader {}
 
 impl module::ModuleLoader for DefaultModuleLoader {
   // TODO: return user error
-  fn load(&self, path: &str) -> hebi::Result<&str> {
+  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>> {
     Err(Error::Vm(SpannedError::new(
       format!("failed to load module {path}"),
       0..0,

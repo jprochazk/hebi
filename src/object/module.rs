@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 use std::num::NonZeroU64;
 
+use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use super::native::{NativeAsyncFunction, NativeClass, NativeFunction};
@@ -13,7 +14,7 @@ use crate::vm::global::Global;
 use crate::Scope;
 
 pub trait ModuleLoader {
-  fn load(&self, path: &str) -> hebi::Result<&str>;
+  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

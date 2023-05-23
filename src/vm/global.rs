@@ -127,7 +127,7 @@ impl Global {
     self.module_registry.borrow_mut().next_module_id()
   }
 
-  pub fn load_module(&self, path: &str) -> Result<&str> {
+  pub fn load_module(&self, path: &str) -> Result<Cow<'static, str>> {
     self.module_loader.load(path)
   }
 
