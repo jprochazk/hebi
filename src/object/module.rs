@@ -13,7 +13,7 @@ use crate::value::Value;
 use crate::vm::global::Global;
 use crate::Scope;
 
-pub trait ModuleLoader {
+pub trait ModuleLoader: Send {
   fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>>;
 }
 
