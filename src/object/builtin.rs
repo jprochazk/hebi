@@ -10,7 +10,6 @@ pub type Callback = fn(Scope<'_>) -> Result<Value>;
 pub type MethodCallback = fn(Value, Scope<'_>) -> Result<Value>;
 pub type TypedMethodCallback<T> = fn(Ptr<T>, Scope<'_>) -> Result<Value>;
 
-#[derive(Debug)]
 pub struct BuiltinFunction {
   function: Callback,
 }
@@ -22,6 +21,12 @@ impl BuiltinFunction {
 
   pub fn call(&self, scope: Scope<'_>) -> Result<Value> {
     (self.function)(scope)
+  }
+}
+
+impl Debug for BuiltinFunction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("BuiltinFunction").finish()
   }
 }
 
@@ -39,7 +44,6 @@ impl Object for BuiltinFunction {
 
 declare_object_type!(BuiltinFunction);
 
-#[derive(Debug)]
 pub struct BuiltinMethod {
   this: Value,
   function: MethodCallback,
@@ -57,6 +61,12 @@ impl BuiltinMethod {
 
   pub fn call(&self, scope: Scope<'_>) -> Result<Value> {
     (self.function)(self.this.clone(), scope)
+  }
+}
+
+impl Debug for BuiltinMethod {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("BuiltinMethod").finish()
   }
 }
 
