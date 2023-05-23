@@ -3,8 +3,7 @@ use crate::Result;
 
 pub fn run(args: &[String]) -> Result<()> {
   cargo("test")
-    .arg("--all-targets")
-    .args(["-F", "serde"])
+    .args(["--all-targets", "--all-features"])
     .spawn()?
     .wait()?
     .check()?;

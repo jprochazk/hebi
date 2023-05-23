@@ -24,7 +24,7 @@ pub fn run(args: &[String]) -> Result<()> {
     cargo("run")
       .arg("--example")
       .arg(&example)
-      .args(["-F", "serde"])
+      .arg("--all-features")
       .args(args.iter())
       .spawn()?
       .wait()?

@@ -5,8 +5,7 @@ pub fn run(args: &[String]) -> Result<()> {
   cargo("insta")
     .args([
       "test",
-      "--features",
-      "serde",
+      "--all-features",
       "--review",
       "--delete-unreferenced-snapshots",
       "--no-ignore",
