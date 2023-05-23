@@ -27,6 +27,14 @@
 - [x] for iter loops (list)
 - [ ] fix "invalid indentation" errors in parser which should be more specific
 
+- [ ] debugger
+  - egui
+  - inspect state of VM
+    - call frames
+    - stack, accumulator
+    - pretty-print values (using Debug)
+  - step through bytecode (not necessarily source code)
+
 - [ ] tuples
 - [ ] generators
 - [ ] f-strings
