@@ -843,6 +843,14 @@ check! {
 }
 
 check! {
+  table_access_unknown,
+  r#"
+    v := {}
+    v["a"]
+  "#
+}
+
+check! {
   arithmetic,
   r#"
     v := 10 # 10
