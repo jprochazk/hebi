@@ -6,27 +6,40 @@ expression: snapshot
 fn test():
   if true:
     v := 0
+    if true:
+      print v
+      v := 0
+      print v
     v := 0
     b := 0
     print b
 
 
 # Func:
-function `test` (registers: 2, length: 22, constants: 2)
+function `test` (registers: 3, length: 37, constants: 4)
 .code
   0  | load_true
-  1  | jump_if_false 19
+  1  | jump_if_false 34
   3  | load_smi 0
-  5  | store r0
-  7  | load_smi 0
-  9  | store r0
-  11 | load_smi 0
-  13 | store r1
-  15 | load r1
-  17 | print
-  18 | jump 2
-  20 | load_none
-  21 | return
+  5  | store r1
+  7  | load_true
+  8  | jump_if_false 14
+  10 | load r1
+  12 | print
+  13 | load_smi 0
+  15 | store r2
+  17 | load r2
+  19 | print
+  20 | jump 2
+  22 | load_smi 0
+  24 | store r1
+  26 | load_smi 0
+  28 | store r2
+  30 | load r2
+  32 | print
+  33 | jump 2
+  35 | load_none
+  36 | return
 
 
 function `main` (registers: 1, length: 5, constants: 2)

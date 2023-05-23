@@ -15,7 +15,7 @@ a()()
 # Func:
 function `b` (registers: 1, length: 5, constants: 0)
 .upvalues
-  0 <- r0
+  0 <- r1
 .code
   0 | load_upvalue ^0
   2 | print
@@ -23,13 +23,13 @@ function `b` (registers: 1, length: 5, constants: 0)
   4 | return
 
 
-function `a` (registers: 1, length: 13, constants: 1)
+function `a` (registers: 3, length: 13, constants: 1)
 .code
   0  | load_smi 0
-  2  | store r0
+  2  | store r1
   4  | make_fn [0]; <function `b` descriptor>
-  6  | store r0
-  8  | load r0
+  6  | store r2
+  8  | load r2
   10 | return
   11 | load_none
   12 | return

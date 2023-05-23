@@ -22,32 +22,32 @@ function `d` (registers: 1, length: 5, constants: 0)
   4 | return
 
 
-function `c` (registers: 1, length: 6, constants: 1)
+function `c` (registers: 2, length: 6, constants: 1)
 .upvalues
   0 <- ^0
 .code
   0 | make_fn [0]; <function `d` descriptor>
-  2 | store r0
+  2 | store r1
   4 | load_none
   5 | return
 
 
-function `b` (registers: 1, length: 6, constants: 1)
+function `b` (registers: 2, length: 6, constants: 1)
 .upvalues
-  0 <- r0
+  0 <- r1
 .code
   0 | make_fn [0]; <function `c` descriptor>
-  2 | store r0
+  2 | store r1
   4 | load_none
   5 | return
 
 
-function `a` (registers: 1, length: 10, constants: 1)
+function `a` (registers: 3, length: 10, constants: 1)
 .code
   0  | load_smi 0
-  2  | store r0
+  2  | store r1
   4  | make_fn [0]; <function `b` descriptor>
-  6  | store r0
+  6  | store r2
   8  | load_none
   9  | return
 

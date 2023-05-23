@@ -9,7 +9,7 @@ for v in a:
 
 
 # Func:
-function `main` (registers: 4, length: 56, constants: 6)
+function `main` (registers: 4, length: 48, constants: 5)
 .code
   0  | load_smi 0
   2  | store r1
@@ -23,26 +23,21 @@ function `main` (registers: 4, length: 56, constants: 6)
   19 | load_field [1]; iter
   21 | call0
   22 | store r1
-  24 | load r1
-  26 | load_field [2]; next
-  28 | call0
-  29 | store r2
-  31 | load r1
-  33 | load_field [3]; done
-  35 | call0
-  36 | not
-  37 | jump_if_false 18
-  39 | jump 11
-  41 | load r1
-  43 | load_field [2]; next
-  45 | call0
-  46 | store r2
-  48 | jump_loop 17
-  50 | load r2
-  52 | print
-  53 | jump_loop 12
-  55 | return
-
+  24 | load_none
+  25 | store r2
+  27 | load r1
+  29 | load_field [3]; done
+  31 | call0
+  32 | not
+  33 | jump_if_false 14
+  35 | load r1
+  37 | load_field [2]; next
+  39 | call0
+  40 | store r2
+  42 | load r2
+  44 | print
+  45 | jump_loop 18
+  47 | return
 
 
 
