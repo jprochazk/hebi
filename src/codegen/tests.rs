@@ -586,6 +586,10 @@ check! {
     fn test():
       if true:
         v := 0
+        if true:
+          print v
+          v := 0
+          print v
         v := 0
         b := 0
         print b

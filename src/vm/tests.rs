@@ -1043,6 +1043,39 @@ check! {
 }
 
 check! {
+  for_iter_list,
+  r#"
+    for item in ["a", "b", "c"]:
+      print item
+  "#
+}
+
+check! {
+  for_iter_iterable_class,
+  r#"
+    class Counter:
+      fn init(self, max):
+        self.n = 0
+        self.max = max
+
+      fn iter(self):
+        return self
+
+      fn next(self):
+        if self.n < self.max:
+          n := self.n
+          self.n += 1
+          return n
+
+      fn done(self):
+        return self.n >= self.max
+
+    for v in Counter(10):
+      print v
+  "#
+}
+
+check! {
   builtin_list_methods,
   r#"
     v := [0, 1, 2]

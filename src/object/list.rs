@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::fmt::{Debug, Display};
 use std::vec::Vec;
 
@@ -162,28 +162,46 @@ fn list_join(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
   ))
 }
 
-// TODO: list iter
+#[derive(Debug)]
+pub struct ListIter {
+  list: Ptr<List>,
+  index: Cell<usize>,
+}
 
-impl Object for List {
+impl Display for ListIter {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<list iter>")
+  }
+}
+
+fn list_iter_iter(this: Ptr<ListIter>, _: Scope<'_>) -> Result<Value> {
+  Ok(Value::object(this))
+}
+
+fn list_iter_next(this: Ptr<ListIter>, _: Scope<'_>) -> Result<Value> {
+  if let Some(item) = this.list.get(this.index.get()) {
+    this.index.set(this.index.get() + 1);
+    Ok(item)
+  } else {
+    Ok(Value::none())
+  }
+}
+
+fn list_iter_done(this: Ptr<ListIter>, _: Scope<'_>) -> Result<Value> {
+  Ok(Value::bool(this.list.get(this.index.get()).is_none()))
+}
+
+impl Object for ListIter {
   fn type_name(_: Ptr<Self>) -> &'static str {
-    "List"
+    "ListIter"
   }
 
-  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<super::Str>) -> Result<Value> {
-    let method = match name.as_str() {
-      "len" => builtin_method!(list_len),
-      "is_empty" => builtin_method!(list_is_empty),
-      "get" => builtin_method!(list_get),
-      "set" => builtin_method!(list_set),
-      "push" => builtin_method!(list_push),
-      "pop" => builtin_method!(list_pop),
-      "join" => builtin_method!(list_join),
-      _ => fail!("`{this}` has no field `{name}`"),
-    };
-
-    Ok(Value::object(unsafe {
-      scope.alloc(BuiltinMethod::new(Value::object(this), method))
-    }))
+  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    Ok(
+      this
+        .named_field_opt(scope, name.clone())?
+        .ok_or_else(|| error!("`{this}` has no field `{name}`"))?,
+    )
   }
 
   fn named_field_opt(
@@ -192,8 +210,57 @@ impl Object for List {
     name: Ptr<super::Str>,
   ) -> Result<Option<Value>> {
     let method = match name.as_str() {
-      "len" => builtin_method!(|this, _| { Ok(Value::int(this.len() as i32)) }),
-      _ => return Ok(None),
+      "iter" => builtin_method!(list_iter_iter),
+      "next" => builtin_method!(list_iter_next),
+      "done" => builtin_method!(list_iter_done),
+      _ => fail!("`{this}` has no field `{name}`"),
+    };
+
+    Ok(Some(Value::object(unsafe {
+      scope.alloc(BuiltinMethod::new(Value::object(this), method))
+    })))
+  }
+}
+
+declare_object_type!(ListIter);
+
+fn list_iter(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  Ok(Value::object(scope.alloc(ListIter {
+    list: this,
+    index: Cell::new(0),
+  })))
+}
+
+// TODO: list iter
+
+impl Object for List {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "List"
+  }
+
+  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+    Ok(
+      this
+        .named_field_opt(scope, name.clone())?
+        .ok_or_else(|| error!("`{this}` has no field `{name}`"))?,
+    )
+  }
+
+  fn named_field_opt(
+    this: Ptr<Self>,
+    scope: Scope<'_>,
+    name: Ptr<super::Str>,
+  ) -> Result<Option<Value>> {
+    let method = match name.as_str() {
+      "len" => builtin_method!(list_len),
+      "is_empty" => builtin_method!(list_is_empty),
+      "get" => builtin_method!(list_get),
+      "set" => builtin_method!(list_set),
+      "push" => builtin_method!(list_push),
+      "pop" => builtin_method!(list_pop),
+      "join" => builtin_method!(list_join),
+      "iter" => builtin_method!(list_iter),
+      _ => fail!("`{this}` has no field `{name}`"),
     };
 
     Ok(Some(Value::object(unsafe {

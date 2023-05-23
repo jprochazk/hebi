@@ -23,9 +23,10 @@
 - [x] list index oob should return None instead of error (improve error message)
 - [x] to_index should check MIN_SAFE_INT
 - [ ] ops on builtins
-- [ ] methods on builtins
+- [x] methods on builtins
+- [x] for iter loops (list)
+- [ ] fix "invalid indentation" errors in parser which should be more specific
 
-- [ ] for iter loops
 - [ ] generators
 - [ ] f-strings
 - [ ] `is`

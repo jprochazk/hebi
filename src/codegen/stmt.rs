@@ -142,8 +142,6 @@ impl<'src> State<'src> {
     let done_const = self.constant_name("done");
 
     let cond = self.builder().loop_header();
-    let latch = self.builder().loop_header();
-    let body = self.builder().label("body");
     let end = self.builder().multi_label("end");
 
     self.current_function().enter_scope();
@@ -156,12 +154,8 @@ impl<'src> State<'src> {
     self.builder().emit(Call0, iter.span);
     self.emit_store(iter_register.clone(), iter.span);
 
-    // first call to `next`
-    self.emit_load(iter_register.clone(), iter.span);
-    self
-      .builder()
-      .emit(LoadField { name: next_const }, iter.span);
-    self.builder().emit(Call0, iter.span);
+    // `item = none`
+    self.builder().emit(LoadNone, iter.span);
     self.emit_store(item_register.clone(), iter.span);
     self.declare_local(stmt.item.lexeme(), item_register.clone());
 
@@ -173,25 +167,23 @@ impl<'src> State<'src> {
       .emit(LoadField { name: done_const }, iter.span);
     self.builder().emit(Call0, iter.span);
     self.builder().emit(Not, iter.span);
+    // if `iter.done()` jump .end
+    // else jump .body
     self.builder().emit_jump_if_false(&end, iter.span);
-    self.builder().emit_jump(&body, iter.span);
 
-    // latch
-    self.builder().bind_loop_header(&latch);
+    // `item = iter.next()`
     self.emit_load(iter_register.clone(), iter.span);
     self
       .builder()
       .emit(LoadField { name: next_const }, iter.span);
     self.builder().emit(Call0, iter.span);
     self.emit_store(item_register.clone(), iter.span);
+
+    let (cond, end) = self.emit_loop_body((cond, end), &stmt.body);
     self.builder().emit_jump_loop(&cond, iter.span);
 
-    self.builder().bind_label(body);
-    let (latch, end) = self.emit_loop_body((latch, end), &stmt.body);
-    self.builder().emit_jump_loop(&latch, iter.span);
-
-    let _ = iter_register.access();
     let _ = item_register.access();
+    let _ = iter_register.access();
 
     self.builder().bind_label(end);
     self.current_function().leave_scope();

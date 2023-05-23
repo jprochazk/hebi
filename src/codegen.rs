@@ -124,9 +124,9 @@ impl<'src> State<'src> {
     let name = name.into();
 
     let key = (function.scope, name);
-    if let Some(var) = function.locals.get_mut(&key) {
-      *var = register;
-    } else if let Some(local) = function.locals.insert(key, register.clone()) {
+    let existing = function.locals.insert(key, register.clone());
+
+    if let Some(local) = existing {
       let _ = local.access();
       local.ensure_non_overlapping(register);
     }
@@ -245,6 +245,8 @@ impl<'src> State<'src> {
       func.has_yield,
     ));
 
+    self.current_function().enter_scope();
+
     // allocate registers
     let param_slice = self.alloc_register_slice(1 + func.params.pos.len());
     let (callee, receiver, positional) = match func.params.has_self {
@@ -299,6 +301,8 @@ impl<'src> State<'src> {
       .unwrap_or((0..0).into());
     self.builder().emit(LoadNone, end_span);
     self.builder().emit(Return, end_span);
+
+    self.current_function().leave_scope();
 
     let function = self.module.functions.pop().unwrap().finish();
 
