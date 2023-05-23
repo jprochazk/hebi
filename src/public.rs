@@ -10,6 +10,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
 
+use beef::lean::Cow;
 use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
@@ -292,9 +293,9 @@ impl<'cx> Scope<'cx> {
     self.thread.global.alloc(v)
   }
 
-  /* pub(crate) fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<String> {
+  pub(crate) fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<crate::object::Str> {
     self.thread.global.intern(s)
-  } */
+  }
 
   pub fn global(&self) -> Global<'cx> {
     Global {

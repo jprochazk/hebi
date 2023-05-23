@@ -1,6 +1,17 @@
+macro_rules! fn_with_optional_body {
+  (fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty) => {
+    #[allow(unused_variables)]
+    fn $name($this: Ptr<Self>, $($arg:$ty),*) -> $ret;
+  };
+  (fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty $body:block) => {
+    #[allow(unused_variables)]
+    fn $name($this: Ptr<Self>, $($arg:$ty),*) -> $ret $body
+  };
+}
+
 macro_rules! declare_object_trait {
   (trait $Object:ident -> $VTable:ident, $declare_object_type:ident {
-    $(fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty $body:block)*
+    $(fn $name:ident($this:ident: Ptr<Self>, $($arg:ident : $ty:ty),*) -> $ret:ty $($body:block)?)*
   }) => {
     #[repr(C)]
     pub struct $VTable<T: Sized + 'static> {
@@ -13,8 +24,7 @@ macro_rules! declare_object_trait {
 
     pub trait $Object: Debug + Display + Sized + 'static {
       $(
-        #[allow(unused_variables)]
-        fn $name($this: Ptr<Self>, $($arg:$ty),*) -> $ret $body
+        fn_with_optional_body!(fn $name($this: Ptr<Self>, $($arg:$ty),*) -> $ret $($body)?);
       )*
     }
 
@@ -65,9 +75,7 @@ pub trait Type: Sized + Object {
 declare_object_trait! {
   trait Object -> VTable, declare_object_type {
 
-    fn type_name(this: Ptr<Self>,) -> &'static str {
-      "Unknown"
-    }
+    fn type_name(this: Ptr<Self>,) -> &'static str
 
     fn named_field(
       this: Ptr<Self>,

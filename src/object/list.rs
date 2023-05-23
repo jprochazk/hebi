@@ -3,10 +3,10 @@ use std::fmt::{Debug, Display};
 use std::vec::Vec;
 
 use super::builtin::BuiltinMethod;
-use super::{Object, Ptr};
-use crate::util::{MAX_SAFE_INT, MIN_SAFE_INT};
+use super::{Object, Ptr, Str};
+use crate::util::{JoinIter, MAX_SAFE_INT, MIN_SAFE_INT};
 use crate::value::Value;
-use crate::{Result, Scope};
+use crate::{Result, Scope, Unbind};
 
 #[derive(Default)]
 pub struct List {
@@ -32,7 +32,7 @@ impl List {
     self.data.borrow().is_empty()
   }
 
-  #[allow(dead_code)] // TODO: use in `index` impl
+  #[allow(dead_code)]
   pub fn get(&self, index: usize) -> Option<Value> {
     self.data.borrow().get(index).cloned()
   }
@@ -79,6 +79,7 @@ impl List {
   }
 }
 
+#[derive(Clone)]
 pub struct Iter<'a> {
   list: &'a List,
   index: usize,
@@ -118,10 +119,65 @@ impl Debug for List {
   }
 }
 
+fn list_len(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
+  Ok(Value::int(this.len() as i32))
+}
+
+fn list_is_empty(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
+  Ok(Value::bool(this.is_empty()))
+}
+
+fn list_get(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  let index = scope.param::<crate::Value>(0)?.unbind();
+  let index = to_index(index, this.len())?;
+  Ok(this.get(index).unwrap_or_else(Value::none))
+}
+
+fn list_set(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  let (index, value) = scope.params::<(crate::Value, crate::Value)>()?;
+  let (index, value) = (index.unbind(), value.unbind());
+  let len = this.len();
+  let index = to_index(index, len)?;
+  if !this.set(index, value) {
+    fail!("index `{index}` out of bounds, len was `{len}`")
+  }
+
+  Ok(Value::none())
+}
+
+fn list_push(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  let value = scope.param::<crate::Value>(0)?.unbind();
+  this.push(value);
+  Ok(Value::none())
+}
+
+fn list_pop(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
+  Ok(this.pop().unwrap_or_else(Value::none))
+}
+
+fn list_join(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  let sep = scope.param::<crate::Str>(0)?;
+  Ok(Value::object(
+    scope.alloc(Str::owned(this.iter().join(sep.as_str()))),
+  ))
+}
+
+// TODO: list iter
+
 impl Object for List {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "List"
+  }
+
   fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<super::Str>) -> Result<Value> {
     let method = match name.as_str() {
-      "len" => builtin_callback!(|this, _| { Ok(Value::int(this.len() as i32)) }),
+      "len" => builtin_method!(list_len),
+      "is_empty" => builtin_method!(list_is_empty),
+      "get" => builtin_method!(list_get),
+      "set" => builtin_method!(list_set),
+      "push" => builtin_method!(list_push),
+      "pop" => builtin_method!(list_pop),
+      "join" => builtin_method!(list_join),
       _ => fail!("`{this}` has no field `{name}`"),
     };
 
@@ -136,7 +192,7 @@ impl Object for List {
     name: Ptr<super::Str>,
   ) -> Result<Option<Value>> {
     let method = match name.as_str() {
-      "len" => builtin_callback!(|this, _| { Ok(Value::int(this.len() as i32)) }),
+      "len" => builtin_method!(|this, _| { Ok(Value::int(this.len() as i32)) }),
       _ => return Ok(None),
     };
 

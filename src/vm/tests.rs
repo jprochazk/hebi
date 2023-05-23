@@ -1043,10 +1043,104 @@ check! {
 }
 
 check! {
-  builtin_method_list_len,
+  builtin_list_methods,
   r#"
     v := [0, 1, 2]
-    v.len()
+
+    print "len", v.len()
+    print "is_empty", v.is_empty()
+    print "get(1)", v.get(1)
+    print "pop()", v.pop()
+    print "set", v.set(0, v.get(1))
+    print "join", v.join(", ")
+    print "push(2)", v.push(2)
+    print "join", v.join(", ")
+  "#
+}
+
+check! {
+  global_builtin_functions__to_int__float,
+  r#"
+    to_int(10.5)
+  "#
+}
+
+check! {
+  global_builtin_functions__to_int__int,
+  r#"
+    to_int(10)
+  "#
+}
+
+check! {
+  global_builtin_functions__to_int__bad_input,
+  r#"
+    to_int({})
+  "#
+}
+
+check! {
+  global_builtin_functions__to_float__float,
+  r#"
+    to_float(10.5)
+  "#
+}
+
+check! {
+  global_builtin_functions__to_float__int,
+  r#"
+    to_float(10)
+  "#
+}
+
+check! {
+  global_builtin_functions__to_float__bad_input,
+  r#"
+    to_float({})
+  "#
+}
+
+check! {
+  global_builtin_functions__to_bool,
+  r#"
+    print "true", to_bool(true)
+    print "false", to_bool(false)
+    print "10.0", to_bool(10.0)
+    print "0.0", to_bool(0.0)
+    print "100", to_bool(100)
+    print "0", to_bool(0)
+    print "none", to_bool(none)
+    print "{}", to_bool({})
+    print "[]", to_bool([])
+    print "\"test\"", to_bool("test")
+  "#
+}
+
+check! {
+  global_builtin_functions__to_str,
+  r#"
+    print to_str(true)
+    print to_str(false)
+    print to_str(100)
+    print to_str(3.14)
+    print to_str(none)
+    print to_str({})
+    print to_str([])
+    print to_str("test")
+  "#
+}
+
+check! {
+  global_builtin_functions__type_of,
+  r#"
+    print type_of(true)
+    print type_of(false)
+    print type_of(100)
+    print type_of(3.14)
+    print type_of(none)
+    print type_of({})
+    print type_of([])
+    print type_of("test")
   "#
 }
 

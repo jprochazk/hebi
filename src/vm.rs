@@ -15,7 +15,7 @@ use crate as hebi;
 use crate::module::NativeModule;
 use crate::object::function::Disassembly;
 use crate::object::module::ModuleId;
-use crate::object::{module, Function, List, Ptr, Str};
+use crate::object::{builtin, module, Function, List, Ptr, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
 use crate::{codegen, syntax, Error, ModuleLoader};
@@ -75,6 +75,7 @@ impl Default for Vm {
 impl Vm {
   pub fn with_config(config: Config) -> Self {
     let global = Global::new(config);
+    builtin::register_builtin_functions(&global);
     let stack = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(Stack::new()))) };
     let root = Thread::new(global.clone(), stack);
     Self {

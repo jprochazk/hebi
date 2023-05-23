@@ -36,6 +36,8 @@ pub struct Join<Iter, Sep>(pub Iter, pub Sep);
 
 impl<Iter, Sep> Display for Join<Iter, Sep>
 where
+  // TODO: get rid of this `Clone` bound by doing `peek`
+  // manually
   Iter: Iterator + Clone,
   <Iter as Iterator>::Item: Display,
   Sep: Display,
