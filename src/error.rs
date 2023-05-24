@@ -10,11 +10,11 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
   Vm(SpannedError),
   Syntax(SyntaxError),
-  User(Box<dyn StdError + 'static>),
+  User(Box<dyn StdError + Send + 'static>),
 }
 
 impl Error {
-  pub fn user(e: impl StdError + 'static) -> Self {
+  pub fn user(e: impl StdError + Send + 'static) -> Self {
     Self::User(Box::new(e))
   }
 }
