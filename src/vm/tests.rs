@@ -1087,6 +1087,7 @@ check! {
     print "set", v.set(0, v.get(1))
     print "join", v.join(", ")
     print "push(2)", v.push(2)
+    print "extend(3, 0)", v.extend(3, 0)
     print "join", v.join(", ")
   "#
 }

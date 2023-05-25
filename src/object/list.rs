@@ -45,6 +45,10 @@ impl List {
     self.data.borrow_mut().pop()
   }
 
+  pub fn extend(&self, n: usize, value: Value) {
+    self.data.borrow_mut().extend((0..n).map(|_| value.clone()));
+  }
+
   /// # Safety
   ///
   /// - `index` must be within the bounds of `self`
@@ -155,6 +159,15 @@ fn list_pop(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
   Ok(this.pop().unwrap_or_else(Value::none))
 }
 
+fn list_extend(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
+  let (n, value) = scope.params::<(i32, crate::Value)>()?;
+  if n < 0 {
+    fail!("count must be positive (was {n})");
+  }
+  this.extend(n as usize, value.unbind());
+  Ok(Value::none())
+}
+
 fn list_join(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
   let sep = scope.param::<crate::Str>(0)?;
   Ok(Value::object(
@@ -258,6 +271,7 @@ impl Object for List {
       "set" => builtin_method!(list_set),
       "push" => builtin_method!(list_push),
       "pop" => builtin_method!(list_pop),
+      "extend" => builtin_method!(list_extend),
       "join" => builtin_method!(list_join),
       "iter" => builtin_method!(list_iter),
       _ => fail!("`{this}` has no field `{name}`"),
