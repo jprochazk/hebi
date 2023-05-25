@@ -12,6 +12,7 @@ print "pop()", v.pop()
 print "set", v.set(0, v.get(1))
 print "join", v.join(", ")
 print "push(2)", v.push(2)
+print "extend(3, 0)", v.extend(3, 0)
 print "join", v.join(", ")
 
 
@@ -28,5 +29,6 @@ pop() 2
 set none
 join 1, 1
 push(2) none
-join 1, 1, 2
+extend(3, 0) none
+join 1, 1, 2, 0, 0, 0
 

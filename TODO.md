@@ -26,6 +26,12 @@
 - [x] methods on builtins
 - [x] for iter loops (list)
 - [ ] fix "invalid indentation" errors in parser which should be more specific
+- [ ] derive(Data)
+  - immutable
+  - non-constructible
+  - no methods
+- [ ] repl
+  - multi-line editor
 
 - [ ] debugger
   - egui

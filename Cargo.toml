@@ -52,10 +52,11 @@ indoc = { opt-level = 3 }
 insta = { opt-level = 3 }
 indoc = { opt-level = 3 }
 
-[[bench]]
-name = "startup"
-harness = false
-
 
 [workspace]
-members = ["xtask"]
+members = ["cli", "xtask"]
+
+
+[[bench]]
+name = "main"
+harness = false
