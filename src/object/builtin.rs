@@ -11,12 +11,13 @@ pub type MethodCallback = fn(Value, Scope<'_>) -> Result<Value>;
 pub type TypedMethodCallback<T> = fn(Ptr<T>, Scope<'_>) -> Result<Value>;
 
 pub struct BuiltinFunction {
+  pub name: Ptr<Str>,
   function: Callback,
 }
 
 impl BuiltinFunction {
-  pub fn new(function: Callback) -> Self {
-    Self { function }
+  pub fn new(name: Ptr<Str>, function: Callback) -> Self {
+    Self { name, function }
   }
 
   pub fn call(&self, scope: Scope<'_>) -> Result<Value> {
@@ -154,14 +155,15 @@ fn type_of(scope: Scope<'_>) -> Result<Value> {
 }
 
 macro_rules! bind_builtin {
-  ($global:ident, $builtin:ident) => {
+  ($global:ident, $builtin:ident) => {{
+    let name = $global.intern(stringify!($builtin));
     $global.set(
-      $global.intern(stringify!($builtin)),
-      $crate::value::Value::object(
-        $global.alloc($crate::object::builtin::BuiltinFunction::new($builtin)),
-      ),
+      name.clone(),
+      $crate::value::Value::object($global.alloc($crate::object::builtin::BuiltinFunction::new(
+        name, $builtin,
+      ))),
     )
-  };
+  }};
 }
 
 pub fn register_builtin_functions(global: &Global) {

@@ -3,6 +3,8 @@ use std::fmt::Display;
 
 use indexmap::IndexMap;
 
+use super::builtin::BuiltinFunction;
+use super::native::{NativeAsyncFunction, NativeFunction};
 use super::ptr::{Any, Ptr};
 use super::{Function, FunctionDescriptor, Object, Str, Table};
 use crate as hebi;
@@ -152,6 +154,7 @@ impl Object for ClassProxy {
 
 declare_object_type!(ClassProxy);
 
+// TODO: store name and type_name
 #[derive(Debug)]
 pub struct ClassMethod {
   this: Ptr<Any>,     // ClassInstance or ClassProxy
@@ -177,13 +180,17 @@ impl ClassMethod {
 
 impl Display for ClassMethod {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let name = if let Some(function) = self.function.clone_cast::<Function>() {
-      function.descriptor.name.clone()
+    if let Some(function) = self.function.clone_cast::<Function>() {
+      write!(f, "<method `{}`>", function.descriptor.name)
+    } else if let Some(function) = self.function.clone_cast::<BuiltinFunction>() {
+      write!(f, "<method `{}`>", function.name)
+    } else if let Some(function) = self.function.clone_cast::<NativeFunction>() {
+      write!(f, "<method `{}`>", function.name)
+    } else if let Some(function) = self.function.clone_cast::<NativeAsyncFunction>() {
+      write!(f, "<method `{}`>", function.name)
     } else {
-      unreachable!();
-    };
-
-    write!(f, "<method `{}`>", name)
+      write!(f, "<method>")
+    }
   }
 }
 
