@@ -1,0 +1,214 @@
+(*
+the indentation level is only recorded for the first token on each line,
+for example:
+
+  if true:
+    print "test"
+
+would produce the token stream:
+
+  Token { kind: If,     indent: Some(0), lexeme: "if" }
+  Token { kind: True,   indent: None,    lexeme: "true" }
+  Token { kind: Colon,  indent: None,    lexeme: ":" }
+  Token { kind: Print,  indent: Some(2), lexeme: "print" }
+  Token { kind: String, indent: None,    lexeme: "\"test\"" }
+
+the parser maintains a stack of indentation levels,
+and supports the following operations on that stack:
+
+  {+} -> expects indentation == Some(indent_stack[0] + N), and pushes N onto the indent_stack
+  {-} -> expects indentation == Some(indent_stack[1]), and pops the top of the indent_stack
+  {=} -> expects indentation == Some(indent_stack[0])
+  {0} -> expects indentation == Some(0)
+  {_} -> expects indentation == None
+
+in certain contexts (such as a grouping expression, or call args), the indentation
+is ignored, meaning that any indentation checks always pass, and the indentation levels
+don't change.
+
+*)
+
+
+module = ({0} top_level_stmt)* ;
+
+top_level_stmt = {=} stmt ;
+
+stmt = scoped_stmt | simple_stmt ;
+
+simple_stmt =
+  | pass_stmt
+  | return_stmt
+  | continue_stmt
+  | break_stmt
+  | yield_stmt
+  | print_stmt
+  | assign_stmt
+  ;
+
+scoped_stmt =
+  | import_stmt
+  | if_stmt
+  | for_stmt
+  | while_stmt
+  | loop_stmt
+  | fn_stmt
+  | class_stmt
+  ;
+
+pass_stmt = "pass" ;
+
+return_stmt = "return" ({_} expr)? ;
+
+continue_stmt = "continue" ;
+
+break_stmt = "break" ;
+
+yield_stmt = "yield" ({_} expr)? ;
+
+print_stmt = "print" {_} expr ({_} "," {_} expr)? ;
+
+assign_stmt = assign_target {_} assign_op {_} expr ;
+
+assign_target =
+  | var_expr
+  | field_expr
+  | index_expr
+  ;
+
+assign_op =
+  | ":="
+  | "="
+  | "+="
+  | "-="
+  | "*="
+  | "/="
+  | "%="
+  | "**="
+  | "??="
+  ;
+
+import_stmt =
+  | "import" {_} import_path ({_} "as" identifier)?
+  | "from" {_} import_path {_} "import" {_} import_symbol_list
+  ;
+
+import_path = identifier ({_} "." {_} identifier)* ;
+import_symbol_list = indentifier ({_} "," {_} identifier)* ;
+
+if_stmt =
+  "if" {_} expr {_} ":" block
+  ({=} "elif" {_} expr {_} ":" block)*
+  ({=} "else" ":" block)?
+  ;
+
+for_stmt = "for" {_} identifier {_} "in" {_} for_iter {_} ":" block ;
+
+for_iter =
+  | expr {_} ".." {_} expr (* range *)
+  | expr                   (* iterable *)
+  ;
+
+while_stmt = "while" {_} expr {_} ":" block ;
+
+loop_stmt = "loop" {_} ":" block ;
+
+fn_stmt = "fn" {_} identifier {_} "(" (param ("," param)*)? ")" {_} ":" block ;
+
+param = identifier ({_} "=" {_} expr)? ;
+
+class_stmt = "class" {_} identifier ({_} "(" identifier ")") {_} ":" class_members ;
+
+class_members =
+  | {_} pass_stmt
+  | {+} class_member_list {-}
+  ;
+
+class_member_list =
+  (class_field ({=} class_field)*)?
+  (class_method ({=} class_method)*)?
+  ;
+
+class_field = identifier "=" expr ;
+
+class_method = fn_stmt ;
+
+
+block =
+  | {_} simple_stmt 
+  | {+} stmt ({=} stmt)*
+  ;
+
+expr = maybe_expr ;
+
+maybe_expr = or_expr ({_} "??" {_} or_expr)* ;
+
+or_expr = and_expr ({_} "||" {_} and_expr)* ;
+
+and_expr = eq_expr ({_} "&&" {_} eq_expr)* ;
+
+eq_expr = comp_expr ({_} ("==" | "!=") {_} comp_expr)* ;
+
+comp_expr = add_expr ({_} ("<" | "<=" | ">" | ">=") {_} add_expr)* ;
+
+add_expr = mul_expr ({_} ("+" | "-") {_} mul_expr)* ;
+
+mul_expr = pow_expr ({_} ("*" | "/" | "%") {_} pow_expr)* ;
+
+pow_expr = unary_expr ({_} "**" {_} unary_expr)* ;
+
+unary_expr = ("-" | "+" | "!" | "?") {_} (unary_expr | postfix_expr) ;
+
+postfix_expr = call_expr | index_expr | field_expr | primary_expr ;
+
+call_expr = postfix_expr {_} "(" (expr ("," expr)*)? ")" ;
+
+index_expr = postfix_expr {_} "[" expr "]" ;
+
+field_expr = postfix_expr {_} "." {_} identifier ;
+
+primary_expr =
+  | none_expr
+  | bool_expr
+  | int_expr
+  | float_expr
+  | string_expr
+  | list_expr
+  | table_expr
+  | self_expr
+  | super_expr
+  | var_expr
+  | group_expr
+  ;
+
+none_expr = "none" ;
+
+bool_expr = "true" | "false" ;
+
+(* NOTE: `int_expr` takes precedence over `float_expr` *)
+
+int_expr = (* regex *) "[0-9]([0-9_]*[0-9])?" ;
+
+float_expr = (* regex *) "[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?" ;
+
+string_expr = "\"" (* regex *) "([^\"\\]|\\.)*" "\"" ;
+
+list_expr = "[" (expr ("," expr)*)? "]" ;
+
+table_expr = "{" (table_field ("," table_field)*)? "}" ;
+
+table_field = table_key ":" expr ;
+
+table_key =
+  | identifier
+  | "[" expr "]"
+  ;
+
+self_expr = "self" ;
+
+super_expr = "super" ;
+
+var_expr = identifier ;
+
+group_expr = "(" expr ")" ;
+
+identifier = (* regex *) "[a-zA-Z_][a-zA-Z0-9_]*" ;
