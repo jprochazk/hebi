@@ -175,7 +175,7 @@ impl Object for Module {
     "Module"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Value> {
+  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
     let value = this
       .module_vars
       .get(&name)
@@ -183,7 +183,7 @@ impl Object for Module {
     Ok(value)
   }
 
-  fn named_field_opt(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
+  fn named_field_opt(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
     Ok(this.module_vars.get(&name))
   }
 }

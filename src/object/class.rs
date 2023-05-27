@@ -52,7 +52,7 @@ impl Object for ClassInstance {
     "Instance"
   }
 
-  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     let value = this
       .fields
       .get(&name)
@@ -70,7 +70,7 @@ impl Object for ClassInstance {
     Ok(value)
   }
 
-  fn named_field_opt(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+  fn named_field_opt(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
     let value = this.fields.get(&name);
 
     // bind functions
@@ -88,8 +88,8 @@ impl Object for ClassInstance {
   }
 
   fn set_named_field(
-    this: Ptr<Self>,
     scope: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<Str>,
     value: Value,
   ) -> Result<()> {
@@ -124,7 +124,7 @@ impl Object for ClassProxy {
     "Instance"
   }
 
-  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     let method = this
       .class
       .methods
@@ -137,7 +137,7 @@ impl Object for ClassProxy {
     ))
   }
 
-  fn named_field_opt(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+  fn named_field_opt(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
     let method = this
       .class
       .methods
@@ -240,7 +240,7 @@ impl Object for ClassType {
     "Class"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> hebi::Result<Value> {
+  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
     let value = this
       .methods
       .get(&name)
@@ -250,7 +250,7 @@ impl Object for ClassType {
     Ok(value)
   }
 
-  fn named_field_opt(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> Result<Option<Value>> {
+  fn named_field_opt(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
     let value = this.methods.get(&name).cloned().map(Value::object);
     Ok(value)
   }

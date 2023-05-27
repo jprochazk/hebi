@@ -1093,6 +1093,13 @@ check! {
 }
 
 check! {
+  add_objects,
+  r#"#!hebi
+    "a" + "b"
+  "#
+}
+
+check! {
   global_builtin_functions__to_int__float,
   r#"#!hebi
     to_int(10.5)

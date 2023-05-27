@@ -177,7 +177,7 @@ impl Object for Table {
     "Table"
   }
 
-  fn keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value) -> Result<Value> {
+  fn keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value) -> Result<Value> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };
@@ -187,7 +187,7 @@ impl Object for Table {
     Ok(value)
   }
 
-  fn keyed_field_opt(this: Ptr<Self>, _: Scope<'_>, key: Value) -> Result<Option<Value>> {
+  fn keyed_field_opt(_: Scope<'_>, this: Ptr<Self>, key: Value) -> Result<Option<Value>> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };
@@ -195,7 +195,7 @@ impl Object for Table {
     Ok(value)
   }
 
-  fn set_keyed_field(this: Ptr<Self>, _: Scope<'_>, key: Value, value: Value) -> hebi::Result<()> {
+  fn set_keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value, value: Value) -> hebi::Result<()> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };

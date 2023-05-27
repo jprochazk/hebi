@@ -101,7 +101,7 @@ impl Object for NativeClassInstance {
     "NativeClassInstance"
   }
 
-  fn named_field(this: Ptr<Self>, mut scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(mut scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
       scope
         .thread
@@ -117,8 +117,8 @@ impl Object for NativeClassInstance {
   }
 
   fn named_field_opt(
-    this: Ptr<Self>,
     mut scope: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<Str>,
   ) -> Result<Option<Value>> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
@@ -137,8 +137,8 @@ impl Object for NativeClassInstance {
   }
 
   fn set_named_field(
-    this: Ptr<Self>,
     mut scope: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<Str>,
     value: Value,
   ) -> Result<()> {
@@ -236,7 +236,7 @@ impl Object for NativeClass {
     "NativeClass"
   }
 
-  fn named_field(this: Ptr<Self>, _: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
       Ok(Value::object(method.to_object()))
     } else if let Some(method) = this.methods.get(name.as_str()) {
@@ -247,8 +247,8 @@ impl Object for NativeClass {
   }
 
   fn named_field_opt(
-    this: Ptr<Self>,
     _: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<Str>,
   ) -> crate::Result<Option<Value>> {
     if let Some(method) = this.static_methods.get(name.as_str()) {

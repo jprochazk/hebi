@@ -527,7 +527,6 @@ impl Thread {
 
     // module is not in cache, actually load it
     let module_id = self.global.next_module_id();
-    // TODO: native modules
     let module = self.global.load_module(path.as_str())?.to_string();
     let module = syntax::parse(self.global.clone(), &module).map_err(Error::Syntax)?;
     let module = codegen::emit(self.global.clone(), &module, path.as_str(), false);
@@ -617,7 +616,6 @@ impl Thread {
     unsafe { object.to_any_unchecked().cast_unchecked::<T>() }
   }
 
-  // TODO: get_register_as
   fn get_register(&self, reg: op::Register) -> Value {
     debug_assert!(
       stack_base!(self) + reg.index() < stack!(self).len(),
@@ -1063,7 +1061,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::int(lhs + rhs),
       f64 => Value::float(lhs + rhs),
-      any => todo!(),
+      any => lhs.add(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())

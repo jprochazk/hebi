@@ -209,7 +209,7 @@ impl Object for ListIter {
     "ListIter"
   }
 
-  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     Ok(
       this
         .named_field_opt(scope, name.clone())?
@@ -218,8 +218,8 @@ impl Object for ListIter {
   }
 
   fn named_field_opt(
-    this: Ptr<Self>,
     scope: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<super::Str>,
   ) -> Result<Option<Value>> {
     let method = match name.as_str() {
@@ -251,7 +251,7 @@ impl Object for List {
     "List"
   }
 
-  fn named_field(this: Ptr<Self>, scope: Scope<'_>, name: Ptr<Str>) -> Result<Value> {
+  fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     Ok(
       this
         .named_field_opt(scope, name.clone())?
@@ -260,8 +260,8 @@ impl Object for List {
   }
 
   fn named_field_opt(
-    this: Ptr<Self>,
     scope: Scope<'_>,
+    this: Ptr<Self>,
     name: Ptr<super::Str>,
   ) -> Result<Option<Value>> {
     let method = match name.as_str() {
@@ -282,7 +282,7 @@ impl Object for List {
     })))
   }
 
-  fn keyed_field(this: Ptr<Self>, _: crate::Scope<'_>, key: Value) -> Result<Value> {
+  fn keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value) -> Result<Value> {
     let len = this.len();
     let index = to_index(key.clone(), len)?;
     let value = this
@@ -291,13 +291,13 @@ impl Object for List {
     Ok(value)
   }
 
-  fn keyed_field_opt(this: Ptr<Self>, _: Scope<'_>, key: Value) -> Result<Option<Value>> {
+  fn keyed_field_opt(_: Scope<'_>, this: Ptr<Self>, key: Value) -> Result<Option<Value>> {
     let len = this.len();
     let index = to_index(key, len)?;
     Ok(this.get(index))
   }
 
-  fn set_keyed_field(this: Ptr<Self>, _: crate::Scope<'_>, key: Value, value: Value) -> Result<()> {
+  fn set_keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value, value: Value) -> Result<()> {
     let len = this.len();
     let index = to_index(key.clone(), len)?;
     if !this.set(index, value) {
