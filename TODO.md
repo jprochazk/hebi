@@ -22,10 +22,13 @@
 - [x] list indexing
 - [x] list index oob should return None instead of error (improve error message)
 - [x] to_index should check MIN_SAFE_INT
-- [ ] ops on builtins
+- [ ] ops on builtins <<<
 - [x] methods on builtins
 - [x] for iter loops (list)
 - [ ] fix "invalid indentation" errors in parser which should be more specific
+- [ ] all function types should have the same global type `Function`
+- [ ] all class types (including native) should have the same global type `Type`
+- [ ] class instances should walk the parent chain
 - [ ] derive(Data)
   - immutable
   - non-constructible
@@ -68,3 +71,38 @@
   - per-function IC
   - reserve IC slot in codegen
 - [ ] quickening
+
+
+
+
+trait Type {
+  fn build(&mut ClassBuilder) -> ClassDescriptor;
+}
+
+.class(str, impl Type)
+
+
+
+
+
+IntoValue should require Send, but not for internal use
+
+split into two traits,
+
+pub trait IntoValue: Send
+
+(name pending)
+priv trait IntoValueUnsafe: ?Send
+
+impl IntoValue where T: IntoValueUnsafe 
+
+public API accepts impl IntoValue
+
+
+
+
+error reporting
+
+Map code offset -> span
+
+also need to know which file we're in so we can report
