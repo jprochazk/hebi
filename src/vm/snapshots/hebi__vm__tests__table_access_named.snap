@@ -8,4 +8,4 @@ v.a
 
 
 # Result:
-runtime error: `<table>` does not support field access
+runtime error: `Table` does not support field access
