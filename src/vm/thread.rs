@@ -3,6 +3,7 @@ mod macros;
 
 pub mod util;
 
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::mem::take;
 use std::ptr::NonNull;
@@ -1073,7 +1074,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::int(lhs - rhs),
       f64 => Value::float(lhs - rhs),
-      any => todo!(),
+      any => lhs.subtract(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())
@@ -1085,7 +1086,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::int(lhs * rhs),
       f64 => Value::float(lhs * rhs),
-      any => todo!(),
+      any => lhs.multiply(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())
@@ -1103,7 +1104,7 @@ impl Handler for Thread {
         }
       },
       f64 => Value::float(lhs / rhs),
-      any => todo!(),
+      any => lhs.divide(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())
@@ -1121,7 +1122,7 @@ impl Handler for Thread {
         }
       },
       f64 => Value::float(lhs % rhs),
-      any => todo!(),
+      any => lhs.remainder(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())
@@ -1133,7 +1134,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::float((lhs as f64).powf(rhs as f64)),
       f64 => Value::float(lhs.powf(rhs)),
-      any => todo!(),
+      any => lhs.pow(self.get_empty_scope(), rhs)?,
     });
     self.acc = value;
     Ok(())
@@ -1152,8 +1153,8 @@ impl Handler for Thread {
     } else if value.is_none() {
       fail!("cannot invert `none`")
     } else if value.is_object() {
-      let _ = unsafe { value.to_any_unchecked() };
-      todo!()
+      let value = unsafe { value.to_any_unchecked() };
+      value.invert(self.get_empty_scope())?
     } else {
       unreachable!()
     };
@@ -1174,7 +1175,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs == rhs),
       f64 => Value::bool(lhs == rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
     });
     self.acc = value;
     Ok(())
@@ -1186,7 +1187,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs != rhs),
       f64 => Value::bool(lhs != rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater | Ordering::Less)),
     });
     self.acc = value;
     Ok(())
@@ -1198,7 +1199,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs > rhs),
       f64 => Value::bool(lhs > rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater)),
     });
     self.acc = value;
     Ok(())
@@ -1210,7 +1211,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs >= rhs),
       f64 => Value::bool(lhs >= rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater | Ordering::Equal)),
     });
     self.acc = value;
     Ok(())
@@ -1222,7 +1223,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs < rhs),
       f64 => Value::bool(lhs < rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Less)),
     });
     self.acc = value;
     Ok(())
@@ -1234,7 +1235,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs <= rhs),
       f64 => Value::bool(lhs <= rhs),
-      any => todo!(),
+      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Less | Ordering::Equal)),
     });
     self.acc = value;
     Ok(())
@@ -1243,15 +1244,20 @@ impl Handler for Thread {
   fn op_cmp_type(&mut self, lhs: op::Register) -> Result<()> {
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let same_type = (lhs.is_int() && rhs.is_int())
-      || (lhs.is_float() && rhs.is_float())
-      || (lhs.is_bool() && rhs.is_bool())
-      || (lhs.is_none() && rhs.is_none());
-    if !same_type {
-      // compare types of objects
-      todo!()
-    }
-    self.acc = Value::bool(same_type);
+
+    let is_same_type = if lhs.is_object() && rhs.is_object() {
+      let lhs = unsafe { lhs.to_any_unchecked() };
+      let rhs = unsafe { rhs.to_any_unchecked() };
+
+      lhs.ty() == rhs.ty()
+    } else {
+      (lhs.is_int() && rhs.is_int())
+        || (lhs.is_float() && rhs.is_float())
+        || (lhs.is_bool() && rhs.is_bool())
+        || (lhs.is_none() && rhs.is_none())
+    };
+
+    self.acc = Value::bool(is_same_type);
     Ok(())
   }
 
