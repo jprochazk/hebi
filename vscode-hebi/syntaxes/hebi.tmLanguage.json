@@ -5,14 +5,6 @@
   "fileTypes": ["hebi"],
   "patterns": [
     {
-      "match": "\\b([0-9]+(\\.[0-9]+)?([Ee][+-]?[0-9]+)?)\\b",
-      "name": "constant.numeric.float.hebi"
-    },
-    {
-      "match": "\\b([0-9][0-9_]*)\\b",
-      "name": "constant.numeric.int.hebi"
-    },
-    {
       "match": "\\b(?:(import)|(from))\\b",
       "captures": {
         "1": {
@@ -39,47 +31,6 @@
       "comment": "keywords that alter flow from within a block"
     },
     {
-      "match": "\\b(as|print|self|super)\\b",
-      "captures": {
-        "1": {
-          "name": "keyword.other.hebi"
-        }
-      },
-      "comment": "keywords that haven't fit into other groups."
-    },
-    {
-      "match": "\\b(none|true|false)\\b",
-      "name": "constant.language.hebi"
-    },
-    {
-      "match": "<|<\\=|>|>\\=|\\!\\=|\\=\\=",
-      "name": "keyword.operator.comparison.hebi"
-    },
-    {
-      "match": ":\\=",
-      "name": "keyword.operator.declaration.hebi"
-    },
-    {
-      "match": "\\=",
-      "name": "keyword.operator.assignment.hebi"
-    },
-    {
-      "match": "\\+\\=|-\\=|\\*\\=|/\\=|%\\=|\\*\\*\\=|\\?\\?\\=",
-      "name": "keyword.operator.assignment.compound.hebi"
-    },
-    {
-      "match": "(\\?\\?)|(\\|\\|)|(&&)|(\\!)|(\\?)|(in)|(is)",
-      "name": "keyword.operator.logical.hebi"
-    },
-    {
-      "match": "(\\+)|(\\-)|(\\*)|(/)|(%)|(\\*\\*)",
-      "name": "keyword.operator.arithmetic.hebi"
-    },
-    {
-      "match": "(\\.\\.)",
-      "name": "keyword.operator.other.hebi"
-    },
-    {
       "begin": "\\s*(class)\\s+(?=[a-zA-Z_][a-zA-Z0-9_]?)",
       "beginCaptures": {
         "1": { "name": "storage.type.class.hebi" }
@@ -95,46 +46,103 @@
       ]
     },
     {
-      "begin": "\\s*(fn)\\s+(?=[a-zA-Z_][a-zA-Z0-9_]?)",
+      "begin": "\\s*(fn)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
       "beginCaptures": {
-        "1": { "name": "storage.type.function.hebi" }
+        "1": { "name": "storage.type.function.hebi" },
+        "2": { "name": "entity.name.function.hebi" }
       },
-      "end": "(\\s*\\:)",
+      "end": "\\s*\\)\\s*\\:",
       "name": "meta.function.hebi",
-      "patterns": [
-        {
-          "begin": "(?=[a-zA-Z_][a-zA-Z0-9_]*)",
-          "contentName": "entity.name.function.hebi",
-          "end": "(?![a-zA-Z0-9_])"
-        }
-      ]
-    },
-    {
-      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
-      "name": "meta.function.call.hebi",
-      "captures": {
-        "1": { "name": "entity.name.function.hebi" }
-      }
-    },
-    {
-      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b",
-      "name": "variable.other.hebi"
+      "patterns": [{ "include": "#expressions" }]
     },
     {
       "match": "\\s*#[^\\n]*$\\n?",
       "name": "comment.line.hebi"
     },
     {
-      "begin": "\"",
-      "end": "\"",
-      "name": "string.quoted.double.hebi",
+      "include": "#expressions"
+    }
+  ],
+  "repository": {
+    "expressions": {
       "patterns": [
         {
-          "name": "constant.character.escape.hebi",
-          "match": "\\\\."
+          "match": "\\b([0-9]+(\\.[0-9]+)?([Ee][+-]?[0-9]+)?)\\b",
+          "name": "constant.numeric.float.hebi"
+        },
+        {
+          "match": "\\b([0-9][0-9_]*)\\b",
+          "name": "constant.numeric.int.hebi"
+        },
+        {
+          "match": "\\b(as|print|self|super)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.other.hebi"
+            }
+          },
+          "comment": "keywords that haven't fit into other groups."
+        },
+        {
+          "match": "\\b(none|true|false)\\b",
+          "name": "constant.language.hebi"
+        },
+        {
+          "match": "<|<\\=|>|>\\=|\\!\\=|\\=\\=",
+          "name": "keyword.operator.comparison.hebi"
+        },
+        {
+          "match": ":\\=",
+          "name": "keyword.operator.declaration.hebi"
+        },
+        {
+          "match": "\\=",
+          "name": "keyword.operator.assignment.hebi"
+        },
+        {
+          "match": "\\+\\=|-\\=|\\*\\=|/\\=|%\\=|\\*\\*\\=|\\?\\?\\=",
+          "name": "keyword.operator.assignment.compound.hebi"
+        },
+        {
+          "match": "(\\?\\?)|(\\|\\|)|(&&)|(\\!)|(\\?)|(in)|(is)",
+          "name": "keyword.operator.logical.hebi"
+        },
+        {
+          "match": "(\\+)|(\\-)|(\\*)|(/)|(%)|(\\*\\*)",
+          "name": "keyword.operator.arithmetic.hebi"
+        },
+        {
+          "match": "(\\.\\.)",
+          "name": "keyword.operator.other.hebi"
+        },
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "name": "meta.function.call.hebi",
+          "captures": {
+            "1": { "name": "entity.name.function.hebi" }
+          }
+        },
+        {
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\b",
+          "name": "variable.other.hebi"
+        },
+        {
+          "match": "\\b([A-Z_][a-zA-Z0-9_]*)\\b",
+          "name": "entity.name.type.class.hebi"
+        },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.hebi",
+          "patterns": [
+            {
+              "name": "constant.character.escape.hebi",
+              "match": "\\\\."
+            }
+          ]
         }
       ]
     }
-  ]
+  }
 }
 

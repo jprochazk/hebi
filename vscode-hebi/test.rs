@@ -63,5 +63,27 @@ check! {
     {a:b, ["c"]:d}
 
     (expr)
+
+    class Counter:
+      fn init(self, max = [a,b,c], other = d):
+        self.n = 0
+        self.max = max
+
+      fn iter(self):
+        return self
+
+      fn next(self):
+        if self.n < self.max:
+          n := self.n
+          self.n += 1
+          return n
+
+      fn done(self):
+        return self.n >= self.max
+
+    for v in Counter(10):
+      print v
   "#
 }
+
+fn f((a,): (A,)) {}
