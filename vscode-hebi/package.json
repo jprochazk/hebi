@@ -2,7 +2,7 @@
   "name": "vscode-hebi",
   "displayName": "vscode-hebi",
   "description": "Hebi language support for VSCode",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.78.0"
   },
@@ -57,4 +57,3 @@
     ]
   }
 }
-
