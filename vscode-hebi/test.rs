@@ -83,7 +83,21 @@ check! {
 
     for v in Counter(10):
       print v
+
+    v := [0, 1, 2]
+
+    print "len", v.len()
+    print "is_empty", v.is_empty()
+    print "get(1)", v.get(1)
+    print "pop()", v.pop()
+    print "set", v.set(0, v.get(1))
+    print "join", v.join(", ")
+    print "push(2)", v.push(2)
+    print "extend(3, 0)", v.extend(3, 0)
+    print "join", v.join(", ")
   "#
 }
 
-fn f((a,): (A,)) {}
+fn f((a,): (A,)) {
+  true
+}

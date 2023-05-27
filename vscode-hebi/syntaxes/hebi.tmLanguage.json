@@ -88,6 +88,21 @@
           "name": "constant.language.hebi"
         },
         {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "name": "meta.function.call.hebi",
+          "captures": {
+            "1": { "name": "entity.name.function.hebi" }
+          }
+        },
+        {
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\b",
+          "name": "variable.other.hebi"
+        },
+        {
+          "match": "\\b([A-Z_][a-zA-Z0-9_]*)\\b",
+          "name": "entity.name.type.class.hebi"
+        },
+        {
           "match": "<|<\\=|>|>\\=|\\!\\=|\\=\\=",
           "name": "keyword.operator.comparison.hebi"
         },
@@ -114,21 +129,6 @@
         {
           "match": "(\\.\\.)",
           "name": "keyword.operator.other.hebi"
-        },
-        {
-          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
-          "name": "meta.function.call.hebi",
-          "captures": {
-            "1": { "name": "entity.name.function.hebi" }
-          }
-        },
-        {
-          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\b",
-          "name": "variable.other.hebi"
-        },
-        {
-          "match": "\\b([A-Z_][a-zA-Z0-9_]*)\\b",
-          "name": "entity.name.type.class.hebi"
         },
         {
           "begin": "\"",
