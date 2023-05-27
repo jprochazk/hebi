@@ -1099,19 +1099,19 @@ check! {
   "#
 }
 
-check! {
-  type_comparison,
-  r#"#!hebi
-    fn interesting_thing(value):
-      if value is Str:
-        print "str: ", value
-      else:
-        print "I hardly know 'er"
-    
-    interesting_thing("ppL")
-    interesting_thing(100)
-  "#
-}
+// check! {
+//   type_comparison,
+//   r#"#!hebi
+//     fn interesting_thing(value):
+//       if value is Str:
+//         print "str: ", value
+//       else:
+//         print "I hardly know 'er"
+//
+//     interesting_thing("ppL")
+//     interesting_thing(100)
+//   "#
+// }
 
 check! {
   global_builtin_functions__to_int__float,

@@ -49,10 +49,10 @@ impl Object for BuiltinFunction {
 
 declare_object_type!(BuiltinFunction);
 
-pub struct BuiltinType {
-  // TODO: List, Str, Table, etc. globals
-  // TODO: special sentinel object type `Type` (also global)
-}
+// pub struct BuiltinType {
+//   // TODO: List, Str, Table, etc. globals
+//   // TODO: special sentinel object type `Type` (also global)
+// }
 
 pub struct BuiltinMethod {
   this: Value,
