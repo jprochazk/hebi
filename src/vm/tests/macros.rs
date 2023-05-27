@@ -1,11 +1,19 @@
+#[doc(hidden)]
+pub fn __clean_source(src: &str) -> String {
+  src.replace("#!hebi", "").trim_start().to_string()
+}
+
 macro_rules! check {
   ($name:ident, $source:literal) => {
     #[tokio::test]
     #[allow(non_snake_case)]
     async fn $name() {
-      let source = indoc::indoc!($source);
+      let source = $crate::vm::tests::macros::__clean_source(indoc::indoc!($source));
       let mut hebi = crate::Hebi::builder().output(Vec::<u8>::new()).finish();
-      let result = format!("{:#?}", hebi.eval_async(source).await);
+      let result = match hebi.eval_async(&source).await {
+        Ok(value) => format!("{value:#?}"),
+        Err(e) => e.report(&source, false),
+      };
       let output = String::from_utf8(
         hebi
           .global()
@@ -16,6 +24,7 @@ macro_rules! check {
           .unwrap(),
       )
       .unwrap();
+
       let snapshot = if output.is_empty() {
         format!("# Source:\n{source}\n\n# Result:\n{result}")
       } else {
@@ -28,7 +37,7 @@ macro_rules! check {
     #[tokio::test]
     #[allow(non_snake_case)]
     async fn $name() {
-      let source = indoc::indoc!($source);
+      let source = $crate::vm::tests::macros::__clean_source(indoc::indoc!($source));
       let mut hebi = crate::Hebi::builder()
         .output(Vec::<u8>::new())
         .module_loader(
@@ -37,7 +46,10 @@ macro_rules! check {
           ])
         )
         .finish();
-      let result = format!("{:#?}", hebi.eval_async(source).await);
+      let result = match hebi.eval_async(&source).await {
+        Ok(value) => format!("{value:#?}"),
+        Err(e) => e.report(&source, false),
+      };
       let output = String::from_utf8(
         hebi
           .global()

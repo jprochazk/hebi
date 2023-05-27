@@ -17,6 +17,24 @@ impl Error {
   pub fn user(e: impl StdError + Send + Sync + 'static) -> Self {
     Self::User(Box::new(e))
   }
+
+  pub fn report(&self, src: &str, use_color: bool) -> String {
+    match self {
+      Error::Vm(e) => format!("runtime error: {}", e.report(src, use_color)),
+      Error::Syntax(e) => {
+        use std::fmt::Write;
+        let mut s = "syntax error:\n".to_string();
+        for e in e.errors() {
+          writeln!(&mut s, "{}", e.report(src, use_color)).unwrap();
+        }
+        s
+      }
+      Error::User(e) => {
+        // TODO: spans in user errors
+        format!("runtime error: {e}")
+      }
+    }
+  }
 }
 
 impl From<SpannedError> for Error {

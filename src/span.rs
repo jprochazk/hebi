@@ -202,7 +202,9 @@ impl SpannedError {
       return self.message.clone();
     }
     if self.span.start > src.len() || self.span.end > src.len() {
-      panic!("invalid span {self}");
+      // TODO: file database + interned spans will solve this
+      return self.message.clone();
+      // panic!("invalid span {self}");
     }
 
     let start = src[..self.span.start].rfind('\n').unwrap_or(0);
