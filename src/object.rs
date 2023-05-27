@@ -37,6 +37,7 @@ macro_rules! declare_object_trait {
       pub(crate) debug_fmt: fn(*const T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
 
       pub(crate) type_name: fn(Ptr<T>) -> &'static str,
+      pub(crate) instance_of: fn(Ptr<T>, Value) -> Result<bool>,
       $(
         pub(crate) $name : fn(
           Scope<'_>,
@@ -48,7 +49,7 @@ macro_rules! declare_object_trait {
 
     pub trait $Object: Debug + Display + Sized + 'static {
       fn type_name(this: Ptr<Self>) -> &'static str;
-
+      fn instance_of(this: Ptr<Self>, ty: Value) -> Result<bool>;
       $(
         fn $name(
           $scope: Scope<'_>,
@@ -59,8 +60,12 @@ macro_rules! declare_object_trait {
     }
 
     impl<T: $Object + Sized + 'static> Ptr<T> {
-      fn type_name(&self) -> &'static str {
+      pub fn type_name(&self) -> &'static str {
         <T as $Object>::type_name(self.clone())
+      }
+
+      pub fn instance_of(&self, ty: Value) -> Result<bool> {
+        <T as $Object>::instance_of(self.clone(), ty)
       }
 
       $(
@@ -84,6 +89,17 @@ macro_rules! declare_object_trait {
           >(this)
         };
         (method)(this)
+      }
+
+      fn instance_of(this: Ptr<Any>, ty: Value) -> Result<bool> {
+        let method = unsafe { this.vtable() }.instance_of;
+        let this = unsafe {
+          ::core::mem::transmute::<
+            Ptr<Any>,
+            Ptr<()>
+          >(this)
+        };
+        (method)(this, ty)
       }
 
       $(
@@ -117,6 +133,8 @@ macro_rules! declare_object_trait {
               debug_fmt: |ptr, f| <$T as ::std::fmt::Debug>::fmt(unsafe { &*ptr }, f),
 
               type_name: <$T as $crate::object::Object>::type_name,
+
+              instance_of: <$T as $crate::object::Object>::instance_of,
               $($name: <$T as $crate::object::Object>::$name),*
             };
 
@@ -136,7 +154,6 @@ type StrPtr = Ptr<Str>;
 
 declare_object_trait! {
   trait Object -> VTable, declare_object_type {
-
     fn named_field(scope, this, name: StrPtr) -> Result<Value> {
       let _ = scope;
       let _ = name;
@@ -249,6 +266,17 @@ declare_object_trait! {
       fail!("`{this}` does not support comparison")
     }
   }
+}
+
+macro_rules! default_instance_of {
+  () => {
+    fn instance_of(
+      _: $crate::object::ptr::Ptr<Self>,
+      ty: $crate::value::Value,
+    ) -> $crate::Result<bool> {
+      Ok(ty.to_object::<Self>().is_some())
+    }
+  };
 }
 
 pub fn is_callable(v: &Ptr<Any>) -> bool {

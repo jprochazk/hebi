@@ -271,6 +271,8 @@ pub enum BinaryOp {
   And,
   Or,
   Maybe,
+  Is,
+  In,
 }
 
 #[cfg_attr(test, derive(Debug))]

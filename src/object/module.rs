@@ -175,6 +175,8 @@ impl Object for Module {
     "Module"
   }
 
+  default_instance_of!();
+
   fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
     let value = this
       .module_vars
@@ -207,6 +209,8 @@ impl Object for ModuleDescriptor {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Module Descriptor"
   }
+
+  default_instance_of!();
 }
 
 declare_object_type!(ModuleDescriptor);

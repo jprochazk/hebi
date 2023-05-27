@@ -121,6 +121,8 @@ impl<'src> State<'src> {
       ast::BinaryOp::MoreEq => self.builder().emit(CmpGe { lhs }, span),
       ast::BinaryOp::Less => self.builder().emit(CmpLt { lhs }, span),
       ast::BinaryOp::LessEq => self.builder().emit(CmpLe { lhs }, span),
+      ast::BinaryOp::Is => self.builder().emit(CmpType { lhs }, span),
+      ast::BinaryOp::In => self.builder().emit(Contains { lhs }, span),
       ast::BinaryOp::And | ast::BinaryOp::Or | ast::BinaryOp::Maybe => unreachable!(),
     }
   }

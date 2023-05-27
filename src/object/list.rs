@@ -209,6 +209,8 @@ impl Object for ListIter {
     "ListIter"
   }
 
+  default_instance_of!();
+
   fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     Ok(
       this
@@ -250,6 +252,8 @@ impl Object for List {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "List"
   }
+
+  default_instance_of!();
 
   fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     Ok(

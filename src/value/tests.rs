@@ -2,6 +2,7 @@ use super::*;
 use crate::object::{Object, Ptr};
 use crate::util::JoinIter;
 use crate::vm::global::Global;
+use crate::Result;
 
 struct Bar {
   value: u64,
@@ -10,6 +11,10 @@ struct Bar {
 impl Object for Bar {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Bar"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    unimplemented!()
   }
 }
 

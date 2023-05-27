@@ -44,6 +44,8 @@ impl Object for Str {
     "String"
   }
 
+  default_instance_of!();
+
   fn add(scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<Value> {
     Ok(Value::object(scope.alloc(this.concat(other.as_str()))))
   }

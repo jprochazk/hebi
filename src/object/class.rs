@@ -52,6 +52,10 @@ impl Object for ClassInstance {
     "Instance"
   }
 
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
+
   fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     let value = this
       .fields
@@ -122,6 +126,16 @@ impl Display for ClassProxy {
 impl Object for ClassProxy {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Instance"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    /*
+    class Foo(Bar):
+      fn test(self):
+        super is Foo ?
+        super is Bar ?
+    */
+    todo!()
   }
 
   fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
@@ -198,6 +212,10 @@ impl Object for ClassMethod {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Method"
   }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
 }
 
 declare_object_type!(ClassMethod);
@@ -240,6 +258,12 @@ impl Object for ClassType {
     "Class"
   }
 
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    // A is Type == true
+    // otherwise == false
+    todo!()
+  }
+
   fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
     let value = this
       .methods
@@ -275,6 +299,8 @@ impl Object for ClassDescriptor {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "ClassDescriptor"
   }
+
+  default_instance_of!();
 }
 
 declare_object_type!(ClassDescriptor);

@@ -1247,9 +1247,8 @@ impl Handler for Thread {
 
     let is_same_type = if lhs.is_object() && rhs.is_object() {
       let lhs = unsafe { lhs.to_any_unchecked() };
-      let rhs = unsafe { rhs.to_any_unchecked() };
 
-      lhs.ty() == rhs.ty()
+      lhs.instance_of(rhs)?
     } else {
       (lhs.is_int() && rhs.is_int())
         || (lhs.is_float() && rhs.is_float())
@@ -1258,6 +1257,7 @@ impl Handler for Thread {
     };
 
     self.acc = Value::bool(is_same_type);
+
     Ok(())
   }
 

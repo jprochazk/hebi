@@ -41,9 +41,18 @@ impl Object for BuiltinFunction {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "BuiltinFunction"
   }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
 }
 
 declare_object_type!(BuiltinFunction);
+
+pub struct BuiltinType {
+  // TODO: List, Str, Table, etc. globals
+  // TODO: special sentinel object type `Type` (also global)
+}
 
 pub struct BuiltinMethod {
   this: Value,
@@ -80,6 +89,10 @@ impl Display for BuiltinMethod {
 impl Object for BuiltinMethod {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "BuiltinMethod"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
   }
 }
 

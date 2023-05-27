@@ -138,6 +138,8 @@ fn binary_expr() {
   check_expr!(r#"a >= b"#);
   check_expr!(r#"a < b"#);
   check_expr!(r#"a <= b"#);
+  check_expr!(r#"a is b"#);
+  check_expr!(r#"a in b"#);
   check_expr!(r#"a && b"#);
   check_expr!(r#"a || b"#);
   check_expr!(r#"a ?? b"#);

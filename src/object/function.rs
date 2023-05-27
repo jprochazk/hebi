@@ -7,6 +7,8 @@ use super::ptr::Ptr;
 use super::{List, Object, Str};
 use crate::bytecode::{disasm, opcode as op};
 use crate::value::constant::Constant;
+use crate::value::Value;
+use crate::Result;
 
 #[derive(Debug)]
 pub struct Function {
@@ -33,6 +35,10 @@ impl Object for Function {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Function"
   }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
 }
 
 declare_object_type!(Function);
@@ -53,6 +59,10 @@ pub struct Generator {
 impl Object for Generator {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "Generator"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
   }
 }
 
@@ -193,6 +203,8 @@ impl Object for FunctionDescriptor {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "FunctionDescriptor"
   }
+
+  default_instance_of!();
 }
 
 declare_object_type!(FunctionDescriptor);

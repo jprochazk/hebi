@@ -290,6 +290,8 @@ mod tests {
     fn type_name(_: Ptr<Self>) -> &'static str {
       "Foo"
     }
+
+    default_instance_of!();
   }
 
   declare_object_type!(Foo);
@@ -323,6 +325,8 @@ mod tests {
     fn type_name(_: Ptr<Self>) -> &'static str {
       "Bar"
     }
+
+    default_instance_of!();
   }
 
   declare_object_type!(Bar);

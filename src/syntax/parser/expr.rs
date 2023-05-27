@@ -74,6 +74,8 @@ impl<'src> Parser<'src> {
         Op_LessEqual => ast::BinaryOp::LessEq,
         Op_More => ast::BinaryOp::More,
         Op_MoreEqual => ast::BinaryOp::MoreEq,
+        Kw_Is => ast::BinaryOp::Is,
+        Kw_In => ast::BinaryOp::In,
         _ => break,
       };
       self.bump(); // bump operator

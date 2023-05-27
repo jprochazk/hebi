@@ -177,6 +177,8 @@ impl Object for Table {
     "Table"
   }
 
+  default_instance_of!();
+
   fn keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value) -> Result<Value> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");

@@ -139,6 +139,8 @@ pub enum TokenKind {
   Kw_Super,
   #[token("for")]
   Kw_For,
+  #[token("is")]
+  Kw_Is,
   #[token("in")]
   Kw_In,
   #[token("while")]
@@ -292,6 +294,7 @@ impl TokenKind {
       TokenKind::Kw_Self => "self",
       TokenKind::Kw_Super => "super",
       TokenKind::Kw_For => "for",
+      TokenKind::Kw_Is => "is",
       TokenKind::Kw_In => "in",
       TokenKind::Kw_While => "while",
       TokenKind::Kw_Loop => "loop",

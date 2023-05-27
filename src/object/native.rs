@@ -47,6 +47,10 @@ impl Object for NativeFunction {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeFunction"
   }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
 }
 
 declare_object_type!(NativeFunction);
@@ -80,6 +84,10 @@ impl Object for NativeAsyncFunction {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeAsyncFunction"
   }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
 }
 
 declare_object_type!(NativeAsyncFunction);
@@ -99,6 +107,10 @@ impl Display for NativeClassInstance {
 impl Object for NativeClassInstance {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeClassInstance"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
   }
 
   fn named_field(mut scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
@@ -234,6 +246,10 @@ impl Display for NativeClass {
 impl Object for NativeClass {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "NativeClass"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
   }
 
   fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
