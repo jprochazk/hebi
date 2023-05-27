@@ -4,7 +4,7 @@ expression: module
 ---
 Binary(
     Binary {
-        op: Maybe,
+        op: And,
         left: GetVar(
             GetVar {
                 name: Ident(

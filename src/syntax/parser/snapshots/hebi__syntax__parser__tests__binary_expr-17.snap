@@ -1,8 +1,23 @@
 ---
 source: src/syntax/parser/tests.rs
-expression: errors
+expression: module
 ---
-invalid indentation
-| [4;31mb[0m
-
-
+Binary(
+    Binary {
+        op: Maybe,
+        left: GetVar(
+            GetVar {
+                name: Ident(
+                    "a",
+                ),
+            },
+        ),
+        right: GetVar(
+            GetVar {
+                name: Ident(
+                    "b",
+                ),
+            },
+        ),
+    },
+)

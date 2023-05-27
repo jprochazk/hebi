@@ -2,49 +2,22 @@
 source: src/syntax/parser/tests.rs
 expression: module
 ---
-Module {
-    body: [
-        Expr(
-            Binary(
-                Binary {
-                    op: Add,
-                    left: GetVar(
-                        GetVar {
-                            name: Ident(
-                                "a",
-                            ),
-                        },
-                    ),
-                    right: GetVar(
-                        GetVar {
-                            name: Ident(
-                                "b",
-                            ),
-                        },
-                    ),
-                },
-            ),
+Binary(
+    Binary {
+        op: Or,
+        left: GetVar(
+            GetVar {
+                name: Ident(
+                    "a",
+                ),
+            },
         ),
-        Expr(
-            Binary(
-                Binary {
-                    op: Add,
-                    left: GetVar(
-                        GetVar {
-                            name: Ident(
-                                "c",
-                            ),
-                        },
-                    ),
-                    right: GetVar(
-                        GetVar {
-                            name: Ident(
-                                "d",
-                            ),
-                        },
-                    ),
-                },
-            ),
+        right: GetVar(
+            GetVar {
+                name: Ident(
+                    "b",
+                ),
+            },
         ),
-    ],
-}
+    },
+)
