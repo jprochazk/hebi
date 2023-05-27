@@ -8,7 +8,7 @@ use crate as hebi;
 
 check! {
   example,
-  r#"
+  r#"#!hebi
     v := 0
     v
   "#
@@ -16,7 +16,7 @@ check! {
 
 check! {
   make_fn,
-  r#"
+  r#"#!hebi
     fn test():
       return "yo"
 
@@ -26,7 +26,7 @@ check! {
 
 check! {
   basic_fn_call,
-  r#"
+  r#"#!hebi
     fn test():
       return "yo"
 
@@ -36,7 +36,7 @@ check! {
 
 check! {
   closure_call,
-  r#"
+  r#"#!hebi
     fn outer():
       v := "yo"
       fn inner():
@@ -49,7 +49,7 @@ check! {
 
 check! {
   make_fn_with_args,
-  r#"
+  r#"#!hebi
     fn test(v):
       return v
     
@@ -59,7 +59,7 @@ check! {
 
 check! {
   call_fn_with_args,
-  r#"
+  r#"#!hebi
     fn test(v):
       return v
     
@@ -69,7 +69,7 @@ check! {
 
 check! {
   call_fn_with_args__error_not_enough_args,
-  r#"
+  r#"#!hebi
     fn test(v):
       return v
     
@@ -79,7 +79,7 @@ check! {
 
 check! {
   call_fn_with_args__error_too_many_args,
-  r#"
+  r#"#!hebi
     fn test(v):
       return v
     
@@ -89,7 +89,7 @@ check! {
 
 check! {
   call_fn_recursive,
-  r#"
+  r#"#!hebi
     fn test(v):
       if v: return "yo"
       else: return test(true)
@@ -129,7 +129,7 @@ check! {
   {
     test: "value := 100"
   },
-  r#"
+  r#"#!hebi
     import test
     test.value
   "#
@@ -141,7 +141,7 @@ check! {
   {
     test: "value := 100"
   },
-  r#"
+  r#"#!hebi
     from test import value
     value
   "#
@@ -151,12 +151,12 @@ check! {
   module
   import_fn,
   {
-    test: r#"
+    test: r#"#!hebi
       fn test(value):
         return value
     "#
   },
-  r#"
+  r#"#!hebi
     import test
     test.test("yo")
   "#
@@ -166,12 +166,12 @@ check! {
   module
   import_fn_named,
   {
-    test: r#"
+    test: r#"#!hebi
       fn test(value):
         return value
     "#
   },
-  r#"
+  r#"#!hebi
     from test import test
     test("yo")
   "#
@@ -181,7 +181,7 @@ check! {
   module
   module_vars,
   {
-    test: r#"
+    test: r#"#!hebi
       value := 100
       fn set(v):
         value = v
@@ -189,7 +189,7 @@ check! {
         return value
     "#
   },
-  r#"
+  r#"#!hebi
     import test
     
     test.set(50)
@@ -201,7 +201,7 @@ check! {
   module
   module_vars_per_module,
   {
-    test: r#"
+    test: r#"#!hebi
       value := 100
       fn set(v):
         value = v
@@ -209,7 +209,7 @@ check! {
         return value
     "#
   },
-  r#"
+  r#"#!hebi
     import test
 
     value := 200
@@ -223,12 +223,12 @@ check! {
   module
   module_fail_to_parse,
   {
-    test: r#"
+    test: r#"#!hebi
       fn invalid:
         pass
     "#
   },
-  r#"
+  r#"#!hebi
     import test
   "#
 }
@@ -237,14 +237,14 @@ check! {
   module
   module_not_found,
   {},
-  r#"
+  r#"#!hebi
     import test
   "#
 }
 
 check! {
   simple_class,
-  r#"
+  r#"#!hebi
     class T: pass
     T
   "#
@@ -252,7 +252,7 @@ check! {
 
 check! {
   simple_class_derived,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T): pass
     U
@@ -261,7 +261,7 @@ check! {
 
 check! {
   class_with_method,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self): pass
     T
@@ -270,7 +270,7 @@ check! {
 
 check! {
   class_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       fn test_0(self): pass
       fn test_1(self): pass
@@ -280,7 +280,7 @@ check! {
 
 check! {
   class_derived_with_method,
-  r#"
+  r#"#!hebi
     class T:
       pass
     class U(T):
@@ -291,7 +291,7 @@ check! {
 
 check! {
   class_derived_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       fn test_0(self): pass
@@ -302,7 +302,7 @@ check! {
 
 check! {
   class_derived_with_parent_method,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self): pass
     class U(T): pass
@@ -312,7 +312,7 @@ check! {
 
 check! {
   class_derived_with_parent_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       fn test_0(self): pass
       fn test_1(self): pass
@@ -323,7 +323,7 @@ check! {
 
 check! {
   simple_data_class,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
     T
@@ -332,7 +332,7 @@ check! {
 
 check! {
   simple_data_class_derived,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       v = 0
@@ -342,7 +342,7 @@ check! {
 
 check! {
   simple_data_class_derived_with_parent_field,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
     class U(T): pass
@@ -352,7 +352,7 @@ check! {
 
 check! {
   data_class_with_method,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test(self): pass
@@ -362,7 +362,7 @@ check! {
 
 check! {
   data_class_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test_0(self): pass
@@ -373,7 +373,7 @@ check! {
 
 check! {
   data_class_derived_with_method,
-  r#"
+  r#"#!hebi
     class T:
       pass
     class U(T):
@@ -385,7 +385,7 @@ check! {
 
 check! {
   data_class_derived_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       v = 0
@@ -397,7 +397,7 @@ check! {
 
 check! {
   data_class_derived_with_parent_method,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test(self): pass
@@ -408,7 +408,7 @@ check! {
 
 check! {
   data_class_derived_with_parent_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test_0(self): pass
@@ -420,7 +420,7 @@ check! {
 
 check! {
   init_simple_class,
-  r#"
+  r#"#!hebi
     class T: pass
     T()
   "#
@@ -428,7 +428,7 @@ check! {
 
 check! {
   init_simple_class_derived,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T): pass
     U()
@@ -437,7 +437,7 @@ check! {
 
 check! {
   init_class_with_method,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self): pass
     T()
@@ -446,7 +446,7 @@ check! {
 
 check! {
   init_class_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       fn test_0(self): pass
       fn test_1(self): pass
@@ -456,7 +456,7 @@ check! {
 
 check! {
   init_class_derived_with_method,
-  r#"
+  r#"#!hebi
     class T:
       pass
     class U(T):
@@ -467,7 +467,7 @@ check! {
 
 check! {
   init_class_derived_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       fn test_0(self): pass
@@ -478,7 +478,7 @@ check! {
 
 check! {
   init_class_derived_with_parent_method,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self): pass
     class U(T): pass
@@ -488,7 +488,7 @@ check! {
 
 check! {
   init_class_derived_with_parent_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       fn test_0(self): pass
       fn test_1(self): pass
@@ -499,7 +499,7 @@ check! {
 
 check! {
   init_simple_data_class,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
     T()
@@ -508,7 +508,7 @@ check! {
 
 check! {
   init_simple_data_class_derived,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       v = 0
@@ -518,7 +518,7 @@ check! {
 
 check! {
   init_simple_data_class_derived_with_parent_field,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
     class U(T): pass
@@ -528,7 +528,7 @@ check! {
 
 check! {
   init_data_class_with_method,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test(self): pass
@@ -538,7 +538,7 @@ check! {
 
 check! {
   init_data_class_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test_0(self): pass
@@ -549,7 +549,7 @@ check! {
 
 check! {
   init_data_class_derived_with_method,
-  r#"
+  r#"#!hebi
     class T:
       pass
     class U(T):
@@ -561,7 +561,7 @@ check! {
 
 check! {
   init_data_class_derived_with_multiple_methods,
-  r#"
+  r#"#!hebi
     class T: pass
     class U(T):
       v = 0
@@ -573,7 +573,7 @@ check! {
 
 check! {
   init_data_class_derived_with_parent_method,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test(self): pass
@@ -584,7 +584,7 @@ check! {
 
 check! {
   init_data_class_derived_with_parent_multiple_methods,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test_0(self): pass
@@ -596,7 +596,7 @@ check! {
 
 check! {
   class_with_init,
-  r#"
+  r#"#!hebi
     class T:
       fn init(self):
         self.v = 10
@@ -606,7 +606,7 @@ check! {
 
 check! {
   class_with_init_conditional_false,
-  r#"
+  r#"#!hebi
     class T:
       fn init(self, v, set):
         if set:
@@ -617,7 +617,7 @@ check! {
 
 check! {
   class_with_init_conditional_true,
-  r#"
+  r#"#!hebi
     class T:
       fn init(self, v, set):
         if set:
@@ -628,7 +628,7 @@ check! {
 
 check! {
   get_class_method,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self):
         pass
@@ -638,7 +638,7 @@ check! {
 
 check! {
   get_class_field,
-  r#"
+  r#"#!hebi
     class T:
       v = 10
     T().v
@@ -647,7 +647,7 @@ check! {
 
 check! {
   call_class_method,
-  r#"
+  r#"#!hebi
     class T:
       v = 10
       fn test(self):
@@ -658,7 +658,7 @@ check! {
 
 check! {
   call_class_method2,
-  r#"
+  r#"#!hebi
     class T:
       v = 10
       fn set(self, v):
@@ -674,7 +674,7 @@ check! {
 
 check! {
   call_class_method_derived,
-  r#"
+  r#"#!hebi
     class T:
       v = 0
       fn test(self):
@@ -688,7 +688,7 @@ check! {
 
 check! {
   call_class_method_derived2,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self, v):
         return v
@@ -701,7 +701,7 @@ check! {
 
 check! {
   call_class_method_derived3,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self, v=5):
         return v
@@ -714,7 +714,7 @@ check! {
 
 check! {
   call_class_method_derived4,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self, v):
         return v
@@ -727,7 +727,7 @@ check! {
 
 check! {
   call_class_method_derived_static,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self, v):
         return v
@@ -740,7 +740,7 @@ check! {
 
 check! {
   call_class_method_derived_static2,
-  r#"
+  r#"#!hebi
     class T:
       fn test(self, v):
         return v
@@ -753,7 +753,7 @@ check! {
 
 check! {
   call_class_nested_inheritance_method,
-  r#"
+  r#"#!hebi
     class A:
       fn test(self, v):
         return v + 1
@@ -770,7 +770,7 @@ check! {
 
 check! {
   call_class_nested_inheritance_method_static_call,
-  r#"
+  r#"#!hebi
     class A:
       fn test(self, v):
         return v + 1
@@ -795,7 +795,7 @@ async fn subsequent_eval() {
 
 check! {
   nested_optional_access,
-  r#"
+  r#"#!hebi
     v := none
 
     ?v.a["b"].c ?? "test"
@@ -804,7 +804,7 @@ check! {
 
 check! {
   empty_table,
-  r#"
+  r#"#!hebi
     v := {}
     v
   "#
@@ -812,7 +812,7 @@ check! {
 
 check! {
   nested_table,
-  r#"
+  r#"#!hebi
     v := {a: {b: 10}}
     v
   "#
@@ -820,7 +820,7 @@ check! {
 
 check! {
   table_access_named,
-  r#"
+  r#"#!hebi
     v := {a: 10}
     v.a
   "#
@@ -828,7 +828,7 @@ check! {
 
 check! {
   table_access_keyed,
-  r#"
+  r#"#!hebi
     v := {a: 10}
     v["a"]
   "#
@@ -836,7 +836,7 @@ check! {
 
 check! {
   table_nested_access_keyed,
-  r#"
+  r#"#!hebi
     v := {a: {b: 10}}
     v["a"]["b"]
   "#
@@ -844,7 +844,7 @@ check! {
 
 check! {
   table_access_unknown,
-  r#"
+  r#"#!hebi
     v := {}
     v["a"]
   "#
@@ -852,7 +852,7 @@ check! {
 
 check! {
   arithmetic,
-  r#"
+  r#"#!hebi
     v := 10 # 10
     v += 1  # 11
     v -= 1  # 10
@@ -865,7 +865,7 @@ check! {
 
 check! {
   unary_invert,
-  r#"
+  r#"#!hebi
     v := 20
     -v
   "#
@@ -873,7 +873,7 @@ check! {
 
 check! {
   unary_not,
-  r#"
+  r#"#!hebi
     v := false
     !v
   "#
@@ -881,7 +881,7 @@ check! {
 
 check! {
   unary_not_int,
-  r#"
+  r#"#!hebi
     v := 0
     !v
   "#
@@ -889,7 +889,7 @@ check! {
 
 check! {
   unary_not_float,
-  r#"
+  r#"#!hebi
     v := 0.0
     !v
   "#
@@ -897,7 +897,7 @@ check! {
 
 check! {
   unary_not_none,
-  r#"
+  r#"#!hebi
     v := none
     !v
   "#
@@ -905,7 +905,7 @@ check! {
 
 check! {
   unary_not_str,
-  r#"
+  r#"#!hebi
     v := "test"
     !v
   "#
@@ -913,7 +913,7 @@ check! {
 
 check! {
   if_stmt,
-  r#"
+  r#"#!hebi
     v := true
     result := none
     if v:
@@ -926,7 +926,7 @@ check! {
 
 check! {
   if_stmt_false,
-  r#"
+  r#"#!hebi
     v := false
     result := none
     if v:
@@ -939,112 +939,112 @@ check! {
 
 check! {
   more_optional_access,
-  r#"
+  r#"#!hebi
     "a" ?? "b"
   "#
 }
 
 check! {
   logical_or_expr_return_lhs,
-  r#"
+  r#"#!hebi
     "a" || "b"
   "#
 }
 
 check! {
   logical_or_expr_return_rhs,
-  r#"
+  r#"#!hebi
     false || "b"
   "#
 }
 
 check! {
   logical_and_expr_return_rhs,
-  r#"
+  r#"#!hebi
     "a" && "b"
   "#
 }
 
 check! {
   logical_and_expr_return_lhs,
-  r#"
+  r#"#!hebi
     false && "b"
   "#
 }
 
 check! {
   list_indexing_zero,
-  r#"
+  r#"#!hebi
     [0, 1, 2][0]
   "#
 }
 
 check! {
   list_indexing_positive,
-  r#"
+  r#"#!hebi
     [0, 1, 2][1]
   "#
 }
 
 check! {
   list_indexing_negative,
-  r#"
+  r#"#!hebi
     [0, 1, 2][-1]
   "#
 }
 
 check! {
   list_indexing_invalid,
-  r#"
+  r#"#!hebi
     [0, 1, 2]["yo"]
   "#
 }
 
 check! {
   list_indexing_oob,
-  r#"
+  r#"#!hebi
     [0, 1, 2][100]
   "#
 }
 
 check! {
   list_indexing_zero_opt,
-  r#"
+  r#"#!hebi
     ?[0, 1, 2][0]
   "#
 }
 
 check! {
   list_indexing_positive_opt,
-  r#"
+  r#"#!hebi
     ?[0, 1, 2][1]
   "#
 }
 
 check! {
   list_indexing_negative_opt,
-  r#"
+  r#"#!hebi
     ?[0, 1, 2][-1]
   "#
 }
 
 check! {
   list_indexing_invalid_opt,
-  r#"
+  r#"#!hebi
     ?[0, 1, 2]["yo"]
   "#
 }
 
 check! {
   list_indexing_oob_opt,
-  r#"
+  r#"#!hebi
     ?[0, 1, 2][100]
   "#
 }
 
 check! {
   for_iter_list,
-  r#"
+  r#"#!hebi
     for item in ["a", "b", "c"]:
       print item
   "#
@@ -1052,7 +1052,7 @@ check! {
 
 check! {
   for_iter_iterable_class,
-  r#"
+  r#"#!hebi
     class Counter:
       fn init(self, max):
         self.n = 0
@@ -1077,7 +1077,7 @@ check! {
 
 check! {
   builtin_list_methods,
-  r#"
+  r#"#!hebi
     v := [0, 1, 2]
 
     print "len", v.len()
@@ -1094,49 +1094,49 @@ check! {
 
 check! {
   global_builtin_functions__to_int__float,
-  r#"
+  r#"#!hebi
     to_int(10.5)
   "#
 }
 
 check! {
   global_builtin_functions__to_int__int,
-  r#"
+  r#"#!hebi
     to_int(10)
   "#
 }
 
 check! {
   global_builtin_functions__to_int__bad_input,
-  r#"
+  r#"#!hebi
     to_int({})
   "#
 }
 
 check! {
   global_builtin_functions__to_float__float,
-  r#"
+  r#"#!hebi
     to_float(10.5)
   "#
 }
 
 check! {
   global_builtin_functions__to_float__int,
-  r#"
+  r#"#!hebi
     to_float(10)
   "#
 }
 
 check! {
   global_builtin_functions__to_float__bad_input,
-  r#"
+  r#"#!hebi
     to_float({})
   "#
 }
 
 check! {
   global_builtin_functions__to_bool,
-  r#"
+  r#"#!hebi
     print "true", to_bool(true)
     print "false", to_bool(false)
     print "10.0", to_bool(10.0)
@@ -1152,7 +1152,7 @@ check! {
 
 check! {
   global_builtin_functions__to_str,
-  r#"
+  r#"#!hebi
     print to_str(true)
     print to_str(false)
     print to_str(100)
@@ -1166,7 +1166,7 @@ check! {
 
 check! {
   global_builtin_functions__type_of,
-  r#"
+  r#"#!hebi
     print type_of(true)
     print type_of(false)
     print type_of(100)
@@ -1180,7 +1180,7 @@ check! {
 
 check! {
   make_large_table,
-  r#"
+  r#"#!hebi
     {
       version: "0.3.3",
       update_time: 1684753441.253474,
@@ -1207,7 +1207,7 @@ check! {
   module
   regression__variable_scope_ends_too_early,
   {
-    http: r#"
+    http: r#"#!hebi
       fn fetch(url, opts):
         return {
           version: "0.3.3",
@@ -1229,7 +1229,7 @@ check! {
           ]
         }
     "#,
-    utils: r#"
+    utils: r#"#!hebi
       fn get_element(list, index):
         return list[index]
       fn format(fmt, a, b):
@@ -1242,7 +1242,7 @@ check! {
         pass
     "#
   },
-  r#"
+  r#"#!hebi
     from http import fetch
     from utils import get_element, format, len, join, push
 
