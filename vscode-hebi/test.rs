@@ -81,6 +81,7 @@ check! {
       fn done(self):
         return self.n >= self.max
 
+    for v in counter(10):
     for v in Counter(10):
       print v
 

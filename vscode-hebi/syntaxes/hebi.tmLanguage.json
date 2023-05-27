@@ -88,10 +88,25 @@
           "name": "constant.language.hebi"
         },
         {
-          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "match": "(\\?\\?)|(\\|\\|)|(&&)|(\\!)|(\\?)",
+          "name": "keyword.operator.logical.hebi"
+        },
+        {
+          "match": "\\b(is|in)\\b",
+          "name": "keyword.operator.logical.hebi"
+        },
+        {
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(?=\\()",
           "name": "meta.function.call.hebi",
           "captures": {
             "1": { "name": "entity.name.function.hebi" }
+          }
+        },
+        {
+          "match": "\\b([A-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "name": "meta.function.call.hebi",
+          "captures": {
+            "1": { "name": "entity.name.type.class.hebi" }
           }
         },
         {
@@ -117,10 +132,6 @@
         {
           "match": "\\+\\=|-\\=|\\*\\=|/\\=|%\\=|\\*\\*\\=|\\?\\?\\=",
           "name": "keyword.operator.assignment.compound.hebi"
-        },
-        {
-          "match": "(\\?\\?)|(\\|\\|)|(&&)|(\\!)|(\\?)|(in)|(is)",
-          "name": "keyword.operator.logical.hebi"
         },
         {
           "match": "(\\+)|(\\-)|(\\*)|(/)|(%)|(\\*\\*)",
