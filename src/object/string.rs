@@ -5,6 +5,8 @@ use std::ops::Deref;
 use beef::lean::Cow;
 
 use super::{Object, Ptr};
+use crate::value::Value;
+use crate::{Result, Scope};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Str {
@@ -28,11 +30,22 @@ impl Str {
   pub fn as_str(&self) -> &str {
     self.data.as_ref()
   }
+
+  pub fn concat(&self, other: &str) -> Self {
+    let mut out = String::with_capacity(self.len() + other.len());
+    out.push_str(self.as_str());
+    out.push_str(other);
+    Self::owned(out)
+  }
 }
 
 impl Object for Str {
   fn type_name(_: Ptr<Self>) -> &'static str {
     "String"
+  }
+
+  fn add(scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<Value> {
+    Ok(Value::object(scope.alloc(this.concat(other.as_str()))))
   }
 }
 
