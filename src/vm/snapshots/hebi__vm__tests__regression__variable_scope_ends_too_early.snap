@@ -30,31 +30,29 @@ __format # should be the `format` function
 
 
 # Result:
-Ok(
-    Object(
-        Function {
-            descriptor: FunctionDescriptor {
-                name: "format",
-                params: Params {
-                    has_self: false,
-                    min: 3,
-                    max: 3,
-                },
-                upvalues: RefCell {
-                    value: [],
-                },
-                frame_size: 4,
-                instructions: 5,
-                constants: 0,
+Object(
+    Function {
+        descriptor: FunctionDescriptor {
+            name: "format",
+            params: Params {
+                has_self: false,
+                min: 3,
+                max: 3,
             },
-            upvalues: [],
-            module_id: ModuleId(
-                Some(
-                    2,
-                ),
-            ),
+            upvalues: RefCell {
+                value: [],
+            },
+            frame_size: 4,
+            instructions: 5,
+            constants: 0,
         },
-    ),
+        upvalues: [],
+        module_id: ModuleId(
+            Some(
+                2,
+            ),
+        ),
+    },
 )
 
 # Output:

@@ -13,8 +13,6 @@ U().test(none)
 
 
 # Result:
-Ok(
-    Int(
-        5,
-    ),
+Int(
+    5,
 )

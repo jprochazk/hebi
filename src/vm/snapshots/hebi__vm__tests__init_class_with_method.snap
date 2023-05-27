@@ -9,38 +9,36 @@ T()
 
 
 # Result:
-Ok(
-    Object(
-        ClassInstance {
-            name: "T",
-            fields: {
-                "test": Object(
-                    Function {
-                        descriptor: FunctionDescriptor {
-                            name: "test",
-                            params: Params {
-                                has_self: true,
-                                min: 0,
-                                max: 0,
-                            },
-                            upvalues: RefCell {
-                                value: [],
-                            },
-                            frame_size: 1,
-                            instructions: 2,
-                            constants: 0,
+Object(
+    ClassInstance {
+        name: "T",
+        fields: {
+            "test": Object(
+                Function {
+                    descriptor: FunctionDescriptor {
+                        name: "test",
+                        params: Params {
+                            has_self: true,
+                            min: 0,
+                            max: 0,
                         },
-                        upvalues: [],
-                        module_id: ModuleId(
-                            None,
-                        ),
+                        upvalues: RefCell {
+                            value: [],
+                        },
+                        frame_size: 1,
+                        instructions: 2,
+                        constants: 0,
                     },
-                ),
-            },
-            parent: None,
-            is_frozen: Cell {
-                value: true,
-            },
+                    upvalues: [],
+                    module_id: ModuleId(
+                        None,
+                    ),
+                },
+            ),
         },
-    ),
+        parent: None,
+        is_frozen: Cell {
+            value: true,
+        },
+    },
 )

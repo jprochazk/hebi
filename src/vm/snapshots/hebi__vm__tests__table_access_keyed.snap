@@ -8,8 +8,6 @@ v["a"]
 
 
 # Result:
-Ok(
-    Int(
-        10,
-    ),
+Int(
+    10,
 )

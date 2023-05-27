@@ -8,14 +8,12 @@ T
 
 
 # Result:
-Ok(
-    Object(
-        ClassType {
-            name: "T",
-            init: None,
-            fields: {},
-            methods: {},
-            parent: None,
-        },
-    ),
+Object(
+    ClassType {
+        name: "T",
+        init: None,
+        fields: {},
+        methods: {},
+        parent: None,
+    },
 )

@@ -12,71 +12,69 @@ U
 
 
 # Result:
-Ok(
-    Object(
-        ClassType {
-            name: "U",
-            init: None,
-            fields: {
-                "v": Int(
-                    0,
-                ),
-            },
-            methods: {},
-            parent: Some(
-                ClassType {
-                    name: "T",
-                    init: None,
-                    fields: {
-                        "v": Int(
-                            0,
-                        ),
-                    },
-                    methods: {
-                        "test_0": Function {
-                            descriptor: FunctionDescriptor {
-                                name: "test_0",
-                                params: Params {
-                                    has_self: true,
-                                    min: 0,
-                                    max: 0,
-                                },
-                                upvalues: RefCell {
-                                    value: [],
-                                },
-                                frame_size: 1,
-                                instructions: 2,
-                                constants: 0,
-                            },
-                            upvalues: [],
-                            module_id: ModuleId(
-                                None,
-                            ),
-                        },
-                        "test_1": Function {
-                            descriptor: FunctionDescriptor {
-                                name: "test_1",
-                                params: Params {
-                                    has_self: true,
-                                    min: 0,
-                                    max: 0,
-                                },
-                                upvalues: RefCell {
-                                    value: [],
-                                },
-                                frame_size: 1,
-                                instructions: 2,
-                                constants: 0,
-                            },
-                            upvalues: [],
-                            module_id: ModuleId(
-                                None,
-                            ),
-                        },
-                    },
-                    parent: None,
-                },
+Object(
+    ClassType {
+        name: "U",
+        init: None,
+        fields: {
+            "v": Int(
+                0,
             ),
         },
-    ),
+        methods: {},
+        parent: Some(
+            ClassType {
+                name: "T",
+                init: None,
+                fields: {
+                    "v": Int(
+                        0,
+                    ),
+                },
+                methods: {
+                    "test_0": Function {
+                        descriptor: FunctionDescriptor {
+                            name: "test_0",
+                            params: Params {
+                                has_self: true,
+                                min: 0,
+                                max: 0,
+                            },
+                            upvalues: RefCell {
+                                value: [],
+                            },
+                            frame_size: 1,
+                            instructions: 2,
+                            constants: 0,
+                        },
+                        upvalues: [],
+                        module_id: ModuleId(
+                            None,
+                        ),
+                    },
+                    "test_1": Function {
+                        descriptor: FunctionDescriptor {
+                            name: "test_1",
+                            params: Params {
+                                has_self: true,
+                                min: 0,
+                                max: 0,
+                            },
+                            upvalues: RefCell {
+                                value: [],
+                            },
+                            frame_size: 1,
+                            instructions: 2,
+                            constants: 0,
+                        },
+                        upvalues: [],
+                        module_id: ModuleId(
+                            None,
+                        ),
+                    },
+                },
+                parent: None,
+            },
+        ),
+    },
 )

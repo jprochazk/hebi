@@ -13,8 +13,6 @@ result
 
 
 # Result:
-Ok(
-    Object(
-        "true",
-    ),
+Object(
+    "true",
 )

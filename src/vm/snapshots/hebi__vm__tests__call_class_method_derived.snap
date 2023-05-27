@@ -14,8 +14,6 @@ U().test()
 
 
 # Result:
-Ok(
-    Int(
-        0,
-    ),
+Int(
+    0,
 )

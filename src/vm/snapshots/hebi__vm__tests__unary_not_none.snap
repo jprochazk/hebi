@@ -8,8 +8,6 @@ v := none
 
 
 # Result:
-Ok(
-    Bool(
-        true,
-    ),
+Bool(
+    true,
 )

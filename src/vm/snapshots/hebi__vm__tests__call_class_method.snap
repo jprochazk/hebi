@@ -11,8 +11,6 @@ T().test()
 
 
 # Result:
-Ok(
-    Int(
-        10,
-    ),
+Int(
+    10,
 )

@@ -7,14 +7,4 @@ to_int({})
 
 
 # Result:
-Err(
-    Vm(
-        SpannedError {
-            span: Span {
-                start: 0,
-                end: 0,
-            },
-            message: "cannot convert `<table>` to a float",
-        },
-    ),
-)
+runtime error: cannot convert `<table>` to a float

@@ -8,8 +8,6 @@ v
 
 
 # Result:
-Ok(
-    Object(
-        {},
-    ),
+Object(
+    {},
 )

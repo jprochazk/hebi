@@ -7,18 +7,6 @@ import test
 
 
 # Result:
-Err(
-    Syntax(
-        SyntaxError {
-            errors: [
-                SpannedError {
-                    span: Span {
-                        start: 10,
-                        end: 11,
-                    },
-                    message: "expected `(`",
-                },
-            ],
-        },
-    ),
-)
+syntax error:
+expected `(`
+

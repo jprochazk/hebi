@@ -25,9 +25,7 @@ for v in Counter(10):
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 0

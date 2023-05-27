@@ -17,9 +17,7 @@ print "join", v.join(", ")
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 len 3

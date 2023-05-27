@@ -7,8 +7,6 @@ to_float(10.5)
 
 
 # Result:
-Ok(
-    Float(
-        10.5,
-    ),
+Float(
+    10.5,
 )

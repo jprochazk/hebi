@@ -7,14 +7,4 @@ import test
 
 
 # Result:
-Err(
-    Vm(
-        SpannedError {
-            span: Span {
-                start: 0,
-                end: 0,
-            },
-            message: "module `test` not found",
-        },
-    ),
-)
+runtime error: module `test` not found

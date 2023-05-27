@@ -16,8 +16,6 @@ t.get()
 
 
 # Result:
-Ok(
-    Int(
-        20,
-    ),
+Int(
+    20,
 )

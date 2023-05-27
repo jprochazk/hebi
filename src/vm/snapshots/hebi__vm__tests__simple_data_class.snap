@@ -9,18 +9,16 @@ T
 
 
 # Result:
-Ok(
-    Object(
-        ClassType {
-            name: "T",
-            init: None,
-            fields: {
-                "v": Int(
-                    0,
-                ),
-            },
-            methods: {},
-            parent: None,
+Object(
+    ClassType {
+        name: "T",
+        init: None,
+        fields: {
+            "v": Int(
+                0,
+            ),
         },
-    ),
+        methods: {},
+        parent: None,
+    },
 )

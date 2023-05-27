@@ -9,8 +9,6 @@ v := none
 
 
 # Result:
-Ok(
-    Object(
-        "test",
-    ),
+Object(
+    "test",
 )

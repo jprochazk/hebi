@@ -8,14 +8,4 @@ v.a
 
 
 # Result:
-Err(
-    Vm(
-        SpannedError {
-            span: Span {
-                start: 0,
-                end: 0,
-            },
-            message: "`<table>` does not support field access",
-        },
-    ),
-)
+runtime error: `<table>` does not support field access

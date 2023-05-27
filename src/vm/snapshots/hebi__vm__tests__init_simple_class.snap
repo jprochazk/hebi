@@ -8,15 +8,13 @@ T()
 
 
 # Result:
-Ok(
-    Object(
-        ClassInstance {
-            name: "T",
-            fields: {},
-            parent: None,
-            is_frozen: Cell {
-                value: true,
-            },
+Object(
+    ClassInstance {
+        name: "T",
+        fields: {},
+        parent: None,
+        is_frozen: Cell {
+            value: true,
         },
-    ),
+    },
 )

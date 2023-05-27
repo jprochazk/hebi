@@ -12,8 +12,6 @@ test(false)
 
 
 # Result:
-Ok(
-    Object(
-        "yo",
-    ),
+Object(
+    "yo",
 )

@@ -7,8 +7,6 @@ expression: snapshot
 
 
 # Result:
-Ok(
-    Object(
-        "a",
-    ),
+Object(
+    "a",
 )

@@ -8,9 +8,7 @@ for item in ["a", "b", "c"]:
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 a

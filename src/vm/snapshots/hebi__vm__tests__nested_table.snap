@@ -8,16 +8,14 @@ v
 
 
 # Result:
-Ok(
-    Object(
-        {
-            "a": Object(
-                {
-                    "b": Int(
-                        10,
-                    ),
-                },
-            ),
-        },
-    ),
+Object(
+    {
+        "a": Object(
+            {
+                "b": Int(
+                    10,
+                ),
+            },
+        ),
+    },
 )

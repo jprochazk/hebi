@@ -17,8 +17,6 @@ C().test(0)
 
 
 # Result:
-Ok(
-    Int(
-        3,
-    ),
+Int(
+    3,
 )

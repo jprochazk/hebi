@@ -9,23 +9,21 @@ U()
 
 
 # Result:
-Ok(
-    Object(
-        ClassInstance {
-            name: "U",
-            fields: {},
-            parent: Some(
-                ClassType {
-                    name: "T",
-                    init: None,
-                    fields: {},
-                    methods: {},
-                    parent: None,
-                },
-            ),
-            is_frozen: Cell {
-                value: true,
+Object(
+    ClassInstance {
+        name: "U",
+        fields: {},
+        parent: Some(
+            ClassType {
+                name: "T",
+                init: None,
+                fields: {},
+                methods: {},
+                parent: None,
             },
+        ),
+        is_frozen: Cell {
+            value: true,
         },
-    ),
+    },
 )

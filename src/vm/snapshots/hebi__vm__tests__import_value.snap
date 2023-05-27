@@ -8,8 +8,6 @@ test.value
 
 
 # Result:
-Ok(
-    Int(
-        100,
-    ),
+Int(
+    100,
 )

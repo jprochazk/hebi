@@ -11,6 +11,4 @@ class T:
 
 
 # Result:
-Ok(
-    None,
-)
+None

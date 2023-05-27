@@ -7,6 +7,4 @@ expression: snapshot
 
 
 # Result:
-Ok(
-    None,
-)
+None

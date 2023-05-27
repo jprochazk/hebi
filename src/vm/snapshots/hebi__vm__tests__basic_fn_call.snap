@@ -10,8 +10,6 @@ test()
 
 
 # Result:
-Ok(
-    Object(
-        "yo",
-    ),
+Object(
+    "yo",
 )

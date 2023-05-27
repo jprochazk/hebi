@@ -9,8 +9,6 @@ T().v
 
 
 # Result:
-Ok(
-    Int(
-        10,
-    ),
+Int(
+    10,
 )

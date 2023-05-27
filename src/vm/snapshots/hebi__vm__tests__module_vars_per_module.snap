@@ -12,8 +12,6 @@ test.get()
 
 
 # Result:
-Ok(
-    Int(
-        50,
-    ),
+Int(
+    50,
 )

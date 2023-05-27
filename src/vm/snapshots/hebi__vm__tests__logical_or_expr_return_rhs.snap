@@ -7,8 +7,6 @@ false || "b"
 
 
 # Result:
-Ok(
-    Object(
-        "b",
-    ),
+Object(
+    "b",
 )

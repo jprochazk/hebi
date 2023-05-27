@@ -16,9 +16,7 @@ print "\"test\"", to_bool("test")
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 true true

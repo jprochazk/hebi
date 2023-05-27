@@ -7,8 +7,6 @@ expression: snapshot
 
 
 # Result:
-Ok(
-    Int(
-        1,
-    ),
+Int(
+    1,
 )

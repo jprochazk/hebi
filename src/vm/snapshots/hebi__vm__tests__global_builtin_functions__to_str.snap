@@ -14,9 +14,7 @@ print to_str("test")
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 true

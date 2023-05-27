@@ -14,9 +14,7 @@ print type_of("test")
 
 
 # Result:
-Ok(
-    None,
-)
+None
 
 # Output:
 bool
