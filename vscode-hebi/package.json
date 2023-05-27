@@ -43,6 +43,16 @@
         "language": "hebi",
         "scopeName": "source.hebi",
         "path": "./syntaxes/hebi.tmLanguage.json"
+      },
+      {
+        "path": "./syntaxes/highlight-hebi-string.json",
+        "scopeName": "inline-hebi.injection",
+        "injectTo": [
+          "source.rust"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.hebi": "hebi"
+        }
       }
     ]
   }
