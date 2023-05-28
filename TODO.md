@@ -74,34 +74,80 @@
 
 
 
+## main/call
+```
+thread.main(function: Ptr<Function>) async
+  push_frame(function, &[])
+  run().await
+  pop_frame()
+  take(self.acc)
 
+thread.run() async
+  loop
+    frame = current()
+    match dispatch(frame)
+      Poll(future) -> self.acc = future.await
+      Yield -> break
+    
+
+thread.call(function: Ptr<Any>, args) -> Result<Value> async
+  match function.call(get_empty_scope(), args)
+    Return(value) -> value
+    Poll(future) -> future.await
+    Dispatch ->
+      run().await
+      take(self.acc)
+
+// TODO
+thread.op_call(callee, count)
+
+
+trait Object
+  call(scope, this: Ptr<Self>, args: Args) -> Result<Call>
+
+
+impl for Ptr<Function>
+  call(scope, this: Ptr<Function>, args: Args) -> Result<Call>
+    check_args?
+    if !has_self
+      scope.stack.push(this)
+    scope.stack.extend_from_within(args.to_range())
+    scope.stack.extend(frame_size - args.count - (has_self as usize))
+    push_frame()
+
+enum Call
+  Return(value)
+  Poll(future)
+  Dispatch
+```
+  
+
+
+
+
+### class type trait
+can be derived or implemented manually
+```
 trait Type {
   fn build(&mut ClassBuilder) -> ClassDescriptor;
 }
 
-.class(str, impl Type)
+NativeModuleBuilder
+  .class(str, impl Type)
+
+```
 
 
-
-
-
-IntoValue should require Send, but not for internal use
-
-split into two traits,
-
-pub trait IntoValue: Send
-
-(name pending)
-priv trait IntoValueUnsafe: ?Send
-
-impl IntoValue where T: IntoValueUnsafe 
+### IntoValue changes
+users may only store userdata which is Send, so intovalue does not have to require send, because the only way to create a value is
+out of Send things.
 
 public API accepts impl IntoValue
 
 
 
 
-error reporting
+### error reporting
 
 Map code offset -> span
 

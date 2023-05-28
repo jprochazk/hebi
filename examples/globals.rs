@@ -27,9 +27,16 @@ from test import example
 
 example(50)
 
+print "in hebi"
 print "external:", external
 print "internal:", internal
+print ""
 "#,
     )
     .unwrap();
+
+  println!("outside hebi");
+  for (key, value) in hebi.global().entries() {
+    println!("{key}: {value}");
+  }
 }

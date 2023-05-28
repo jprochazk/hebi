@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::Config;
 use crate::object::module::{Module, ModuleId};
 use crate::object::native::NativeClass;
-use crate::object::{module, Ptr, Str, Table};
+use crate::object::{module, table, Ptr, Str, Table};
 use crate::value::Value;
 use crate::Result;
 
@@ -170,6 +170,10 @@ impl Global {
 
   pub fn io(&self) -> &Io {
     &self.inner.io
+  }
+
+  pub fn entries(&self) -> table::Entries<'_> {
+    self.inner.globals.entries()
   }
 }
 

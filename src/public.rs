@@ -15,7 +15,7 @@ use futures_util::TryFutureExt;
 use self::value::FromValuePack;
 use crate::object::function::Disassembly;
 use crate::object::native::NativeClassInstance;
-use crate::object::{Ptr, Type};
+use crate::object::{table, Ptr, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm;
 use crate::vm::global::{Input, Output};
@@ -270,6 +270,29 @@ impl<'cx> Global<'cx> {
 
   pub fn input(&mut self) -> RefMut<'_, dyn Input> {
     RefMut::map(self.inner.io().input.borrow_mut(), |input| input.as_mut())
+  }
+
+  pub fn entries<'a>(&'a self) -> GlobalEntries<'a, 'cx> {
+    GlobalEntries {
+      entries: self.inner.entries(),
+      lifetime: PhantomData,
+    }
+  }
+}
+
+pub struct GlobalEntries<'a, 'cx> {
+  entries: table::Entries<'a>,
+  lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'a, 'cx> Iterator for GlobalEntries<'a, 'cx> {
+  type Item = (Str<'cx>, Value<'cx>);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self
+      .entries
+      .next()
+      .map(|(key, value)| unsafe { (key.bind_raw::<'cx>(), value.bind_raw::<'cx>()) })
   }
 }
 
