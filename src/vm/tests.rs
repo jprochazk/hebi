@@ -149,6 +149,20 @@ check! {
 
 check! {
   module
+  use_import_in_nested_scope,
+  {
+    test: "value := 100"
+  },
+  r#"#!hebi
+    import test
+    fn foo():
+      print test
+    foo()
+  "#
+}
+
+check! {
+  module
   import_fn,
   {
     test: r#"#!hebi

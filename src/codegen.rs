@@ -162,7 +162,7 @@ impl<'src> State<'src> {
     name: &Cow<'src, str>,
     function_index: usize,
   ) -> Option<op::Upvalue> {
-    if function_index < 2 {
+    if function_index < 1 {
       return None;
     }
 
