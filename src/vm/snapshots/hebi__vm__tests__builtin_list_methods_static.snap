@@ -1,0 +1,32 @@
+---
+source: src/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := [0, 1, 2]
+
+print "len", List.len(v)
+print "is_empty", List.is_empty(v)
+print "get(1)", List.get(v, 1)
+print "pop()", List.pop(v)
+print "set", List.set(v, 0, List.get(v, 1))
+print "join", List.join(v, ", ")
+print "push(2)", List.push(v, 2)
+print "extend(3, 0)", List.extend(v, 3, 0)
+print "join", List.join(v, ", ")
+
+
+# Result:
+None
+
+# Output:
+len 3
+is_empty false
+get(1) 1
+pop() 2
+set none
+join 1, 1
+push(2) none
+extend(3, 0) none
+join 1, 1, 2, 0, 0, 0
+

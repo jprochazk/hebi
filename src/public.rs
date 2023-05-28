@@ -337,6 +337,11 @@ impl<'cx> Scope<'cx> {
       .await
       .map(|value| unsafe { value.bind_raw::<'cx>() })
   }
+
+  pub(crate) fn consume_args(&mut self, n: usize) {
+    self.args.start += n;
+    self.args.count -= n;
+  }
 }
 
 impl<'cx> Global<'cx> {

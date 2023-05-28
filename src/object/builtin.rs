@@ -1,6 +1,9 @@
 use std::fmt::{Debug, Display};
 
+use indexmap::IndexMap;
+
 use super::{Object, Ptr, Str};
+use crate::object::list;
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::vm::thread::util::is_truthy;
@@ -10,13 +13,14 @@ pub type Callback = fn(Scope<'_>) -> Result<Value>;
 pub type MethodCallback = fn(Value, Scope<'_>) -> Result<Value>;
 pub type TypedMethodCallback<T> = fn(Ptr<T>, Scope<'_>) -> Result<Value>;
 
+#[derive(Clone)]
 pub struct BuiltinFunction {
-  pub name: Ptr<Str>,
+  pub name: &'static str,
   function: Callback,
 }
 
 impl BuiltinFunction {
-  pub fn new(name: Ptr<Str>, function: Callback) -> Self {
+  pub fn new(name: &'static str, function: Callback) -> Self {
     Self { name, function }
   }
 
@@ -53,7 +57,84 @@ declare_object_type!(BuiltinFunction);
 //   // TODO: List, Str, Table, etc. globals
 //   // TODO: special sentinel object type `Type` (also global)
 // }
+#[derive(Debug)]
+pub struct BuiltinType {
+  pub name: &'static str,
+  methods: IndexMap<&'static str, BuiltinFunction>,
+}
 
+impl BuiltinType {
+  pub fn builder(name: &'static str) -> BuiltinTypeBuilder {
+    BuiltinTypeBuilder {
+      name,
+      methods: IndexMap::new(),
+    }
+  }
+}
+
+pub struct BuiltinTypeBuilder {
+  name: &'static str,
+  methods: IndexMap<&'static str, BuiltinFunction>,
+}
+
+impl BuiltinTypeBuilder {
+  pub fn method(mut self, name: &'static str, f: Callback) -> Self {
+    self.methods.insert(name, BuiltinFunction::new(name, f));
+    self
+  }
+
+  pub fn finish(self) -> BuiltinType {
+    BuiltinType {
+      name: self.name,
+      methods: self.methods,
+    }
+  }
+}
+
+macro_rules! builtin_type {
+  ($name:ident { $($method_name:ident : $method_cb:expr),* }) => {
+    $crate::object::builtin::BuiltinType::builder(stringify!($name))
+      $(.method(stringify!($method_name), $method_cb))*
+      .finish()
+  }
+}
+
+impl Display for BuiltinType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<builtin type `{}`>", self.name)
+  }
+}
+
+impl Object for BuiltinType {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "BuiltinType"
+  }
+
+  fn named_field(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
+    Ok(
+      this
+        .named_field_opt(scope, name.clone())?
+        .ok_or_else(|| error!("`{this}` has no field `{name}`"))?,
+    )
+  }
+
+  fn named_field_opt(scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
+    Ok(
+      this
+        .methods
+        .get(name.as_str())
+        .map(|method| Value::object(scope.alloc(method.clone()))),
+    )
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
+}
+
+declare_object_type!(BuiltinType);
+
+#[derive(Clone)]
 pub struct BuiltinMethod {
   this: Value,
   function: MethodCallback,
@@ -106,6 +187,26 @@ macro_rules! builtin_method {
         let function: $crate::object::builtin::TypedMethodCallback<Self> = $function;
         function(this, scope)
       };
+    cb
+  }};
+}
+
+macro_rules! builtin_method_static {
+  ($T:ident, $function:expr) => {{
+    let cb: $crate::object::builtin::Callback = |mut scope: $crate::Scope<'_>| {
+      use $crate::public::Unbind;
+      let this = scope.param::<$crate::Value>(0)?;
+      scope.consume_args(1);
+      let this = match this.clone().unbind().to_object::<$T>() {
+        Some(value) => value,
+        None => fail!(
+          "`{this}` is not an instance of {}",
+          std::any::type_name::<$T>()
+        ),
+      };
+      let function: $crate::object::builtin::TypedMethodCallback<$T> = $function;
+      function(this, scope)
+    };
     cb
   }};
 }
@@ -169,12 +270,22 @@ fn type_of(scope: Scope<'_>) -> Result<Value> {
 
 macro_rules! bind_builtin {
   ($global:ident, $builtin:ident) => {{
-    let name = $global.intern(stringify!($builtin));
+    let name = stringify!($builtin);
     $global.set(
-      name.clone(),
+      $global.intern(name),
       $crate::value::Value::object($global.alloc($crate::object::builtin::BuiltinFunction::new(
         name, $builtin,
       ))),
+    )
+  }};
+}
+
+macro_rules! bind_builtin_type {
+  ($global:ident, $builtin:expr) => {{
+    let builtin = $builtin;
+    $global.set(
+      $global.intern(builtin.name),
+      $crate::value::Value::object($global.alloc(builtin)),
     )
   }};
 }
@@ -185,4 +296,6 @@ pub fn register_builtin_functions(global: &Global) {
   bind_builtin!(global, to_bool);
   bind_builtin!(global, to_str);
   bind_builtin!(global, type_of);
+
+  list::register_builtin_functions(global);
 }

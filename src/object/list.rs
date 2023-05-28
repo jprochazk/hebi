@@ -6,6 +6,7 @@ use super::builtin::BuiltinMethod;
 use super::{Object, Ptr, Str};
 use crate::util::{JoinIter, MAX_SAFE_INT, MIN_SAFE_INT};
 use crate::value::Value;
+use crate::vm::global::Global;
 use crate::{Result, Scope, Unbind};
 
 #[derive(Default)]
@@ -309,6 +310,23 @@ impl Object for List {
     };
     Ok(())
   }
+}
+
+pub fn register_builtin_functions(global: &Global) {
+  bind_builtin_type!(
+    global,
+    builtin_type!(List {
+      len: builtin_method_static!(List, list_len),
+      is_empty: builtin_method_static!(List, list_is_empty),
+      get: builtin_method_static!(List, list_get),
+      set: builtin_method_static!(List, list_set),
+      push: builtin_method_static!(List, list_push),
+      pop: builtin_method_static!(List, list_pop),
+      extend: builtin_method_static!(List, list_extend),
+      join: builtin_method_static!(List, list_join),
+      iter: builtin_method_static!(List, list_iter)
+    })
+  );
 }
 
 fn to_index(index: Value, len: usize) -> Result<usize> {

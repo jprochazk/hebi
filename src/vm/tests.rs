@@ -1093,6 +1093,61 @@ check! {
 }
 
 check! {
+  builtin_list_methods_bound,
+  r#"#!hebi
+    v := [0, 1, 2]
+
+    v_len := v.len
+    v_is_empty := v.is_empty
+    v_get := v.get
+    v_pop := v.pop
+    v_set := v.set
+    v_join := v.join
+    v_push := v.push
+    v_extend := v.extend
+    
+    print "len", v_len()
+    print "is_empty", v_is_empty()
+    print "get(1)", v_get(1)
+    print "pop()", v_pop()
+    print "set", v_set(0, v_get(1))
+    print "join", v_join(", ")
+    print "push(2)", v_push(2)
+    print "extend(3, 0)", v_extend(3, 0)
+    print "join", v_join(", ")
+  "#
+}
+
+check! {
+  builtin_list_methods_static,
+  r#"#!hebi
+    v := [0, 1, 2]
+    
+    print "len", List.len(v)
+    print "is_empty", List.is_empty(v)
+    print "get(1)", List.get(v, 1)
+    print "pop()", List.pop(v)
+    print "set", List.set(v, 0, List.get(v, 1))
+    print "join", List.join(v, ", ")
+    print "push(2)", List.push(v, 2)
+    print "extend(3, 0)", List.extend(v, 3, 0)
+    print "join", List.join(v, ", ")
+  "#
+}
+
+/*
+
+[].len()
+
+f := [].len
+f()
+
+List.len([])
+
+
+*/
+
+check! {
   add_objects,
   r#"#!hebi
     "a" + "b"
