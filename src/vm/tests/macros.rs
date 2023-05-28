@@ -10,7 +10,12 @@ macro_rules! check {
     async fn $name() {
       let source = $crate::vm::tests::macros::__clean_source(indoc::indoc!($source));
       let mut hebi = crate::Hebi::builder().output(Vec::<u8>::new()).finish();
-      let result = match hebi.eval_async(&source).await {
+      let chunk = match hebi.compile(&source) {
+        Ok(chunk) => chunk,
+        Err(e) => panic!("Failed to compile:\n{}", e.report(&source, false)),
+      };
+      eprintln!("{}", chunk.disassemble());
+      let result = match hebi.run_async(chunk).await {
         Ok(value) => format!("{value:#?}"),
         Err(e) => e.report(&source, false),
       };

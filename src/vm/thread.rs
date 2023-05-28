@@ -15,7 +15,7 @@ use super::dispatch;
 use super::dispatch::{dispatch, ControlFlow, Handler};
 use super::global::Global;
 use crate::bytecode::opcode as op;
-use crate::object::builtin::{BuiltinFunction, BuiltinMethod};
+use crate::object::builtin::{BuiltinAsyncFunction, BuiltinFunction, BuiltinMethod};
 use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
@@ -182,6 +182,9 @@ impl Thread {
     } else if object.is::<BuiltinFunction>() {
       let function = unsafe { object.cast_unchecked::<BuiltinFunction>() };
       self.call_builtin_function(function, args)
+    } else if object.is::<BuiltinAsyncFunction>() {
+      let function = unsafe { object.cast_unchecked::<BuiltinAsyncFunction>() };
+      self.call_builtin_async_function(function, args)
     } else if object.is::<BuiltinMethod>() {
       let method = unsafe { object.cast_unchecked::<BuiltinMethod>() };
       self.call_builtin_method(method, args)
@@ -339,6 +342,27 @@ impl Thread {
     self.pop_args(args);
     self.acc = result?;
     Ok(dispatch::Call::Continue)
+  }
+
+  fn call_builtin_async_function(
+    &mut self,
+    function: Ptr<BuiltinAsyncFunction>,
+    args: Args,
+  ) -> Result<dispatch::Call> {
+    if !self.poll {
+      fail!(
+        "cannot call builtin async function `{}` in a non-async context",
+        function.name
+      );
+    }
+    let start = stack!(self).len();
+    let count = args.count;
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    let args = Args { start, count };
+    let fut = function.call(self.get_scope(args));
+    self.async_frame.replace(AsyncFrame { fut, args });
+
+    Ok(dispatch::Call::Yield)
   }
 
   fn call_builtin_method(

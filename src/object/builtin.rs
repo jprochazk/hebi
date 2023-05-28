@@ -2,14 +2,15 @@ use std::fmt::{Debug, Display};
 
 use indexmap::IndexMap;
 
-use super::{Object, Ptr, Str};
-use crate::object::list;
+use super::{List, Object, Ptr, Str};
+use crate::object::{list, string};
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::vm::thread::util::is_truthy;
-use crate::{Result, Scope, Unbind};
+use crate::{Bind, LocalBoxFuture, Result, Scope, Unbind};
 
 pub type Callback = fn(Scope<'_>) -> Result<Value>;
+pub type AsyncCallback = fn(Scope<'_>) -> LocalBoxFuture<'_, Result<Value>>;
 pub type MethodCallback = fn(Value, Scope<'_>) -> Result<Value>;
 pub type TypedMethodCallback<T> = fn(Ptr<T>, Scope<'_>) -> Result<Value>;
 
@@ -31,7 +32,9 @@ impl BuiltinFunction {
 
 impl Debug for BuiltinFunction {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("BuiltinFunction").finish()
+    f.debug_struct("BuiltinFunction")
+      .field("name", &self.name)
+      .finish()
   }
 }
 
@@ -52,6 +55,48 @@ impl Object for BuiltinFunction {
 }
 
 declare_object_type!(BuiltinFunction);
+
+pub struct BuiltinAsyncFunction {
+  pub name: &'static str,
+  function: AsyncCallback,
+}
+
+impl BuiltinAsyncFunction {
+  pub fn new(name: &'static str, function: AsyncCallback) -> Self {
+    Self { name, function }
+  }
+
+  pub fn call(&self, scope: Scope) -> LocalBoxFuture<'static, Result<Value>> {
+    let scope = unsafe { ::core::mem::transmute::<Scope<'_>, Scope<'static>>(scope) };
+    (self.function)(scope)
+  }
+}
+
+impl Debug for BuiltinAsyncFunction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("BuiltinAsyncFunction")
+      .field("name", &self.name)
+      .finish()
+  }
+}
+
+impl Display for BuiltinAsyncFunction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<builtin function>")
+  }
+}
+
+impl Object for BuiltinAsyncFunction {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "BuiltinAsyncFunction"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
+}
+
+declare_object_type!(BuiltinAsyncFunction);
 
 // pub struct BuiltinType {
 //   // TODO: List, Str, Table, etc. globals
@@ -268,7 +313,39 @@ fn type_of(scope: Scope<'_>) -> Result<Value> {
   }
 }
 
-macro_rules! bind_builtin {
+async fn collect(mut scope: Scope<'_>) -> Result<Value> {
+  let iterable = scope.param::<crate::Value>(0)?.unbind();
+
+  let Some(iterable) = iterable.clone().to_any() else {
+    fail!("`{iterable}` is not iterable");
+  };
+
+  let iter = iterable
+    .named_field(scope.clone(), scope.intern("iter"))?
+    .bind(scope.global());
+
+  let iterator = scope.call(iter, &[]).await?.unbind();
+  let Some(iterator) = iterator.clone().to_any() else {
+    fail!("`{iterable}` is not an iterator");
+  };
+
+  let next = iterator
+    .named_field(scope.clone(), scope.intern("next"))?
+    .bind(scope.global());
+  let done = iterator
+    .named_field(scope.clone(), scope.intern("done"))?
+    .bind(scope.global());
+
+  let list = List::new();
+  while !is_truthy(scope.call(done.clone(), &[]).await?.unbind()) {
+    list.push(scope.call(next.clone(), &[]).await?.unbind());
+  }
+  let list = scope.alloc(list);
+
+  Ok(Value::object(list))
+}
+
+macro_rules! bind_builtin_fn {
   ($global:ident, $builtin:ident) => {{
     let name = stringify!($builtin);
     $global.set(
@@ -276,6 +353,17 @@ macro_rules! bind_builtin {
       $crate::value::Value::object($global.alloc($crate::object::builtin::BuiltinFunction::new(
         name, $builtin,
       ))),
+    )
+  }};
+  ($global:ident, async $builtin:ident) => {{
+    let name = stringify!($builtin);
+    $global.set(
+      $global.intern(name),
+      $crate::value::Value::object($global.alloc(
+        $crate::object::builtin::BuiltinAsyncFunction::new(name, |scope| {
+          Box::pin(($builtin)(scope))
+        }),
+      )),
     )
   }};
 }
@@ -291,11 +379,13 @@ macro_rules! bind_builtin_type {
 }
 
 pub fn register_builtin_functions(global: &Global) {
-  bind_builtin!(global, to_int);
-  bind_builtin!(global, to_float);
-  bind_builtin!(global, to_bool);
-  bind_builtin!(global, to_str);
-  bind_builtin!(global, type_of);
+  bind_builtin_fn!(global, to_int);
+  bind_builtin_fn!(global, to_float);
+  bind_builtin_fn!(global, to_bool);
+  bind_builtin_fn!(global, to_str);
+  bind_builtin_fn!(global, type_of);
+  /* bind_builtin_fn!(global, async collect); */
 
   list::register_builtin_functions(global);
+  string::register_builtin_functions(global);
 }

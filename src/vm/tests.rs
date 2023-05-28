@@ -1135,17 +1135,89 @@ check! {
   "#
 }
 
-/*
+check! {
+  builtin_str_methods,
+  r#"#!hebi
+    v := "a\nb\nc"
 
-[].len()
+    print "len", v.len()
+    print "is_empty", v.is_empty()
+    print "lines", v.lines()
+  "#
+}
 
-f := [].len
-f()
+check! {
+  builtin_str_methods_bound,
+  r#"#!hebi
+    v := "a\nb\nc"
 
-List.len([])
+    v_len := v.len
+    v_is_empty := v.is_empty
+    v_lines := v.lines
 
+    print "len", v_len()
+    print "is_empty", v_is_empty()
+    print "lines", v_lines()
+  "#
+}
 
-*/
+check! {
+  builtin_str_methods_static,
+  r#"#!hebi
+    v := "a\nb\nc"
+
+    print "len", Str.len(v)
+    print "is_empty", Str.is_empty(v)
+    print "lines", Str.lines(v)
+  "#
+}
+
+check! {
+  builtin_str_lines_iter,
+  r#"#!hebi
+    strings := [
+      "a\n\nb\nc",
+      "\na\n\nb\nc",
+      "\na\n\nb\nc\n",
+    ]
+
+    for string in strings:
+      for line in string.lines():
+        print "`" + line + "`"
+      print ""
+  "#
+}
+
+/* check! {
+  builtin_collect,
+  r#"#!hebi
+    class Counter:
+      fn init(self, max):
+        self.n = 0
+        self.max = max
+
+      fn iter(self):
+        return self
+
+      fn next(self):
+        if self.n < self.max:
+          n := self.n
+          self.n += 1
+          return n
+
+      fn done(self):
+        return self.n >= self.max
+
+    collect(Counter(10))
+  "#
+} */
+
+/* check! {
+  builtin_collect_native,
+  r#"#!hebi
+    collect("a\nb\nc".lines())
+  "#
+} */
 
 check! {
   add_objects,
