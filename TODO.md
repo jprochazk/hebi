@@ -35,6 +35,7 @@
   - no methods
 - [ ] repl
   - multi-line editor
+- [ ] spaces only, make better error message for tabs
 
 - [ ] debugger
   - egui
