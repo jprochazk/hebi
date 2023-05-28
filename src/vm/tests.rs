@@ -163,6 +163,20 @@ check! {
 
 check! {
   module
+  use_named_import_in_nested_scope,
+  {
+    test: "value := 100"
+  },
+  r#"#!hebi
+    from test import value
+    fn foo():
+      print value
+    foo()
+  "#
+}
+
+check! {
+  module
   import_fn,
   {
     test: r#"#!hebi
