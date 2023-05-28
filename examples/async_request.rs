@@ -1,3 +1,6 @@
+use std::panic::AssertUnwindSafe;
+
+use futures_util::FutureExt;
 use hebi::{Hebi, NativeModule, Scope, Str};
 
 #[tokio::main]
@@ -20,15 +23,28 @@ async fn main() {
   let mut hebi = Hebi::new();
   hebi.register(&module);
 
-  let result = hebi
-    .eval_async(
-      r#"
+  let source = r#"
 from http import get
 get("https://jsonplaceholder.typicode.com/todos/1")
-"#,
-    )
-    .await
-    .unwrap();
+  "#;
 
-  println!("Result is:\n{result}");
+  let result = AssertUnwindSafe(hebi.eval_async(source))
+    .catch_unwind()
+    .await;
+
+  match result {
+    Ok(result) => match result {
+      Ok(value) => println!("Result is:\n{value}"),
+      Err(e) => {
+        eprintln!("{}", e.report(source, true))
+      }
+    },
+    Err(panic) => {
+      println!("hebi panicked");
+      for (key, value) in hebi.global().entries() {
+        println!("{key}: {value}")
+      }
+      std::panic::panic_any(panic)
+    }
+  }
 }
