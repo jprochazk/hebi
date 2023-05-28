@@ -80,6 +80,9 @@ c := Circle(20.0)
 print(c.area()) # ~1256
 print(3.14 * (c.radius ** 2)) # 1256
 print(Circle.area(Circle.unit()))
+print(c.x)
+c.x = 10.0
+print(c.x)
 "#,
     )
     .unwrap();

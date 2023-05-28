@@ -1,3 +1,5 @@
+#![allow(dead_code)] // TEMP
+
 use std::fmt::{Debug, Display};
 
 use indexmap::IndexMap;

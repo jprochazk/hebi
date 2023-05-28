@@ -83,6 +83,8 @@ impl Thread {
     }
   }
 
+  // pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {}
+
   pub async fn call(&mut self, f: Value, args: &[Value]) -> Result<Value> {
     let poll = self.poll;
     self.poll = true;
@@ -213,34 +215,14 @@ impl Thread {
   ) -> Result<dispatch::Call> {
     check_args(&function.descriptor.params, false, args.count)?;
 
-    self.pc = 0;
-    unsafe {
-      self.stack.as_mut().base = self.stack.as_ref().regs.len();
-    }
-    // note that this only works because `self` is
-    // syntactically guaranteed to only exist in class methods
-    // if that guarantee ever disappears, this will break
-    if !function.descriptor.params.has_self {
-      // this is a regular function, put `function` in slot 0
-      // the slot is already reserved by codegen
-      stack_mut!(self).push(Value::object(function.clone()));
-    }
-    // if the above condition is false, the first arg will be the receiver
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let mut remainder = function.descriptor.frame_size - args.count;
-    if !function.descriptor.params.has_self {
-      remainder -= 1;
-    }
-    stack_mut!(self).extend((0..remainder).map(|_| Value::none()));
+    self.push_frame(function.clone(), return_addr);
 
-    call_frames_mut!(self).push(Frame {
-      instructions: function.descriptor.instructions,
-      constants: function.descriptor.constants,
-      upvalues: function.upvalues.clone(),
-      frame_size: function.descriptor.frame_size,
-      return_addr,
-      module_id: function.module_id,
-    });
+    let slot0 = if !function.descriptor.params.has_self {
+      Slot0::Function(Value::object(function.clone()))
+    } else {
+      Slot0::None
+    };
+    let _ = self.enter_scope(slot0, args, Some(function.descriptor.frame_size));
 
     Ok(
       dispatch::LoadFrame {
@@ -265,11 +247,6 @@ impl Thread {
     unsafe {
       self.stack.as_mut().base = self.stack.as_ref().regs.len();
     }
-    // receiver is passed implicitly through the `ClassMethod` wrapper
-    stack_mut!(self).push(Value::object(this));
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    stack_mut!(self)
-      .extend((0..function.descriptor.frame_size - args.count - 1).map(|_| Value::none()));
 
     call_frames_mut!(self).push(Frame {
       instructions: function.descriptor.instructions,
@@ -279,6 +256,12 @@ impl Thread {
       return_addr,
       module_id: function.module_id,
     });
+
+    // receiver is passed implicitly through the `ClassMethod` wrapper
+    stack_mut!(self).push(Value::object(this));
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+    stack_mut!(self)
+      .extend((0..function.descriptor.frame_size - args.count - 1).map(|_| Value::none()));
 
     Ok(
       dispatch::LoadFrame {
@@ -300,29 +283,22 @@ impl Thread {
     function: Ptr<Any>,
     args: Args,
   ) -> Result<dispatch::Call> {
-    let start = stack!(self).len();
-    let count = args.count + 1;
-    stack_mut!(self).push(Value::object(this));
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
+    // TODO: native (async) method should store its receiver
+    let scope = self.enter_scope(Slot0::Receiver(Value::object(this)), args, None);
 
     if let Some(function) = function.clone_cast::<NativeFunction>() {
-      match function.call(self.get_scope(args)) {
-        Ok(value) => {
-          self.acc = value;
-          self.pop_args(args);
-          Ok(dispatch::Call::Continue)
-        }
-        Err(e) => {
-          self.pop_args(args);
-          Err(e)
-        }
-      }
+      let result = function.call(scope.clone());
+      self.leave_scope(scope);
+      self.acc = result?;
+      Ok(dispatch::Call::Continue)
     } else {
       let function = unsafe { function.cast_unchecked::<NativeAsyncFunction>() };
 
-      let fut = function.call(self.get_scope(args));
-      self.async_frame.replace(AsyncFrame { fut, args });
+      let fut = function.call(scope.clone());
+      self.async_frame.replace(AsyncFrame {
+        fut,
+        args: scope.args,
+      });
 
       Ok(dispatch::Call::Yield)
     }
@@ -333,13 +309,9 @@ impl Thread {
     function: Ptr<BuiltinFunction>,
     args: Args,
   ) -> Result<dispatch::Call> {
-    // TODO: put this in a function
-    let start = stack!(self).len();
-    let count = args.count;
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
-    let result = function.call(self.get_scope(args));
-    self.pop_args(args);
+    let scope = self.enter_scope(Slot0::None, args, None);
+    let result = function.call(scope.clone());
+    self.leave_scope(scope);
     self.acc = result?;
     Ok(dispatch::Call::Continue)
   }
@@ -355,12 +327,12 @@ impl Thread {
         function.name
       );
     }
-    let start = stack!(self).len();
-    let count = args.count;
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
-    let fut = function.call(self.get_scope(args));
-    self.async_frame.replace(AsyncFrame { fut, args });
+    let scope = self.enter_scope(Slot0::None, args, None);
+    let fut = function.call(scope.clone());
+    self.async_frame.replace(AsyncFrame {
+      fut,
+      args: scope.args,
+    });
 
     Ok(dispatch::Call::Yield)
   }
@@ -371,12 +343,9 @@ impl Thread {
     args: Args,
   ) -> Result<dispatch::Call> {
     // TODO: put this in a function
-    let start = stack!(self).len();
-    let count = args.count;
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
-    let result = method.call(self.get_scope(args));
-    self.pop_args(args);
+    let scope = self.enter_scope(Slot0::None, args, None);
+    let result = method.call(scope.clone());
+    self.leave_scope(scope);
     self.acc = result?;
     Ok(dispatch::Call::Continue)
   }
@@ -421,22 +390,11 @@ impl Thread {
     function: Ptr<NativeFunction>,
     args: Args,
   ) -> Result<dispatch::Call> {
-    // TODO: put this in a function
-    let start = stack!(self).len();
-    let count = args.count;
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
-    match function.call(self.get_scope(args)) {
-      Ok(value) => {
-        self.acc = value;
-        self.pop_args(args);
-        Ok(dispatch::Call::Continue)
-      }
-      Err(e) => {
-        self.pop_args(args);
-        Err(e)
-      }
-    }
+    let scope = self.enter_scope(Slot0::None, args, None);
+    let result = function.call(scope.clone());
+    self.leave_scope(scope);
+    self.acc = result?;
+    Ok(dispatch::Call::Continue)
   }
 
   fn call_native_async_function(
@@ -450,12 +408,12 @@ impl Thread {
         function.name
       );
     }
-    let start = stack!(self).len();
-    let count = args.count;
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    let args = Args { start, count };
-    let fut = function.call(self.get_scope(args));
-    self.async_frame.replace(AsyncFrame { fut, args });
+    let scope = self.enter_scope(Slot0::None, args, None);
+    let fut = function.call(scope.clone());
+    self.async_frame.replace(AsyncFrame {
+      fut,
+      args: scope.args,
+    });
 
     Ok(dispatch::Call::Yield)
   }
@@ -465,12 +423,13 @@ impl Thread {
     instance: Ptr<NativeClassInstance>,
     getter: Ptr<NativeFunction>,
   ) -> Result<Value> {
-    let start = stack!(self).len();
-    let count = 1;
-    stack_mut!(self).push(Value::object(instance));
-    let args = Args { start, count };
-    let result = getter.call(self.get_scope(args));
-    self.pop_args(args);
+    let scope = self.enter_scope(
+      Slot0::Receiver(Value::object(instance)),
+      Args::empty(),
+      None,
+    );
+    let result = getter.call(scope.clone());
+    self.leave_scope(scope);
     result
   }
 
@@ -480,13 +439,14 @@ impl Thread {
     setter: Ptr<NativeFunction>,
     value: Value,
   ) -> Result<()> {
-    let start = stack!(self).len();
-    let count = 2;
-    stack_mut!(self).push(Value::object(instance));
+    let args = Args {
+      start: stack!(self).len(),
+      count: 1,
+    };
     stack_mut!(self).push(value);
-    let args = Args { start, count };
-    let result = setter.call(self.get_scope(args)).map(|_| ());
-    self.pop_args(args);
+    let scope = self.enter_scope(Slot0::Receiver(Value::object(instance)), args, None);
+    let result = setter.call(scope.clone()).map(|_| ());
+    self.leave_scope(scope);
     result
   }
 
@@ -586,6 +546,75 @@ impl Thread {
 
   fn get_scope(&self, args: Args) -> Scope {
     Scope::new(self, args)
+  }
+
+  fn push_frame(&mut self, f: Ptr<Function>, return_addr: Option<usize>) {
+    self.pc = 0;
+    let stack_base = stack!(self).len();
+    unsafe { self.stack.as_mut().base = stack_base };
+
+    call_frames_mut!(self).push(Frame {
+      instructions: f.descriptor.instructions,
+      constants: f.descriptor.constants,
+      upvalues: f.upvalues.clone(),
+      frame_size: f.descriptor.frame_size,
+      return_addr,
+      module_id: f.module_id,
+    });
+  }
+
+  fn enter_scope(&mut self, slot0: Slot0, args: Args, frame_size: Option<usize>) -> Scope<'static> {
+    let start = stack!(self).len();
+    let count = slot0.is_some() as usize + args.count;
+
+    if let Some(slot0) = slot0.get() {
+      stack_mut!(self).push(slot0);
+    }
+
+    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
+
+    if let Some(frame_size) = frame_size {
+      debug_assert!(frame_size >= args.count);
+      let mut remainder = frame_size - args.count;
+      if slot0.is_function() {
+        remainder -= 1;
+      }
+      stack_mut!(self).extend((0..remainder).map(|_| Value::none()));
+    }
+
+    let args = Args { start, count };
+
+    Scope::new(self, args)
+  }
+
+  fn leave_scope(&mut self, scope: Scope) {
+    stack_mut!(self).truncate(scope.args.start);
+  }
+}
+
+enum Slot0 {
+  Receiver(Value),
+  Function(Value),
+  None,
+}
+
+impl Slot0 {
+  fn get(&self) -> Option<Value> {
+    match self {
+      Slot0::Receiver(value) => Some(value.clone()),
+      Slot0::Function(value) => Some(value.clone()),
+      Slot0::None => None,
+    }
+  }
+
+  fn is_function(&self) -> bool {
+    use Slot0::*;
+    matches!(self, Function(_))
+  }
+
+  fn is_some(&self) -> bool {
+    use Slot0::*;
+    matches!(self, Receiver(_) | Function(_))
   }
 }
 
