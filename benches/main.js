@@ -1,6 +1,6 @@
 const process = require("process");
 const Benchmark = require("benchmark");
-const { fib_rec } = require("./benches/fib.js");
+const { fib } = require("./benches/fib.js");
 const { primes } = require("./benches/primes.js");
 
 const UNITS = ["s", "ms", "μs", "ns", "ps"];
@@ -38,11 +38,11 @@ function main(benches) {
 
   if (benches.has("fib")) {
     const suite = create_suite();
-    suite.add("fib_rec(15)", function () {
-      return fib_rec(15);
+    suite.add("fib(15)", function () {
+      return fib(15);
     });
-    suite.add("fib_rec(20)", function () {
-      return fib_rec(20);
+    suite.add("fib(20)", function () {
+      return fib(20);
     });
     suite.run();
   }

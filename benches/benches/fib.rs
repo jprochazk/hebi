@@ -7,7 +7,7 @@ pub fn fib_15(c: &mut Criterion) {
 
     let chunk = hebi
       .compile(indoc::indoc! {
-        r#"
+        r#"#!hebi
           fn fib(n):
             if n <= 1:
               return n

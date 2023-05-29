@@ -7,7 +7,7 @@ pub fn primes(c: &mut Criterion) {
 
     let chunk = hebi
       .compile(indoc::indoc! {
-        r#"
+        r#"#!hebi
           fn primes(max_number):
             prime_mask := []
             prime_mask.extend(max_number+1, true)
