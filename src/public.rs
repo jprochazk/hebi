@@ -353,7 +353,11 @@ impl<'cx> Scope<'cx> {
   }
 
   // TODO: does this also need to be force-Send?
-  pub async fn call(&mut self, value: Value<'cx>, args: &[Value<'cx>]) -> Result<Value<'cx>> {
+  pub async fn call<'a>(
+    &'a mut self,
+    value: Value<'cx>,
+    args: &'a [Value<'cx>],
+  ) -> Result<Value<'cx>> {
     self
       .thread
       .call(value.unbind(), <_>::unbind_slice(args))
