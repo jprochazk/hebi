@@ -198,6 +198,13 @@ declare_object_trait! {
       fail!("`{this}` does not support `[]=`")
     }
 
+    fn call(scope, this, return_addr: ReturnAddr) -> Result<CallResult> {
+      let _ = scope;
+      let _ = return_addr;
+      let this = Self::type_name(this);
+      fail!("`{this}` is not callable")
+    }
+
     fn contains(scope, this, item: Value) -> Result<bool> {
       let _ = scope;
       let _ = item;
@@ -281,7 +288,7 @@ macro_rules! default_instance_of {
 
 pub fn is_callable(v: &Ptr<Any>) -> bool {
   v.is::<Function>()
-    || v.is::<ClassMethod>()
+    || v.is::<BoundFunction>()
     || v.is::<NativeFunction>()
     || v.is::<NativeAsyncFunction>()
 }
@@ -289,6 +296,8 @@ pub fn is_callable(v: &Ptr<Any>) -> bool {
 pub fn is_class(v: &Ptr<Any>) -> bool {
   v.is::<ClassInstance>() || v.is::<ClassProxy>() || v.is::<NativeClassInstance>()
 }
+
+pub type ReturnAddr = Option<usize>;
 
 #[macro_use]
 pub mod builtin;
@@ -307,14 +316,15 @@ use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 
 pub use class::{ClassDescriptor, ClassType};
-pub use function::{Function, FunctionDescriptor};
+pub use function::{BoundFunction, Function, FunctionDescriptor};
 pub use list::List;
 pub use module::{Module, ModuleDescriptor};
 pub use ptr::{Any, Ptr};
 pub use string::Str;
 pub use table::Table;
 
-use self::class::{ClassInstance, ClassMethod, ClassProxy};
+use self::class::{ClassInstance, ClassProxy};
 use self::native::{NativeAsyncFunction, NativeClassInstance, NativeFunction};
 use crate::value::Value;
+use crate::vm::thread::CallResult;
 use crate::{Result, Scope};

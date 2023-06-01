@@ -626,7 +626,8 @@ check! {
   class_with_init,
   r#"#!hebi
     class T:
-      fn init(self):
+      v = 0
+      init(self):
         self.v = 10
     T().v
   "#
@@ -636,7 +637,8 @@ check! {
   class_with_init_conditional_false,
   r#"#!hebi
     class T:
-      fn init(self, v, set):
+      v = none
+      init(self, v, set):
         if set:
           self.v = v
     ?T(10, false).v
@@ -647,7 +649,8 @@ check! {
   class_with_init_conditional_true,
   r#"#!hebi
     class T:
-      fn init(self, v, set):
+      v = none
+      init(self, v, set):
         if set:
           self.v = v
     ?T(10, true).v
@@ -1082,8 +1085,10 @@ check! {
   for_iter_iterable_class,
   r#"#!hebi
     class Counter:
-      fn init(self, max):
-        self.n = 0
+      n = 0
+      max = 0
+
+      init(self, max):
         self.max = max
 
       fn iter(self):
@@ -1220,7 +1225,7 @@ check! {
   builtin_collect,
   r#"#!hebi
     class Counter:
-      fn init(self, max):
+      init(self, max):
         self.n = 0
         self.max = max
 

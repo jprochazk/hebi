@@ -202,7 +202,7 @@ impl<'src> Parser<'src> {
     let params = self.func_params()?;
     self.no_indent()?;
     self.expect(Tok_Colon)?;
-    let state = self.state.with_func(params.has_self);
+    let state = self.state.with_func(name.lexeme(), params.has_self);
     let (state, body) = self.with_state2(state, Self::body)?;
     let has_yield = state
       .current_func
@@ -285,7 +285,7 @@ impl<'src> Parser<'src> {
     self.no_indent()?;
     self.expect(Tok_Colon)?;
     let state = State::with_class(parent.is_some());
-    let members = self.with_state(state, |this| this.class_members())?;
+    let members = self.with_state(state, Self::class_members)?;
     let end = self.previous().span.end;
     Ok(ast::class_stmt(start..end, name, parent, members))
   }
@@ -313,20 +313,31 @@ impl<'src> Parser<'src> {
     while self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       let name = self.ident()?;
 
-      if names.contains(&name) {
-        self.errors.push(SpannedError::new(
-          format!("duplicate field {name}"),
-          name.span,
-        ));
-      } else {
-        names.insert(name.clone());
-      }
+      if name == "init" {
+        if members.init.is_some() {
+          self
+            .errors
+            .push(SpannedError::new("duplicate initializer", name.span));
+        }
 
-      self.no_indent()?; // op_equal must be unindented
-      self.expect(Op_Equal)?;
-      self.no_indent()?;
-      let default = self.expr()?;
-      members.fields.push(ast::Field { name, default });
+        self.no_indent()?; // func's opening paren must be unindented
+        members.init = Some(self.func(name)?);
+      } else {
+        if names.contains(&name) {
+          self.errors.push(SpannedError::new(
+            format!("duplicate field {name}"),
+            name.span,
+          ));
+        } else {
+          names.insert(name.clone());
+        }
+
+        self.no_indent()?; // op_equal must be unindented
+        self.expect(Op_Equal)?;
+        self.no_indent()?;
+        let default = self.expr()?;
+        members.fields.push(ast::Field { name, default });
+      }
     }
 
     while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
@@ -336,6 +347,15 @@ impl<'src> Parser<'src> {
       if names.contains(&name) {
         self.errors.push(SpannedError::new(
           format!("duplicate field {name}"),
+          name.span,
+        ));
+      } else if name == "init" {
+        self.errors.push(SpannedError::new(
+          "\
+            a method may not be named `init`. \
+            if you meant to write an initializer, \
+            write it without the `fn` keyword\
+            ",
           name.span,
         ));
       } else {
@@ -390,12 +410,15 @@ impl<'src> Parser<'src> {
   }
 
   fn return_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
-    if self.state.current_func.is_none() {
+    let Some(current_fn_name) = self.state.current_func.as_ref().map(|f| f.name.clone()) else {
       fail!(@self.current().span, "return outside of function");
-    }
+    };
 
     self.expect(Kw_Return)?;
     let start = self.previous().span.start;
+    if current_fn_name == "init" && self.state.current_class.is_some() && self.no_indent().is_ok() {
+      fail!(@self.current().span, "return in `init` may not return a value");
+    }
     let value = self.no_indent().ok().map(|_| self.expr()).transpose()?;
     let end = self.previous().span.end;
     Ok(ast::return_stmt(start..end, value))

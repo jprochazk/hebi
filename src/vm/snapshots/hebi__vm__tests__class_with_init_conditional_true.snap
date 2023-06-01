@@ -4,7 +4,8 @@ expression: snapshot
 ---
 # Source:
 class T:
-  fn init(self, v, set):
+  v = none
+  init(self, v, set):
     if set:
       self.v = v
 ?T(10, true).v

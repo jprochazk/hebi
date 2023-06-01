@@ -66,6 +66,7 @@ impl<'src> State<'src> {
           name,
           function::Params::default(),
           false,
+          false,
         )],
       },
     }
@@ -237,12 +238,13 @@ impl<'src> State<'src> {
     );
   }
 
-  fn emit_function(&mut self, func: &'src ast::Func<'src>) -> EmittedFunction<'src> {
+  fn emit_function(&mut self, func: &'src ast::Func<'src>, is_init: bool) -> EmittedFunction<'src> {
     self.module.functions.push(Function::new(
       self.global.clone(),
       func.name.lexeme(),
       function::Params::from_ast_func(func),
       func.has_yield,
+      is_init,
     ));
 
     self.current_function().enter_scope();
@@ -299,7 +301,12 @@ impl<'src> State<'src> {
       .last()
       .map(|stmt| stmt.span)
       .unwrap_or((0..0).into());
-    self.builder().emit(LoadNone, end_span);
+
+    if self.current_function().is_init {
+      self.builder().emit(LoadSelf, end_span);
+    } else {
+      self.builder().emit(LoadNone, end_span);
+    }
     self.builder().emit(Return, end_span);
 
     self.current_function().leave_scope();
@@ -364,7 +371,9 @@ struct EmittedFunction<'src> {
 struct Function<'src> {
   global: Global,
 
+  // TODO: these two should be mutually exclusive
   is_generator: bool,
+  is_init: bool,
 
   name: Cow<'src, str>,
   builder: BytecodeBuilder,
@@ -387,11 +396,13 @@ impl<'src> Function<'src> {
     name: impl Into<Cow<'src, str>>,
     params: function::Params,
     is_generator: bool,
+    is_init: bool,
   ) -> Self {
     Self {
       global,
 
       is_generator,
+      is_init,
 
       name: name.into(),
       builder: BytecodeBuilder::new(),

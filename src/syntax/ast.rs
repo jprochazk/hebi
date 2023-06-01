@@ -140,6 +140,7 @@ pub struct Class<'src> {
 
 #[cfg_attr(test, derive(Debug))]
 pub struct ClassMembers<'src> {
+  pub init: Option<Func<'src>>,
   pub fields: Vec<Field<'src>>,
   pub methods: Vec<Func<'src>>,
 }
@@ -148,6 +149,7 @@ impl<'src> ClassMembers<'src> {
   #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
     Self {
+      init: None,
       fields: vec![],
       methods: vec![],
     }

@@ -13,8 +13,5 @@ Object(
         name: "T",
         fields: {},
         parent: None,
-        is_frozen: Cell {
-            value: true,
-        },
     },
 )

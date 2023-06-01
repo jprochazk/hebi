@@ -236,6 +236,8 @@ impl<'src> State<'src> {
       ast::Ctrl::Return(stmt) => {
         if let Some(value) = stmt.value.as_ref() {
           self.emit_expr(value);
+        } else if self.current_function().is_init {
+          self.builder().emit(LoadSelf, span);
         } else {
           self.builder().emit(LoadNone, span);
         }
@@ -269,7 +271,7 @@ impl<'src> State<'src> {
   }
 
   fn emit_func_stmt(&mut self, stmt: &'src ast::Func<'src>) {
-    let function = self.emit_function(stmt);
+    let function = self.emit_function(stmt, false);
     let desc = self.constant_value(function.ptr);
     self.builder().emit(MakeFn { desc }, stmt.name.span);
     function.upvalues.finish();
@@ -279,9 +281,18 @@ impl<'src> State<'src> {
   fn emit_class_stmt(&mut self, stmt: &'src ast::Class<'src>) {
     let mut preserve = Vec::new();
 
+    let init = match stmt.members.init.as_ref() {
+      Some(init) => {
+        let function = self.emit_function(init, true);
+        preserve.push(function.upvalues);
+        Some(function.ptr)
+      }
+      None => None,
+    };
+
     let mut methods = IndexMap::with_capacity(stmt.members.methods.len());
     for function in stmt.members.methods.iter() {
-      let function = self.emit_function(function);
+      let function = self.emit_function(function, false);
       preserve.push(function.upvalues);
       let function = function.ptr;
       methods.insert(function.name.clone(), function.clone());
@@ -295,6 +306,7 @@ impl<'src> State<'src> {
 
     let class = self.global.alloc(object::ClassDescriptor {
       name: self.global.intern(stmt.name.to_string()),
+      init,
       methods,
       fields,
     });

@@ -1,16 +1,20 @@
 
+
+- [ ] go through usage of scopes and ensure all are being exited properly
+- [ ] fix native stuff
+- [ ] vm fully async
+  - [x] stackless import
+  - [ ] stackless class init
+    - [x] make `init` a contextual keyword that doesn't require `fn` in classes
+    - [x] user cannot access initializer (to call it again)
+          only way is to call the class type
+    - [ ] remove `super.init()` and replace with calling the proxy (`super()`)
+
 - [x] remove `__miri` feature and put args in `xtask miri` instead (`--filter` for running only specific tests)
   - [x] should unlock `--all-features`
 - [x] change ptr repr to use manual vtable + static object trait
 - [x] remove Table `named_field`, it should be reserved for methods
 - [x] move all field access/index access/etc. to delegate to the object trait
-- [ ] vm fully async
-  - [x] stackless import
-  - [ ] stackless class init
-    - [ ] make `init` a contextual keyword that doesn't require `fn` in classes
-    - [ ] user cannot access initializer (to call it again)
-          only way is to call the class type
-    - [ ] remove `super.init()` and replace with calling the proxy (`super()`)
 - [x] fix `from m import a, b, c` bug
 - [x] unify globals/global
 - [x] remove `Ref` from name of public value types (inner should be prefix by `Owned` or qualified path)
@@ -22,13 +26,17 @@
 - [x] list indexing
 - [x] list index oob should return None instead of error (improve error message)
 - [x] to_index should check MIN_SAFE_INT
-- [ ] ops on builtins <<<
 - [x] methods on builtins
 - [x] for iter loops (list)
+- [ ] ops on builtins <<<
+- [ ] store `this` as a special register in `Thread`
+      - method calls can set `this` and `self` access will fetch through `this` as opposed to slot 0
+      - `this` can be pushed onto the stack if it needs to be saved, such as script->script function calls
+      - native/builtin functions can also access `this` through their `scope` as opposed to expecting it in param 0
 - [ ] fix "invalid indentation" errors in parser which should be more specific
-- [ ] all function types should have the same global type `Function`
-- [ ] all class types (including native) should have the same global type `Type`
-- [ ] class instances should walk the parent chain
+- [ ] all function types should have the same global type `Function` for use in `is` checks
+- [ ] all class types (including native) should have the same global type `Type` for use in `is` checks
+- [ ] class instances should walk the parent chain in `is` checks
 - [ ] derive(Data)
   - immutable
   - non-constructible

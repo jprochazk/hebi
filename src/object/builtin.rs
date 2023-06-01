@@ -4,11 +4,13 @@ use std::fmt::{Debug, Display};
 
 use indexmap::IndexMap;
 
-use super::{List, Object, Ptr, Str};
+use super::{List, Object, Ptr, ReturnAddr, Str};
 use crate::object::{list, string};
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::vm::thread::util::is_truthy;
+use crate::vm::thread::AsyncFrame;
+use crate::vm::thread::CallResult;
 use crate::{Bind, LocalBoxFuture, Result, Scope, Unbind};
 
 pub type Callback = fn(Scope<'_>) -> Result<Value>;
@@ -54,6 +56,10 @@ impl Object for BuiltinFunction {
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
   }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    BuiltinFunction::call(this.as_ref(), scope).map(CallResult::Return)
+  }
 }
 
 declare_object_type!(BuiltinFunction);
@@ -95,6 +101,14 @@ impl Object for BuiltinAsyncFunction {
 
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
+  }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    let args = scope.args;
+    Ok(CallResult::Poll(AsyncFrame {
+      fut: BuiltinAsyncFunction::call(this.as_ref(), scope),
+      args,
+    }))
   }
 }
 
@@ -222,6 +236,10 @@ impl Object for BuiltinMethod {
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
   }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    BuiltinMethod::call(this.as_ref(), scope).map(CallResult::Return)
+  }
 }
 
 declare_object_type!(BuiltinMethod);
@@ -324,6 +342,8 @@ async fn collect(mut scope: Scope<'_>) -> Result<Value> {
 
   let iter = iterable
     .named_field(scope.clone(), scope.intern("iter"))?
+    .to_any()
+    .ok_or_else(|| error!("`iter` is not callable"))?
     .bind(scope.global());
 
   let iterator = scope.call(iter, &[]).await?.unbind();
@@ -333,9 +353,13 @@ async fn collect(mut scope: Scope<'_>) -> Result<Value> {
 
   let next = iterator
     .named_field(scope.clone(), scope.intern("next"))?
+    .to_any()
+    .ok_or_else(|| error!("`next` is not callable"))?
     .bind(scope.global());
   let done = iterator
     .named_field(scope.clone(), scope.intern("done"))?
+    .to_any()
+    .ok_or_else(|| error!("`done` is not callable"))?
     .bind(scope.global());
 
   let list = List::new();

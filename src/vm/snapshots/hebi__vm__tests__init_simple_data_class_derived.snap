@@ -27,8 +27,5 @@ Object(
                 parent: None,
             },
         ),
-        is_frozen: Cell {
-            value: true,
-        },
     },
 )

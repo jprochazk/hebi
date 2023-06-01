@@ -769,7 +769,7 @@ fn class_self_and_super() {
           print self, super
 
       class T(U):
-        fn init(self):
+        init(self):
           self.v = super.f()
     "#
   }
@@ -984,7 +984,7 @@ fn whole_module() {
         print("very large")
 
       class Test:
-        fn init(self, n):
+        init(self, n):
           self.n = n
 
         fn get_n(self):
@@ -1017,7 +1017,7 @@ fn whole_module() {
       # data class, implicit initializer
       class A:
         a = 100
-        # fn init(self, a = 100):
+        # init(self, a = 100):
         #   self.a = a
 
       print(A().a)   # 100
@@ -1025,7 +1025,7 @@ fn whole_module() {
 
       class B:
         a = 100
-        fn init(self): # override the implicit initializer
+        init(self): # override the implicit initializer
           pass
 
       print(B().a) # 100
@@ -1036,7 +1036,7 @@ fn whole_module() {
         # and may be added in the initializer
         # after `init` is called, the class is frozen
         # no fields/methods may be added or removed
-        fn init(self):
+        init(self):
           self.a = 10
 
       print(C().a) # 10
@@ -1066,15 +1066,15 @@ fn whole_module() {
                       # test 2
 
       class X:
-       fn init(self):
+       init(self):
           self.v = 10
 
       class Y(X):
-        fn init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
+        init(self): # error: `super.init` must be called before accessing `self` or returning in derived constructor
           self.v = 10
 
       class Z(X):
-        fn init(self, v):
+        init(self, v):
           super.init()
           self.v += v
 

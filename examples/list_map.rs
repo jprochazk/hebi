@@ -1,8 +1,8 @@
-use hebi::{Hebi, List, NativeModule, Scope, Value};
+use hebi::{Any, Hebi, List, NativeModule, Scope};
 
 fn main() {
   async fn map(mut scope: Scope<'_>) -> hebi::Result<List<'_>> {
-    let (list, cb) = scope.params::<(List, Value)>()?;
+    let (list, cb) = scope.params::<(List, Any)>()?;
 
     let out = scope.new_list(list.len());
     for i in 0..list.len() {

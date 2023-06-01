@@ -180,20 +180,6 @@ impl Global {
   }
 }
 
-/// Calculates the offset of the specified field from the start of the named
-/// struct.
-macro_rules! offset_of {
-  ($ty: path, $field: tt) => {{
-    // ensure the type is a named struct + field exists and is accessible
-    let $ty { $field: _, .. };
-    let uninit = <::core::mem::MaybeUninit<$ty>>::uninit();
-    let base_ptr: *const $ty = uninit.as_ptr();
-    #[allow(unused_unsafe)]
-    let field_ptr = unsafe { ::core::ptr::addr_of!((*base_ptr).$field) };
-    (field_ptr as usize) - (base_ptr as usize)
-  }};
-}
-
 pub struct Any {
   __: (),
 }
@@ -204,7 +190,13 @@ impl Any {
   }
 
   unsafe fn repr_raw(&self) -> *const Repr<()> {
-    let data_offset = offset_of!(Repr<()>, data);
+    let data_offset = {
+      let Repr::<()> { data: _, .. };
+      let uninit = <::core::mem::MaybeUninit<Repr<()>>>::uninit();
+      let base_ptr: *const Repr<()> = uninit.as_ptr();
+      let field_ptr = ::core::ptr::addr_of!((*base_ptr).data);
+      (field_ptr as usize) - (base_ptr as usize)
+    };
     let ptr = self as *const Any as *const u8;
     ptr.sub(data_offset) as *const Repr<()>
   }

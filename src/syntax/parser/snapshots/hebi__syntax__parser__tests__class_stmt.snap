@@ -11,6 +11,7 @@ Module {
                 ),
                 parent: None,
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [],
                 },
@@ -23,6 +24,7 @@ Module {
                 ),
                 parent: None,
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [],
                 },
@@ -35,6 +37,7 @@ Module {
                 ),
                 parent: None,
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [
                         Func {
@@ -68,6 +71,7 @@ Module {
                 ),
                 parent: None,
                 members: ClassMembers {
+                    init: None,
                     fields: [
                         Field {
                             name: Ident(
@@ -118,6 +122,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [],
                 },
@@ -134,6 +139,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [],
                 },
@@ -150,6 +156,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [
                         Field {
                             name: Ident(
@@ -179,6 +186,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [
                         Field {
                             name: Ident(
@@ -229,6 +237,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [
                         Field {
                             name: Ident(

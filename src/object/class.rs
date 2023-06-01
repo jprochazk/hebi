@@ -1,23 +1,22 @@
-use std::cell::Cell;
 use std::fmt::Display;
 
 use indexmap::IndexMap;
 
-use super::builtin::BuiltinFunction;
-use super::native::{NativeAsyncFunction, NativeFunction};
-use super::ptr::{Any, Ptr};
+use super::ptr::Ptr;
+use super::BoundFunction;
+use super::ReturnAddr;
 use super::{Function, FunctionDescriptor, Object, Str, Table};
 use crate as hebi;
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::{object, Result, Scope};
+use crate::vm::thread::CallResult;
+use crate::{Result, Scope};
 
 #[derive(Debug)]
 pub struct ClassInstance {
   pub name: Ptr<Str>,
   pub fields: Ptr<Table>,
   pub parent: Option<Ptr<ClassType>>,
-  pub is_frozen: Cell<bool>,
 }
 
 impl ClassInstance {
@@ -32,12 +31,7 @@ impl ClassInstance {
       name,
       fields,
       parent,
-      is_frozen: Cell::new(false),
     }
-  }
-
-  pub fn is_frozen(&self) -> bool {
-    self.is_frozen.get()
   }
 }
 
@@ -63,12 +57,10 @@ impl Object for ClassInstance {
       .ok_or_else(|| error!("`{this}` has no field `{name}`"))?;
 
     // bind functions
-    if let Some(object) = value.clone().to_any() {
-      if object::is_callable(&object) {
-        return Ok(Value::object(
-          scope.alloc(ClassMethod::new(this.into_any(), object)),
-        ));
-      }
+    if let Some(function) = value.clone().to_object::<Function>() {
+      return Ok(Value::object(
+        scope.alloc(BoundFunction::new(this.into_any(), function)),
+      ));
     }
 
     Ok(value)
@@ -79,29 +71,17 @@ impl Object for ClassInstance {
 
     // bind functions
     if let Some(value) = value.clone() {
-      if let Some(object) = value.to_any() {
-        if object::is_callable(&object) {
-          return Ok(Some(Value::object(
-            scope.alloc(ClassMethod::new(this.into_any(), object)),
-          )));
-        }
+      if let Some(function) = value.to_object::<Function>() {
+        return Ok(Some(Value::object(
+          scope.alloc(BoundFunction::new(this.into_any(), function)),
+        )));
       }
     }
 
     Ok(value)
   }
 
-  fn set_named_field(
-    scope: Scope<'_>,
-    this: Ptr<Self>,
-    name: Ptr<Str>,
-    value: Value,
-  ) -> Result<()> {
-    if !this.is_frozen() {
-      this.fields.insert(scope.alloc(Str::owned(name)), value);
-      return Ok(());
-    }
-
+  fn set_named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>, value: Value) -> Result<()> {
     if !this.fields.set(&name, value) {
       fail!("`{this}` has no field `{name}`");
     }
@@ -147,7 +127,7 @@ impl Object for ClassProxy {
       .ok_or_else(|| error!("failed to get field `{name}`"))?;
 
     Ok(Value::object(
-      scope.alloc(ClassMethod::new(this.into_any(), method.into_any())),
+      scope.alloc(BoundFunction::new(this.into_any(), method)),
     ))
   }
 
@@ -157,68 +137,20 @@ impl Object for ClassProxy {
       .methods
       .get(name.as_str())
       .cloned()
-      .map(|method| scope.alloc(ClassMethod::new(this.into_any(), method.into_any())))
+      .map(|method| scope.alloc(BoundFunction::new(this.into_any(), method)))
       .map(Value::object);
 
     Ok(method)
+  }
+
+  fn call(_: Scope<'_>, _: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    todo!("super()")
   }
 
   // TODO: delegate everything to `this`
 }
 
 declare_object_type!(ClassProxy);
-
-// TODO: store name and type_name
-#[derive(Debug)]
-pub struct ClassMethod {
-  this: Ptr<Any>,     // ClassInstance or ClassProxy
-  function: Ptr<Any>, // Function or ???
-}
-
-impl ClassMethod {
-  pub fn new(this: Ptr<Any>, function: Ptr<Any>) -> Self {
-    assert!(object::is_class(&this));
-    assert!(object::is_callable(&function));
-
-    Self { this, function }
-  }
-
-  pub fn this(&self) -> Ptr<Any> {
-    self.this.clone()
-  }
-
-  pub fn function(&self) -> Ptr<Any> {
-    self.function.clone()
-  }
-}
-
-impl Display for ClassMethod {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    if let Some(function) = self.function.clone_cast::<Function>() {
-      write!(f, "<method `{}`>", function.descriptor.name)
-    } else if let Some(function) = self.function.clone_cast::<BuiltinFunction>() {
-      write!(f, "<method `{}`>", function.name)
-    } else if let Some(function) = self.function.clone_cast::<NativeFunction>() {
-      write!(f, "<method `{}`>", function.name)
-    } else if let Some(function) = self.function.clone_cast::<NativeAsyncFunction>() {
-      write!(f, "<method `{}`>", function.name)
-    } else {
-      write!(f, "<method>")
-    }
-  }
-}
-
-impl Object for ClassMethod {
-  fn type_name(_: Ptr<Self>) -> &'static str {
-    "Method"
-  }
-
-  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
-    todo!()
-  }
-}
-
-declare_object_type!(ClassMethod);
 
 #[derive(Debug)]
 pub struct ClassType {
@@ -278,6 +210,21 @@ impl Object for ClassType {
     let value = this.methods.get(&name).cloned().map(Value::object);
     Ok(value)
   }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
+    let instance = scope.alloc(ClassInstance::new(
+      scope.thread.global.clone(),
+      this.as_ref(),
+    ));
+
+    match this.init.as_ref() {
+      Some(init) => {
+        let init = scope.alloc(BoundFunction::new(instance.into_any(), init.clone()));
+        <BoundFunction as Object>::call(scope, init, return_addr)
+      }
+      None => Ok(CallResult::Return(Value::object(instance))),
+    }
+  }
 }
 
 declare_object_type!(ClassType);
@@ -285,6 +232,7 @@ declare_object_type!(ClassType);
 #[derive(Debug)]
 pub struct ClassDescriptor {
   pub name: Ptr<Str>,
+  pub init: Option<Ptr<FunctionDescriptor>>,
   pub methods: IndexMap<Ptr<Str>, Ptr<FunctionDescriptor>>,
   pub fields: Ptr<Table>,
 }

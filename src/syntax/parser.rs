@@ -20,19 +20,19 @@ pub fn parse(global: Global, src: &str) -> Result<ast::Module, SyntaxError> {
 }
 
 #[derive(Clone)]
-struct State {
+struct State<'src> {
   ignore_indent: bool,
   current_loop: Option<()>,
-  current_func: Option<Func>,
+  current_func: Option<Func<'src>>,
   current_class: Option<Class>,
 }
 
-impl State {
+impl<'src> State<'src> {
   pub fn with_ignore_indent(&self) -> Self {
     Self {
       ignore_indent: true,
       current_loop: self.current_loop,
-      current_func: self.current_func,
+      current_func: self.current_func.clone(),
       current_class: self.current_class,
     }
   }
@@ -46,11 +46,12 @@ impl State {
     }
   }
 
-  pub fn with_func(&self, has_self: bool) -> Self {
+  pub fn with_func(&self, name: Cow<'src, str>, has_self: bool) -> Self {
     Self {
       ignore_indent: false,
       current_loop: None,
       current_func: Some(Func {
+        name,
         has_yield: false,
         has_self,
       }),
@@ -62,7 +63,7 @@ impl State {
     Self {
       ignore_indent: false,
       current_loop: Some(()),
-      current_func: self.current_func,
+      current_func: self.current_func.clone(),
       current_class: self.current_class,
     }
   }
@@ -73,14 +74,15 @@ struct Class {
   has_super: bool,
 }
 
-#[derive(Clone, Copy)]
-struct Func {
+#[derive(Clone)]
+struct Func<'src> {
+  name: Cow<'src, str>,
   has_yield: bool,
   has_self: bool,
 }
 
 #[allow(clippy::derivable_impls)]
-impl Default for State {
+impl<'src> Default for State<'src> {
   fn default() -> Self {
     Self {
       ignore_indent: false,
@@ -92,9 +94,10 @@ impl Default for State {
 }
 
 #[allow(clippy::derivable_impls)]
-impl Default for Func {
+impl<'src> Default for Func<'src> {
   fn default() -> Self {
     Self {
+      name: Cow::borrowed("__main__"),
       has_yield: false,
       has_self: false,
     }
@@ -107,7 +110,7 @@ struct Parser<'src> {
   lex: Lexer<'src>,
   errors: Vec<SpannedError>,
   indent: IndentStack,
-  state: State,
+  state: State<'src>,
 }
 
 impl<'src> Parser<'src> {
@@ -220,7 +223,7 @@ impl<'src> Parser<'src> {
   #[inline]
   fn with_state<T>(
     &mut self,
-    mut state: State,
+    mut state: State<'src>,
     f: impl FnOnce(&mut Self) -> Result<T, SpannedError>,
   ) -> Result<T, SpannedError> {
     std::mem::swap(&mut self.state, &mut state);
@@ -232,9 +235,9 @@ impl<'src> Parser<'src> {
   #[inline]
   fn with_state2<T>(
     &mut self,
-    mut state: State,
+    mut state: State<'src>,
     f: impl FnOnce(&mut Self) -> Result<T, SpannedError>,
-  ) -> Result<(State, T), SpannedError> {
+  ) -> Result<(State<'src>, T), SpannedError> {
     std::mem::swap(&mut self.state, &mut state);
     let res = f(self);
     std::mem::swap(&mut self.state, &mut state);

@@ -11,17 +11,14 @@ use std::ptr::NonNull;
 use indexmap::IndexMap;
 
 use self::util::*;
-use super::dispatch;
-use super::dispatch::{dispatch, ControlFlow, Handler};
+use super::dispatch::Return;
+use super::dispatch::{dispatch, Call, ControlFlow, Handler, LoadFrame};
 use super::global::Global;
 use crate::bytecode::opcode as op;
-use crate::object::builtin::{BuiltinAsyncFunction, BuiltinFunction, BuiltinMethod};
-use crate::object::class::{ClassInstance, ClassMethod, ClassProxy};
+use crate::object::class::{ClassInstance, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
-use crate::object::native::{
-  NativeAsyncFunction, NativeClass, NativeClassInstance, NativeFunction,
-};
+use crate::object::Object;
 use crate::object::{
   Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, Str, Table,
   Type,
@@ -83,371 +80,100 @@ impl Thread {
     }
   }
 
-  // pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {}
+  pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {
+    self.push_frame(main.clone(), None);
+    let _ = self.enter_new_scope(
+      Slot0::Function(Value::object(main.clone())),
+      Args::empty(),
+      Some(main.descriptor.frame_size),
+    );
+    match self.run().await {
+      Ok(()) => Ok(take(&mut self.acc)),
+      Err(e) => Err(e),
+    }
+  }
 
-  pub async fn call(&mut self, f: Value, args: &[Value]) -> Result<Value> {
+  pub async fn call(&mut self, callable: Ptr<Any>, args: &[Value]) -> Result<Value> {
     let poll = self.poll;
     self.poll = true;
 
     let args = self.push_args(args);
-    if let Err(e) = self.do_call(f, args, None) {
-      self.pop_args(args);
-      return Err(e);
+    let result = match callable.call(Scope::new(self, args), None) {
+      Ok(call) => match call {
+        CallResult::Return(value) => Ok(value),
+        CallResult::Poll(frame) => {
+          // `args` is strictly below `frame.args`,
+          // so we don't have to pop them here
+          frame.fut.await
+        }
+        CallResult::Dispatch => {
+          // the call pushed a frame onto the call stack,
+          // so all we have to do is enter the interpreter
+          match self.run().await {
+            Ok(()) => Ok(take(&mut self.acc)),
+            Err(e) => Err(e),
+          }
+        }
+      },
+      Err(e) => Err(e),
     };
-    loop {
-      if let Err(e) = self.run() {
-        self.pop_args(args);
-        return Err(e);
-      };
-      match self.async_frame.take() {
-        Some(frame) => match frame.fut.await {
-          Ok(value) => {
-            self.acc = value;
-            self.pop_args(frame.args);
-          }
-          Err(e) => {
-            self.pop_args(args);
-            return Err(e);
-          }
-        },
-        None => break,
-      }
-    }
     self.pop_args(args);
-
     self.poll = poll;
 
-    Ok(take(&mut self.acc))
+    result
   }
 
-  fn run(&mut self) -> Result<()> {
-    let instructions = current_call_frame_mut!(self).instructions;
-    let pc = self.pc;
+  async fn run(&mut self) -> Result<()> {
+    loop {
+      let instructions = current_call_frame_mut!(self).instructions;
+      let pc = self.pc;
 
-    match dispatch(self, instructions, pc)? {
-      ControlFlow::Yield(pc) => {
-        self.pc = pc;
-        Ok(())
-      }
-      ControlFlow::Return => {
-        self.pc = 0;
-        Ok(())
+      match dispatch(self, instructions, pc)? {
+        ControlFlow::Yield(pc) => {
+          self.pc = pc;
+          break Ok(());
+        }
+        ControlFlow::Poll(poll) => {
+          self.pc = poll.pc;
+          self.acc = poll.frame.fut.await?;
+          self.pop_args(poll.frame.args);
+          continue;
+        }
+        ControlFlow::Return => {
+          self.pc = 0;
+          break Ok(());
+        }
       }
     }
   }
 
-  fn push_args(&mut self, args: &[Value]) -> Args {
+  pub(crate) fn push_args(&mut self, args: &[Value]) -> Args {
     let start = stack!(self).len();
     let count = args.len();
     stack_mut!(self).extend_from_slice(args);
     Args { start, count }
   }
 
-  fn pop_args(&mut self, args: Args) {
+  pub(crate) fn pop_args(&mut self, args: Args) {
     stack_mut!(self).truncate(args.start)
   }
 
-  /// Args are passed through the stack:
-  /// - `self.stack[args_start]` is the first arg
-  /// - `self.stack[args_start+num_args]` is the last arg
-  ///
-  /// If the call pushes a call frame, `return_addr` is stored in that call
-  /// frame and the `pc` will be restored to it during `op_return`.
-  ///
-  /// If `return_addr` is `None`, the resulting call frame when popped will
-  /// yield to the VM's host.
-  fn do_call(
-    &mut self,
-    value: Value,
-    args: Args,
-    return_addr: Option<usize>,
-  ) -> Result<dispatch::Call> {
-    let object = match value.try_to_any() {
-      Ok(f) => f,
-      Err(f) => fail!("cannot call value `{f}`"),
-    };
-
-    if object.is::<Function>() {
-      let function = unsafe { object.cast_unchecked::<Function>() };
-      self.call_function(function, args, return_addr)
-    } else if object.is::<ClassMethod>() {
-      let method = unsafe { object.cast_unchecked::<ClassMethod>() };
-      if method.this().is::<NativeClassInstance>() {
-        let this = unsafe { method.this().cast_unchecked::<NativeClassInstance>() };
-        let function = method.function();
-        self.call_native_method(this, function, args)
-      } else {
-        let this = method.this();
-        let function = method.function();
-        self.call_method(this, function, args, return_addr)
-      }
-    } else if object.is::<BuiltinFunction>() {
-      let function = unsafe { object.cast_unchecked::<BuiltinFunction>() };
-      self.call_builtin_function(function, args)
-    } else if object.is::<BuiltinAsyncFunction>() {
-      let function = unsafe { object.cast_unchecked::<BuiltinAsyncFunction>() };
-      self.call_builtin_async_function(function, args)
-    } else if object.is::<BuiltinMethod>() {
-      let method = unsafe { object.cast_unchecked::<BuiltinMethod>() };
-      self.call_builtin_method(method, args)
-    } else if object.is::<ClassType>() {
-      let class = unsafe { object.cast_unchecked::<ClassType>() };
-      self.init_class(class, args)
-    } else if object.is::<NativeFunction>() {
-      let function = unsafe { object.cast_unchecked::<NativeFunction>() };
-      self.call_native_function(function, args)
-    } else if object.is::<NativeAsyncFunction>() {
-      let function = unsafe { object.cast_unchecked::<NativeAsyncFunction>() };
-      self.call_native_async_function(function, args)
-    } else if object.is::<NativeClass>() {
-      let class = unsafe { object.cast_unchecked::<NativeClass>() };
-      self.init_native_class(class, args)
-    } else {
-      fail!("cannot call object `{object}`")
+  fn do_call(&mut self, function: Ptr<Any>, args: Args, return_addr: usize) -> Result<Call> {
+    match function.call(self.get_scope(args), Some(return_addr)) {
+      Ok(call) => match call {
+        CallResult::Return(value) => {
+          self.acc = value;
+          Ok(Call::Continue)
+        }
+        CallResult::Poll(frame) => Ok(Call::Poll(frame)),
+        CallResult::Dispatch => {
+          let bytecode = current_call_frame!(self).instructions;
+          let pc = 0;
+          Ok(Call::LoadFrame(LoadFrame { bytecode, pc }))
+        }
+      },
+      Err(e) => Err(e),
     }
-  }
-
-  fn call_function(
-    &mut self,
-    function: Ptr<Function>,
-    args: Args,
-    return_addr: Option<usize>,
-  ) -> Result<dispatch::Call> {
-    check_args(&function.descriptor.params, false, args.count)?;
-
-    self.push_frame(function.clone(), return_addr);
-
-    let slot0 = if !function.descriptor.params.has_self {
-      Slot0::Function(Value::object(function.clone()))
-    } else {
-      Slot0::None
-    };
-    let _ = self.enter_scope(slot0, args, Some(function.descriptor.frame_size));
-
-    Ok(
-      dispatch::LoadFrame {
-        bytecode: function.descriptor.instructions,
-        pc: 0,
-      }
-      .into(),
-    )
-  }
-
-  fn call_method(
-    &mut self,
-    this: Ptr<Any>,
-    function: Ptr<Any>,
-    args: Args,
-    return_addr: Option<usize>,
-  ) -> Result<dispatch::Call> {
-    let function = unsafe { function.cast_unchecked::<Function>() };
-    check_args(&function.descriptor.params, true, args.count)?;
-
-    self.pc = 0;
-    unsafe {
-      self.stack.as_mut().base = self.stack.as_ref().regs.len();
-    }
-
-    call_frames_mut!(self).push(Frame {
-      instructions: function.descriptor.instructions,
-      constants: function.descriptor.constants,
-      upvalues: function.upvalues.clone(),
-      frame_size: function.descriptor.frame_size,
-      return_addr,
-      module_id: function.module_id,
-    });
-
-    // receiver is passed implicitly through the `ClassMethod` wrapper
-    stack_mut!(self).push(Value::object(this));
-    stack_mut!(self).extend_from_within(args.start..args.start + args.count);
-    stack_mut!(self)
-      .extend((0..function.descriptor.frame_size - args.count - 1).map(|_| Value::none()));
-
-    Ok(
-      dispatch::LoadFrame {
-        bytecode: function.descriptor.instructions,
-        pc: 0,
-      }
-      .into(),
-    )
-  }
-
-  // TODO: deduplicate
-  // - do_native_call
-  // - do_native_async_call
-  // - also some kind of push_args-like thing
-
-  fn call_native_method(
-    &mut self,
-    this: Ptr<NativeClassInstance>,
-    function: Ptr<Any>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    // TODO: native (async) method should store its receiver
-    let scope = self.enter_scope(Slot0::Receiver(Value::object(this)), args, None);
-
-    if let Some(function) = function.clone_cast::<NativeFunction>() {
-      let result = function.call(scope.clone());
-      self.leave_scope(scope);
-      self.acc = result?;
-      Ok(dispatch::Call::Continue)
-    } else {
-      let function = unsafe { function.cast_unchecked::<NativeAsyncFunction>() };
-
-      let fut = function.call(scope.clone());
-      self.async_frame.replace(AsyncFrame {
-        fut,
-        args: scope.args,
-      });
-
-      Ok(dispatch::Call::Yield)
-    }
-  }
-
-  fn call_builtin_function(
-    &mut self,
-    function: Ptr<BuiltinFunction>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    let scope = self.enter_scope(Slot0::None, args, None);
-    let result = function.call(scope.clone());
-    self.leave_scope(scope);
-    self.acc = result?;
-    Ok(dispatch::Call::Continue)
-  }
-
-  fn call_builtin_async_function(
-    &mut self,
-    function: Ptr<BuiltinAsyncFunction>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    if !self.poll {
-      fail!(
-        "cannot call builtin async function `{}` in a non-async context",
-        function.name
-      );
-    }
-    let scope = self.enter_scope(Slot0::None, args, None);
-    let fut = function.call(scope.clone());
-    self.async_frame.replace(AsyncFrame {
-      fut,
-      args: scope.args,
-    });
-
-    Ok(dispatch::Call::Yield)
-  }
-
-  fn call_builtin_method(
-    &mut self,
-    method: Ptr<BuiltinMethod>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    // TODO: put this in a function
-    let scope = self.enter_scope(Slot0::None, args, None);
-    let result = method.call(scope.clone());
-    self.leave_scope(scope);
-    self.acc = result?;
-    Ok(dispatch::Call::Continue)
-  }
-
-  // TODO: change to not recurse
-  fn init_class(&mut self, class: Ptr<ClassType>, args: Args) -> Result<dispatch::Call> {
-    let instance = self
-      .global
-      .alloc(ClassInstance::new(self.global.clone(), &class));
-
-    if let Some(init) = class.init.as_ref() {
-      check_args(&init.descriptor.params, true, args.count)?;
-
-      let _ = self.call_method(
-        instance.clone().into_any(),
-        init.clone().into_any(),
-        args,
-        None,
-      )?;
-      self.run()?;
-    } else if args.count > 0 {
-      fail!("expected at most 0 args");
-    }
-
-    instance.is_frozen.set(true);
-
-    self.acc = Value::object(instance);
-
-    Ok(dispatch::Call::Continue)
-  }
-
-  fn init_native_class(&mut self, class: Ptr<NativeClass>, args: Args) -> Result<dispatch::Call> {
-    let Some(init) = class.init.clone() else {
-      fail!("native class `{}` has no initializer", class.name);
-    };
-
-    self.call_native_function(init, args)
-  }
-
-  fn call_native_function(
-    &mut self,
-    function: Ptr<NativeFunction>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    let scope = self.enter_scope(Slot0::None, args, None);
-    let result = function.call(scope.clone());
-    self.leave_scope(scope);
-    self.acc = result?;
-    Ok(dispatch::Call::Continue)
-  }
-
-  fn call_native_async_function(
-    &mut self,
-    function: Ptr<NativeAsyncFunction>,
-    args: Args,
-  ) -> Result<dispatch::Call> {
-    if !self.poll {
-      fail!(
-        "cannot call async function `{}` in a non-async context",
-        function.name
-      );
-    }
-    let scope = self.enter_scope(Slot0::None, args, None);
-    let fut = function.call(scope.clone());
-    self.async_frame.replace(AsyncFrame {
-      fut,
-      args: scope.args,
-    });
-
-    Ok(dispatch::Call::Yield)
-  }
-
-  pub(crate) fn call_native_field_getter(
-    &mut self,
-    instance: Ptr<NativeClassInstance>,
-    getter: Ptr<NativeFunction>,
-  ) -> Result<Value> {
-    let scope = self.enter_scope(
-      Slot0::Receiver(Value::object(instance)),
-      Args::empty(),
-      None,
-    );
-    let result = getter.call(scope.clone());
-    self.leave_scope(scope);
-    result
-  }
-
-  pub(crate) fn call_native_field_setter(
-    &mut self,
-    instance: Ptr<NativeClassInstance>,
-    setter: Ptr<NativeFunction>,
-    value: Value,
-  ) -> Result<()> {
-    let args = Args {
-      start: stack!(self).len(),
-      count: 1,
-    };
-    stack_mut!(self).push(value);
-    let scope = self.enter_scope(Slot0::Receiver(Value::object(instance)), args, None);
-    let result = setter.call(scope.clone()).map(|_| ());
-    self.leave_scope(scope);
-    result
   }
 
   fn make_fn(&mut self, desc: Ptr<FunctionDescriptor>) -> Ptr<Function> {
@@ -481,15 +207,11 @@ impl Thread {
     fields: Option<Ptr<Table>>,
     parent: Option<Ptr<ClassType>>,
   ) -> Ptr<ClassType> {
-    let mut init = None;
+    let init = desc.init.as_ref().map(|init| self.make_fn(init.clone()));
     let fields = fields.unwrap_or_else(|| self.global.alloc(Table::new()));
     let mut methods = IndexMap::with_capacity(desc.methods.len());
     for (key, desc) in desc.methods.iter() {
-      let method = self.make_fn(desc.clone());
-      if key == &"init" {
-        init = Some(method.clone());
-      }
-      methods.insert(key.clone(), method);
+      methods.insert(key.clone(), self.make_fn(desc.clone()));
     }
     self.global.alloc(ClassType::new(
       desc.name.clone(),
@@ -500,14 +222,14 @@ impl Thread {
     ))
   }
 
-  fn load_module(&mut self, path: Ptr<Str>, return_addr: usize) -> Result<dispatch::Call> {
+  fn load_module(&mut self, path: Ptr<Str>, return_addr: usize) -> Result<Call> {
     if let Some((module_id, module)) = self.global.get_module_by_name(path.as_str()) {
       // module is in cache
       if self.global.is_module_visited(module_id) {
         fail!("attempted to import partially initialized module {path}");
       }
       self.acc = Value::object(module);
-      return Ok(dispatch::Call::Continue);
+      return Ok(Call::Continue);
     }
 
     // module is not in cache, actually load it
@@ -533,11 +255,11 @@ impl Thread {
       fail!("expected module kind to be `script`");
     };
 
-    self.do_call(
-      Value::object(root.clone()),
-      Args::empty(),
-      Some(return_addr),
-    )
+    <Function as Object>::call(self.get_empty_scope(), root.clone(), Some(return_addr))?;
+    Ok(Call::LoadFrame(LoadFrame {
+      bytecode: root.descriptor.instructions,
+      pc: 0,
+    }))
   }
 
   fn get_empty_scope(&self) -> Scope {
@@ -548,7 +270,7 @@ impl Thread {
     Scope::new(self, args)
   }
 
-  fn push_frame(&mut self, f: Ptr<Function>, return_addr: Option<usize>) {
+  pub(crate) fn push_frame(&mut self, f: Ptr<Function>, return_addr: Option<usize>) {
     self.pc = 0;
     let stack_base = stack!(self).len();
     unsafe { self.stack.as_mut().base = stack_base };
@@ -563,7 +285,12 @@ impl Thread {
     });
   }
 
-  fn enter_scope(&mut self, slot0: Slot0, args: Args, frame_size: Option<usize>) -> Scope<'static> {
+  pub(crate) fn enter_new_scope(
+    &mut self,
+    slot0: Slot0,
+    args: Args,
+    frame_size: Option<usize>,
+  ) -> Scope<'static> {
     let start = stack!(self).len();
     let count = slot0.is_some() as usize + args.count;
 
@@ -574,12 +301,8 @@ impl Thread {
     stack_mut!(self).extend_from_within(args.start..args.start + args.count);
 
     if let Some(frame_size) = frame_size {
-      debug_assert!(frame_size >= args.count);
-      let mut remainder = frame_size - args.count;
-      if slot0.is_function() {
-        remainder -= 1;
-      }
-      stack_mut!(self).extend((0..remainder).map(|_| Value::none()));
+      debug_assert!(frame_size >= count);
+      stack_mut!(self).extend((0..frame_size - count).map(|_| Value::none()));
     }
 
     let args = Args { start, count };
@@ -587,12 +310,18 @@ impl Thread {
     Scope::new(self, args)
   }
 
-  fn leave_scope(&mut self, scope: Scope) {
+  pub(crate) fn leave_scope(&mut self, scope: Scope) {
     stack_mut!(self).truncate(scope.args.start);
   }
 }
 
-enum Slot0 {
+pub enum CallResult {
+  Return(Value),
+  Poll(AsyncFrame),
+  Dispatch,
+}
+
+pub enum Slot0 {
   Receiver(Value),
   Function(Value),
   None,
@@ -646,9 +375,9 @@ impl Debug for Thread {
   }
 }
 
-pub(crate) struct AsyncFrame {
-  fut: LocalBoxFuture<'static, Result<Value>>,
-  args: Args,
+pub struct AsyncFrame {
+  pub fut: LocalBoxFuture<'static, Result<Value>>,
+  pub args: Args,
 }
 
 pub(crate) struct Frame {
@@ -696,6 +425,13 @@ impl Thread {
 
 impl Handler for Thread {
   type Error = crate::vm::Error;
+
+  fn print_stack(&self) {
+    let base = unsafe { self.stack.as_ref().base };
+    let stack = &stack!(self)[base..];
+    println!("  stack: [{}]", stack.iter().join(", "));
+    println!("  acc: {}", self.acc);
+  }
 
   fn op_load(&mut self, reg: op::Register) -> Result<()> {
     self.acc = self.get_register(reg);
@@ -808,9 +544,10 @@ impl Handler for Thread {
     // native class methods
     // class methods
 
-    if let Some(object) = receiver.to_any() {
+    if let Some(object) = receiver.clone().to_any() {
       self.acc = object.named_field(self.get_empty_scope(), name)?;
     } else {
+      println!("load_field `{receiver}`.`{name}`");
       // TODO: fields on primitives
       todo!("fields on primitives")
     }
@@ -1349,30 +1086,35 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_call(
-    &mut self,
-    return_addr: usize,
-    callee: op::Register,
-    args: op::Count,
-  ) -> Result<dispatch::Call> {
-    let f = self.get_register(callee);
+  fn op_call(&mut self, return_addr: usize, callee: op::Register, args: op::Count) -> Result<Call> {
+    let function = self.get_register(callee);
     let args = Args {
       start: stack_base!(self) + callee.index() + 1,
       count: args.value(),
     };
-    self.do_call(f, args, Some(return_addr))
+
+    let Some(function) = function.clone().to_any() else {
+      fail!("`{function}` is not callable");
+    };
+
+    self.do_call(function, args, return_addr)
   }
 
-  fn op_call0(&mut self, return_addr: usize) -> Result<dispatch::Call> {
-    let f = take(&mut self.acc);
+  fn op_call0(&mut self, return_addr: usize) -> Result<Call> {
+    let function = take(&mut self.acc);
     let args = Args {
       start: stack!(self).len(),
       count: 0,
     };
-    self.do_call(f, args, Some(return_addr))
+
+    let Some(function) = function.clone().to_any() else {
+      fail!("`{function}` is not callable");
+    };
+
+    self.do_call(function, args, return_addr)
   }
 
-  fn op_import(&mut self, path: op::Constant, return_addr: usize) -> Result<dispatch::Call> {
+  fn op_import(&mut self, path: op::Constant, return_addr: usize) -> Result<Call> {
     let path = self.get_constant_object::<Str>(path);
     self.load_module(path, return_addr)
   }
@@ -1387,7 +1129,7 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_return(&mut self) -> Result<dispatch::Return> {
+  fn op_return(&mut self) -> Result<Return> {
     // return value is in the accumulator
 
     // pop frame
@@ -1403,15 +1145,15 @@ impl Handler for Thread {
         if let Some(return_addr) = frame.return_addr {
           // restore pc
           self.pc = return_addr;
-          dispatch::Return::LoadFrame(dispatch::LoadFrame {
+          Return::LoadFrame(LoadFrame {
             bytecode: current_frame.instructions,
             pc: self.pc,
           })
         } else {
-          dispatch::Return::Yield
+          Return::Yield
         }
       }
-      None => dispatch::Return::Yield,
+      None => Return::Yield,
     })
   }
 

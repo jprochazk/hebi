@@ -4,8 +4,10 @@ expression: snapshot
 ---
 # Source:
 class Counter:
-  fn init(self, max):
-    self.n = 0
+  n = 0
+  max = 0
+
+  init(self, max):
     self.max = max
 
   fn iter(self):

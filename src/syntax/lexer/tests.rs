@@ -106,7 +106,7 @@ fn clamp(v, min, max):
   else: v
 
 class Test:
-  fn init(self, n):
+  init(self, n):
     self.n = n
 
   fn get_n(self):

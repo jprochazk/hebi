@@ -238,7 +238,12 @@ impl<'src> Parser<'src> {
 
     if self.bump_if(Kw_Self) {
       if self.state.current_class.is_none()
-        || !self.state.current_func.map(|f| f.has_self).unwrap_or(false)
+        || !self
+          .state
+          .current_func
+          .as_ref()
+          .map(|f| f.has_self)
+          .unwrap_or(false)
       {
         fail!(
           @self.previous().span,
@@ -256,7 +261,13 @@ impl<'src> Parser<'src> {
             "cannot access `super` in a class with no parent class",
           );
         }
-        if !self.state.current_func.map(|f| f.has_self).unwrap_or(false) {
+        if !self
+          .state
+          .current_func
+          .as_ref()
+          .map(|f| f.has_self)
+          .unwrap_or(false)
+        {
           fail!(
             @self.previous().span,
             "cannot access `super` outside of a class method that takes `self`",

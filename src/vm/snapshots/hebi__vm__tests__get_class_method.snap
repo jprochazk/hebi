@@ -11,7 +11,7 @@ T().test
 
 # Result:
 Object(
-    ClassMethod {
+    BoundFunction {
         this: ClassInstance {
             name: "T",
             fields: {
@@ -39,9 +39,6 @@ Object(
                 ),
             },
             parent: None,
-            is_frozen: Cell {
-                value: true,
-            },
         },
         function: Function {
             descriptor: FunctionDescriptor {

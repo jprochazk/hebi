@@ -6,15 +6,17 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 
-use super::class::ClassMethod;
-use super::{Any, Object, Ptr, Str};
+use super::{Any, Object, Ptr, ReturnAddr, Str};
 use crate::value::Value;
 use crate::vm::global::Global;
+use crate::vm::thread::AsyncFrame;
+use crate::vm::thread::CallResult;
+use crate::vm::thread::Slot0;
 use crate::{Result, Scope};
 
-pub type Callback<R> = Arc<dyn Fn(Scope<'_>) -> R + Send + Sync + 'static>;
 pub type LocalBoxFuture<'a, T> = Pin<Box<dyn core::future::Future<Output = T> + 'a>>;
 
+pub type Callback<R> = Arc<dyn Fn(Scope<'_>) -> R + Send + Sync + 'static>;
 pub type SyncCallback = Callback<Result<Value>>;
 pub type AsyncCallback = Callback<LocalBoxFuture<'static, Result<Value>>>;
 
@@ -50,6 +52,10 @@ impl Object for NativeFunction {
 
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
+  }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    NativeFunction::call(this.as_ref(), scope).map(CallResult::Return)
   }
 }
 
@@ -88,6 +94,14 @@ impl Object for NativeAsyncFunction {
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
   }
+
+  fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    let args = scope.args;
+    Ok(CallResult::Poll(AsyncFrame {
+      fut: NativeAsyncFunction::call(this.as_ref(), scope),
+      args,
+    }))
+  }
 }
 
 declare_object_type!(NativeAsyncFunction);
@@ -115,13 +129,17 @@ impl Object for NativeClassInstance {
 
   fn named_field(mut scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
-      scope
-        .thread
-        .call_native_field_getter(this.clone(), getter.clone())
+      // TODO: flatten
+      let inner_scope = scope.thread.enter_new_scope(
+        Slot0::Receiver(Value::object(this.clone())),
+        scope.args,
+        None,
+      );
+      NativeFunction::call(getter.as_ref(), inner_scope)
     } else if let Some(method) = this.class.methods.get(name.as_str()) {
-      Ok(Value::object(scope.alloc(ClassMethod::new(
-        this.clone().into_any(),
-        method.to_object(),
+      Ok(Value::object(scope.alloc(NativeBoundFunction::new(
+        this.clone(),
+        method.clone(),
       ))))
     } else {
       fail!("`{this}` has no field `{name}`")
@@ -134,14 +152,17 @@ impl Object for NativeClassInstance {
     name: Ptr<Str>,
   ) -> Result<Option<Value>> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
-      scope
-        .thread
-        .call_native_field_getter(this.clone(), getter.clone())
-        .map(Some)
+      // TODO: flatten
+      let inner_scope = scope.thread.enter_new_scope(
+        Slot0::Receiver(Value::object(this.clone())),
+        scope.args,
+        None,
+      );
+      NativeFunction::call(getter.as_ref(), inner_scope).map(Some)
     } else if let Some(method) = this.class.methods.get(name.as_str()) {
-      Ok(Some(Value::object(scope.alloc(ClassMethod::new(
-        this.clone().into_any(),
-        method.to_object(),
+      Ok(Some(Value::object(scope.alloc(NativeBoundFunction::new(
+        this.clone(),
+        method.clone(),
       )))))
     } else {
       Ok(None)
@@ -160,9 +181,12 @@ impl Object for NativeClassInstance {
       .get(name.as_str())
       .and_then(|field| field.set.as_ref())
     {
-      scope
-        .thread
-        .call_native_field_setter(this.clone(), setter.clone(), value)
+      let args = scope.thread.push_args(&[value]);
+      let inner_scope =
+        scope
+          .thread
+          .enter_new_scope(Slot0::Receiver(Value::object(this.clone())), args, None);
+      NativeFunction::call(setter.as_ref(), inner_scope).map(|_| ())
     } else {
       fail!("`{this}` has no field `{name}`")
     }
@@ -177,8 +201,8 @@ pub struct NativeClass {
   pub type_id: TypeId,
   pub init: Option<Ptr<NativeFunction>>,
   pub fields: IndexMap<Ptr<Str>, NativeField>,
-  pub methods: IndexMap<Ptr<Str>, NativeMethod>,
-  pub static_methods: IndexMap<Ptr<Str>, NativeMethod>,
+  pub methods: IndexMap<Ptr<Str>, Ptr<Any>>,
+  pub static_methods: IndexMap<Ptr<Str>, Ptr<Any>>,
 }
 
 impl NativeClass {
@@ -215,14 +239,14 @@ impl NativeClass {
     let mut methods = IndexMap::with_capacity(desc.methods.len());
     for (name, desc) in desc.methods.iter() {
       let name = global.alloc(Str::owned(name.clone()));
-      let method = NativeMethod::new(global.clone(), name.clone(), desc.clone());
+      let method = desc.to_function(name.clone(), &global);
       methods.insert(name, method);
     }
 
     let mut static_methods = IndexMap::with_capacity(desc.static_methods.len());
     for (name, desc) in desc.static_methods.iter() {
       let name = global.alloc(Str::owned(name.clone()));
-      let method = NativeMethod::new(global.clone(), name.clone(), desc.clone());
+      let method = desc.to_function(name.clone(), &global);
       static_methods.insert(name, method);
     }
 
@@ -254,9 +278,9 @@ impl Object for NativeClass {
 
   fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
-      Ok(Value::object(method.to_object()))
+      Ok(Value::object(method.clone()))
     } else if let Some(method) = this.methods.get(name.as_str()) {
-      Ok(Value::object(method.to_object()))
+      Ok(Value::object(method.clone()))
     } else {
       fail!("failed to get field `{name}`")
     }
@@ -268,47 +292,83 @@ impl Object for NativeClass {
     name: Ptr<Str>,
   ) -> crate::Result<Option<Value>> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
-      Ok(Some(Value::object(method.to_object())))
+      Ok(Some(Value::object(method.clone())))
     } else if let Some(method) = this.methods.get(name.as_str()) {
-      Ok(Some(Value::object(method.to_object())))
+      Ok(Some(Value::object(method.clone())))
     } else {
       Ok(None)
     }
+  }
+
+  fn call(_: Scope<'_>, _: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    todo!("native class init")
   }
 }
 
 declare_object_type!(NativeClass);
 
 #[derive(Debug)]
-pub enum NativeMethod {
-  Sync(Ptr<NativeFunction>),
-  Async(Ptr<NativeAsyncFunction>),
+pub struct NativeBoundFunction {
+  pub this: Ptr<NativeClassInstance>,
+  pub function: Ptr<Any>, // NativeFunction or NativeAsyncFunction
 }
 
-impl NativeMethod {
-  pub fn new(global: Global, name: Ptr<Str>, method: NativeMethodDescriptor) -> Self {
-    match method {
-      NativeMethodDescriptor::Sync(method) => Self::Sync(global.alloc(NativeFunction {
-        name,
-        cb: method.clone(),
-      })),
-      NativeMethodDescriptor::Async(method) => Self::Async(global.alloc(NativeAsyncFunction {
-        name,
-        cb: method.clone(),
-      })),
-    }
+impl NativeBoundFunction {
+  fn new(this: Ptr<NativeClassInstance>, function: Ptr<Any>) -> Self {
+    debug_assert!(function.is::<NativeFunction>() || function.is::<NativeAsyncFunction>());
+    Self { this, function }
+  }
+}
+
+impl Display for NativeBoundFunction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    // TODO: name
+    write!(f, "<native bound fn>")
+  }
+}
+
+impl Object for NativeBoundFunction {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "NativeBoundFunction"
   }
 
-  pub fn to_object(&self) -> Ptr<Any> {
-    match self {
-      NativeMethod::Sync(method) => method.clone().into_any(),
-      NativeMethod::Async(method) => method.clone().into_any(),
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
+
+  fn call(mut scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
+    let args = scope.args;
+    let inner_scope = scope.thread.enter_new_scope(
+      Slot0::Receiver(Value::object(this.this.clone())),
+      args,
+      None,
+    );
+    if this.function.is::<NativeFunction>() {
+      let function = unsafe { this.function.clone().cast_unchecked::<NativeFunction>() };
+      let result = NativeFunction::call(function.as_ref(), inner_scope).map(CallResult::Return);
+      scope.thread.pop_args(args);
+      result
+    } else {
+      // TODO: the outer scope is not left
+      let function = unsafe {
+        this
+          .function
+          .clone()
+          .cast_unchecked::<NativeAsyncFunction>()
+      };
+      Ok(CallResult::Poll(AsyncFrame {
+        fut: NativeAsyncFunction::call(function.as_ref(), inner_scope),
+        args,
+      }))
     }
   }
 }
+
+declare_object_type!(NativeBoundFunction);
 
 #[derive(Debug)]
 pub struct NativeField {
+  // TODO: these probably don't need to be function objects
   pub get: Ptr<NativeFunction>,
   pub set: Option<Ptr<NativeFunction>>,
 }
@@ -332,4 +392,23 @@ pub struct NativeFieldDescriptor {
 pub enum NativeMethodDescriptor {
   Sync(SyncCallback),
   Async(AsyncCallback),
+}
+
+impl NativeMethodDescriptor {
+  fn to_function(&self, name: Ptr<Str>, global: &Global) -> Ptr<Any> {
+    match self {
+      NativeMethodDescriptor::Sync(cb) => global
+        .alloc(NativeFunction {
+          name,
+          cb: cb.clone(),
+        })
+        .into_any(),
+      NativeMethodDescriptor::Async(cb) => global
+        .alloc(NativeAsyncFunction {
+          name,
+          cb: cb.clone(),
+        })
+        .into_any(),
+    }
+  }
 }

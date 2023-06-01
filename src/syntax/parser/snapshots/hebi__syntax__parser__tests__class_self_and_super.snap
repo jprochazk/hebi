@@ -11,6 +11,7 @@ Module {
                 ),
                 parent: None,
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [
                         Func {
@@ -47,6 +48,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
+                    init: None,
                     fields: [],
                     methods: [
                         Func {
@@ -84,8 +86,7 @@ Module {
                     ),
                 ),
                 members: ClassMembers {
-                    fields: [],
-                    methods: [
+                    init: Some(
                         Func {
                             name: Ident(
                                 "init",
@@ -123,7 +124,9 @@ Module {
                             ],
                             has_yield: false,
                         },
-                    ],
+                    ),
+                    fields: [],
+                    methods: [],
                 },
             },
         ),

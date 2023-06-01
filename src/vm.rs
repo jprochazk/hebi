@@ -4,6 +4,7 @@ pub mod dispatch;
 pub mod global;
 pub mod thread;
 
+use std::future::Future;
 use std::ptr::NonNull;
 
 use beef::lean::Cow;
@@ -12,13 +13,14 @@ use module::Module;
 
 use self::global::{Input, Output};
 use self::thread::{Stack, Thread};
-use crate as hebi;
 use crate::module::NativeModule;
 use crate::object::function::Disassembly;
 use crate::object::module::ModuleId;
+use crate::object::Any;
 use crate::object::{builtin, module, Function, List, Ptr, Str};
 use crate::span::SpannedError;
 use crate::value::Value;
+use crate::Result;
 use crate::{codegen, syntax, Error, ModuleLoader};
 
 pub struct Vm {
@@ -31,7 +33,7 @@ struct DefaultModuleLoader {}
 
 impl module::ModuleLoader for DefaultModuleLoader {
   // TODO: return user error
-  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>> {
+  fn load(&self, path: &str) -> Result<Cow<'static, str>> {
     Err(Error::Vm(SpannedError::new(
       format!("failed to load module {path}"),
       0..0,
@@ -86,12 +88,12 @@ impl Vm {
     }
   }
 
-  pub async fn eval(&mut self, code: &str) -> hebi::Result<Value> {
+  pub async fn eval(&mut self, code: &str) -> Result<Value> {
     let chunk = self.compile(code)?;
-    self.run(chunk).await
+    self.entry(chunk).await
   }
 
-  pub fn compile(&self, code: &str) -> hebi::Result<Chunk> {
+  pub fn compile(&self, code: &str) -> Result<Chunk> {
     let ast = syntax::parse(self.global.clone(), code).map_err(Error::Syntax)?;
     let module = codegen::emit(self.global.clone(), &ast, "__main__", true);
     let module_id = ModuleId::global();
@@ -102,8 +104,16 @@ impl Vm {
     Ok(Chunk { main })
   }
 
-  pub async fn run(&mut self, chunk: Chunk) -> hebi::Result<Value> {
-    self.root.call(Value::object(chunk.main.clone()), &[]).await
+  pub async fn entry(&mut self, chunk: Chunk) -> Result<Value> {
+    self.root.entry(chunk.main).await
+  }
+
+  pub fn call<'a>(
+    &'a mut self,
+    callable: Ptr<Any>,
+    args: &'a [Value],
+  ) -> impl Future<Output = Result<Value>> + 'a {
+    self.root.call(callable, args)
   }
 
   pub fn register(&mut self, module: &NativeModule) {

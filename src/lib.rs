@@ -1,3 +1,5 @@
+#![allow(dead_code)] // TEMP
+
 #[macro_use]
 pub mod macros;
 

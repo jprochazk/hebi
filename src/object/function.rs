@@ -4,11 +4,15 @@ use std::ptr::NonNull;
 
 use super::module::ModuleId;
 use super::ptr::Ptr;
-use super::{List, Object, Str};
+use super::Any;
+use super::{List, Object, ReturnAddr, Str};
 use crate::bytecode::{disasm, opcode as op};
+use crate::object;
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::Result;
+use crate::vm::thread::util::check_args;
+use crate::vm::thread::{CallResult, Slot0};
+use crate::{Result, Scope};
 
 #[derive(Debug)]
 pub struct Function {
@@ -38,6 +42,23 @@ impl Object for Function {
 
   fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
     todo!()
+  }
+
+  fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
+    check_args(&this.descriptor.params, false, scope.num_args())?;
+
+    scope.thread.push_frame(this.clone(), return_addr);
+
+    let slot0 = if !this.descriptor.params.has_self {
+      Slot0::Function(Value::object(this.clone()))
+    } else {
+      Slot0::None
+    };
+    let _ = scope
+      .thread
+      .enter_new_scope(slot0, scope.args, Some(this.descriptor.frame_size));
+
+    Ok(CallResult::Dispatch)
   }
 }
 
@@ -250,3 +271,50 @@ impl Default for Params {
     Self::empty()
   }
 }
+
+// TODO: store name and type_name
+#[derive(Debug)]
+pub struct BoundFunction {
+  this: Ptr<Any>, // ClassInstance or ClassProxy
+  function: Ptr<Function>,
+}
+
+impl BoundFunction {
+  pub fn new(this: Ptr<Any>, function: Ptr<Function>) -> Self {
+    assert!(object::is_class(&this));
+
+    Self { this, function }
+  }
+}
+
+impl Display for BoundFunction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<bound fn `{}`>", self.function.descriptor.name)
+  }
+}
+
+impl Object for BoundFunction {
+  fn type_name(_: Ptr<Self>) -> &'static str {
+    "BoundFunction"
+  }
+
+  fn instance_of(_: Ptr<Self>, _: Value) -> Result<bool> {
+    todo!()
+  }
+
+  fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
+    check_args(&this.function.descriptor.params, true, scope.num_args())?;
+
+    scope.thread.push_frame(this.function.clone(), return_addr);
+
+    let _ = scope.thread.enter_new_scope(
+      Slot0::Receiver(Value::object(this.this.clone())),
+      scope.args,
+      Some(this.function.descriptor.frame_size),
+    );
+
+    Ok(CallResult::Dispatch)
+  }
+}
+
+declare_object_type!(BoundFunction);

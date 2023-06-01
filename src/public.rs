@@ -202,7 +202,7 @@ impl Hebi {
     &'cx mut self,
     chunk: Chunk<'cx>,
   ) -> impl Future<Output = Result<Value<'cx>>> + Send + 'cx {
-    let fut = self.vm.run(chunk.inner);
+    let fut = self.vm.entry(chunk.inner);
     unsafe { ForceSendFuture::new(fut) }.map_ok(|value| unsafe { value.bind_raw::<'cx>() })
   }
 
@@ -355,7 +355,7 @@ impl<'cx> Scope<'cx> {
   // TODO: does this also need to be force-Send?
   pub async fn call<'a>(
     &'a mut self,
-    value: Value<'cx>,
+    value: Any<'cx>,
     args: &'a [Value<'cx>],
   ) -> Result<Value<'cx>> {
     self
