@@ -174,11 +174,14 @@ impl Thread {
     stack_mut!(self).truncate(to)
   }
 
+  #[inline]
   fn do_call(&mut self, function: Ptr<Any>, args: Args, return_addr: usize) -> Result<Call> {
     if function.is::<Function>() {
       let function = unsafe { function.cast_unchecked::<Function>() };
-      let load_frame = Function::prepare_call(function, self, args, Some(return_addr))?;
-      return Ok(Call::LoadFrame(load_frame));
+      match Function::prepare_call(function, self, args, Some(return_addr)) {
+        Ok(frame) => return Ok(Call::LoadFrame(frame)),
+        Err(e) => return Err(e),
+      };
     }
 
     match function.call(self.get_scope(args), Some(return_addr)) {

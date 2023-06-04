@@ -50,11 +50,14 @@ impl Function {
     let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
 
-    let stack_base = stack.regs.len();
-    stack.regs.resize_with(stack_base + frame_size, Value::none);
-
+    stack.regs.reserve(frame_size);
     if !descriptor.params.has_self {
-      stack.regs[stack_base] = Value::object(this);
+      stack.regs.push(Value::object(this));
+      stack
+        .regs
+        .extend((0..frame_size - 1).map(|_| Value::none()));
+    } else {
+      stack.regs.extend((0..frame_size).map(|_| Value::none()));
     }
   }
 
@@ -73,18 +76,23 @@ impl Function {
     let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
 
-    let stack_base = stack.regs.len();
-    stack.regs.resize_with(stack_base + frame_size, Value::none);
+    stack.regs.reserve(frame_size);
 
-    let params_start = if !descriptor.params.has_self {
-      stack.regs[stack_base] = Value::object(this);
-      1 + stack_base
+    if !descriptor.params.has_self {
+      stack.regs.push(Value::object(this));
+      stack
+        .regs
+        .extend_from_within(args.start..args.start + args.count);
+      stack
+        .regs
+        .extend((0..frame_size - args.count - 1).map(|_| Value::none()));
     } else {
-      stack_base
-    };
-
-    for i in 0..args.count {
-      stack.regs[params_start + i] = stack.regs[args.start + i].clone();
+      stack
+        .regs
+        .extend_from_within(args.start..args.start + args.count);
+      stack
+        .regs
+        .extend((0..frame_size - args.count).map(|_| Value::none()));
     }
 
     Ok(LoadFrame { bytecode, pc: 0 })

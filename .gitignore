@@ -14,6 +14,7 @@ target_ra/
 # Profiling and cargo-flamegraph output
 perf.data*
 *.zst
+flamegraph*.svg
 
 # insta
 *.snap.new
