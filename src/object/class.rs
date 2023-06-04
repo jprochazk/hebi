@@ -143,8 +143,13 @@ impl Object for ClassProxy {
     Ok(method)
   }
 
-  fn call(_: Scope<'_>, _: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
-    todo!("super()")
+  fn call(scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
+    if let Some(init) = this.class.init.clone() {
+      let init = scope.alloc(BoundFunction::new(this.into_any(), init));
+      <BoundFunction as Object>::call(scope, init, return_addr)
+    } else {
+      Ok(CallResult::Return(Value::none()))
+    }
   }
 
   // TODO: delegate everything to `this`

@@ -223,12 +223,25 @@ impl Thread {
     fields: Option<Ptr<Table>>,
     parent: Option<Ptr<ClassType>>,
   ) -> Ptr<ClassType> {
-    let init = desc.init.as_ref().map(|init| self.make_fn(init.clone()));
+    let mut init = desc.init.as_ref().map(|init| self.make_fn(init.clone()));
     let fields = fields.unwrap_or_else(|| self.global.alloc(Table::new()));
     let mut methods = IndexMap::with_capacity(desc.methods.len());
+
+    // inherit `init` and methods
+    if let Some(parent) = parent.as_ref() {
+      if init.is_none() {
+        init = parent.init.clone();
+      }
+
+      for (key, method) in parent.methods.iter() {
+        methods.insert(key.clone(), method.clone());
+      }
+    }
+
     for (key, desc) in desc.methods.iter() {
       methods.insert(key.clone(), self.make_fn(desc.clone()));
     }
+
     self.global.alloc(ClassType::new(
       desc.name.clone(),
       init,
