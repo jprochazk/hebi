@@ -104,10 +104,9 @@ impl Object for BuiltinAsyncFunction {
   }
 
   fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
-    let args = scope.args;
     Ok(CallResult::Poll(AsyncFrame {
+      stack_base: scope.stack_base,
       fut: BuiltinAsyncFunction::call(this.as_ref(), scope),
-      args,
     }))
   }
 }

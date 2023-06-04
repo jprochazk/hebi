@@ -96,10 +96,9 @@ impl Object for NativeAsyncFunction {
   }
 
   fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
-    let args = scope.args;
     Ok(CallResult::Poll(AsyncFrame {
+      stack_base: scope.stack_base,
       fut: NativeAsyncFunction::call(this.as_ref(), scope),
-      args,
     }))
   }
 }
@@ -129,13 +128,14 @@ impl Object for NativeClassInstance {
 
   fn named_field(mut scope: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
-      // TODO: flatten
-      let inner_scope = scope.thread.enter_new_scope(
+      let scope = scope.enter_nested(
         Slot0::Receiver(Value::object(this.clone())),
         scope.args,
         None,
       );
-      NativeFunction::call(getter.as_ref(), inner_scope)
+      let result = NativeFunction::call(getter.as_ref(), scope.clone());
+      scope.leave();
+      result
     } else if let Some(method) = this.class.methods.get(name.as_str()) {
       Ok(Value::object(scope.alloc(NativeBoundFunction::new(
         this.clone(),
@@ -152,13 +152,14 @@ impl Object for NativeClassInstance {
     name: Ptr<Str>,
   ) -> Result<Option<Value>> {
     if let Some(getter) = this.class.fields.get(name.as_str()).map(|field| &field.get) {
-      // TODO: flatten
-      let inner_scope = scope.thread.enter_new_scope(
+      let scope = scope.enter_nested(
         Slot0::Receiver(Value::object(this.clone())),
         scope.args,
         None,
       );
-      NativeFunction::call(getter.as_ref(), inner_scope).map(Some)
+      let result = NativeFunction::call(getter.as_ref(), scope.clone()).map(Some);
+      scope.leave();
+      result
     } else if let Some(method) = this.class.methods.get(name.as_str()) {
       Ok(Some(Value::object(scope.alloc(NativeBoundFunction::new(
         this.clone(),
@@ -182,11 +183,10 @@ impl Object for NativeClassInstance {
       .and_then(|field| field.set.as_ref())
     {
       let args = scope.thread.push_args(&[value]);
-      let inner_scope =
-        scope
-          .thread
-          .enter_new_scope(Slot0::Receiver(Value::object(this.clone())), args, None);
-      NativeFunction::call(setter.as_ref(), inner_scope).map(|_| ())
+      let scope = scope.enter_nested(Slot0::Receiver(Value::object(this.clone())), args, None);
+      let result = NativeFunction::call(setter.as_ref(), scope.clone()).map(|_| ());
+      scope.leave();
+      result
     } else {
       fail!("`{this}` has no field `{name}`")
     }
@@ -300,8 +300,12 @@ impl Object for NativeClass {
     }
   }
 
-  fn call(_: Scope<'_>, _: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
-    todo!("native class init")
+  fn call(scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
+    if let Some(init) = this.init.as_ref() {
+      <NativeFunction as Object>::call(scope, init.clone(), return_addr)
+    } else {
+      fail!("native class `{}` has no initializer", this.name)
+    }
   }
 }
 
@@ -337,16 +341,15 @@ impl Object for NativeBoundFunction {
   }
 
   fn call(mut scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
-    let args = scope.args;
-    let inner_scope = scope.thread.enter_new_scope(
+    let scope = scope.enter_nested(
       Slot0::Receiver(Value::object(this.this.clone())),
-      args,
+      scope.args,
       None,
     );
     if this.function.is::<NativeFunction>() {
       let function = unsafe { this.function.clone().cast_unchecked::<NativeFunction>() };
-      let result = NativeFunction::call(function.as_ref(), inner_scope).map(CallResult::Return);
-      scope.thread.pop_args(args);
+      let result = NativeFunction::call(function.as_ref(), scope.clone()).map(CallResult::Return);
+      scope.leave();
       result
     } else {
       // TODO: the outer scope is not left
@@ -357,8 +360,8 @@ impl Object for NativeBoundFunction {
           .cast_unchecked::<NativeAsyncFunction>()
       };
       Ok(CallResult::Poll(AsyncFrame {
-        fut: NativeAsyncFunction::call(function.as_ref(), inner_scope),
-        args,
+        stack_base: scope.stack_base,
+        fut: NativeAsyncFunction::call(function.as_ref(), scope),
       }))
     }
   }

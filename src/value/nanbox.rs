@@ -63,7 +63,7 @@ pub struct Value {
 
 // Constructors
 impl Value {
-  fn new(bits: u64) -> Self {
+  const fn new(bits: u64) -> Self {
     Self {
       bits,
       _p: PhantomData,
@@ -91,7 +91,7 @@ impl Value {
     Self::new(bits)
   }
 
-  pub fn none() -> Self {
+  pub const fn none() -> Self {
     let bits = ty::NONE;
     Self::new(bits)
   }

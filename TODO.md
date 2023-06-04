@@ -1,7 +1,7 @@
 
 
-- [ ] go through usage of scopes and ensure all are being exited properly
-- [ ] fix native stuff
+- [x] go through usage of scopes and ensure all are being exited properly
+- [x] fix native stuff
 - [ ] vm fully async
   - [x] stackless import
   - [ ] stackless class init
@@ -165,3 +165,93 @@ public API accepts impl IntoValue
 Map code offset -> span
 
 also need to know which file we're in so we can report
+
+
+### codegen comparison to V8
+
+```
+LdaZero                                       ;   a = 0
+Star0                                         ;   
+
+LdaSmi [1]                                    ;   b = 1
+Star1                                         ;   
+
+LdaZero                                       ;   i = 0
+Star2                                         ;   
+
+                                              ; loop:
+Ldar a0                                       ;   i < n
+TestLessThan r2, [0]                          ;   
+
+JumpIfFalse [24] (0x120efd313ffa @ 36)        ;   jump? .end
+
+Ldar r1                                       ;   temp = a + b
+Add r0, [1]                                   ;   
+Star3                                         ;   
+
+Mov r1, r0                                    ;   a = b
+
+Mov r3, r1                                    ;   b = temp
+
+Ldar r2                                       ;   i += 1
+AddSmi [1], [2]                               ;   
+Star2                                         ;   
+
+JumpLoop [25], [0], [3] (0x120efd313fdd @ 7)  ;   jump .loop
+                                              ; end:
+
+Ldar r0                                       ;   return a
+Return                                        ;   
+
+
+
+load_smi 0        ;   a = 0
+store r2          ;   
+
+load_smi 1        ;   b = 1
+store r3          ;   
+
+load_smi 0        ;   i = 0
+store r4          ;   
+
+                  ; loop:
+load r1           ;   n0 = n        # why isn't it directly using `n`?
+store r5          ;   
+load r5           ;   
+cmp_lt r4         ;   i < n
+
+jump_if_false 32  ;   jump? .end
+
+jump 10           ;   jump .body    # numerical `for` should put the latch at end
+                                    # which would remove `jump.body` and `jump .loop` here
+                                    # the ending `jump .latch` would turn to `jump .loop`
+
+                  ; latch:
+load_smi 1        ;   i += 1
+add r4            ;   
+store r4          ;   
+
+jump_loop 14      ;   jump .loop
+
+                  ; body:
+load r2           ;   temp = a      # probably same problem as `n0` above
+store r6          ;   
+
+load r3           ;   temp += b
+add r6            ;   
+store r6          ;   
+
+load r3           ;   a = b         # need a `mov` that's a peephole of `load, store`
+store r2          ;   
+
+load r6           ;   b = temp      # also mov
+store r3          ;   
+
+jump_loop 26      ;   jump .latch
+
+load r2           ;   return a
+return            ;   
+
+load_none         ;   return none   # basic block DCE would eliminate this
+return            ;   
+```

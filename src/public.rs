@@ -19,6 +19,7 @@ use crate::object::{table, Ptr, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm;
 use crate::vm::global::{Input, Output};
+use crate::vm::thread::Slot0;
 use crate::vm::thread::{Args, Thread};
 use crate::vm::{global, Config, Vm};
 
@@ -299,15 +300,18 @@ impl<'a, 'cx> Iterator for GlobalEntries<'a, 'cx> {
 #[derive(Clone)]
 pub struct Scope<'cx> {
   pub(crate) thread: Thread,
+  pub(crate) stack_base: usize,
   pub(crate) args: Args,
   pub(crate) lifetime: PhantomData<&'cx ()>,
 }
 
 impl<'cx> Scope<'cx> {
-  pub(crate) fn new(parent: &Thread, args: Args) -> Self {
+  pub(crate) fn new(parent: &Thread, stack_base: usize, args: Args) -> Self {
+    debug_assert!(unsafe { parent.stack.as_ref() }.regs.len() >= args.start + args.count);
     let thread = Thread::new(parent.global.clone(), parent.stack);
     Scope {
       thread,
+      stack_base,
       args,
       lifetime: PhantomData,
     }
@@ -334,20 +338,19 @@ impl<'cx> Scope<'cx> {
 
   pub fn params<T: FromValuePack<'cx>>(&self) -> Result<T::Output> {
     let stack = unsafe { self.thread.stack.as_ref() };
-    let args = stack
-      .regs
-      .get(self.args.start..self.args.start + self.args.count)
-      .ok_or_else(|| error!("expected {} args, got {}", T::len(), self.args.count))?;
+    let range = self.args.start..self.args.start + self.args.count;
+    let Some(args) = stack.regs.get(range) else {
+      fail!("expected {} args, got {}", T::len(), self.args.count);
+    };
     T::from_value_pack(args, self.global())
   }
 
   pub fn param<T: FromValue<'cx>>(&self, n: usize) -> Result<T> {
     let stack = unsafe { self.thread.stack.as_ref() };
-    let value = stack
-      .regs
-      .get(self.args.start + n)
-      .cloned()
-      .ok_or_else(|| error!("missing argument {n}"))?;
+    let index = self.args.start + n;
+    let Some(value) = stack.regs.get(index).cloned() else {
+      fail!("missing argument {n}");
+    };
     let value = unsafe { value.bind_raw::<'cx>() };
     T::from_value(value, self.global())
   }
@@ -368,6 +371,21 @@ impl<'cx> Scope<'cx> {
   pub(crate) fn consume_args(&mut self, n: usize) {
     self.args.start += n;
     self.args.count -= n;
+  }
+
+  pub(crate) fn enter_nested(
+    &mut self,
+    slot0: Slot0,
+    args: Args,
+    frame_size: Option<usize>,
+  ) -> Scope<'cx> {
+    self
+      .thread
+      .enter_nested_scope(self.stack_base, slot0, args, frame_size)
+  }
+
+  pub(crate) fn leave(mut self) {
+    self.thread.truncate_stack(self.stack_base);
   }
 }
 

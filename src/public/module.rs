@@ -265,6 +265,7 @@ fn extract_this<T: Send + 'static>(scope: Scope<'_>) -> Result<(Scope<'_>, This<
       start: scope.args.start + 1,
       count: scope.args.count - 1,
     },
+    stack_base: scope.stack_base,
     lifetime: PhantomData,
   };
   Ok((scope, this))

@@ -11,6 +11,8 @@ use crate::object;
 use crate::value::constant::Constant;
 use crate::value::Value;
 use crate::vm::thread::util::check_args;
+use crate::vm::thread::Args;
+use crate::vm::thread::Thread;
 use crate::vm::thread::{CallResult, Slot0};
 use crate::{Result, Scope};
 
@@ -33,6 +35,56 @@ impl Function {
       module_id,
     }
   }
+
+  pub fn prepare_call_empty_unchecked(
+    this: Ptr<Self>,
+    thread: &mut Thread,
+    return_addr: ReturnAddr,
+  ) {
+    debug_assert!(this.descriptor.params.is_empty());
+
+    thread.push_frame(this.clone(), return_addr);
+
+    let frame_size = this.descriptor.frame_size;
+    let stack = unsafe { thread.stack.as_mut() };
+
+    let stack_base = stack.regs.len();
+    stack.regs.resize_with(stack_base + frame_size, Value::none);
+
+    if !this.descriptor.params.has_self {
+      stack.regs[stack_base] = Value::object(this);
+    }
+  }
+
+  pub fn prepare_call(
+    this: Ptr<Self>,
+    thread: &mut Thread,
+    args: Args,
+    return_addr: ReturnAddr,
+  ) -> Result<CallResult> {
+    check_args(&this.descriptor.params, false, args.count)?;
+
+    thread.push_frame(this.clone(), return_addr);
+
+    let frame_size = this.descriptor.frame_size;
+    let stack = unsafe { thread.stack.as_mut() };
+
+    let stack_base = stack.regs.len();
+    stack.regs.resize_with(stack_base + frame_size, Value::none);
+
+    let params_start = if !this.descriptor.params.has_self {
+      stack.regs[stack_base] = Value::object(this);
+      1 + stack_base
+    } else {
+      stack_base
+    };
+
+    for i in 0..args.count {
+      stack.regs[params_start + i] = stack.regs[args.start + i].clone();
+    }
+
+    Ok(CallResult::Dispatch)
+  }
 }
 
 impl Object for Function {
@@ -45,20 +97,7 @@ impl Object for Function {
   }
 
   fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
-    check_args(&this.descriptor.params, false, scope.num_args())?;
-
-    scope.thread.push_frame(this.clone(), return_addr);
-
-    let slot0 = if !this.descriptor.params.has_self {
-      Slot0::Function(Value::object(this.clone()))
-    } else {
-      Slot0::None
-    };
-    let _ = scope
-      .thread
-      .enter_new_scope(slot0, scope.args, Some(this.descriptor.frame_size));
-
-    Ok(CallResult::Dispatch)
+    Self::prepare_call(this, &mut scope.thread, scope.args, return_addr)
   }
 }
 
@@ -264,6 +303,10 @@ impl Params {
       max: 0,
     }
   }
+
+  pub fn is_empty(&self) -> bool {
+    self.min == 0 && self.max == 0
+  }
 }
 
 impl Default for Params {
@@ -307,7 +350,7 @@ impl Object for BoundFunction {
 
     scope.thread.push_frame(this.function.clone(), return_addr);
 
-    let _ = scope.thread.enter_new_scope(
+    let _ = scope.enter_nested(
       Slot0::Receiver(Value::object(this.this.clone())),
       scope.args,
       Some(this.function.descriptor.frame_size),

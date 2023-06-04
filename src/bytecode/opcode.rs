@@ -41,7 +41,6 @@ instructions! {
   MakeClassDerived(desc: Constant),
   MakeDataClass(desc: Constant, parts: Register),
   MakeDataClassDerived(desc: Constant, parts: Register),
-  FinalizeClass,
   // TODO: MakeListConst / MakeTableConst for statically known values
   MakeList(start: Register, count: Count),
   MakeListEmpty,

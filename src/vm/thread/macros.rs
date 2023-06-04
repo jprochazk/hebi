@@ -1,39 +1,3 @@
-macro_rules! get_raw {
-  ($ptr:expr, $field:ident) => {{
-    #[allow(unused_unsafe)]
-    unsafe {
-      ::core::ptr::addr_of!((*$ptr.as_ptr()).$field)
-    }
-  }};
-}
-
-macro_rules! get_raw_mut {
-  ($ptr:expr, $field:ident) => {{
-    #[allow(unused_unsafe)]
-    unsafe {
-      ::core::ptr::addr_of_mut!((*$ptr.as_ptr()).$field)
-    }
-  }};
-}
-
-macro_rules! stack_base {
-  ($self:ident) => {{
-    #[allow(unused_unsafe)]
-    unsafe {
-      ::core::ptr::read(get_raw!($self.stack, base))
-    }
-  }};
-}
-
-macro_rules! stack_base_mut {
-  ($self:ident) => {{
-    #[allow(unused_unsafe)]
-    unsafe {
-      &mut *get_raw_mut!($self.stack, base)
-    }
-  }};
-}
-
 macro_rules! stack {
   ($self:ident) => {{
     #[allow(unused_unsafe)]

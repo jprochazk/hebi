@@ -53,7 +53,6 @@ impl Clone for Thread {
 pub struct Stack {
   pub(crate) frames: Vec<Frame>,
   pub(crate) regs: Vec<Value>,
-  pub(crate) base: usize,
 }
 
 impl Stack {
@@ -61,7 +60,6 @@ impl Stack {
     Self {
       frames: Vec::with_capacity(8),
       regs: Vec::with_capacity(64),
-      base: 0,
     }
   }
 }
@@ -81,12 +79,7 @@ impl Thread {
   }
 
   pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {
-    self.push_frame(main.clone(), None);
-    let _ = self.enter_new_scope(
-      Slot0::Function(Value::object(main.clone())),
-      Args::empty(),
-      Some(main.descriptor.frame_size),
-    );
+    Function::prepare_call_empty_unchecked(main.clone(), self, None);
     match self.run().await {
       Ok(()) => Ok(take(&mut self.acc)),
       Err(e) => Err(e),
@@ -94,11 +87,12 @@ impl Thread {
   }
 
   pub async fn call(&mut self, callable: Ptr<Any>, args: &[Value]) -> Result<Value> {
+    // TODO: nested call is always `async`, no need to keep track of this on the c stack
     let poll = self.poll;
     self.poll = true;
 
     let args = self.push_args(args);
-    let result = match callable.call(Scope::new(self, args), None) {
+    let result = match callable.call(self.get_scope(args), None) {
       Ok(call) => match call {
         CallResult::Return(value) => Ok(value),
         CallResult::Poll(frame) => {
@@ -136,7 +130,7 @@ impl Thread {
         ControlFlow::Poll(poll) => {
           self.pc = poll.pc;
           self.acc = poll.frame.fut.await?;
-          self.pop_args(poll.frame.args);
+          self.truncate_stack(poll.frame.stack_base);
           continue;
         }
         ControlFlow::Return => {
@@ -156,6 +150,10 @@ impl Thread {
 
   pub(crate) fn pop_args(&mut self, args: Args) {
     stack_mut!(self).truncate(args.start)
+  }
+
+  pub(crate) fn truncate_stack(&mut self, to: usize) {
+    stack_mut!(self).truncate(to)
   }
 
   fn do_call(&mut self, function: Ptr<Any>, args: Args, return_addr: usize) -> Result<Call> {
@@ -267,13 +265,12 @@ impl Thread {
   }
 
   fn get_scope(&self, args: Args) -> Scope {
-    Scope::new(self, args)
+    Scope::new(self, stack!(self).len(), args)
   }
 
   pub(crate) fn push_frame(&mut self, f: Ptr<Function>, return_addr: Option<usize>) {
     self.pc = 0;
     let stack_base = stack!(self).len();
-    unsafe { self.stack.as_mut().base = stack_base };
 
     call_frames_mut!(self).push(Frame {
       instructions: f.descriptor.instructions,
@@ -281,12 +278,14 @@ impl Thread {
       upvalues: f.upvalues.clone(),
       frame_size: f.descriptor.frame_size,
       return_addr,
+      stack_base,
       module_id: f.module_id,
     });
   }
 
-  pub(crate) fn enter_new_scope(
+  pub(crate) fn enter_nested_scope(
     &mut self,
+    stack_base: usize,
     slot0: Slot0,
     args: Args,
     frame_size: Option<usize>,
@@ -307,11 +306,16 @@ impl Thread {
 
     let args = Args { start, count };
 
-    Scope::new(self, args)
+    Scope::new(self, stack_base, args)
   }
 
   pub(crate) fn leave_scope(&mut self, scope: Scope) {
     stack_mut!(self).truncate(scope.args.start);
+  }
+
+  #[inline(always)]
+  fn stack_base(&self) -> usize {
+    current_call_frame!(self).stack_base
   }
 }
 
@@ -377,13 +381,14 @@ impl Debug for Thread {
 
 pub struct AsyncFrame {
   pub fut: LocalBoxFuture<'static, Result<Value>>,
-  pub args: Args,
+  pub stack_base: usize,
 }
 
 pub(crate) struct Frame {
   instructions: NonNull<[u8]>,
   constants: NonNull<[Constant]>,
   upvalues: Ptr<List>,
+  stack_base: usize,
   frame_size: usize,
   return_addr: Option<usize>,
   module_id: ModuleId,
@@ -401,45 +406,64 @@ impl Thread {
 
   fn get_register(&self, reg: op::Register) -> Value {
     debug_assert!(
-      stack_base!(self) + reg.index() < stack!(self).len(),
+      self.stack_base() + reg.index() < stack!(self).len(),
       "register out of bounds {reg:?}"
     );
     unsafe {
       stack!(self)
-        .get_unchecked(stack_base!(self) + reg.index())
+        .get_unchecked(self.stack_base() + reg.index())
         .clone()
     }
   }
 
   fn set_register(&mut self, reg: op::Register, value: Value) {
     debug_assert!(
-      stack_base!(self) + reg.index() < stack!(self).len(),
+      self.stack_base() + reg.index() < stack!(self).len(),
       "register out of bounds {reg:?}"
     );
     unsafe {
-      let slot = stack_mut!(self).get_unchecked_mut(stack_base!(self) + reg.index());
+      let slot = stack_mut!(self).get_unchecked_mut(self.stack_base() + reg.index());
       *slot = value;
     };
   }
+
+  #[cfg(not(feature = "__disable_verbose_logs"))]
+  fn print_stack(&self) {
+    let base = current_call_frame!(self).stack_base;
+    let stack = &stack!(self)[base..];
+    println!("  stack: [{}]", stack.iter().join(", "));
+    println!("  acc: {}", self.acc);
+  }
+  #[cfg(feature = "__disable_verbose_logs")]
+  fn print_stack(&self) {}
+}
+
+macro_rules! vprintln {
+  ($($tt:tt)*) => {{
+    #[cfg(not(feature="__disable_verbose_logs"))]
+    {
+      println!($($tt)*);
+    }
+  }}
 }
 
 impl Handler for Thread {
   type Error = crate::vm::Error;
 
-  fn print_stack(&self) {
-    let base = unsafe { self.stack.as_ref().base };
-    let stack = &stack!(self)[base..];
-    println!("  stack: [{}]", stack.iter().join(", "));
-    println!("  acc: {}", self.acc);
-  }
-
   fn op_load(&mut self, reg: op::Register) -> Result<()> {
-    self.acc = self.get_register(reg);
+    self.print_stack();
+    vprintln!("load {reg}");
+
+    let value = self.get_register(reg);
+    self.acc = value;
 
     Ok(())
   }
 
   fn op_store(&mut self, reg: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("store {reg}");
+
     let value = take(&mut self.acc);
     self.set_register(reg, value);
 
@@ -447,24 +471,35 @@ impl Handler for Thread {
   }
 
   fn op_load_const(&mut self, idx: op::Constant) -> Result<()> {
-    self.acc = self.get_constant(idx).into_value();
+    self.print_stack();
+    vprintln!("load_const {idx}");
+
+    let value = self.get_constant(idx).into_value();
+    self.acc = value;
 
     Ok(())
   }
 
   fn op_load_upvalue(&mut self, idx: op::Upvalue) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_upvalue {idx}");
+
     let call_frame = current_call_frame!(self);
     let upvalues = &call_frame.upvalues;
     debug_assert!(
       idx.index() < upvalues.len(),
       "upvalue index is out of bounds {idx:?}"
     );
-    self.acc = unsafe { call_frame.upvalues.get_unchecked(idx.index()) };
+    let value = unsafe { call_frame.upvalues.get_unchecked(idx.index()) };
+    self.acc = value;
 
     Ok(())
   }
 
   fn op_store_upvalue(&mut self, idx: op::Upvalue) -> Result<()> {
+    self.print_stack();
+    vprintln!("store_upvalue {idx}");
+
     let call_frame = current_call_frame!(self);
     let upvalues = &call_frame.upvalues;
     debug_assert!(
@@ -478,6 +513,9 @@ impl Handler for Thread {
   }
 
   fn op_load_module_var(&mut self, idx: op::ModuleVar) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_module_var {idx}");
+
     let module_id = current_call_frame!(self).module_id;
     let module = match self.global.get_module_by_id(module_id) {
       Some(module) => module,
@@ -499,6 +537,9 @@ impl Handler for Thread {
   }
 
   fn op_store_module_var(&mut self, idx: op::ModuleVar) -> Result<()> {
+    self.print_stack();
+    vprintln!("store_module_var {idx}");
+
     let module_id = current_call_frame!(self).module_id;
     let module = match self.global.get_module_by_id(module_id) {
       Some(module) => module,
@@ -518,6 +559,9 @@ impl Handler for Thread {
   }
 
   fn op_load_global(&mut self, name: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_global {name}");
+
     let name = self.get_constant_object::<Str>(name);
     let value = match self.global.get(&name) {
       Some(value) => value,
@@ -529,6 +573,9 @@ impl Handler for Thread {
   }
 
   fn op_store_global(&mut self, name: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("store_global {name}");
+
     let name = self.get_constant_object::<Str>(name);
     let value = take(&mut self.acc);
     self.global.set(name, value);
@@ -537,6 +584,9 @@ impl Handler for Thread {
   }
 
   fn op_load_field(&mut self, name: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_field {name}");
+
     let name = self.get_constant_object::<Str>(name);
     let receiver = take(&mut self.acc);
 
@@ -544,10 +594,9 @@ impl Handler for Thread {
     // native class methods
     // class methods
 
-    if let Some(object) = receiver.clone().to_any() {
+    if let Some(object) = receiver.to_any() {
       self.acc = object.named_field(self.get_empty_scope(), name)?;
     } else {
-      println!("load_field `{receiver}`.`{name}`");
       // TODO: fields on primitives
       todo!("fields on primitives")
     }
@@ -556,6 +605,9 @@ impl Handler for Thread {
   }
 
   fn op_load_field_opt(&mut self, name: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_field_opt {name}");
+
     let name = self.get_constant_object::<Str>(name);
     let receiver = take(&mut self.acc);
 
@@ -577,6 +629,9 @@ impl Handler for Thread {
   }
 
   fn op_store_field(&mut self, obj: op::Register, name: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("store_field {obj}, {name}");
+
     let name = self.get_constant_object::<Str>(name);
     let receiver = self.get_register(obj);
     let value = take(&mut self.acc);
@@ -592,6 +647,9 @@ impl Handler for Thread {
   }
 
   fn op_load_index(&mut self, obj: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_index {obj}");
+
     let object = self.get_register(obj);
     let key = take(&mut self.acc);
 
@@ -606,6 +664,9 @@ impl Handler for Thread {
   }
 
   fn op_load_index_opt(&mut self, obj: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_index_opt {obj}");
+
     let object = self.get_register(obj);
     let key = take(&mut self.acc);
 
@@ -627,6 +688,9 @@ impl Handler for Thread {
   }
 
   fn op_store_index(&mut self, obj: op::Register, key: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("store_index {obj}, {key}");
+
     let object = self.get_register(obj);
     let key = self.get_register(key);
     let value = take(&mut self.acc);
@@ -642,6 +706,9 @@ impl Handler for Thread {
   }
 
   fn op_load_self(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_self");
+
     let this = self.get_register(op::Register(0));
 
     let this = match this.try_to_object::<ClassProxy>() {
@@ -654,6 +721,9 @@ impl Handler for Thread {
   }
 
   fn op_load_super(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_super");
+
     let this = self.get_register(op::Register(0));
 
     let Some(this) = this.to_any() else {
@@ -680,30 +750,45 @@ impl Handler for Thread {
   }
 
   fn op_load_none(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_none");
+
     self.acc = Value::none();
 
     Ok(())
   }
 
   fn op_load_true(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_true");
+
     self.acc = Value::bool(true);
 
     Ok(())
   }
 
   fn op_load_false(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_false");
+
     self.acc = Value::bool(false);
 
     Ok(())
   }
 
   fn op_load_smi(&mut self, smi: op::Smi) -> Result<()> {
+    self.print_stack();
+    vprintln!("load_smi {smi}");
+
     self.acc = Value::int(smi.value());
 
     Ok(())
   }
 
   fn op_make_fn(&mut self, desc: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_fn {desc}");
+
     let desc = self.get_constant_object::<FunctionDescriptor>(desc);
 
     // fetch upvalues
@@ -715,6 +800,9 @@ impl Handler for Thread {
   }
 
   fn op_make_class(&mut self, desc: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_class {desc}");
+
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
 
     let class = self.make_class(desc, None, None);
@@ -725,6 +813,9 @@ impl Handler for Thread {
   }
 
   fn op_make_class_derived(&mut self, desc: op::Constant) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_class_derived {desc}");
+
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
     let parent = take(&mut self.acc);
 
@@ -740,6 +831,9 @@ impl Handler for Thread {
   }
 
   fn op_make_data_class(&mut self, desc: op::Constant, parts: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_data_class {desc}, {parts}");
+
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
 
     let fields = self.global.alloc(Table::with_capacity(desc.fields.len()));
@@ -755,6 +849,9 @@ impl Handler for Thread {
   }
 
   fn op_make_data_class_derived(&mut self, desc: op::Constant, parts: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_data_class_derived {desc}, {parts}");
+
     let desc = self.get_constant_object::<ClassDescriptor>(desc);
     let parent = self.get_register(parts);
 
@@ -774,11 +871,10 @@ impl Handler for Thread {
     Ok(())
   }
 
-  fn op_finalize_class(&mut self) -> Result<(), Self::Error> {
-    todo!()
-  }
-
   fn op_make_list(&mut self, start: op::Register, count: op::Count) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_list {start}, {count}");
+
     let list = List::with_capacity(count.value());
     for reg in start.iter(count, 1) {
       list.push(self.get_register(reg));
@@ -788,11 +884,17 @@ impl Handler for Thread {
   }
 
   fn op_make_list_empty(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_list_empty");
+
     self.acc = Value::object(self.global.alloc(List::new()));
     Ok(())
   }
 
   fn op_make_table(&mut self, start: op::Register, count: op::Count) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_table {start}, {count}");
+
     let table = Table::with_capacity(count.value());
     for reg in start.iter(count, 2) {
       let key = self.get_register(reg);
@@ -809,15 +911,24 @@ impl Handler for Thread {
   }
 
   fn op_make_table_empty(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("make_table_empty");
+
     self.acc = Value::object(self.global.alloc(Table::new()));
     Ok(())
   }
 
   fn op_jump(&mut self, offset: op::Offset) -> Result<op::Offset> {
+    self.print_stack();
+    vprintln!("jump {offset}");
+
     Ok(offset)
   }
 
   fn op_jump_const(&mut self, idx: op::Constant) -> Result<op::Offset> {
+    self.print_stack();
+    vprintln!("jump_const {idx}");
+
     let offset = self.get_constant(idx).as_offset().cloned();
     debug_assert!(offset.is_some());
     let offset = unsafe { offset.unwrap_unchecked() };
@@ -825,10 +936,16 @@ impl Handler for Thread {
   }
 
   fn op_jump_loop(&mut self, offset: op::Offset) -> Result<op::Offset> {
+    self.print_stack();
+    vprintln!("jump_loop {offset}");
+
     Ok(offset)
   }
 
   fn op_jump_if_false(&mut self, offset: op::Offset) -> Result<super::dispatch::Jump> {
+    self.print_stack();
+    vprintln!("jump_if_false {offset}");
+
     match is_truthy(take(&mut self.acc)) {
       true => Ok(super::dispatch::Jump::Skip),
       false => Ok(super::dispatch::Jump::Move(offset)),
@@ -836,6 +953,9 @@ impl Handler for Thread {
   }
 
   fn op_jump_if_false_const(&mut self, idx: op::Constant) -> Result<super::dispatch::Jump> {
+    self.print_stack();
+    vprintln!("jump_if_false_const {idx}");
+
     let offset = self.get_constant(idx).as_offset().cloned();
     debug_assert!(offset.is_some());
     let offset = unsafe { offset.unwrap_unchecked() };
@@ -847,6 +967,9 @@ impl Handler for Thread {
   }
 
   fn op_add(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("add {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -859,6 +982,9 @@ impl Handler for Thread {
   }
 
   fn op_sub(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("sub {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -871,6 +997,9 @@ impl Handler for Thread {
   }
 
   fn op_mul(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("mul {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -883,6 +1012,9 @@ impl Handler for Thread {
   }
 
   fn op_div(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("div {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -901,6 +1033,9 @@ impl Handler for Thread {
   }
 
   fn op_rem(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("rem {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -919,6 +1054,9 @@ impl Handler for Thread {
   }
 
   fn op_pow(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("pow {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -931,6 +1069,9 @@ impl Handler for Thread {
   }
 
   fn op_inv(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("inv");
+
     let value = take(&mut self.acc);
     let value = if value.is_int() {
       let value = unsafe { value.to_int_unchecked() };
@@ -953,6 +1094,8 @@ impl Handler for Thread {
   }
 
   fn op_not(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("not");
     let value = take(&mut self.acc);
     let value = Value::bool(!is_truthy(value));
     self.acc = value;
@@ -960,6 +1103,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_eq(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_eq {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -972,6 +1118,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_ne(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_ne {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -984,6 +1133,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_gt(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_gt {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -996,6 +1148,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_ge(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_ge {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -1008,6 +1163,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_lt(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_lt {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -1020,6 +1178,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_le(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_le {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
     let value = binary!(lhs, rhs {
@@ -1032,6 +1193,9 @@ impl Handler for Thread {
   }
 
   fn op_cmp_type(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("cmp_type {lhs}");
+
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
 
@@ -1052,6 +1216,9 @@ impl Handler for Thread {
   }
 
   fn op_contains(&mut self, lhs: op::Register) -> Result<()> {
+    self.print_stack();
+    vprintln!("contains {lhs}");
+
     // lhs in rhs
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
@@ -1066,18 +1233,27 @@ impl Handler for Thread {
   }
 
   fn op_is_none(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("is_none");
+
     self.acc = Value::bool(self.acc.is_none());
     Ok(())
   }
 
   fn op_print(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("print");
+
     let mut output = self.global.io().output.borrow_mut();
     writeln!(&mut output, "{}", take(&mut self.acc)).map_err(Error::user)?;
     Ok(())
   }
 
   fn op_print_n(&mut self, start: op::Register, count: op::Count) -> Result<()> {
-    debug_assert!(stack_base!(self) + start.index() + count.value() <= stack!(self).len());
+    self.print_stack();
+    vprintln!("print_n {start}, {count}");
+
+    debug_assert!(self.stack_base() + start.index() + count.value() <= stack!(self).len());
 
     let mut output = self.global.io().output.borrow_mut();
     let values = stack!(self)[start.index()..start.index() + count.value()].iter();
@@ -1087,9 +1263,12 @@ impl Handler for Thread {
   }
 
   fn op_call(&mut self, return_addr: usize, callee: op::Register, args: op::Count) -> Result<Call> {
+    self.print_stack();
+    vprintln!("call {callee}, {args} (ret={return_addr})");
+
     let function = self.get_register(callee);
     let args = Args {
-      start: stack_base!(self) + callee.index() + 1,
+      start: self.stack_base() + callee.index() + 1,
       count: args.value(),
     };
 
@@ -1101,6 +1280,9 @@ impl Handler for Thread {
   }
 
   fn op_call0(&mut self, return_addr: usize) -> Result<Call> {
+    self.print_stack();
+    vprintln!("call0 (ret={return_addr})");
+
     let function = take(&mut self.acc);
     let args = Args {
       start: stack!(self).len(),
@@ -1115,11 +1297,17 @@ impl Handler for Thread {
   }
 
   fn op_import(&mut self, path: op::Constant, return_addr: usize) -> Result<Call> {
+    self.print_stack();
+    vprintln!("import {path} (ret={return_addr})");
+
     let path = self.get_constant_object::<Str>(path);
     self.load_module(path, return_addr)
   }
 
   fn op_finalize_module(&mut self) -> Result<(), Self::Error> {
+    self.print_stack();
+    vprintln!("finalize_module");
+
     let module_id = current_call_frame!(self).module_id;
     self.global.finish_module(module_id, true);
 
@@ -1130,18 +1318,19 @@ impl Handler for Thread {
   }
 
   fn op_return(&mut self) -> Result<Return> {
+    self.print_stack();
+    vprintln!("return");
+
     // return value is in the accumulator
 
     // pop frame
     let frame = call_frames_mut!(self).pop().unwrap();
 
     // truncate stack
-    let truncate_to = stack!(self).len() - frame.frame_size;
-    stack_mut!(self).truncate(truncate_to);
+    stack_mut!(self).truncate(frame.stack_base);
 
     Ok(match call_frames!(self).last() {
       Some(current_frame) => {
-        *stack_base_mut!(self) -= current_frame.frame_size;
         if let Some(return_addr) = frame.return_addr {
           // restore pc
           self.pc = return_addr;
@@ -1158,6 +1347,9 @@ impl Handler for Thread {
   }
 
   fn op_yield(&mut self) -> Result<()> {
+    self.print_stack();
+    vprintln!("yield");
+
     todo!()
   }
 }

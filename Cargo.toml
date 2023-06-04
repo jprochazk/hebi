@@ -9,7 +9,12 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
-default = ["nanbox", "__check_recursion_limit", "__assert_snapshots"]
+default = [
+  "nanbox",
+  "__check_recursion_limit",
+  "__assert_snapshots",
+  "__disable_verbose_logs",
+]
 
 # public features
 nanbox = []
@@ -17,6 +22,7 @@ nanbox = []
 # private features
 __check_recursion_limit = []
 __assert_snapshots = []
+__disable_verbose_logs = []
 
 
 [dependencies]
