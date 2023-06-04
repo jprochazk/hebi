@@ -1467,3 +1467,14 @@ TODO: more tests
   - class static methods
   - class static async methods
 */
+
+check! {
+  order_of_eval,
+  r#"#!hebi
+    a := 1
+    fn f():
+      a += 1
+      return a
+    print (a + f())
+  "#
+}
