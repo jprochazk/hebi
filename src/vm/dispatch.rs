@@ -11,7 +11,7 @@ use crate::Result;
 
 use super::thread::AsyncFrame;
 
-// #[inline(never)]
+#[inline(never)]
 pub fn dispatch<T: Handler>(
   handler: &mut T,
   bytecode: NonNull<[u8]>,
@@ -22,13 +22,8 @@ pub fn dispatch<T: Handler>(
 
   'load_frame: loop {
     let ip = bytecode.as_ptr() as *mut u8;
-    if pc >= bytecode.len() {
-      panic!(
-        "unexpected end of bytecode stream (pc={}, len={})",
-        pc,
-        bytecode.len()
-      );
-    }
+    debug_assert!(pc < bytecode.len(), "unexpected end of bytecode stream");
+
     let end = unsafe { ip.add(bytecode.len()) };
     let mut ip = unsafe { ip.add(pc) };
     let mut width = Width::Normal;
@@ -343,7 +338,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
           }
         }
         Opcode::Call0 => {
@@ -358,7 +353,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
           }
         }
         Opcode::Import => {
@@ -371,7 +366,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
+            Call::Yield => return Ok(ControlFlow::Yield(get_pc!(ip, bytecode))),
           }
         }
         Opcode::FinalizeModule => {
@@ -409,7 +404,6 @@ pub struct Poll {
 
 pub enum ControlFlow {
   Yield(usize),
-  Poll(usize),
   // TODO: is a separate `Return` needed?
   Return,
 }
@@ -428,7 +422,7 @@ pub struct LoadFrame {
 #[must_use]
 pub enum Call {
   LoadFrame(LoadFrame),
-  Poll,
+  Yield,
   Continue,
 }
 

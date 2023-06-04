@@ -1,14 +1,10 @@
 macro_rules! read_opcode {
   ($ip:ident, $end:ident) => {
     unsafe {
-      if $ip >= $end {
-        panic!(
-          "unexpected end of bytecode stream (pc={})",
-          ($ip as usize) - ($end as usize)
-        );
-      }
+      debug_assert!($ip < $end, "unexpected end of bytecode stream");
       let opcode = $ip.read();
       $ip = $ip.add(1);
+
       debug_assert!(
         $crate::bytecode::opcode::Opcode::try_from(opcode).is_ok(),
         "illegal instruction"
@@ -34,14 +30,11 @@ macro_rules! read_operands {
     type Operands =
       <$crate::bytecode::opcode::symbolic::$T as $crate::bytecode::opcode::Operands>::Operands;
     const LENGTH: usize = <Operands as $crate::util::TupleLength>::LENGTH;
+
     if LENGTH > 0 {
       unsafe {
-        if $ip >= $end {
-          panic!(
-            "unexpected end of bytecode stream (pc={})",
-            ($ip as usize) - ($end as usize)
-          );
-        }
+        debug_assert!($ip < $end, "unexpected end of bytecode stream");
+
         let operands = $crate::vm::dispatch::macros::__read_tuple::<LENGTH, Operands>($ip, $width);
         $ip = $ip.add(LENGTH * ($width as usize));
         $width = Width::Normal;

@@ -13,6 +13,7 @@ use crate::value::Value;
 use crate::vm::dispatch::LoadFrame;
 use crate::vm::thread::util::check_args;
 use crate::vm::thread::Args;
+use crate::vm::thread::Frame;
 use crate::vm::thread::Thread;
 use crate::vm::thread::{CallResult, Slot0};
 use crate::{Result, Scope};
@@ -42,13 +43,17 @@ impl Function {
     thread: &mut Thread,
     return_addr: ReturnAddr,
   ) {
-    let descriptor = this.descriptor.as_ref();
+    let function = this.as_ref();
+    let descriptor = function.descriptor.as_ref();
     debug_assert!(descriptor.params.is_empty());
-
-    thread.push_frame(this.clone(), return_addr);
 
     let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
+
+    thread.pc = 0;
+    stack
+      .frames
+      .push(Frame::new(function, stack.regs.len(), return_addr));
 
     stack.regs.reserve(frame_size);
     if !descriptor.params.has_self {
@@ -67,14 +72,18 @@ impl Function {
     args: Args,
     return_addr: ReturnAddr,
   ) -> Result<LoadFrame> {
-    let descriptor = this.descriptor.as_ref();
+    let function = this.as_ref();
+    let descriptor = function.descriptor.as_ref();
     let bytecode = descriptor.instructions;
     check_args(&descriptor.params, false, args.count)?;
 
-    thread.push_frame(this.clone(), return_addr);
-
     let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
+
+    thread.pc = 0;
+    stack
+      .frames
+      .push(Frame::new(function, stack.regs.len(), return_addr));
 
     stack.regs.reserve(frame_size);
 
@@ -359,10 +368,16 @@ impl Object for BoundFunction {
   }
 
   fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
-    let descriptor = this.function.descriptor.as_ref();
+    let bound_function = this.as_ref();
+    let function = bound_function.function.as_ref();
+    let descriptor = function.descriptor.as_ref();
     check_args(&descriptor.params, true, scope.num_args())?;
 
-    scope.thread.push_frame(this.function.clone(), return_addr);
+    scope.thread.pc = 0;
+    let stack = unsafe { scope.thread.stack.as_mut() };
+    stack
+      .frames
+      .push(Frame::new(function, stack.regs.len(), return_addr));
 
     let _ = scope.enter_nested(
       Slot0::Receiver(Value::object(this.this.clone())),

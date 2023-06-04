@@ -66,3 +66,7 @@ members = ["cli", "xtask"]
 [[bench]]
 name = "main"
 harness = false
+
+
+[profile.release]
+lto = "fat"
