@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use super::*;
 use crate as hebi;
+use crate::Scope;
 
 check! {
   example,
@@ -822,6 +823,43 @@ async fn subsequent_eval() {
   hebi.eval("v := 0").await.unwrap();
   let value = hebi.eval("v").await.unwrap().to_int();
   assert_eq!(value, Some(0));
+}
+
+#[tokio::test]
+async fn subsequent_eval_with_error() {
+  fn error(_: Scope<'_>) -> Result<()> {
+    fail!("explicit failure")
+  }
+
+  let mut hebi = Vm::default();
+  hebi.register(
+    &NativeModule::builder("test")
+      .function("error", error)
+      .finish(),
+  );
+
+  let source = indoc::indoc!(
+    r#"#!hebi
+      from test import error
+
+      fn inner():
+        error()
+      
+      inner()
+    "#
+  );
+
+  eprintln!("{}", hebi.compile(source).unwrap().disassemble());
+
+  for _ in 0..10 {
+    hebi.eval(source).await.unwrap_err();
+  }
+
+  {
+    let stack = unsafe { hebi.root.stack.as_ref() };
+    assert!(stack.frames.is_empty());
+    assert!(stack.regs.is_empty());
+  }
 }
 
 check! {

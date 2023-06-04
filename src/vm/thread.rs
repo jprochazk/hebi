@@ -34,7 +34,6 @@ pub struct Thread {
   acc: Value,
   pc: usize,
   async_frame: Option<AsyncFrame>,
-  poll: bool,
 }
 
 impl Clone for Thread {
@@ -45,7 +44,6 @@ impl Clone for Thread {
       acc: self.acc.clone(),
       pc: self.pc,
       async_frame: None,
-      poll: self.poll,
     }
   }
 }
@@ -74,22 +72,35 @@ impl Thread {
       pc: 0,
 
       async_frame: None,
-      poll: false,
+    }
+  }
+
+  fn unwind_stack(&mut self, stop_at_index: Option<usize>) {
+    let stack = unsafe { self.stack.as_mut() };
+    let start = stop_at_index.map(|v| v + 1).unwrap_or(0);
+    for frame in stack.frames.drain(start..).rev() {
+      stack.regs.truncate(frame.stack_base);
     }
   }
 
   pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {
     Function::prepare_call_empty_unchecked(main.clone(), self, None);
     match self.run().await {
-      Ok(()) => Ok(take(&mut self.acc)),
-      Err(e) => Err(e),
+      Ok(()) => {
+        let value = take(&mut self.acc);
+        debug_assert!(unsafe { self.stack.as_ref().regs.is_empty() });
+        Ok(value)
+      }
+      Err(e) => {
+        self.unwind_stack(None);
+        debug_assert!(unsafe { self.stack.as_ref().regs.is_empty() });
+        Err(e)
+      }
     }
   }
 
   pub async fn call(&mut self, callable: Ptr<Any>, args: &[Value]) -> Result<Value> {
-    // TODO: nested call is always `async`, no need to keep track of this on the c stack
-    let poll = self.poll;
-    self.poll = true;
+    let current_frame_index = unsafe { self.stack.as_ref().frames.len() };
 
     let args = self.push_args(args);
     let result = match callable.call(self.get_scope(args), None) {
@@ -111,10 +122,17 @@ impl Thread {
       },
       Err(e) => Err(e),
     };
-    self.pop_args(args);
-    self.poll = poll;
 
-    result
+    match result {
+      Ok(value) => {
+        self.pop_args(args);
+        Ok(value)
+      }
+      Err(e) => {
+        self.unwind_stack(Some(current_frame_index));
+        Err(e)
+      }
+    }
   }
 
   async fn run(&mut self) -> Result<()> {
