@@ -1,22 +1,19 @@
 macro_rules! read_opcode {
   ($ip:ident, $end:ident) => {
     unsafe {
-      let opcode = $ip.read();
       if $ip >= $end {
         panic!(
           "unexpected end of bytecode stream (pc={})",
           ($ip as usize) - ($end as usize)
         );
       }
+      let opcode = $ip.read();
       $ip = $ip.add(1);
-      match $crate::bytecode::opcode::Opcode::try_from(opcode) {
-        Ok(opcode) => opcode,
-        Err(()) => panic!(
-          "illegal instruction (pc={}, opcode={})",
-          ($ip as usize - 1) - ($end as usize),
-          opcode
-        ),
-      }
+      debug_assert!(
+        $crate::bytecode::opcode::Opcode::try_from(opcode).is_ok(),
+        "illegal instruction"
+      );
+      ::core::mem::transmute::<u8, Opcode>(opcode)
     }
   };
 }
