@@ -46,7 +46,15 @@ fn miri(cmd: &str, filters: &[String]) -> Result<()> {
   process
     .env("MIRIFLAGS", MIRIFLAGS)
     .arg(cmd)
-    .args(["--no-default-features", "-F", "nanbox", "-F", "serde"])
+    .args([
+      "--no-default-features",
+      "-F",
+      "nanbox",
+      "-F",
+      "serde",
+      "-F",
+      "__disable_verbose_logs",
+    ])
     .args(["--"]);
 
   if should_run_all(filters) {
