@@ -10,6 +10,7 @@ use crate::bytecode::{disasm, opcode as op};
 use crate::object;
 use crate::value::constant::Constant;
 use crate::value::Value;
+use crate::vm::dispatch::LoadFrame;
 use crate::vm::thread::util::check_args;
 use crate::vm::thread::Args;
 use crate::vm::thread::Thread;
@@ -41,17 +42,18 @@ impl Function {
     thread: &mut Thread,
     return_addr: ReturnAddr,
   ) {
-    debug_assert!(this.descriptor.params.is_empty());
+    let descriptor = this.descriptor.as_ref();
+    debug_assert!(descriptor.params.is_empty());
 
     thread.push_frame(this.clone(), return_addr);
 
-    let frame_size = this.descriptor.frame_size;
+    let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
 
     let stack_base = stack.regs.len();
     stack.regs.resize_with(stack_base + frame_size, Value::none);
 
-    if !this.descriptor.params.has_self {
+    if !descriptor.params.has_self {
       stack.regs[stack_base] = Value::object(this);
     }
   }
@@ -61,18 +63,20 @@ impl Function {
     thread: &mut Thread,
     args: Args,
     return_addr: ReturnAddr,
-  ) -> Result<CallResult> {
-    check_args(&this.descriptor.params, false, args.count)?;
+  ) -> Result<LoadFrame> {
+    let descriptor = this.descriptor.as_ref();
+    let bytecode = descriptor.instructions;
+    check_args(&descriptor.params, false, args.count)?;
 
     thread.push_frame(this.clone(), return_addr);
 
-    let frame_size = this.descriptor.frame_size;
+    let frame_size = descriptor.frame_size;
     let stack = unsafe { thread.stack.as_mut() };
 
     let stack_base = stack.regs.len();
     stack.regs.resize_with(stack_base + frame_size, Value::none);
 
-    let params_start = if !this.descriptor.params.has_self {
+    let params_start = if !descriptor.params.has_self {
       stack.regs[stack_base] = Value::object(this);
       1 + stack_base
     } else {
@@ -83,7 +87,7 @@ impl Function {
       stack.regs[params_start + i] = stack.regs[args.start + i].clone();
     }
 
-    Ok(CallResult::Dispatch)
+    Ok(LoadFrame { bytecode, pc: 0 })
   }
 }
 
@@ -98,6 +102,7 @@ impl Object for Function {
 
   fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
     Self::prepare_call(this, &mut scope.thread, scope.args, return_addr)
+      .map(|_| CallResult::Dispatch)
   }
 }
 
@@ -346,14 +351,15 @@ impl Object for BoundFunction {
   }
 
   fn call(mut scope: Scope<'_>, this: Ptr<Self>, return_addr: ReturnAddr) -> Result<CallResult> {
-    check_args(&this.function.descriptor.params, true, scope.num_args())?;
+    let descriptor = this.function.descriptor.as_ref();
+    check_args(&descriptor.params, true, scope.num_args())?;
 
     scope.thread.push_frame(this.function.clone(), return_addr);
 
     let _ = scope.enter_nested(
       Slot0::Receiver(Value::object(this.this.clone())),
       scope.args,
-      Some(this.function.descriptor.frame_size),
+      Some(descriptor.frame_size),
     );
 
     Ok(CallResult::Dispatch)
