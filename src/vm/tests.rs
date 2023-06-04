@@ -1221,12 +1221,14 @@ check! {
   "#
 }
 
-/* check! {
+check! {
   builtin_collect,
   r#"#!hebi
     class Counter:
+      n = 0
+      max = 0
+
       init(self, max):
-        self.n = 0
         self.max = max
 
       fn iter(self):
@@ -1243,14 +1245,14 @@ check! {
 
     collect(Counter(10))
   "#
-} */
+}
 
-/* check! {
+check! {
   builtin_collect_native,
   r#"#!hebi
     collect("a\nb\nc".lines())
   "#
-} */
+}
 
 check! {
   add_objects,

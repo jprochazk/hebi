@@ -409,7 +409,7 @@ pub fn register_builtin_functions(global: &Global) {
   bind_builtin_fn!(global, to_bool);
   bind_builtin_fn!(global, to_str);
   bind_builtin_fn!(global, type_of);
-  /* bind_builtin_fn!(global, async collect); */
+  bind_builtin_fn!(global, async collect);
 
   list::register_builtin_functions(global);
   string::register_builtin_functions(global);
