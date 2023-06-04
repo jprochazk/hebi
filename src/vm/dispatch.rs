@@ -11,6 +11,7 @@ use crate::Result;
 
 use super::thread::AsyncFrame;
 
+// #[inline(never)]
 pub fn dispatch<T: Handler>(
   handler: &mut T,
   bytecode: NonNull<[u8]>,
@@ -342,12 +343,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll(frame) => {
-              return Ok(ControlFlow::Poll(Poll {
-                frame,
-                pc: get_pc!(ip, bytecode),
-              }))
-            }
+            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
           }
         }
         Opcode::Call0 => {
@@ -362,12 +358,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll(frame) => {
-              return Ok(ControlFlow::Poll(Poll {
-                frame,
-                pc: get_pc!(ip, bytecode),
-              }))
-            }
+            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
           }
         }
         Opcode::Import => {
@@ -380,12 +371,7 @@ pub fn dispatch<T: Handler>(
               continue 'load_frame;
             }
             Call::Continue => continue,
-            Call::Poll(frame) => {
-              return Ok(ControlFlow::Poll(Poll {
-                frame,
-                pc: get_pc!(ip, bytecode),
-              }))
-            }
+            Call::Poll => return Ok(ControlFlow::Poll(get_pc!(ip, bytecode))),
           }
         }
         Opcode::FinalizeModule => {
@@ -423,7 +409,7 @@ pub struct Poll {
 
 pub enum ControlFlow {
   Yield(usize),
-  Poll(Poll),
+  Poll(usize),
   // TODO: is a separate `Return` needed?
   Return,
 }
@@ -442,7 +428,7 @@ pub struct LoadFrame {
 #[must_use]
 pub enum Call {
   LoadFrame(LoadFrame),
-  Poll(AsyncFrame),
+  Poll,
   Continue,
 }
 
