@@ -659,6 +659,75 @@ check! {
 }
 
 check! {
+  class_derived_with_init,
+  r#"#!hebi
+    class T:
+      pass
+    class U(T):
+      init(self):
+        print("U.init")
+    _ := U()
+  "#
+}
+
+check! {
+  class_derived_with_parent_init,
+  r#"#!hebi
+    class T:
+      init(self):
+        print("T.init")
+    class U(T):
+      pass
+    _ := U()
+  "#
+}
+
+check! {
+  class_derived_with_init_and_no_call_parent_init,
+  r#"#!hebi
+    class T:
+      init(self):
+        print("T.init")
+    class U(T):
+      init(self):
+        print("U.init")
+    _ := U()
+  "#
+}
+
+check! {
+  class_derived_with_init_and_call_parent_init,
+  r#"#!hebi
+    class T:
+      init(self):
+        print("T.init")
+    class U(T):
+      init(self):
+        super()
+        print("U.init")
+    _ := U()
+  "#
+}
+
+check! {
+  class_derived_nested_init_call_chain,
+  r#"#!hebi
+    class T:
+      init(self):
+        print("T.init")
+    class U(T):
+      init(self):
+        super()
+        print("U.init")
+    class V(U):
+      init(self):
+        super()
+        print("V.init")
+    _ := V()
+  "#
+}
+
+check! {
   get_class_method,
   r#"#!hebi
     class T:
@@ -669,11 +738,34 @@ check! {
 }
 
 check! {
+  get_class_parent_method,
+  r#"#!hebi
+    class T:
+      fn test(self):
+        pass
+    class U(T):
+      pass
+    U().test
+  "#
+}
+
+check! {
   get_class_field,
   r#"#!hebi
     class T:
       v = 10
     T().v
+  "#
+}
+
+check! {
+  get_class_parent_field,
+  r#"#!hebi
+    class T:
+      v = 10
+    class U(T):
+      pass
+    U().v
   "#
 }
 
