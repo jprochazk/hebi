@@ -4,10 +4,12 @@ use std::vec::Vec;
 
 use super::builtin::BuiltinMethod;
 use super::{Object, Ptr, Str};
+use crate::error::Result;
+use crate::public;
+use crate::public::{Scope, Unbind};
 use crate::util::{JoinIter, MAX_SAFE_INT, MIN_SAFE_INT};
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::{Result, Scope, Unbind};
 
 #[derive(Default)]
 pub struct List {
@@ -133,13 +135,13 @@ fn list_is_empty(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
 }
 
 fn list_get(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
-  let index = scope.param::<crate::Value>(0)?.unbind();
+  let index = scope.param::<public::Value>(0)?.unbind();
   let index = to_index(index, this.len())?;
   Ok(this.get(index).unwrap_or_else(Value::none))
 }
 
 fn list_set(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
-  let (index, value) = scope.params::<(crate::Value, crate::Value)>()?;
+  let (index, value) = scope.params::<(public::Value, public::Value)>()?;
   let (index, value) = (index.unbind(), value.unbind());
   let len = this.len();
   let index = to_index(index, len)?;
@@ -151,7 +153,7 @@ fn list_set(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
 }
 
 fn list_push(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
   this.push(value);
   Ok(Value::none())
 }
@@ -161,7 +163,7 @@ fn list_pop(this: Ptr<List>, _: Scope<'_>) -> Result<Value> {
 }
 
 fn list_extend(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
-  let (n, value) = scope.params::<(i32, crate::Value)>()?;
+  let (n, value) = scope.params::<(i32, public::Value)>()?;
   if n < 0 {
     fail!("count must be positive (was {n})");
   }
@@ -170,7 +172,7 @@ fn list_extend(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
 }
 
 fn list_join(this: Ptr<List>, scope: Scope<'_>) -> Result<Value> {
-  let sep = scope.param::<crate::Str>(0)?;
+  let sep = scope.param::<public::Str>(0)?;
   Ok(Value::object(
     scope.alloc(Str::owned(this.iter().join(sep.as_str()))),
   ))

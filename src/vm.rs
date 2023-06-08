@@ -13,15 +13,14 @@ use module::Module;
 
 use self::global::{Input, Output};
 use self::thread::{Stack, Thread};
-use crate::module::NativeModule;
+use crate::error::{Error, Result};
 use crate::object::function::Disassembly;
-use crate::object::module::ModuleId;
-use crate::object::Any;
-use crate::object::{builtin, module, Function, List, Ptr, Str};
+use crate::object::module::{ModuleId, ModuleLoader};
+use crate::object::{builtin, module, Any, Function, List, Ptr, Str};
+use crate::public::NativeModule;
 use crate::span::SpannedError;
 use crate::value::Value;
-use crate::Result;
-use crate::{codegen, syntax, Error, ModuleLoader};
+use crate::{codegen, syntax};
 
 pub struct Vm {
   pub(crate) global: Global,

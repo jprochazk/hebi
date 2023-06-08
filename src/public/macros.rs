@@ -19,7 +19,7 @@ macro_rules! decl_ref {
       }
     }
 
-    unsafe impl<'cx> $crate::IsSimpleRef for $name<'cx> {}
+    unsafe impl<'cx> $crate::public::IsSimpleRef for $name<'cx> {}
 
     impl $crate::public::Bind for $inner {
       type Ref<'cx> = $name<'cx>;
@@ -42,12 +42,15 @@ macro_rules! decl_ref {
 macro_rules! impl_object_ref {
   ($T:ident, $Owned:ty) => {
     impl<'cx> $crate::public::object::ObjectRef<'cx> for $T<'cx> {
-      fn as_any(&self, _: $crate::Global<'cx>) -> $crate::public::object::Any<'cx> {
+      fn as_any(&self, _: $crate::public::Global<'cx>) -> $crate::public::object::Any<'cx> {
         let ptr = self.inner.clone().into_any();
         unsafe { ptr.bind_raw::<'cx>() }
       }
 
-      fn from_any(v: $crate::public::object::Any<'cx>, _: $crate::Global<'cx>) -> Option<Self> {
+      fn from_any(
+        v: $crate::public::object::Any<'cx>,
+        _: $crate::public::Global<'cx>,
+      ) -> Option<Self> {
         v.inner
           .cast::<$Owned>()
           .ok()

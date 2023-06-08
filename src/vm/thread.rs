@@ -11,22 +11,23 @@ use std::ptr::NonNull;
 use indexmap::IndexMap;
 
 use self::util::*;
-use super::dispatch::Return;
-use super::dispatch::{dispatch, Call, ControlFlow, Handler, LoadFrame};
+use super::dispatch::{dispatch, Call, ControlFlow, Handler, LoadFrame, Return};
 use super::global::Global;
 use crate::bytecode::opcode as op;
+use crate::error::{Error, Result};
 use crate::object::class::{ClassInstance, ClassProxy};
 use crate::object::function::Params;
 use crate::object::module::{ModuleId, ModuleKind};
-use crate::object::Object;
+use crate::object::native::LocalBoxFuture;
 use crate::object::{
-  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Ptr, Str, Table,
-  Type,
+  Any, ClassDescriptor, ClassType, Function, FunctionDescriptor, List, Module, Object, Ptr, Str,
+  Table, Type,
 };
+use crate::public::Scope;
 use crate::util::JoinIter;
 use crate::value::constant::Constant;
 use crate::value::Value;
-use crate::{codegen, syntax, Error, LocalBoxFuture, Result, Scope};
+use crate::{codegen, syntax};
 
 pub struct Thread {
   pub(crate) global: Global,

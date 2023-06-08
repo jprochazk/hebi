@@ -20,4 +20,8 @@ mod value;
 mod vm;
 
 pub mod public;
-pub use public::*;
+pub use error::{Error, Result};
+
+pub mod prelude {
+  pub use super::public::*;
+}

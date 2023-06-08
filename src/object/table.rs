@@ -6,9 +6,9 @@ use indexmap::{Equivalent, IndexMap};
 
 use super::ptr::Ptr;
 use super::{Object, Str};
-use crate as hebi;
+use crate::error::Result;
+use crate::public::Scope;
 use crate::value::Value;
-use crate::{Result, Scope};
 
 #[derive(Default)]
 pub struct Table {
@@ -197,7 +197,7 @@ impl Object for Table {
     Ok(value)
   }
 
-  fn set_keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value, value: Value) -> hebi::Result<()> {
+  fn set_keyed_field(_: Scope<'_>, this: Ptr<Self>, key: Value, value: Value) -> Result<()> {
     let Some(key) = key.clone().to_object::<Str>() else {
       fail!("`{key}` is not a string");
     };

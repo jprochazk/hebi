@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, Criterion};
-use hebi::Hebi;
+use hebi::prelude::*;
 
 pub fn fib_15(c: &mut Criterion) {
   c.bench_function("fib(15)", |b| {

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
-use hebi::module::NativeModule;
-use hebi::{Hebi, Scope};
+use hebi::prelude::*;
 
 #[tokio::main]
 async fn main() {

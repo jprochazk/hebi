@@ -4,8 +4,7 @@ mod macros;
 use std::collections::HashMap;
 
 use super::*;
-use crate as hebi;
-use crate::Scope;
+use crate::public::Scope;
 
 check! {
   example,
@@ -113,7 +112,7 @@ impl TestModuleLoader {
 }
 
 impl module::ModuleLoader for TestModuleLoader {
-  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>> {
+  fn load(&self, path: &str) -> Result<Cow<'static, str>> {
     match self.modules.get(path).copied() {
       Some(module) => Ok(Cow::borrowed(module)),
       None => Err(Error::Vm(SpannedError::new(

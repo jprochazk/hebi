@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::*;
 use crate::object::{list, List as OwnedList, Ptr};
-use crate::{Hebi, Scope, Unbind, Value};
+use crate::public::{Hebi, Scope, Unbind, Value};
 
 decl_ref! {
   struct List(Ptr<OwnedList>)

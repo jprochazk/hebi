@@ -8,8 +8,8 @@ use std::ptr::{self, NonNull};
 use std::{alloc, mem};
 
 use super::{Type, VTable};
+use crate::error::Result;
 use crate::vm::global::Global;
-use crate::Result;
 
 // TODO: identity eq specialization similar to `std::rc::Rc`
 

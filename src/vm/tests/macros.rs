@@ -9,7 +9,7 @@ macro_rules! check {
     #[allow(non_snake_case)]
     async fn $name() {
       let source = $crate::vm::tests::macros::__clean_source(indoc::indoc!($source));
-      let mut hebi = crate::Hebi::builder().output(Vec::<u8>::new()).finish();
+      let mut hebi = crate::public::Hebi::builder().output(Vec::<u8>::new()).finish();
       let chunk = match hebi.compile(&source) {
         Ok(chunk) => chunk,
         Err(e) => panic!("Failed to compile:\n{}", e.report(&source, false)),
@@ -43,7 +43,7 @@ macro_rules! check {
     #[allow(non_snake_case)]
     async fn $name() {
       let source = $crate::vm::tests::macros::__clean_source(indoc::indoc!($source));
-      let mut hebi = crate::Hebi::builder()
+      let mut hebi = crate::public::Hebi::builder()
         .output(Vec::<u8>::new())
         .module_loader(
           TestModuleLoader::new(&[

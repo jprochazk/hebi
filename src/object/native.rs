@@ -7,12 +7,11 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use super::{Any, Object, Ptr, ReturnAddr, Str};
+use crate::error::Result;
+use crate::public::Scope;
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::vm::thread::AsyncFrame;
-use crate::vm::thread::CallResult;
-use crate::vm::thread::Slot0;
-use crate::{Result, Scope};
+use crate::vm::thread::{AsyncFrame, CallResult, Slot0};
 
 pub type LocalBoxFuture<'a, T> = Pin<Box<dyn core::future::Future<Output = T> + 'a>>;
 
@@ -286,11 +285,7 @@ impl Object for NativeClass {
     }
   }
 
-  fn named_field_opt(
-    _: Scope<'_>,
-    this: Ptr<Self>,
-    name: Ptr<Str>,
-  ) -> crate::Result<Option<Value>> {
+  fn named_field_opt(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
     if let Some(method) = this.static_methods.get(name.as_str()) {
       Ok(Some(Value::object(method.clone())))
     } else if let Some(method) = this.methods.get(name.as_str()) {

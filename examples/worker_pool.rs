@@ -1,5 +1,5 @@
 use futures_util::future::join_all;
-use hebi::{Hebi, NativeModule, Scope, Str};
+use hebi::prelude::*;
 
 #[tokio::main]
 async fn main() {

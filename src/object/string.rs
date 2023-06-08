@@ -7,9 +7,10 @@ use beef::lean::Cow;
 
 use super::builtin::BuiltinMethod;
 use super::{Object, Ptr};
+use crate::error::Result;
+use crate::public::Scope;
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::{Result, Scope};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Str {

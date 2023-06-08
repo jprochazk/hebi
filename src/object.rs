@@ -280,7 +280,7 @@ macro_rules! default_instance_of {
     fn instance_of(
       _: $crate::object::ptr::Ptr<Self>,
       ty: $crate::value::Value,
-    ) -> $crate::Result<bool> {
+    ) -> $crate::error::Result<bool> {
       Ok(ty.to_object::<Self>().is_some())
     }
   };
@@ -325,6 +325,7 @@ pub use table::Table;
 
 use self::class::{ClassInstance, ClassProxy};
 use self::native::{NativeAsyncFunction, NativeClassInstance, NativeFunction};
+use crate::error::Result;
+use crate::public::Scope;
 use crate::value::Value;
 use crate::vm::thread::CallResult;
-use crate::{Result, Scope};

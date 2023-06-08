@@ -1,8 +1,8 @@
 use super::*;
+use crate::error::Result;
 use crate::object::{Object, Ptr};
 use crate::util::JoinIter;
 use crate::vm::global::Global;
-use crate::Result;
 
 struct Bar {
   value: u64,

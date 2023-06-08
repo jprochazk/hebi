@@ -1,5 +1,7 @@
 use super::object::{Any, ObjectRef};
-use crate::{value, Bind, Global, Result, Unbind};
+use crate::error::Result;
+use crate::public::{Bind, Global, Unbind};
+use crate::value;
 
 decl_ref! {
   struct Value(value::Value)

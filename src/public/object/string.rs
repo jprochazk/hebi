@@ -1,6 +1,6 @@
 use super::*;
 use crate::object::{Ptr, Str as OwnedStr};
-use crate::{Hebi, Scope};
+use crate::public::{Hebi, Scope};
 
 decl_ref! {
   struct Str(Ptr<OwnedStr>)

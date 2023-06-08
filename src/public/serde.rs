@@ -1,6 +1,6 @@
 use serde::de::DeserializeSeed;
 
-use crate::{Bind, Global, Value};
+use crate::public::{Bind, Global, Value};
 
 pub struct ValueDeserializer<'cx> {
   global: Global<'cx>,

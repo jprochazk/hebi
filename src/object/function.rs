@@ -4,19 +4,16 @@ use std::ptr::NonNull;
 
 use super::module::ModuleId;
 use super::ptr::Ptr;
-use super::Any;
-use super::{List, Object, ReturnAddr, Str};
+use super::{Any, List, Object, ReturnAddr, Str};
 use crate::bytecode::{disasm, opcode as op};
+use crate::error::Result;
 use crate::object;
+use crate::public::Scope;
 use crate::value::constant::Constant;
 use crate::value::Value;
 use crate::vm::dispatch::LoadFrame;
 use crate::vm::thread::util::check_args;
-use crate::vm::thread::Args;
-use crate::vm::thread::Frame;
-use crate::vm::thread::Thread;
-use crate::vm::thread::{CallResult, Slot0};
-use crate::{Result, Scope};
+use crate::vm::thread::{Args, CallResult, Frame, Slot0, Thread};
 
 #[derive(Debug)]
 pub struct Function {

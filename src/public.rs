@@ -13,14 +13,14 @@ use std::pin::Pin;
 use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
+use crate::error::{Error, Result};
 use crate::object::function::Disassembly;
 use crate::object::native::NativeClassInstance;
 use crate::object::{table, Ptr, Type};
 use crate::value::Value as OwnedValue;
 use crate::vm;
 use crate::vm::global::{Input, Output};
-use crate::vm::thread::Slot0;
-use crate::vm::thread::{Args, Thread};
+use crate::vm::thread::{Args, Slot0, Thread};
 use crate::vm::{global, Config, Vm};
 
 // public API
@@ -30,7 +30,6 @@ pub mod value;
 
 pub use beef::lean::Cow;
 
-pub use crate::error::{Error, Result};
 pub use crate::fail;
 pub use crate::object::module::ModuleLoader;
 pub use crate::object::native::LocalBoxFuture;

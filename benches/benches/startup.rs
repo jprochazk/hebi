@@ -1,12 +1,11 @@
 use criterion::{black_box, criterion_group, Criterion};
-use hebi::module::NativeModule;
-use hebi::{Hebi, Result, Scope};
+use hebi::prelude::*;
 
 fn example(_: Scope) -> i32 {
   100i32
 }
 
-fn add1(scope: Scope) -> Result<i32> {
+fn add1(scope: Scope) -> hebi::Result<i32> {
   let value = scope.param::<i32>(0)?;
   Ok(value + 1)
 }

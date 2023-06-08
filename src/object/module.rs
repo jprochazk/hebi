@@ -7,14 +7,14 @@ use indexmap::{IndexMap, IndexSet};
 use super::native::{NativeAsyncFunction, NativeClass, NativeFunction};
 use super::ptr::Ptr;
 use super::{Function, FunctionDescriptor, Object, Str, Table};
-use crate as hebi;
-use crate::module::NativeModule;
+use crate::error::Result;
+use crate::public::module::NativeModule;
+use crate::public::Scope;
 use crate::value::Value;
 use crate::vm::global::Global;
-use crate::Scope;
 
 pub trait ModuleLoader: Send {
-  fn load(&self, path: &str) -> hebi::Result<Cow<'static, str>>;
+  fn load(&self, path: &str) -> Result<Cow<'static, str>>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -177,7 +177,7 @@ impl Object for Module {
 
   default_instance_of!();
 
-  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
+  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     let value = this
       .module_vars
       .get(&name)
@@ -185,7 +185,7 @@ impl Object for Module {
     Ok(value)
   }
 
-  fn named_field_opt(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Option<Value>> {
+  fn named_field_opt(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Option<Value>> {
     Ok(this.module_vars.get(&name))
   }
 }

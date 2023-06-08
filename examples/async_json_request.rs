@@ -4,8 +4,8 @@ fn main() {}
 #[cfg(feature = "serde")]
 #[tokio::main]
 async fn main() {
-  use hebi::{Hebi, NativeModule, Scope, Str, Value, ValueDeserializer};
-  use serde::de::DeserializeSeed;
+  use ::serde::de::DeserializeSeed;
+  use hebi::prelude::*;
 
   let client = reqwest::Client::default();
 

@@ -4,12 +4,11 @@ mod macros;
 use std::error::Error as StdError;
 use std::ptr::NonNull;
 
+use super::thread::AsyncFrame;
 use crate::bytecode::opcode as op;
 use crate::bytecode::opcode::Opcode;
 use crate::bytecode::operands::Width;
-use crate::Result;
-
-use super::thread::AsyncFrame;
+use crate::error::Result;
 
 #[inline(never)]
 pub fn dispatch<T: Handler>(

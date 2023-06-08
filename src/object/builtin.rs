@@ -5,13 +5,15 @@ use std::fmt::{Debug, Display};
 use indexmap::IndexMap;
 
 use super::{List, Object, Ptr, ReturnAddr, Str};
+use crate::error::Result;
+use crate::object::native::LocalBoxFuture;
 use crate::object::{list, string};
+use crate::public;
+use crate::public::{Bind, Scope, Unbind};
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::vm::thread::util::is_truthy;
-use crate::vm::thread::AsyncFrame;
-use crate::vm::thread::CallResult;
-use crate::{Bind, LocalBoxFuture, Result, Scope, Unbind};
+use crate::vm::thread::{AsyncFrame, CallResult};
 
 pub type Callback = fn(Scope<'_>) -> Result<Value>;
 pub type AsyncCallback = fn(Scope<'_>) -> LocalBoxFuture<'_, Result<Value>>;
@@ -246,7 +248,7 @@ declare_object_type!(BuiltinMethod);
 macro_rules! builtin_method {
   ($function:expr) => {{
     let cb: $crate::object::builtin::MethodCallback =
-      |this: $crate::value::Value, scope: $crate::Scope<'_>| {
+      |this: $crate::value::Value, scope: $crate::public::Scope<'_>| {
         let this = unsafe { this.to_object_unchecked::<Self>() };
         let function: $crate::object::builtin::TypedMethodCallback<Self> = $function;
         function(this, scope)
@@ -257,9 +259,9 @@ macro_rules! builtin_method {
 
 macro_rules! builtin_method_static {
   ($T:ident, $function:expr) => {{
-    let cb: $crate::object::builtin::Callback = |mut scope: $crate::Scope<'_>| {
+    let cb: $crate::object::builtin::Callback = |mut scope: $crate::public::Scope<'_>| {
       use $crate::public::Unbind;
-      let this = scope.param::<$crate::Value>(0)?;
+      let this = scope.param::<$crate::public::Value>(0)?;
       scope.consume_args(1);
       let this = match this.clone().unbind().to_object::<$T>() {
         Some(value) => value,
@@ -276,7 +278,7 @@ macro_rules! builtin_method_static {
 }
 
 fn to_int(scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
   if value.is_int() {
     Ok(value)
   } else if value.is_float() {
@@ -288,7 +290,7 @@ fn to_int(scope: Scope<'_>) -> Result<Value> {
 }
 
 fn to_float(scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
   if value.is_int() {
     let value = unsafe { value.to_int_unchecked() };
     Ok(Value::float(value as f64))
@@ -300,13 +302,13 @@ fn to_float(scope: Scope<'_>) -> Result<Value> {
 }
 
 fn to_bool(scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
   let bool = is_truthy(value);
   Ok(Value::bool(bool))
 }
 
 fn to_str(scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
   if let Some(str) = value.clone().to_object::<Str>() {
     Ok(Value::object(str))
   } else {
@@ -316,7 +318,7 @@ fn to_str(scope: Scope<'_>) -> Result<Value> {
 }
 
 fn type_of(scope: Scope<'_>) -> Result<Value> {
-  let value = scope.param::<crate::Value>(0)?.unbind();
+  let value = scope.param::<public::Value>(0)?.unbind();
 
   if value.is_float() {
     Ok(Value::object(scope.intern("float")))
@@ -333,7 +335,7 @@ fn type_of(scope: Scope<'_>) -> Result<Value> {
 }
 
 async fn collect(mut scope: Scope<'_>) -> Result<Value> {
-  let iterable = scope.param::<crate::Value>(0)?.unbind();
+  let iterable = scope.param::<public::Value>(0)?.unbind();
 
   let Some(iterable) = iterable.clone().to_any() else {
     fail!("`{iterable}` is not iterable");

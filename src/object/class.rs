@@ -3,14 +3,12 @@ use std::fmt::Display;
 use indexmap::IndexMap;
 
 use super::ptr::Ptr;
-use super::BoundFunction;
-use super::ReturnAddr;
-use super::{Function, FunctionDescriptor, Object, Str, Table};
-use crate as hebi;
+use super::{BoundFunction, Function, FunctionDescriptor, Object, ReturnAddr, Str, Table};
+use crate::error::Result;
+use crate::public::Scope;
 use crate::value::Value;
 use crate::vm::global::Global;
 use crate::vm::thread::CallResult;
-use crate::{Result, Scope};
 
 #[derive(Debug)]
 pub struct ClassInstance {
@@ -201,7 +199,7 @@ impl Object for ClassType {
     todo!()
   }
 
-  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> hebi::Result<Value> {
+  fn named_field(_: Scope<'_>, this: Ptr<Self>, name: Ptr<Str>) -> Result<Value> {
     let value = this
       .methods
       .get(&name)

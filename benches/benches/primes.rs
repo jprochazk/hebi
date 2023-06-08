@@ -1,5 +1,5 @@
 use criterion::{criterion_group, Criterion};
-use hebi::Hebi;
+use hebi::prelude::*;
 
 pub fn primes(c: &mut Criterion) {
   c.bench_function("primes", |b| {

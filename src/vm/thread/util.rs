@@ -1,5 +1,4 @@
 use super::*;
-use crate as hebi;
 
 pub fn is_truthy(value: Value) -> bool {
   if value.is_bool() {
@@ -37,11 +36,7 @@ pub fn clone_from_raw_slice<T: Clone>(ptr: *mut [T], index: usize) -> T {
   std::mem::ManuallyDrop::into_inner(value.clone())
 }
 
-pub fn check_args(
-  params: &Params,
-  has_implicit_receiver: bool,
-  num_args: usize,
-) -> hebi::Result<()> {
+pub fn check_args(params: &Params, has_implicit_receiver: bool, num_args: usize) -> Result<()> {
   let has_explicit_self_param = params.has_self && !has_implicit_receiver;
 
   let min = params.min as usize + has_explicit_self_param as usize;

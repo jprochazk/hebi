@@ -6,7 +6,7 @@ pub mod table;
 use std::fmt::{Debug, Display};
 
 use crate::object::{self, Ptr};
-use crate::{Bind, Global};
+use crate::public::{Bind, Global};
 
 decl_ref! {
   struct Any(Ptr<object::Any>)

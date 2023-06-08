@@ -1,4 +1,4 @@
-use hebi::{Hebi, IntoValue, NativeModule, Scope};
+use hebi::prelude::*;
 
 fn main() {
   fn example(scope: Scope) -> hebi::Result<()> {

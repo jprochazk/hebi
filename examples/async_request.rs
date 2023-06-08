@@ -1,7 +1,7 @@
 use std::panic::AssertUnwindSafe;
 
 use futures_util::FutureExt;
-use hebi::{Hebi, NativeModule, Scope, Str};
+use hebi::prelude::*;
 
 #[tokio::main]
 async fn main() {

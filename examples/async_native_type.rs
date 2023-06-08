@@ -1,4 +1,4 @@
-use hebi::{Hebi, NativeModule, Scope, Str, This};
+use hebi::prelude::*;
 
 #[tokio::main]
 async fn main() {

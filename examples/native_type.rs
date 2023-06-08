@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use hebi::{Hebi, NativeModule};
+use hebi::prelude::*;
 
 fn main() {
   struct Circle {

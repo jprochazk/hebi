@@ -1,4 +1,4 @@
-use hebi::Hebi;
+use hebi::prelude::*;
 
 fn main() {
   let mut hebi = Hebi::new();

@@ -1,4 +1,4 @@
-use hebi::{Hebi, NativeModule, Scope, Value};
+use hebi::prelude::*;
 
 fn main() {
   fn print_value(scope: Scope) -> hebi::Result<()> {

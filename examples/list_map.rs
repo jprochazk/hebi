@@ -1,4 +1,4 @@
-use hebi::{Any, Hebi, List, NativeModule, Scope};
+use hebi::prelude::*;
 
 fn main() {
   async fn map(mut scope: Scope<'_>) -> hebi::Result<List<'_>> {
