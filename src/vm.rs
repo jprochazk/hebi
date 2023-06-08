@@ -4,6 +4,7 @@ pub mod dispatch;
 pub mod global;
 pub mod thread;
 
+use std::fmt::Debug;
 use std::future::Future;
 use std::ptr::NonNull;
 
@@ -26,6 +27,15 @@ pub struct Vm {
   pub(crate) global: Global,
   pub(crate) root: Thread,
   pub(crate) stack: NonNull<Stack>,
+}
+
+impl Debug for Vm {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Vm")
+      .field("global", &self.global)
+      .field("root", &self.root)
+      .finish()
+  }
 }
 
 struct DefaultModuleLoader {}

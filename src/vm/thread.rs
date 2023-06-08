@@ -49,6 +49,7 @@ impl Clone for Thread {
   }
 }
 
+#[derive(Debug)]
 pub struct Stack {
   pub(crate) frames: Vec<Frame>,
   pub(crate) regs: Vec<Value>,
@@ -101,13 +102,19 @@ impl Thread {
             }
           } else {
             let value = take(&mut self.acc);
-            debug_assert!(unsafe { self.stack.as_ref().regs.is_empty() });
+            if !unsafe { self.stack.as_ref().regs.is_empty() } {
+              eprintln!("{self:?}");
+              panic!("stack is not empty upon exit from vm.entry");
+            }
             break Ok(value);
           }
         }
         Err(e) => {
           self.unwind_stack(None);
-          debug_assert!(unsafe { self.stack.as_ref().regs.is_empty() });
+          if !unsafe { self.stack.as_ref().regs.is_empty() } {
+            eprintln!("{self:?}");
+            panic!("stack is not empty upon exit from vm.entry");
+          }
           break Err(e);
         }
       }
@@ -421,9 +428,11 @@ impl Display for Thread {
 impl Debug for Thread {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Thread")
-      .field("stack", &self.stack)
+      .field("global", &self.global)
+      .field("stack", &unsafe { self.stack.as_ref() })
       .field("acc", &self.acc)
       .field("pc", &self.pc)
+      .field("poll", &self.poll)
       .finish()
   }
 }
@@ -431,6 +440,15 @@ impl Debug for Thread {
 pub struct AsyncFrame {
   pub fut: LocalBoxFuture<'static, Result<Value>>,
   pub stack_base: usize,
+}
+
+impl Debug for AsyncFrame {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("AsyncFrame")
+      .field("fut", &"<...>")
+      .field("stack_base", &self.stack_base)
+      .finish()
+  }
 }
 
 pub(crate) struct Frame {
@@ -441,6 +459,20 @@ pub(crate) struct Frame {
   frame_size: usize,
   return_addr: Option<usize>,
   module_id: ModuleId,
+}
+
+impl Debug for Frame {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Frame")
+      .field("instructions", &unsafe { self.instructions.as_ref() })
+      .field("constants", &unsafe { self.constants.as_ref() })
+      .field("upvalues", &self.upvalues)
+      .field("stack_base", &self.stack_base)
+      .field("frame_size", &self.frame_size)
+      .field("return_addr", &self.return_addr)
+      .field("module_id", &self.module_id)
+      .finish()
+  }
 }
 
 impl Frame {

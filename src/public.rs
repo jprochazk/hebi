@@ -220,7 +220,7 @@ impl Hebi {
 
 impl Debug for Hebi {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Hebi").finish()
+    f.debug_tuple("Hebi").field(&self.vm).finish()
   }
 }
 

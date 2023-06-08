@@ -41,6 +41,7 @@ impl Display for ModuleId {
   }
 }
 
+#[derive(Debug)]
 pub struct Registry {
   pub next_module_id: NonZeroU64,
   pub index: IndexMap<Ptr<Str>, ModuleId>,

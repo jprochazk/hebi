@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::cell::RefCell;
+use std::fmt::Debug;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -13,7 +14,7 @@ use crate::object::native::NativeClass;
 use crate::object::{module, table, Ptr, Str, Table};
 use crate::value::Value;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Global {
   inner: Rc<State>,
 }
@@ -47,6 +48,20 @@ pub struct State {
   module_visited_set: RefCell<IndexSet<ModuleId>>,
   string_table: RefCell<IndexMap<Cow<'static, str>, Ptr<Str>>>,
   type_map: RefCell<IndexMap<TypeId, Ptr<NativeClass>>>,
+}
+
+impl Debug for State {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("State")
+      .field("globals", &self.globals)
+      .field("io", &"<...>")
+      .field("module_registry", &self.module_registry)
+      .field("module_loader", &"<...>")
+      .field("module_visited_set", &self.module_visited_set)
+      .field("string_table", &self.string_table)
+      .field("type_map", &self.type_map)
+      .finish()
+  }
 }
 
 pub struct Io {
