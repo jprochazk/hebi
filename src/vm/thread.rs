@@ -88,35 +88,38 @@ impl Thread {
   pub async fn entry(&mut self, main: Ptr<Function>) -> Result<Value> {
     Function::prepare_call_empty_unchecked(main.clone(), self, None);
     loop {
-      match self.run() {
-        Ok(()) => {
-          if let Some(frame) = self.poll.take() {
-            let result = frame.fut.await;
-            self.truncate_stack(frame.stack_base);
-            match result {
-              Ok(value) => {
-                self.acc = value;
-                continue;
-              }
-              Err(e) => break Err(e),
-            }
-          } else {
-            let value = take(&mut self.acc);
+      if let Err(e) = self.run() {
+        self.unwind_stack(None);
+        if !unsafe { self.stack.as_ref().regs.is_empty() } {
+          eprintln!("{self:?}");
+          panic!("stack is not empty upon exit from vm.entry");
+        }
+        break Err(e);
+      }
+      if let Some(frame) = self.poll.take() {
+        let result = frame.fut.await;
+        self.truncate_stack(frame.stack_base);
+        match result {
+          Ok(value) => {
+            self.acc = value;
+            continue;
+          }
+          Err(e) => {
+            self.unwind_stack(None);
             if !unsafe { self.stack.as_ref().regs.is_empty() } {
               eprintln!("{self:?}");
               panic!("stack is not empty upon exit from vm.entry");
             }
-            break Ok(value);
+            break Err(e);
           }
         }
-        Err(e) => {
-          self.unwind_stack(None);
-          if !unsafe { self.stack.as_ref().regs.is_empty() } {
-            eprintln!("{self:?}");
-            panic!("stack is not empty upon exit from vm.entry");
-          }
-          break Err(e);
+      } else {
+        let value = take(&mut self.acc);
+        if !unsafe { self.stack.as_ref().regs.is_empty() } {
+          eprintln!("{self:?}");
+          panic!("stack is not empty upon exit from vm.entry");
         }
+        break Ok(value);
       }
     }
   }
@@ -137,23 +140,21 @@ impl Thread {
           // the call pushed a frame onto the call stack,
           // so all we have to do is enter the interpreter
           loop {
-            match self.run() {
-              Ok(()) => {
-                if let Some(frame) = self.poll.take() {
-                  let result = frame.fut.await;
-                  self.truncate_stack(frame.stack_base);
-                  match result {
-                    Ok(value) => {
-                      self.acc = value;
-                      continue;
-                    }
-                    Err(e) => break Err(e),
-                  };
-                } else {
-                  break Ok(take(&mut self.acc));
+            if let Err(e) = self.run() {
+              break Err(e);
+            }
+            if let Some(frame) = self.poll.take() {
+              let result = frame.fut.await;
+              self.truncate_stack(frame.stack_base);
+              match result {
+                Ok(value) => {
+                  self.acc = value;
+                  continue;
                 }
-              }
-              Err(e) => break Err(e),
+                Err(e) => break Err(e),
+              };
+            } else {
+              break Ok(take(&mut self.acc));
             }
           }
         }
