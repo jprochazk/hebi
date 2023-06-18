@@ -50,7 +50,7 @@ pub fn fib_20(c: &mut Criterion) {
 }
 
 pub fn fib_iter_big(c: &mut Criterion) {
-  c.bench_function("fib_iter(10_000_000)", |b| {
+  c.bench_function("iter_fib(10_000_000)", |b| {
     let mut hebi = Hebi::new();
 
     let chunk = hebi
