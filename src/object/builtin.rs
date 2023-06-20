@@ -317,6 +317,26 @@ fn to_str(scope: Scope<'_>) -> Result<Value> {
   }
 }
 
+fn parse_int(scope: Scope<'_>) -> Result<Value> {
+  let value = scope.param::<public::Value>(0)?.unbind();
+  if value.is_int() {
+    return Ok(value);
+  } else if value.is_float() {
+    return Ok(Value::int(unsafe { value.to_float_unchecked() } as i32));
+  } else if value.is_object() {
+    if let Some(value) = value.clone().to_object::<Str>() {
+      return Ok(Value::int(
+        value
+          .as_str()
+          .parse()
+          .map_err(|e| error!("failed to parse `{value}` as int: {e}"))?,
+      ));
+    };
+  }
+
+  fail!("could not parse `{value}` as int");
+}
+
 fn type_of(scope: Scope<'_>) -> Result<Value> {
   let value = scope.param::<public::Value>(0)?.unbind();
 
@@ -411,6 +431,7 @@ pub fn register_builtin_functions(global: &Global) {
   bind_builtin_fn!(global, to_bool);
   bind_builtin_fn!(global, to_str);
   bind_builtin_fn!(global, type_of);
+  bind_builtin_fn!(global, parse_int);
   bind_builtin_fn!(global, async collect);
 
   list::register_builtin_functions(global);

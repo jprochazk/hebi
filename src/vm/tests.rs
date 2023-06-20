@@ -1384,6 +1384,15 @@ check! {
 }
 
 check! {
+  builtin_parse_int,
+  r#"#!hebi
+    print parse_int(10)
+    print parse_int(10.0)
+    print parse_int("10")
+  "#
+}
+
+check! {
   add_objects,
   r#"#!hebi
     "a" + "b"
