@@ -285,7 +285,7 @@ fn to_int(scope: Scope<'_>) -> Result<Value> {
     let value = unsafe { value.to_float_unchecked() };
     Ok(Value::int(value as i32))
   } else {
-    fail!("cannot convert `{value}` to a float")
+    fail!("cannot convert `{value}` to an int")
   }
 }
 
