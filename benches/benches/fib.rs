@@ -31,7 +31,7 @@ pub fn fib_20(c: &mut Criterion) {
 
     let chunk = hebi
       .compile(indoc::indoc! {
-        r#"
+        r#"#!hebi
           fn fib(n):
             if n <= 1:
               return n
@@ -49,13 +49,13 @@ pub fn fib_20(c: &mut Criterion) {
   });
 }
 
-pub fn fib_iter_big(c: &mut Criterion) {
+/* pub fn fib_iter_big(c: &mut Criterion) {
   c.bench_function("iter_fib(10_000_000)", |b| {
     let mut hebi = Hebi::new();
 
     let chunk = hebi
       .compile(indoc::indoc! {
-        r#"
+        r#"#!hebi
           fn fib(n):
             a := 0.0
             b := 1.0
@@ -75,6 +75,6 @@ pub fn fib_iter_big(c: &mut Criterion) {
       black_box(hebi.run(chunk.clone()).unwrap());
     })
   });
-}
+} */
 
-criterion_group!(bench, fib_15, fib_20, fib_iter_big);
+criterion_group!(bench, fib_15, fib_20);
