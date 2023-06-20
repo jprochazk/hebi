@@ -7,4 +7,4 @@ to_int({})
 
 
 # Result:
-runtime error: cannot convert `<table>` to a float
+runtime error: cannot convert `<table>` to an int
