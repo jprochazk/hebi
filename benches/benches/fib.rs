@@ -77,4 +77,32 @@ pub fn fib_20(c: &mut Criterion) {
   });
 } */
 
-criterion_group!(bench, fib_15, fib_20);
+pub fn fib_iter_20(c: &mut Criterion) {
+  c.bench_function("iter_fib(20)", |b| {
+    let mut hebi = Hebi::new();
+
+    let chunk = hebi
+      .compile(indoc::indoc! {
+        r#"#!hebi
+          fn fib(n):
+            a := 0
+            b := 1
+            i := 0
+            while i < n:
+              c := a + b
+              a = b
+              b = c
+              i = i + 1
+            return a
+          fib(20)
+        "#
+      })
+      .unwrap();
+
+    b.iter(|| {
+      black_box(hebi.run(chunk.clone()).unwrap());
+    })
+  });
+}
+
+criterion_group!(bench, fib_15, fib_20, fib_iter_20);
