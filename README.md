@@ -34,51 +34,22 @@ fn main() {
 
 Hebi can do much more than this, though! Here are some of its features:
 
-- A simple syntax inspired by Python
+- Syntax similar to Python, including significant indentation
 - First-class functions
-- Classes
-- Single inheritance
+- Classes with single inheritance
 - Easy Rust function and struct binding
 - Async support
+
+Visit the [examples](./examples) directory to see Hebi in action.
+
+You can run an example using `cargo run --example <name>`:
+```
+$ cargo run --example basic
+```
 
 ## Development
 
 The first step is to install Rust and Cargo via [rustup](https://rustup.rs/).
-
-Hebi currently uses at least one unstable feature ([`ptr_metadata`](https://github.com/rust-lang/rust/issues/81513)), which means a nightly toolchain is required.
-
-The best way is to configure rustup to use the nightly toolchain only in this repository:
-```
-$ rustup override set nightly
-```
-
-Or if you prefer living on the edge, set it as the default:
-```
-$ rustup default nightly
-```
-
-The compile times should already be plenty fast, but you can gain :
-- Setting up a faster linker
-
-  On Linux, [`mold`](https://github.com/rui314/mold) can be quite a bit faster than either `gold` or `lld`.
-  To use it, you'll have to [build it](https://github.com/rui314/mold#how-to-build), and then add the following
-  to your `$HOME/.cargo/config.toml`:
-
-  ```toml
-  [target.x86_64-unknown-linux-gnu]
-  linker = "clang"
-  rustflags = ["-C", "link-arg=-fuse-ld=/path/to/mold"]
-  ```
-
-  Replacing `/path/to/mold` with the actual path to the `mold` executable.
-
-- Using Cargo's sparse protocol
-  
-  Add the following to your `$HOME/.cargo/config.toml`:
-  ```toml
-  [registries.crates-io]
-  protocol = "sparse"
-  ```
 
 ### xtask
 
@@ -108,7 +79,7 @@ Some tasks use tools which you'll have to install, though these are kept to just
 
 ## Why Hebi?
 
-I thought it was appropritate, because the language is in the Python family, and Hebi (蛇) means snake in Japanese. 
+I thought it was appropriate, because the language is in the Python family, and Hebi (蛇) means snake in Japanese. 
 
 ## License
 
