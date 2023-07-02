@@ -1,3 +1,8 @@
+# 0.4.0
+
+This is a total rewrite of the VM and codegen, which means that the API is now completely different.
+The easiest way to get started is to look at the [examples](./examples).
+
 # 0.3.1
 
 ## New features
