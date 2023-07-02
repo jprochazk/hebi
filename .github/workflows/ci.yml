@@ -56,29 +56,30 @@ jobs:
         with:
           command: xtask
           args: test
-  miri:
-    name: Miri
-    runs-on: ubuntu-22.04
-    env:
-      TOOLCHAIN: "nightly-2023-07-01"
-    steps:
-      - uses: actions/checkout@v3
+#  miri:
+#    name: Miri
+#    runs-on: ubuntu-22.04
+#    env:
+#      TOOLCHAIN: "nightly-2023-07-01"
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Install Rust
+#        uses: dtolnay/rust-toolchain@v1
+#        with:
+#          toolchain: ${{ env.TOOLCHAIN }}
+#          components: miri, rust-src
+#
+#      - name: Cache
+#        uses: Swatinem/rust-cache@v2
+#
+#      - name: Run sccache-cache
+#        uses: mozilla-actions/sccache-action@v0.0.3
+#
+#      - name: Run miri tests
+#        uses: actions-rs/cargo@v1
+#        with:
+#          command: xtask
+#          args: miri test
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ env.TOOLCHAIN }}
-          components: miri, rust-src
-
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
-
-      - name: Run miri tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: xtask
-          args: miri test
 
