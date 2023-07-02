@@ -1,0 +1,31 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+class T:
+  v = 0
+  fn test(self):
+    print self.v
+
+
+# Func:
+function `T.test` (registers: 1, length: 6, constants: 1)
+.code
+  0 | load_self
+  1 | load_field [0]; v
+  3 | print
+  4 | load_none
+  5 | return
+
+
+function `main` (registers: 2, length: 10, constants: 2)
+.code
+  0  | load_smi 0
+  2  | store r1
+  4  | make_data_class [0], r1; <class `T` descriptor>
+  7  | store_global [1]; T
+  9  | return
+
+
+

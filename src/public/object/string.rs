@@ -1,5 +1,5 @@
 use super::*;
-use crate::object::{Ptr, Str as OwnedStr};
+use crate::internal::object::{Ptr, Str as OwnedStr};
 use crate::public::{Hebi, Scope};
 
 decl_ref! {

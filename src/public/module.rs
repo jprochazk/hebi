@@ -9,14 +9,14 @@ use std::sync::Arc;
 use futures_util::{FutureExt, TryFutureExt};
 use indexmap::IndexMap;
 
-use crate::error::Result;
-use crate::object::native::{
+use crate::internal::error::Result;
+use crate::internal::object::native::{
   AsyncCallback, NativeClassDescriptor, NativeClassInstance, NativeFieldDescriptor,
   NativeMethodDescriptor, SyncCallback,
 };
+use crate::internal::value::Value as OwnedValue;
+use crate::internal::vm::thread::Args;
 use crate::public::{FromValue, IntoValue, Scope, This, Unbind, Value};
-use crate::value::Value as OwnedValue;
-use crate::vm::thread::Args;
 
 #[derive(Clone)]
 pub struct NativeModule {

@@ -13,11 +13,12 @@ Tasks:
 
 pub mod common;
 
+pub mod bench;
 pub mod examples;
 pub mod miri;
 pub mod snap;
 pub mod template;
-pub mod test_all;
+pub mod test;
 
 pub fn print_help() -> Result<()> {
   eprintln!("{HELP}");
@@ -29,7 +30,8 @@ pub fn run(which: &str, args: &[String]) -> Result<()> {
     "examples" => examples::run(args),
     "snap" => snap::run(args),
     "miri" => miri::run(args),
-    "test-all" => test_all::run(args),
+    "test" => test::run(args),
+    "bench" => bench::run(args),
     // "template" => template::run(args),
     _ => print_help(),
   }

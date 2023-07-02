@@ -5,7 +5,7 @@ pub mod table;
 
 use std::fmt::{Debug, Display};
 
-use crate::object::{self, Ptr};
+use crate::internal::object::{self, Ptr};
 use crate::public::{Bind, Global};
 
 decl_ref! {

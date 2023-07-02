@@ -1,0 +1,36 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Loop(
+            While(
+                While {
+                    cond: Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                    body: [
+                        Pass,
+                    ],
+                },
+            ),
+        ),
+        Loop(
+            While(
+                While {
+                    cond: Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                    body: [
+                        Pass,
+                    ],
+                },
+            ),
+        ),
+    ],
+}

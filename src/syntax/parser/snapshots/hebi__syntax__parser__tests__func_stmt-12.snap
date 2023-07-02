@@ -1,8 +1,0 @@
----
-source: src/syntax/parser/tests.rs
-expression: errors
----
-expected `identifier`
-| fn[4;31m([0m):
-
-

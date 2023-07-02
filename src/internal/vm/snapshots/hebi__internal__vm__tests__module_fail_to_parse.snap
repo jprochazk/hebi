@@ -1,0 +1,12 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+import test
+
+
+# Result:
+syntax error:
+expected `(`
+

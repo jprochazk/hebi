@@ -1,0 +1,14 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  v = 10
+T().v
+
+
+# Result:
+Int(
+    10,
+)

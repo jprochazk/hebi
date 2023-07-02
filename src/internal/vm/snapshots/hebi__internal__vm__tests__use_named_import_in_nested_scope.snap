@@ -1,0 +1,17 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+from test import value
+fn foo():
+  print value
+foo()
+
+
+# Result:
+None
+
+# Output:
+100
+

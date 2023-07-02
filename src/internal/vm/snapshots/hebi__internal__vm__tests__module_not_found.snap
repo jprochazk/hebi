@@ -1,0 +1,10 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+import test
+
+
+# Result:
+runtime error: module `test` not found

@@ -1,0 +1,12 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+"a" || "b"
+
+
+# Result:
+Object(
+    "a",
+)

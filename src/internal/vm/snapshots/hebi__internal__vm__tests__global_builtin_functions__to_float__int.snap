@@ -1,0 +1,12 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+to_float(10)
+
+
+# Result:
+Float(
+    10.0,
+)

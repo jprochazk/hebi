@@ -1,0 +1,19 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  init(self):
+    print("T.init")
+class U(T):
+  pass
+_ := U()
+
+
+# Result:
+None
+
+# Output:
+T.init
+

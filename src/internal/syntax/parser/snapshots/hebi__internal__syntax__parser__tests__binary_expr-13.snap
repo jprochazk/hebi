@@ -1,0 +1,23 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Binary(
+    Binary {
+        op: Is,
+        left: GetVar(
+            GetVar {
+                name: Ident(
+                    "a",
+                ),
+            },
+        ),
+        right: GetVar(
+            GetVar {
+                name: Ident(
+                    "b",
+                ),
+            },
+        ),
+    },
+)

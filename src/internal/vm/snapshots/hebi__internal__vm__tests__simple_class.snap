@@ -1,0 +1,19 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T: pass
+T
+
+
+# Result:
+Object(
+    ClassType {
+        name: "T",
+        init: None,
+        fields: {},
+        methods: {},
+        parent: None,
+    },
+)

@@ -6,22 +6,30 @@ pub mod macros;
 #[macro_use]
 mod util;
 
-#[macro_use]
-mod object;
+mod internal {
+  #[macro_use]
+  pub(crate) mod object;
 
-mod bytecode;
-mod codegen;
-mod error;
-#[cfg(feature = "serde")]
-mod serde;
-pub mod span;
-mod syntax;
-mod value;
-mod vm;
+  pub(crate) mod bytecode;
+  pub(crate) mod codegen;
+  #[cfg(feature = "serde")]
+  pub(crate) mod serde;
+  pub(crate) mod syntax;
+  pub(crate) mod value;
+  pub(crate) mod vm;
+
+  pub mod error;
+}
 
 pub mod public;
-pub use error::{Error, Result};
+#[cfg(feature = "serde")]
+pub mod serde;
+pub mod span;
 
 pub mod prelude {
   pub use super::public::*;
+  #[cfg(feature = "serde")]
+  pub use super::serde::ValueDeserializer;
 }
+
+pub use internal::error::{Error, Result};

@@ -1,0 +1,17 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+for item in ["a", "b", "c"]:
+  print item
+
+
+# Result:
+None
+
+# Output:
+a
+b
+c
+

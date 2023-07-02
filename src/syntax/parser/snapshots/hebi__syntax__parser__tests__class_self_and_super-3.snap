@@ -1,8 +1,0 @@
----
-source: src/syntax/parser/tests.rs
-expression: errors
----
-cannot access `self` outside of class method
-| v = [4;31mself[0m.f()
-
-

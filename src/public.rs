@@ -13,15 +13,15 @@ use std::pin::Pin;
 use futures_util::TryFutureExt;
 
 use self::value::FromValuePack;
-use crate::error::{Error, Result};
-use crate::object::function::Disassembly;
-use crate::object::native::NativeClassInstance;
-use crate::object::{table, Ptr, Type};
-use crate::value::Value as OwnedValue;
-use crate::vm;
-use crate::vm::global::{Input, Output};
-use crate::vm::thread::{Args, Slot0, Thread};
-use crate::vm::{global, Config, Vm};
+use crate::internal::error::{Error, Result};
+use crate::internal::object::function::Disassembly;
+use crate::internal::object::native::NativeClassInstance;
+use crate::internal::object::{table, Ptr, Type};
+use crate::internal::value::Value as OwnedValue;
+use crate::internal::vm;
+use crate::internal::vm::global::{Input, Output};
+use crate::internal::vm::thread::{Args, Slot0, Thread};
+use crate::internal::vm::{global, Config, Vm};
 
 // public API
 pub mod module;
@@ -31,19 +31,14 @@ pub mod value;
 pub use beef::lean::Cow;
 
 pub use crate::fail;
-pub use crate::object::module::ModuleLoader;
-pub use crate::object::native::LocalBoxFuture;
+pub use crate::internal::object::module::ModuleLoader;
+pub use crate::internal::object::native::LocalBoxFuture;
 pub use crate::public::module::NativeModule;
 pub use crate::public::object::list::List;
 pub use crate::public::object::string::Str;
 pub use crate::public::object::table::Table;
 pub use crate::public::object::Any;
 pub use crate::public::value::{FromValue, IntoValue, Value};
-
-#[cfg(feature = "serde")]
-pub mod serde;
-#[cfg(feature = "serde")]
-pub use crate::public::serde::ValueDeserializer;
 
 #[derive(Default)]
 pub struct Hebi {
@@ -92,9 +87,9 @@ where
 }
 
 pub struct HebiBuilder<M, I, O> {
-  module_loader: Option<Box<dyn crate::object::module::ModuleLoader>>,
-  input: Option<Box<dyn crate::vm::global::Input>>,
-  output: Option<Box<dyn crate::vm::global::Output>>,
+  module_loader: Option<Box<dyn crate::internal::object::module::ModuleLoader>>,
+  input: Option<Box<dyn crate::internal::vm::global::Input>>,
+  output: Option<Box<dyn crate::internal::vm::global::Output>>,
   __: PhantomData<(M, I, O)>,
 }
 
@@ -320,7 +315,10 @@ impl<'cx> Scope<'cx> {
     self.thread.global.alloc(v)
   }
 
-  pub(crate) fn intern(&self, s: impl Into<Cow<'static, str>>) -> Ptr<crate::object::Str> {
+  pub(crate) fn intern(
+    &self,
+    s: impl Into<Cow<'static, str>>,
+  ) -> Ptr<crate::internal::object::Str> {
     self.thread.global.intern(s)
   }
 

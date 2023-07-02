@@ -1,0 +1,28 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+print type_of(true)
+print type_of(false)
+print type_of(100)
+print type_of(3.14)
+print type_of(none)
+print type_of({})
+print type_of([])
+print type_of("test")
+
+
+# Result:
+None
+
+# Output:
+bool
+bool
+int
+float
+none
+Table
+List
+String
+

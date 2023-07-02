@@ -1,0 +1,24 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+a(b(c()))
+
+# Func:
+function `main` (registers: 5, length: 22, constants: 3)
+.code
+  0  | load_global [0]; a
+  2  | store r1
+  4  | load_global [1]; b
+  6  | store r3
+  8  | load_global [2]; c
+  10 | call0
+  11 | store r4
+  13 | call r3, 1
+  16 | store r2
+  18 | call r1, 1
+  21 | return
+
+
+

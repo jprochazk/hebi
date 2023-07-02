@@ -1,0 +1,68 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Binary(
+                            Binary {
+                                op: Or,
+                                left: Binary(
+                                    Binary {
+                                        op: And,
+                                        left: GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "some_very_long_condition",
+                                                ),
+                                            },
+                                        ),
+                                        right: Call(
+                                            Call {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: Ident(
+                                                            "with_many_sub_expressions",
+                                                        ),
+                                                    },
+                                                ),
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                ),
+                                right: Call(
+                                    Call {
+                                        target: GetField(
+                                            GetField {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: Ident(
+                                                            "which_are_complex",
+                                                        ),
+                                                    },
+                                                ),
+                                                name: Ident(
+                                                    "too",
+                                                ),
+                                            },
+                                        ),
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ),
+                        body: [
+                            Pass,
+                        ],
+                    },
+                ],
+                default: None,
+            },
+        ),
+    ],
+}

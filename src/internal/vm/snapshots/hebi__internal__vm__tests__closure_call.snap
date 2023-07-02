@@ -1,0 +1,18 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+fn outer():
+  v := "yo"
+  fn inner():
+    return v
+  return inner
+
+outer()()
+
+
+# Result:
+Object(
+    "yo",
+)

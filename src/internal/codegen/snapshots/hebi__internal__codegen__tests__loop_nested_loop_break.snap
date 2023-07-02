@@ -1,0 +1,22 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+loop:
+  loop:
+    break
+  break
+
+
+# Func:
+function `main` (registers: 1, length: 9, constants: 2)
+.code
+  0 | jump 4
+  2 | jump_loop 2
+  4 | jump 4
+  6 | jump_loop 6
+  8 | return
+
+
+

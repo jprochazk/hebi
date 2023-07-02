@@ -1,8 +1,0 @@
----
-source: src/syntax/parser/tests.rs
-expression: errors
----
-cannot access `super` outside of class method
-| print [4;31msuper[0m
-
-

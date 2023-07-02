@@ -1,0 +1,62 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Expr(
+            Literal(
+                None,
+            ),
+        ),
+        Expr(
+            Literal(
+                Bool(
+                    true,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Bool(
+                    false,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Int(
+                    1,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Float(
+                    0.1,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Float(
+                    1500.0,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Float(
+                    0.00314,
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                String(
+                    "\tas\\df⠀(\n",
+                ),
+            ),
+        ),
+    ],
+}

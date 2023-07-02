@@ -1,0 +1,41 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  fn test(self): pass
+T()
+
+
+# Result:
+Object(
+    ClassInstance {
+        name: "T",
+        fields: {
+            "test": Object(
+                Function {
+                    descriptor: FunctionDescriptor {
+                        name: "test",
+                        params: Params {
+                            has_self: true,
+                            min: 0,
+                            max: 0,
+                        },
+                        upvalues: RefCell {
+                            value: [],
+                        },
+                        frame_size: 1,
+                        instructions: 2,
+                        constants: 0,
+                    },
+                    upvalues: [],
+                    module_id: ModuleId(
+                        None,
+                    ),
+                },
+            ),
+        },
+        parent: None,
+    },
+)

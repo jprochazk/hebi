@@ -1,0 +1,129 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Import(
+            Module {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                alias: None,
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "x",
+                        ),
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "y",
+                        ),
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Module {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                alias: None,
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "x",
+                        ),
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "y",
+                        ),
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+    ],
+}

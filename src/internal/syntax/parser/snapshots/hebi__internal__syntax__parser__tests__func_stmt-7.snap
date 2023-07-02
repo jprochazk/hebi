@@ -1,0 +1,8 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: errors
+---
+duplicate argument `a`
+| fn f(a, [4;31ma[0m): pass
+
+

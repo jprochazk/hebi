@@ -1,0 +1,13 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+import test
+test.test("yo")
+
+
+# Result:
+Object(
+    "yo",
+)

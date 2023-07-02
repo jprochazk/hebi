@@ -1,0 +1,14 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := none
+
+?v.a["b"].c ?? "test"
+
+
+# Result:
+Object(
+    "test",
+)

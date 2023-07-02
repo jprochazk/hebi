@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::*;
-use crate::object::{table, Ptr, Table as OwnedTable};
+use crate::internal::object::{table, Ptr, Table as OwnedTable};
 use crate::public::{Hebi, Scope, Str, Unbind, Value};
 
 decl_ref! {

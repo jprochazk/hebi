@@ -1,7 +1,7 @@
 use super::object::{Any, ObjectRef};
-use crate::error::Result;
+use crate::internal::error::Result;
+use crate::internal::{object, value};
 use crate::public::{Bind, Global, Unbind};
-use crate::value;
 
 decl_ref! {
   struct Value(value::Value)
@@ -197,7 +197,7 @@ where
 
 impl<'cx> FromValue<'cx> for String {
   fn from_value(value: Value<'cx>, _: Global<'cx>) -> Result<Self> {
-    let Some(str) = value.unbind().to_object::<crate::object::Str>() else {
+    let Some(str) = value.unbind().to_object::<object::Str>() else {
       fail!("value is not a string")
     };
     Ok(str.as_str().to_string())
@@ -243,7 +243,7 @@ macro_rules! impl_from_value_pack {
       type Output = ($($T,)*);
 
       #[allow(non_snake_case)]
-      fn from_value_pack(args: &[$crate::value::Value], global: Global<'cx>) -> Result<Self::Output> {
+      fn from_value_pack(args: &[$crate::internal::value::Value], global: Global<'cx>) -> Result<Self::Output> {
         let num_args = args.len();
         let expected_num_args = Self::len();
 

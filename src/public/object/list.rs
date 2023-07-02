@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::*;
-use crate::object::{list, List as OwnedList, Ptr};
+use crate::internal::object::{list, List as OwnedList, Ptr};
 use crate::public::{Hebi, Scope, Unbind, Value};
 
 decl_ref! {

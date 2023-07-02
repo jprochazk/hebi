@@ -1,0 +1,16 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Unary(
+    Unary {
+        op: Plus,
+        right: GetVar(
+            GetVar {
+                name: Ident(
+                    "a",
+                ),
+            },
+        ),
+    },
+)

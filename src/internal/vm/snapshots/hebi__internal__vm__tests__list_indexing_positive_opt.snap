@@ -1,0 +1,12 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+?[0, 1, 2][1]
+
+
+# Result:
+Int(
+    1,
+)

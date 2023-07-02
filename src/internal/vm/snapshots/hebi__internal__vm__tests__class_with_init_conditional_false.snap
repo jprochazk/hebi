@@ -1,0 +1,15 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  v = none
+  init(self, v, set):
+    if set:
+      self.v = v
+?T(10, false).v
+
+
+# Result:
+None

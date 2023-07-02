@@ -1,0 +1,26 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T: pass
+class U(T): pass
+U()
+
+
+# Result:
+Object(
+    ClassInstance {
+        name: "U",
+        fields: {},
+        parent: Some(
+            ClassType {
+                name: "T",
+                init: None,
+                fields: {},
+                methods: {},
+                parent: None,
+            },
+        ),
+    },
+)
