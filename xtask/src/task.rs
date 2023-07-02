@@ -8,7 +8,7 @@ Tasks:
   examples : run all examples
   snap     : run snapshot tests in review mode
   miri     : run cargo command under miri
-  test-all : run tests and examples
+  test     : run tests and examples
 ";
 
 pub mod common;

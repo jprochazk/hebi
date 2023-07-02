@@ -65,10 +65,15 @@ To run one of them, use:
 $ cargo xtask <task>
 ```
 
+Or the slightly shorter:
+```
+$ cargo x <task>
+```
+
 For example:
 ```
 # Run all tests and examples
-$ cargo xtask test-all
+$ cargo xtask test
 ```
 
 Some tasks use tools which you'll have to install, though these are kept to just a select few, and ideally always installed through either `rustup` or `cargo`.

@@ -15,7 +15,7 @@ $ cargo xtask <task>
 For example:
 ```
 # Run all tests and examples
-$ cargo xtask test-all
+$ cargo xtask test
 ```
 
 ## Adding tasks

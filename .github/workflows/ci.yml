@@ -55,7 +55,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: xtask
-          args: test-all
+          args: test
   miri:
     name: Miri
     runs-on: ubuntu-22.04
