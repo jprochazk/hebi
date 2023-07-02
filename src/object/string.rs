@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::Cell;
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
 
@@ -191,6 +192,10 @@ impl Object for Str {
 
   fn add(scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<Value> {
     Ok(Value::object(scope.alloc(this.concat(other.as_str()))))
+  }
+
+  fn cmp(_: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<Ordering> {
+    Ok(this.as_str().cmp(other.as_str()))
   }
 }
 

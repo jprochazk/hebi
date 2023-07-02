@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.26.1"
+hebi = { path = "../" }

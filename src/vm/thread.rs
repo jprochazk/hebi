@@ -1224,7 +1224,7 @@ impl Handler for Thread {
     let value = binary!(lhs, rhs {
       i32 => Value::bool(lhs != rhs),
       f64 => Value::bool(lhs != rhs),
-      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater | Ordering::Less)),
+      any => Value::bool(!matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
     });
     self.acc = value;
     Ok(())

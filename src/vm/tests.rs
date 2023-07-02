@@ -1399,6 +1399,21 @@ check! {
   "#
 }
 
+check! {
+  string_comparison,
+  r#"#!hebi
+    print "'a' <  'b'", "a" <  "b"
+    print "'b' >= 'a'", "b" >= "a"
+
+    print "'b' <  'a'", "b" <  "a"
+    print "'a' >= 'b'", "a" >= "b"
+
+    print "'a' == 'b'", "a" == "b"
+    print "'b' == 'a'", "a" == "b"
+    print "'a' == 'a'", "a" == "a"
+  "#
+}
+
 // check! {
 //   type_comparison,
 //   r#"#!hebi
