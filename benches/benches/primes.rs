@@ -1,6 +1,7 @@
 use criterion::{criterion_group, Criterion};
-use hebi::prelude::*;
+use hebi::Hebi;
 
+#[allow(dead_code)]
 pub fn primes(c: &mut Criterion) {
   c.bench_function("primes", |b| {
     let mut hebi = Hebi::new();

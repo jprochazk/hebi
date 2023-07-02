@@ -5,7 +5,6 @@ mod expr;
 mod regalloc;
 mod stmt;
 
-use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use self::regalloc::{RegAlloc, Register, Slice};
@@ -18,6 +17,7 @@ use super::object::ptr::Ptr;
 use super::syntax::ast;
 use super::vm::global::Global;
 use crate::span::Span;
+use crate::Cow;
 
 pub fn emit<'src>(
   global: Global,

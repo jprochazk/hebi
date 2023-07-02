@@ -8,7 +8,6 @@ use std::fmt::Debug;
 use std::future::Future;
 use std::ptr::NonNull;
 
-use beef::lean::Cow;
 use global::Global;
 use module::Module;
 
@@ -22,6 +21,7 @@ use super::value::Value;
 use super::{codegen, syntax};
 use crate::public::NativeModule;
 use crate::span::SpannedError;
+use crate::Cow;
 
 pub struct Vm {
   pub(crate) global: Global,

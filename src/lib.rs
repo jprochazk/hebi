@@ -26,6 +26,8 @@ pub mod public;
 pub mod serde;
 pub mod span;
 
+pub use beef::lean::Cow;
+
 pub mod prelude {
   pub use super::public::*;
   #[cfg(feature = "serde")]
@@ -33,3 +35,4 @@ pub mod prelude {
 }
 
 pub use internal::error::{Error, Result};
+pub use public::*;

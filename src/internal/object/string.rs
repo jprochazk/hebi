@@ -4,14 +4,13 @@ use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
 
-use beef::lean::Cow;
-
 use super::builtin::BuiltinMethod;
 use super::{Object, Ptr};
 use crate::internal::error::Result;
 use crate::internal::value::Value;
 use crate::internal::vm::global::Global;
 use crate::public::Scope;
+use crate::Cow;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Str {

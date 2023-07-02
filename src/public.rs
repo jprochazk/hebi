@@ -22,13 +22,12 @@ use crate::internal::vm;
 use crate::internal::vm::global::{Input, Output};
 use crate::internal::vm::thread::{Args, Slot0, Thread};
 use crate::internal::vm::{global, Config, Vm};
+use crate::Cow;
 
 // public API
 pub mod module;
 pub mod object;
 pub mod value;
-
-pub use beef::lean::Cow;
 
 pub use crate::fail;
 pub use crate::internal::object::module::ModuleLoader;

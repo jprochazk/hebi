@@ -4,7 +4,6 @@ use std::fmt::Debug;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use super::Config;
@@ -13,6 +12,7 @@ use crate::internal::object::module::{Module, ModuleId};
 use crate::internal::object::native::NativeClass;
 use crate::internal::object::{module, table, Ptr, Str, Table};
 use crate::internal::value::Value;
+use crate::Cow;
 
 #[derive(Debug, Clone)]
 pub struct Global {

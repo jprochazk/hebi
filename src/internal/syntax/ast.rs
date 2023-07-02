@@ -3,9 +3,8 @@
 use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 
-use beef::lean::Cow;
-
 use crate::span::{Span, Spanned};
+use crate::Cow;
 
 #[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ident<'src>(Spanned<Cow<'src, str>>);

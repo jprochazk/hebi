@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Display};
 use std::num::NonZeroU64;
 
-use beef::lean::Cow;
 use indexmap::{IndexMap, IndexSet};
 
 use super::native::{NativeAsyncFunction, NativeClass, NativeFunction};
@@ -12,6 +11,7 @@ use crate::internal::value::Value;
 use crate::internal::vm::global::Global;
 use crate::public::module::NativeModule;
 use crate::public::Scope;
+use crate::Cow;
 
 pub trait ModuleLoader: Send {
   fn load(&self, path: &str) -> Result<Cow<'static, str>>;

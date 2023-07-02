@@ -1,14 +1,13 @@
 #![deny(unused_must_use)]
 #![allow(dead_code, clippy::needless_update)]
 
-use beef::lean::Cow;
-
 use self::indent::IndentStack;
 use super::lexer::TokenKind::*;
 use super::lexer::{Lexer, Token, TokenKind};
 use super::{ast, SyntaxError};
 use crate::internal::vm::global::Global;
 use crate::span::{Span, SpannedError};
+use crate::Cow;
 
 // TODO: `is` and `in`
 // TODO: `async`/`await` - maybe post-MVP
