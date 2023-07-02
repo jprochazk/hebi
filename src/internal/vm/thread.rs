@@ -999,7 +999,7 @@ impl Handler for Thread {
       let value = self.get_register(reg.offset(1));
 
       let Some(key) = key.clone().to_any().and_then(|v| v.cast::<Str>().ok()) else {
-        fail!( "`{key}` is not a string");
+        fail!("`{key}` is not a string");
       };
 
       table.insert(key, value);

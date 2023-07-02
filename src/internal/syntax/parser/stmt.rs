@@ -470,7 +470,9 @@ impl<'src> Parser<'src> {
 
     'assign: {
       if self.no_indent().is_ok() {
-        let Some(kind) = self.assign_kind() else { break 'assign };
+        let Some(kind) = self.assign_kind() else {
+          break 'assign;
+        };
         let error_span = target.span.start..self.previous().span.end;
         self.no_indent()?;
         let value = self.expr()?;
