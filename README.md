@@ -17,7 +17,7 @@ This repository hosts a dynamically typed language, its compiler, and VM.
 Install the library (currently only available via git):
 
 ```
-$ cargo add --git https://github.com/jprochazk/hebi.git --branch v2
+$ cargo add --git https://github.com/jprochazk/hebi.git hebi
 ```
 
 Import it, and run some code:
