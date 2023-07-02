@@ -10,17 +10,22 @@ on:
 permissions:
   contents: read
 
+# nightly version = nightly-2023-07-01
+
 jobs:
   linting:
     name: Linting
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        toolchain: [stable, "nightly-2023-07-01"]
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
       - name: Cache
@@ -40,13 +45,16 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        toolchain: [stable, nightly-2023-07-01]
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: ${{ matrix.toolchain }}
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
@@ -59,13 +67,15 @@ jobs:
   miri:
     name: Miri
     runs-on: ubuntu-22.04
+    env:
+      TOOLCHAIN: "nightly-2023-07-01"
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: ${{ env.TOOLCHAIN }}
           components: miri, rust-src
 
       - name: Cache
