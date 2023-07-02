@@ -8,44 +8,65 @@ authors = ["jprochazk"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-# [[bin]]
-# name = "cli"
-# path = "bin/cli"
-
 [features]
-default = ["check_recursion_limit", "emit_snapshots"]
-portable = []
-check_recursion_limit = ["syntax/check_recursion_limit"]
-emit_snapshots = []
+default = [
+  "nanbox",
+  "__check_recursion_limit",
+  "__assert_snapshots",
+  "__disable_verbose_logs",
+]
+
+# public features
+nanbox = []
+
+# private features
+__check_recursion_limit = []
+__assert_snapshots = []
+__disable_verbose_logs = []
+
 
 [dependencies]
-diag = { version = "0.2.0", path = "crates/diag", package = "hebi_diag" }
-span = { version = "^0.0.1", path = "crates/span", package = "hebi_span" }
-derive = { version = "0.3.0", path = "crates/derive", package = "hebi_derive" }
-syntax = { version = "0.3.0", path = "crates/syntax", package = "hebi_syntax", default-features = false }
-
-beef = { version = "0.5.2" }
-indexmap = { version = "1.9.2" }
-paste = { version = "1.0.11" }
-dyn-clone = "1.0.11"
-
+beef = "0.5.2"
+indexmap = "1.9.3"
+logos = "0.13.0"
+paste = "1.0.12"
+stacker = "0.1.15"
+futures-util = "0.3.28"
+serde = { version = "1.0.163", optional = true }
+pollster = { version = "0.3.0", features = ["macro"] }
 
 [dev-dependencies]
-indoc = { version = "1.0.8" }
-insta = { version = "1.23.0" }
+indoc = "2.0.1"
+insta = "1.29.0"
+criterion = "0.4"
+tokio = { version = "1.28.1", features = [
+  "macros",
+  "rt",
+  "time",
+  "rt-multi-thread",
+] }
+reqwest = "0.11.18"
+tokio-util = { version = "0.7.8", features = ["rt"] }
+flume = "0.10.14"
+serde_json = "1.0.96"
+
+[profile.dev.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+
+[profile.test.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+
 
 [workspace]
-members = [
-  "crates/derive", "crates/diag", "crates/span", "crates/syntax",
-  "cli",
-  "samples/*"
-]
-resolver = "2"
+members = ["cli", "xtask"]
 
-# TODO: list shared dependencies here https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
-# will make it easier to update
 
-[profile.dev.package.insta]
-opt-level = 3
+[[bench]]
+name = "main"
+harness = false
+
+
+[profile.release]
+lto = "fat"

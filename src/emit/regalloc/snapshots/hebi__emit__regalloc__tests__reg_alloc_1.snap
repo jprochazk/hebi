@@ -1,5 +1,0 @@
----
-source: src/emit/regalloc/tests.rs
-expression: "format!(\"{}\", DisplayTracking(& regalloc.0.borrow()))"
----
-<empty>

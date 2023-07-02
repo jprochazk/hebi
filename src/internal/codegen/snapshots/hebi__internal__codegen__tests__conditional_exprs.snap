@@ -1,0 +1,66 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+fn test0(a, b):
+  a && b
+fn test1(a, b):
+  a || b
+fn test2(a, b):
+  a ?? b
+
+
+# Func:
+function `test0` (registers: 4, length: 16, constants: 2)
+.code
+  0  | load r1
+  2  | store r3
+  4  | load r3
+  6  | jump_if_false 6
+  8  | load r2
+  10 | jump 4
+  12 | load r3
+  14 | load_none
+  15 | return
+
+
+function `test1` (registers: 4, length: 16, constants: 2)
+.code
+  0  | load r1
+  2  | store r3
+  4  | load r3
+  6  | jump_if_false 6
+  8  | load r3
+  10 | jump 4
+  12 | load r2
+  14 | load_none
+  15 | return
+
+
+function `test2` (registers: 4, length: 17, constants: 2)
+.code
+  0  | load r1
+  2  | store r3
+  4  | load r3
+  6  | is_none
+  7  | jump_if_false 6
+  9  | load r2
+  11 | jump 4
+  13 | load r3
+  15 | load_none
+  16 | return
+
+
+function `main` (registers: 1, length: 13, constants: 6)
+.code
+  0  | make_fn [0]; <function `test0` descriptor>
+  2  | store_global [1]; test0
+  4  | make_fn [2]; <function `test1` descriptor>
+  6  | store_global [3]; test1
+  8  | make_fn [4]; <function `test2` descriptor>
+  10 | store_global [5]; test2
+  12 | return
+
+
+

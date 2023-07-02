@@ -1,0 +1,8 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: errors
+---
+unexpected token
+| [4;31m.[0mb[c].d
+
+

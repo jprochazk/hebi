@@ -1,0 +1,17 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+import test
+fn foo():
+  print test
+foo()
+
+
+# Result:
+None
+
+# Output:
+<module `test`>
+

@@ -1,0 +1,18 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+print parse_int(10)
+print parse_int(10.0)
+print parse_int("10")
+
+
+# Result:
+None
+
+# Output:
+10
+10
+10
+

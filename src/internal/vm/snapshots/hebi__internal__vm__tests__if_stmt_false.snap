@@ -1,0 +1,18 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := false
+result := none
+if v:
+  result = "true"
+else:
+  result = "false"
+result
+
+
+# Result:
+Object(
+    "false",
+)

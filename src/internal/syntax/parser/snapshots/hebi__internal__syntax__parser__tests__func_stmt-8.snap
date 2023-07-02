@@ -1,0 +1,8 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: errors
+---
+expected `identifier`
+| fn f(a, [4;31m*[0ma): pass
+
+

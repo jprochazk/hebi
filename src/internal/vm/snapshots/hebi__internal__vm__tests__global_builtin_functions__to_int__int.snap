@@ -1,0 +1,12 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+to_int(10)
+
+
+# Result:
+Int(
+    10,
+)

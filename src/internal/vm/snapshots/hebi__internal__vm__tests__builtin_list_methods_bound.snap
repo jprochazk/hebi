@@ -1,0 +1,41 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := [0, 1, 2]
+
+v_len := v.len
+v_is_empty := v.is_empty
+v_get := v.get
+v_pop := v.pop
+v_set := v.set
+v_join := v.join
+v_push := v.push
+v_extend := v.extend
+
+print "len", v_len()
+print "is_empty", v_is_empty()
+print "get(1)", v_get(1)
+print "pop()", v_pop()
+print "set", v_set(0, v_get(1))
+print "join", v_join(", ")
+print "push(2)", v_push(2)
+print "extend(3, 0)", v_extend(3, 0)
+print "join", v_join(", ")
+
+
+# Result:
+None
+
+# Output:
+len 3
+is_empty false
+get(1) 1
+pop() 2
+set none
+join 1, 1
+push(2) none
+extend(3, 0) none
+join 1, 1, 2, 0, 0, 0
+

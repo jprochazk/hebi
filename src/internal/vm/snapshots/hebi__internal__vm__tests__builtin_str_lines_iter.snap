@@ -1,0 +1,40 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+strings := [
+  "a\n\nb\nc",
+  "\na\n\nb\nc",
+  "\na\n\nb\nc\n",
+]
+
+for string in strings:
+  for line in string.lines():
+    print "`" + line + "`"
+  print ""
+
+
+# Result:
+None
+
+# Output:
+`a`
+``
+`b`
+`c`
+
+``
+`a`
+``
+`b`
+`c`
+
+``
+`a`
+``
+`b`
+`c`
+``
+
+

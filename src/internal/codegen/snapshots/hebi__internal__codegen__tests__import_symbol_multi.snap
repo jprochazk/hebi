@@ -1,0 +1,29 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+from test import a, b
+print a, b
+
+
+# Func:
+function `main` (registers: 5, length: 28, constants: 3)
+.code
+  0  | import [0]; test
+  2  | store r1
+  4  | load r1
+  6  | load_field [1]; a
+  8  | store r2
+  10 | load r1
+  12 | load_field [2]; b
+  14 | store r1
+  16 | load r2
+  18 | store r3
+  20 | load r1
+  22 | store r4
+  24 | print_n r3, 2
+  27 | return
+
+
+

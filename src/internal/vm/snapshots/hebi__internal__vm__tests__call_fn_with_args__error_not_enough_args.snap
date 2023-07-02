@@ -1,0 +1,13 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+fn test(v):
+  return v
+
+test()
+
+
+# Result:
+runtime error: expected 1 arg, got 0

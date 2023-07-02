@@ -1,0 +1,176 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Expr(
+            Literal(
+                Table(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "c",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Table(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "c",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Table(
+                    [
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "c",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        ),
+                        (
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ],
+}

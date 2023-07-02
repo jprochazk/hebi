@@ -1,0 +1,18 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  fn test(self, v):
+    return v
+class U(T):
+  fn test(self, v=5):
+    return super.test(v)
+U.test(U(), 10)
+
+
+# Result:
+Int(
+    10,
+)

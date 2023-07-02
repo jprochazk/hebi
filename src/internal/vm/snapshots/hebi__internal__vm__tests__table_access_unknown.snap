@@ -1,0 +1,11 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := {}
+v["a"]
+
+
+# Result:
+runtime error: `<table>` has no index `a`

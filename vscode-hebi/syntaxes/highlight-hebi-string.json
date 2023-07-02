@@ -1,0 +1,40 @@
+{
+  "scopeName": "inline-hebi.injection",
+  "fileTypes": "rs",
+  "injectionSelector": "L:source -comment -string",
+  "patterns": [
+    {
+      "comment": "Rust multi-line raw strings",
+      "begin": "(b?r)(#*)(\")(\\s*#\\s*\\!\\s*hebi)",
+      "beginCaptures": {
+        "1": {
+          "name": "string.quoted.byte.raw.rust"
+        },
+        "2": {
+          "name": "string.quoted.raw.rust"
+        },
+        "3": {
+          "name": "string.quoted.double.rust"
+        },
+        "4": {
+          "name": "comment.hebi"
+        }
+      },
+      "end": "(\")(\\2)",
+      "endCaptures": {
+        "1": {
+          "name": "string.quoted.double.rust"
+        },
+        "2": {
+          "name": "string.quoted.raw.rust"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.hebi"
+        }
+      ]
+    }
+  ]
+}
+

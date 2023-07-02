@@ -1,0 +1,10 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+[0, 1, 2]["yo"]
+
+
+# Result:
+runtime error: `yo` is not a valid index

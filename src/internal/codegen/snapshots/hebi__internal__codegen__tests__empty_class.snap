@@ -1,0 +1,17 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+class T: pass
+
+
+# Func:
+function `main` (registers: 1, length: 5, constants: 2)
+.code
+  0 | make_class [0]; <class `T` descriptor>
+  2 | store_global [1]; T
+  4 | return
+
+
+

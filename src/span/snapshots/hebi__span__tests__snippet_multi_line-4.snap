@@ -1,0 +1,5 @@
+---
+source: src/span/tests.rs
+expression: "SpannedError::new(\"error: test\", 19..19).report(\"d(                 \", true)"
+---
+error: test

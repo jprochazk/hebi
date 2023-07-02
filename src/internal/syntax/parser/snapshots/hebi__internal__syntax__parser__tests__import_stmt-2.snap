@@ -1,0 +1,169 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Import(
+            Module {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                alias: Some(
+                    Ident(
+                        "temp",
+                    ),
+                ),
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "x",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "y",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                ],
+            },
+        ),
+        Import(
+            Module {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                alias: Some(
+                    Ident(
+                        "temp",
+                    ),
+                ),
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                ],
+            },
+        ),
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "module",
+                    ),
+                    Ident(
+                        "nested",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "x",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "y",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "z",
+                        ),
+                        alias: Some(
+                            Ident(
+                                "temp",
+                            ),
+                        ),
+                    },
+                ],
+            },
+        ),
+    ],
+}

@@ -1,0 +1,17 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+import test
+
+value := 200
+test.set(50)
+value = 0
+test.get()
+
+
+# Result:
+Int(
+    50,
+)

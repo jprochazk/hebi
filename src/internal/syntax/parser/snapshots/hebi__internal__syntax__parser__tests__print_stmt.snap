@@ -1,0 +1,50 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                    Literal(
+                        Int(
+                            0,
+                        ),
+                    ),
+                    Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        String(
+                            "a",
+                        ),
+                    ),
+                    Literal(
+                        Int(
+                            0,
+                        ),
+                    ),
+                    Literal(
+                        Bool(
+                            true,
+                        ),
+                    ),
+                ],
+            },
+        ),
+    ],
+}

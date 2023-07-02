@@ -1,0 +1,6 @@
+[book]
+authors = ["jprochazk"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Hebi"

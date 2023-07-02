@@ -1,0 +1,134 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: Ident(
+                    "T",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "f",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            GetSelf,
+                                        ],
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "T",
+                ),
+                parent: Some(
+                    Ident(
+                        "U",
+                    ),
+                ),
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "f",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            GetSelf,
+                                            GetSuper,
+                                        ],
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "T",
+                ),
+                parent: Some(
+                    Ident(
+                        "U",
+                    ),
+                ),
+                members: ClassMembers {
+                    init: Some(
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "v",
+                                                ),
+                                            },
+                                            value: Call(
+                                                Call {
+                                                    target: GetField(
+                                                        GetField {
+                                                            target: GetSuper,
+                                                            name: Ident(
+                                                                "f",
+                                                            ),
+                                                        },
+                                                    ),
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ),
+                    fields: [],
+                    methods: [],
+                },
+            },
+        ),
+    ],
+}

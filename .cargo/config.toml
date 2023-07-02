@@ -1,0 +1,4 @@
+[alias]
+xtask = "run --package xtask --"
+x = "run --package xtask --"
+hebi = "run --quiet --package hebi-cli --"

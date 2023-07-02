@@ -1,0 +1,24 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+class T:
+  v = 0
+T
+
+
+# Result:
+Object(
+    ClassType {
+        name: "T",
+        init: None,
+        fields: {
+            "v": Int(
+                0,
+            ),
+        },
+        methods: {},
+        parent: None,
+    },
+)

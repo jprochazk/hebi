@@ -1,0 +1,13 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+v := false
+!v
+
+
+# Result:
+Bool(
+    true,
+)

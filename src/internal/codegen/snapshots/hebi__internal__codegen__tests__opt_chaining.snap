@@ -1,0 +1,39 @@
+---
+source: src/internal/codegen/tests.rs
+expression: snapshot
+---
+# Input:
+fn f3(a, b, c, d):
+  a ?? b ?? c
+
+
+# Func:
+function `f3` (registers: 7, length: 30, constants: 4)
+.code
+  0  | load r1
+  2  | store r6
+  4  | load r6
+  6  | is_none
+  7  | jump_if_false 6
+  9  | load r2
+  11 | jump 4
+  13 | load r6
+  15 | store r5
+  17 | load r5
+  19 | is_none
+  20 | jump_if_false 6
+  22 | load r3
+  24 | jump 4
+  26 | load r5
+  28 | load_none
+  29 | return
+
+
+function `main` (registers: 1, length: 5, constants: 2)
+.code
+  0 | make_fn [0]; <function `f3` descriptor>
+  2 | store_global [1]; f3
+  4 | return
+
+
+
