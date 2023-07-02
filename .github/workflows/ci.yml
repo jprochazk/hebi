@@ -17,6 +17,7 @@ jobs:
     name: Linting
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         toolchain: [stable, "nightly-2023-07-01"]
     steps:
@@ -46,6 +47,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         toolchain: [stable, nightly-2023-07-01]
     steps:
