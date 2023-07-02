@@ -17,8 +17,8 @@ concurrency:
 # nightly version = nightly-2023-07-01
 
 jobs:
-  linting:
-    name: Linting
+  lint-test:
+    name: Lint + Test
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -36,6 +36,9 @@ jobs:
       - name: Cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+
       - name: Formatting
         uses: actions-rs/cargo@v1
         with:
@@ -47,23 +50,6 @@ jobs:
         with:
           command: clippy
           args: --all-targets --all-features -- -D warnings
-  tests:
-    name: Tests
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        toolchain: [stable, nightly-2023-07-01]
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
 
       - name: Run tests
         uses: actions-rs/cargo@v1
@@ -86,6 +72,9 @@ jobs:
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Run miri tests
         uses: actions-rs/cargo@v1
