@@ -1070,7 +1070,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs + rhs {
       i32 => Value::int(lhs + rhs),
       f64 => Value::float(lhs + rhs),
       any => lhs.add(self.get_empty_scope(), rhs)?,
@@ -1085,7 +1085,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs - rhs {
       i32 => Value::int(lhs - rhs),
       f64 => Value::float(lhs - rhs),
       any => lhs.subtract(self.get_empty_scope(), rhs)?,
@@ -1100,7 +1100,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs * rhs {
       i32 => Value::int(lhs * rhs),
       f64 => Value::float(lhs * rhs),
       any => lhs.multiply(self.get_empty_scope(), rhs)?,
@@ -1115,7 +1115,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs / rhs {
       i32 => {
         if rhs != 0 {
           Value::float(lhs as f64 / rhs as f64)
@@ -1136,7 +1136,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs % rhs {
       i32 => {
         if rhs != 0 {
           Value::float(lhs as f64 % rhs as f64)
@@ -1157,7 +1157,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs ** rhs {
       i32 => Value::float((lhs as f64).powf(rhs as f64)),
       f64 => Value::float(lhs.powf(rhs)),
       any => lhs.pow(self.get_empty_scope(), rhs)?,
@@ -1211,7 +1211,7 @@ impl Handler for Thread {
       f64 => Value::bool(lhs == rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
       bool => Value::bool(lhs == rhs),
-      none => Value::bool(true)
+      none => Value::bool(true),
     });
     self.acc = value;
     Ok(())
@@ -1228,7 +1228,7 @@ impl Handler for Thread {
       f64 => Value::bool(lhs != rhs),
       any => Value::bool(!matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
       bool => Value::bool(lhs != rhs),
-      none => Value::bool(false)
+      none => Value::bool(false),
     });
     self.acc = value;
     Ok(())
@@ -1240,7 +1240,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs > rhs {
       i32 => Value::bool(lhs > rhs),
       f64 => Value::bool(lhs > rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater)),
@@ -1255,7 +1255,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs >= rhs {
       i32 => Value::bool(lhs >= rhs),
       f64 => Value::bool(lhs >= rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Greater | Ordering::Equal)),
@@ -1270,7 +1270,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs < rhs {
       i32 => Value::bool(lhs < rhs),
       f64 => Value::bool(lhs < rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Less)),
@@ -1285,7 +1285,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
+    let value = binary!(lhs <= rhs {
       i32 => Value::bool(lhs <= rhs),
       f64 => Value::bool(lhs <= rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Less | Ordering::Equal)),

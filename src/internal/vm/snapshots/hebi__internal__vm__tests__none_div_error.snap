@@ -1,0 +1,10 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+none / none
+
+
+# Result:
+runtime error: cannot `/` `none`

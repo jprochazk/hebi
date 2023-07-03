@@ -51,7 +51,20 @@ macro_rules! current_call_frame_mut {
 }
 
 macro_rules! binary {
-  ($lhs:ident, $rhs:ident {
+  ($lhs:ident ** $rhs:ident {
+    i32 => $i32_expr:expr,
+    f64 => $f64_expr:expr,
+    any => $any_expr:expr,
+  }) => {{
+    binary!($lhs, $rhs {
+      i32 => $i32_expr,
+      f64 => $f64_expr,
+      any => $any_expr,
+      bool => fail!("cannot `**` `bool`"),
+      none => fail!("cannot `**` `none`"),
+    })
+  }};
+  ($lhs:ident $op:tt $rhs:ident {
     i32 => $i32_expr:expr,
     f64 => $f64_expr:expr,
     any => $any_expr:expr,
@@ -61,7 +74,7 @@ macro_rules! binary {
       f64 => $f64_expr,
       any => $any_expr,
       bool => fail!("cannot `{}` `bool`", stringify!($op)),
-      none => fail!("cannot `{}` `none`", stringify!($op))
+      none => fail!("cannot `{}` `none`", stringify!($op)),
     })
   }};
   ($lhs:ident, $rhs:ident {
@@ -69,7 +82,7 @@ macro_rules! binary {
     f64 => $f64_expr:expr,
     any => $any_expr:expr,
     bool => $bool_expr:expr,
-    none => $none_expr:expr
+    none => $none_expr:expr,
   }) => {{
     if $lhs.is_int() && $rhs.is_int() {
       let $lhs = unsafe { $lhs.to_int_unchecked() };

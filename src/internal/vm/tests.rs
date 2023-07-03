@@ -1656,3 +1656,143 @@ check! {
       print "a != none"
   "#
 }
+
+check! {
+  bool_add_error,
+  r#"#!hebi
+    true + false
+  "#
+}
+
+check! {
+  none_add_error,
+  r#"#!hebi
+    none + none
+  "#
+}
+
+check! {
+  bool_sub_error,
+  r#"#!hebi
+    true - false
+  "#
+}
+
+check! {
+  none_sub_error,
+  r#"#!hebi
+    none - none
+  "#
+}
+
+check! {
+  bool_mul_error,
+  r#"#!hebi
+    true * false
+  "#
+}
+
+check! {
+  none_mul_error,
+  r#"#!hebi
+    none * none
+  "#
+}
+
+check! {
+  bool_div_error,
+  r#"#!hebi
+    true / false
+  "#
+}
+
+check! {
+  none_div_error,
+  r#"#!hebi
+    none / none
+  "#
+}
+
+check! {
+  bool_rem_error,
+  r#"#!hebi
+    true % false
+  "#
+}
+
+check! {
+  none_rem_error,
+  r#"#!hebi
+    none % none
+  "#
+}
+
+check! {
+  bool_pow_error,
+  r#"#!hebi
+    true ** false
+  "#
+}
+
+check! {
+  none_pow_error,
+  r#"#!hebi
+    none ** none
+  "#
+}
+
+check! {
+  bool_gt_error,
+  r#"#!hebi
+    true > false
+  "#
+}
+
+check! {
+  none_gt_error,
+  r#"#!hebi
+    none > none
+  "#
+}
+
+check! {
+  bool_ge_error,
+  r#"#!hebi
+    true >= false
+  "#
+}
+
+check! {
+  none_ge_error,
+  r#"#!hebi
+    none >= none
+  "#
+}
+
+check! {
+  bool_lt_error,
+  r#"#!hebi
+    true < false
+  "#
+}
+
+check! {
+  none_lt_error,
+  r#"#!hebi
+    none < none
+  "#
+}
+
+check! {
+  bool_le_error,
+  r#"#!hebi
+    true <= false
+  "#
+}
+
+check! {
+  none_le_error,
+  r#"#!hebi
+    none <= none
+  "#
+}
