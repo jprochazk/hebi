@@ -56,6 +56,21 @@ macro_rules! binary {
     f64 => $f64_expr:expr,
     any => $any_expr:expr,
   }) => {{
+    binary!($lhs, $rhs {
+      i32 => $i32_expr,
+      f64 => $f64_expr,
+      any => $any_expr,
+      bool => fail!("cannot `{}` `bool`", stringify!($op)),
+      none => fail!("cannot `{}` `none`", stringify!($op))
+    })
+  }};
+  ($lhs:ident, $rhs:ident {
+    i32 => $i32_expr:expr,
+    f64 => $f64_expr:expr,
+    any => $any_expr:expr,
+    bool => $bool_expr:expr,
+    none => $none_expr:expr
+  }) => {{
     if $lhs.is_int() && $rhs.is_int() {
       let $lhs = unsafe { $lhs.to_int_unchecked() };
       let $rhs = unsafe { $rhs.to_int_unchecked() };
@@ -73,9 +88,13 @@ macro_rules! binary {
       let $rhs = unsafe { $rhs.to_float_unchecked() };
       $f64_expr
     } else if $lhs.is_bool() && $rhs.is_bool() {
-      fail!("cannot {} `bool`", stringify!($op))
+      #[allow(unused_variables)]
+      let $lhs = unsafe { $lhs.to_bool_unchecked() };
+      #[allow(unused_variables)]
+      let $rhs = unsafe { $rhs.to_bool_unchecked() };
+      $bool_expr
     } else if $lhs.is_none() && $rhs.is_none() {
-      fail!("cannot {} `none`", stringify!($op))
+      $none_expr
     } else if $lhs.is_object() && $rhs.is_object() {
       let $lhs = unsafe { $lhs.to_any_unchecked() };
       let $rhs = unsafe { $rhs.to_any_unchecked() };

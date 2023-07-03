@@ -1210,6 +1210,8 @@ impl Handler for Thread {
       i32 => Value::bool(lhs == rhs),
       f64 => Value::bool(lhs == rhs),
       any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
+      bool => Value::bool(lhs == rhs),
+      none => Value::bool(true)
     });
     self.acc = value;
     Ok(())
@@ -1225,6 +1227,8 @@ impl Handler for Thread {
       i32 => Value::bool(lhs != rhs),
       f64 => Value::bool(lhs != rhs),
       any => Value::bool(!matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
+      bool => Value::bool(lhs != rhs),
+      none => Value::bool(false)
     });
     self.acc = value;
     Ok(())

@@ -1633,3 +1633,26 @@ check! {
     print (a + f())
   "#
 }
+
+check! {
+  bool_equality,
+  r#"#!hebi
+    a := true
+    b := false
+    if a == b:
+      print "a == b"
+    if a != b:
+      print "a != b"
+  "#
+}
+
+check! {
+  none_equality,
+  r#"#!hebi
+    a := none
+    if a == none:
+      print "a == none"
+    if a != none:
+      print "a != none"
+  "#
+}
