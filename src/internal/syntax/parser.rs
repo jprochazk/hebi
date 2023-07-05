@@ -138,11 +138,11 @@ impl<'src> Parser<'src> {
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
-      || previous.is(Tok_Semicolon)
-      || previous.is(Tok_SemicolonSemicolon)
       || matches!(token.ws, Some(n) if self.indent.is_eq(n))
     {
       Ok(())
+    } else if previous.is(Tok_Semicolon) || previous.is(Tok_SemicolonSemicolon) {
+      self.no_indent()
     } else {
       Err(SpannedError::new("invalid indentation", token.span))
     }

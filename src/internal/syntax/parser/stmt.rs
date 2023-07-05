@@ -385,10 +385,10 @@ impl<'src> Parser<'src> {
       let mut body = vec![self.stmt()?];
 
       while self.previous().is(Tok_Semicolon)
-        && self.no_indent().is_ok()
         && !self.current().is(Tok_SemicolonSemicolon)
         && !self.current().is(Tok_Eof)
       {
+        self.no_indent()?;
         body.push(self.stmt()?);
       }
 
