@@ -15,6 +15,10 @@ impl<'src> Parser<'src> {
       Some(stmt) => Ok(stmt),
       None => self.simple_stmt(),
     }
+    .map(|v| {
+      self.bump_if(Tok_Semicolon);
+      v
+    })
   }
 
   fn scoped_stmt(&mut self) -> Result<Option<ast::Stmt<'src>>, SpannedError> {
@@ -378,7 +382,19 @@ impl<'src> Parser<'src> {
   fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>, SpannedError> {
     self.check_recursion_limit(self.current().span)?;
     if self.no_indent().is_ok() {
-      Ok(vec![self.simple_stmt()?])
+      let mut body = vec![self.stmt()?];
+
+      while self.previous().is(Tok_Semicolon)
+        && self.no_indent().is_ok()
+        && !self.current().is(Tok_SemicolonSemicolon)
+        && !self.current().is(Tok_Eof)
+      {
+        body.push(self.stmt()?);
+      }
+
+      self.bump_if(Tok_SemicolonSemicolon);
+
+      Ok(body)
     } else {
       self.indent_gt()?;
 

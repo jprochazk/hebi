@@ -131,6 +131,10 @@ import json
 
 v = json.parse("{\"a\":0, \"b\":1}")
 print(v) # { a: 0, b: 1 }
+;
+;;
+;;;
+;;;;
 "#;
 
   let lexer = Lexer::new(input);

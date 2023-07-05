@@ -134,9 +134,12 @@ impl<'src> Parser<'src> {
   }
 
   fn indent_eq(&self) -> Result<(), SpannedError> {
+    let previous = self.previous();
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
+      || previous.is(Tok_Semicolon)
+      || previous.is(Tok_SemicolonSemicolon)
       || matches!(token.ws, Some(n) if self.indent.is_eq(n))
     {
       Ok(())

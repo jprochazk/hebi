@@ -1091,3 +1091,27 @@ fn _temp() {
     "#
   }
 } */
+
+#[test]
+fn semicolons() {
+  check_module! {
+    r#"
+      1 + 2; 3 + 4
+      1 + 2; 3 + 4;
+      print 5; print 6;
+      pass; print 7; pass;
+      a; b; c; d;
+      a + b - c; a / d || c; print abcd;
+      print (
+        a + b
+      ); print (
+          c + d
+        ); print (
+            e + f
+          );  
+      if true: print x; print y;; print z; if false: print a;; print b
+      if true: print x; print y;; elif false: print a;; else: print z; print zz
+      if one: print one; if two: print two;; else: print two_else;; else: print one_else
+    "#
+  };
+}

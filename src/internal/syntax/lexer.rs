@@ -185,6 +185,8 @@ pub enum TokenKind {
   Tok_Comma,
   #[token(";")]
   Tok_Semicolon,
+  #[token(";;")]
+  Tok_SemicolonSemicolon,
   #[token(":")]
   Tok_Colon,
   #[token("?")]
@@ -315,6 +317,7 @@ impl TokenKind {
       TokenKind::Op_Dot => ".",
       TokenKind::Tok_Comma => ",",
       TokenKind::Tok_Semicolon => ";",
+      TokenKind::Tok_SemicolonSemicolon => ";;",
       TokenKind::Tok_Colon => ":",
       TokenKind::Tok_Question => "?",
       TokenKind::Op_Equal => "=",
