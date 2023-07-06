@@ -1,0 +1,63 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Loop(
+            While(
+                While {
+                    cond: GetVar(
+                        GetVar {
+                            name: Ident(
+                                "outer",
+                            ),
+                        },
+                    ),
+                    body: [
+                        Print(
+                            Print {
+                                values: [
+                                    Literal(
+                                        String(
+                                            "outer",
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                        Loop(
+                            While(
+                                While {
+                                    cond: GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "inner",
+                                            ),
+                                        },
+                                    ),
+                                    body: [
+                                        Ctrl(
+                                            Break,
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                        Print(
+                            Print {
+                                values: [
+                                    Literal(
+                                        String(
+                                            "after inner",
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ],
+}

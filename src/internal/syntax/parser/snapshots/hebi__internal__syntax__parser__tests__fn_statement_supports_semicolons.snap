@@ -1,0 +1,354 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Func(
+            Func {
+                name: Ident(
+                    "add",
+                ),
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        Param {
+                            name: Ident(
+                                "a",
+                            ),
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
+                                "b",
+                            ),
+                            default: None,
+                        },
+                    ],
+                },
+                body: [
+                    Var(
+                        Var {
+                            name: Ident(
+                                "s",
+                            ),
+                            value: Binary(
+                                Binary {
+                                    op: Add,
+                                    left: GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "a",
+                                            ),
+                                        },
+                                    ),
+                                    right: GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "b",
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    Print(
+                        Print {
+                            values: [
+                                Literal(
+                                    String(
+                                        "a + b = ",
+                                    ),
+                                ),
+                                GetVar(
+                                    GetVar {
+                                        name: Ident(
+                                            "s",
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "s",
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                ],
+                has_yield: false,
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "add",
+                                    ),
+                                },
+                            ),
+                            args: [
+                                Literal(
+                                    Int(
+                                        1,
+                                    ),
+                                ),
+                                Literal(
+                                    Int(
+                                        2,
+                                    ),
+                                ),
+                            ],
+                        },
+                    ),
+                ],
+            },
+        ),
+        Func(
+            Func {
+                name: Ident(
+                    "reduce",
+                ),
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        Param {
+                            name: Ident(
+                                "it",
+                            ),
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
+                                "init",
+                            ),
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
+                                "func",
+                            ),
+                            default: None,
+                        },
+                    ],
+                },
+                body: [
+                    Var(
+                        Var {
+                            name: Ident(
+                                "acc",
+                            ),
+                            value: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "init",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    Loop(
+                        For(
+                            For {
+                                item: Ident(
+                                    "x",
+                                ),
+                                iter: Expr(
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "it",
+                                            ),
+                                        },
+                                    ),
+                                ),
+                                body: [
+                                    Expr(
+                                        SetVar(
+                                            SetVar {
+                                                target: GetVar {
+                                                    name: Ident(
+                                                        "acc",
+                                                    ),
+                                                },
+                                                value: Call(
+                                                    Call {
+                                                        target: GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "func",
+                                                                ),
+                                                            },
+                                                        ),
+                                                        args: [
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: Ident(
+                                                                        "acc",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: Ident(
+                                                                        "x",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "acc",
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                ],
+                has_yield: false,
+            },
+        ),
+        Func(
+            Func {
+                name: Ident(
+                    "reducer",
+                ),
+                params: Params {
+                    has_self: false,
+                    pos: [
+                        Param {
+                            name: Ident(
+                                "acc",
+                            ),
+                            default: None,
+                        },
+                        Param {
+                            name: Ident(
+                                "i",
+                            ),
+                            default: None,
+                        },
+                    ],
+                },
+                body: [
+                    Ctrl(
+                        Return(
+                            Return {
+                                value: Some(
+                                    Binary(
+                                        Binary {
+                                            op: Add,
+                                            left: GetVar(
+                                                GetVar {
+                                                    name: Ident(
+                                                        "acc",
+                                                    ),
+                                                },
+                                            ),
+                                            right: GetVar(
+                                                GetVar {
+                                                    name: Ident(
+                                                        "i",
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    ),
+                ],
+                has_yield: false,
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Call(
+                        Call {
+                            target: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "reduce",
+                                    ),
+                                },
+                            ),
+                            args: [
+                                Literal(
+                                    List(
+                                        [
+                                            Literal(
+                                                Int(
+                                                    1,
+                                                ),
+                                            ),
+                                            Literal(
+                                                Int(
+                                                    2,
+                                                ),
+                                            ),
+                                            Literal(
+                                                Int(
+                                                    3,
+                                                ),
+                                            ),
+                                            Literal(
+                                                Int(
+                                                    4,
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                Literal(
+                                    Int(
+                                        0,
+                                    ),
+                                ),
+                                GetVar(
+                                    GetVar {
+                                        name: Ident(
+                                            "reducer",
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                    ),
+                ],
+            },
+        ),
+    ],
+}

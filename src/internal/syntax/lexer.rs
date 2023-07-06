@@ -263,7 +263,7 @@ pub enum TokenKind {
   #[token("true")]
   #[token("false")]
   Lit_Bool,
-  #[regex(r#""([^"\\]|\\.)*""#)]
+  #[regex(r#""([^"\\]|\\.)*""#)] // fix highlighting -> "
   Lit_String,
   /// `a`, `b_c`, `__x0`, etc.
   #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]

@@ -187,7 +187,6 @@ impl<'src> Parser<'src> {
     let (state, body) = self.with_state2(state, Self::body)?;
     // yield may appear in loop, in which case we have to propagate it upwards here
     self.state.current_func = state.current_func;
-
     Ok(body)
   }
 
@@ -384,7 +383,7 @@ impl<'src> Parser<'src> {
     if self.no_indent().is_ok() {
       let mut body = vec![self.stmt()?];
 
-      while self.previous().is(Tok_Semicolon)
+      while (self.previous().is(Tok_Semicolon) || self.previous().is(Tok_SemicolonSemicolon))
         && !self.current().is(Tok_SemicolonSemicolon)
         && !self.current().is(Tok_Eof)
       {

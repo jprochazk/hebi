@@ -21,6 +21,12 @@ macro_rules! check_module {
       }
     };
   };
+  ($name:ident, $input:literal) => {
+    #[test]
+    fn $name() {
+      check_module!($input);
+    }
+  };
 }
 
 macro_rules! check_expr {
@@ -52,6 +58,12 @@ macro_rules! check_error {
         assert_snapshot!(errors);
       }
     };
+  };
+  ($name:ident, $input:literal) => {
+    #[test]
+    fn $name() {
+      check_error!($input);
+    }
   };
 }
 
@@ -1092,36 +1104,147 @@ fn _temp() {
   }
 } */
 
-#[test]
-fn semicolons() {
-  check_module! {
-    r#"#!hebi
-      1 + 2; 3 + 4
-      1 + 2; 3 + 4;
-      print 5; print 6;
-      pass; print 7; pass;
-      a; b; c; d;
-      a + b - c; a / d || c; print abcd;
-      print (
-        a + b
-      ); print (
-          c + d
-        ); print (
-            e + f
-          );  
-      if true: print x; print y;; print z; if false: print a;; print b
-      if true: print x; print y;; elif false: print a;; else: print z; print zz
-      if one: print one; if two: print two;; else: print two_else;; else: print one_else
-    "#
-  };
+// semicolons
 
-  check_module! {
-    r#"#!hebi
-      if true:
-        if true: print x; print y
-        if true: print z
+check_module! {
+  many_semicolons,
+  r#"#!hebi
+    1 + 2; 3 + 4
+    1 + 2; 3 + 4;
+    print 5; print 6;
+    pass; print 7; pass;
+    a; b; c; d;
+    a + b - c; a / d || c; print abcd;
+    print (
+      a + b
+    ); print (
+        c + d
+      ); print (
+          e + f
+        );  
+    if true: print x; print y;; print z; if false: print a;; print b
+    if true: print x; print y;; elif false: print a;; else: print z; print zz
+    if one: print one; if two: print two;; else: print two_else;;;; else: print one_else
+  "#
+}
+
+check_module! {
+  if_statement_supports_semicolons,
+  r#"#!hebi
+    if true:
+      if true: print x; print y
+      if true: print z
+  "#
+}
+
+check_module! {
+  for_statement_supports_semicolons,
+  r#"#!hebi
+    for i in 0..10: print x
+    x := 0; for i in 0..10: x += i; print x;; print x;
     "#
-  }
+}
+
+check_module! {
+  for_statements_can_be_nested_on_the_same_line,
+  r#"#!hebi
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;; print "------------"
+  "#
+}
+
+check_module! {
+  infinite_loop_statements_support_semicolons,
+  r#"#!hebi
+    loop: print x; print y
+    loop: print x;; print y
+    loop: print x; print y;; print z
+  "#
+}
+
+check_module! {
+  while_statements_support_semicolons,
+  r#"#!hebi
+    x := 1; while x % 96 != 0: x += x * 17; x += x * 11;; if x != 46656: print "broken arithmetics"
+  "#
+}
+
+check_module! {
+  import_statements_support_semicolons,
+  r#"#!hebi
+  import a; import b
+  from a import b; import x; from c import d;
+  import http; from json import parse; print parse(http.get("https://jsonplaceholder.typicode.com/todos/1"))
+  "#
+}
+
+check_module! {
+  trailing_statements_of_nested_blocks_are_included_in_outer_block_body,
+  r#"#!hebi
+    while outer: print "outer"; while inner: break;; print "after inner";
+  "#
+}
+
+check_module! {
+  fn_statement_supports_semicolons,
+  r#"#!hebi
+    fn add(a, b): s := a + b; print "a + b = ", s; return s;; print add(1,2); 
+    fn reduce(it, init, func): acc := init; for x in it: acc = func(acc, x);; return acc;; fn reducer(acc, i): return acc + i;; print reduce([1,2,3,4],0, reducer)
+  "#
+}
+
+check_error! {
+  inline_for_indentation_enforcement,
+  r#"#!hebi
+    for i in 0..10: print x;
+      print y
+
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;
+        print x, y
+
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;;
+      print "---------"
+  "#
+}
+
+check_error! {
+  inline_while_indentation_enforcement,
+  r#"#!hebi
+    while x % 96 != 0: x += x * 17; x += x * 11;
+      if x != 46656: print "broken arithmetics"
+  "#
+}
+
+check_module! {
+  funky_inline_indentation_mix,
+  r#"#!hebi
+    if cond: print 1;; else:
+      print "i == j"
+
+    for i in (call()
+    ): for j in (call()
+      ): if (
+          i 
+          != 
+          j
+        ): print (
+            i, 
+            j
+          ); print (
+            j, 
+            i
+          );; else: 
+          print (
+          "i == j"
+        )
+
+    for one in x(): for two in (
+      y()
+    ): for three in z(): if (one != two
+    ): print one, two;; elif one == two: print (
+      "one == two"
+                          );; else: 
+    print "unreachable"
+  "#
 }
 
 #[test]

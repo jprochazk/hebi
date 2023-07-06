@@ -1,0 +1,358 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: Ident(
+                                    "cond",
+                                ),
+                            },
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        Literal(
+                                            Int(
+                                                1,
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: Some(
+                    [
+                        Print(
+                            Print {
+                                values: [
+                                    Literal(
+                                        String(
+                                            "i == j",
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ],
+                ),
+            },
+        ),
+        Loop(
+            For(
+                For {
+                    item: Ident(
+                        "i",
+                    ),
+                    iter: Expr(
+                        Call(
+                            Call {
+                                target: GetVar(
+                                    GetVar {
+                                        name: Ident(
+                                            "call",
+                                        ),
+                                    },
+                                ),
+                                args: [],
+                            },
+                        ),
+                    ),
+                    body: [
+                        Loop(
+                            For(
+                                For {
+                                    item: Ident(
+                                        "j",
+                                    ),
+                                    iter: Expr(
+                                        Call(
+                                            Call {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: Ident(
+                                                            "call",
+                                                        ),
+                                                    },
+                                                ),
+                                                args: [],
+                                            },
+                                        ),
+                                    ),
+                                    body: [
+                                        If(
+                                            If {
+                                                branches: [
+                                                    Branch {
+                                                        cond: Binary(
+                                                            Binary {
+                                                                op: Neq,
+                                                                left: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "i",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "j",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                        body: [
+                                                            Print(
+                                                                Print {
+                                                                    values: [
+                                                                        GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "i",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "j",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            Print(
+                                                                Print {
+                                                                    values: [
+                                                                        GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "j",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "i",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ],
+                                                default: Some(
+                                                    [
+                                                        Print(
+                                                            Print {
+                                                                values: [
+                                                                    Literal(
+                                                                        String(
+                                                                            "i == j",
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+        Loop(
+            For(
+                For {
+                    item: Ident(
+                        "one",
+                    ),
+                    iter: Expr(
+                        Call(
+                            Call {
+                                target: GetVar(
+                                    GetVar {
+                                        name: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                ),
+                                args: [],
+                            },
+                        ),
+                    ),
+                    body: [
+                        Loop(
+                            For(
+                                For {
+                                    item: Ident(
+                                        "two",
+                                    ),
+                                    iter: Expr(
+                                        Call(
+                                            Call {
+                                                target: GetVar(
+                                                    GetVar {
+                                                        name: Ident(
+                                                            "y",
+                                                        ),
+                                                    },
+                                                ),
+                                                args: [],
+                                            },
+                                        ),
+                                    ),
+                                    body: [
+                                        Loop(
+                                            For(
+                                                For {
+                                                    item: Ident(
+                                                        "three",
+                                                    ),
+                                                    iter: Expr(
+                                                        Call(
+                                                            Call {
+                                                                target: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "z",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ),
+                                                    body: [
+                                                        If(
+                                                            If {
+                                                                branches: [
+                                                                    Branch {
+                                                                        cond: Binary(
+                                                                            Binary {
+                                                                                op: Neq,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "one",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                right: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "two",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        body: [
+                                                                            Print(
+                                                                                Print {
+                                                                                    values: [
+                                                                                        GetVar(
+                                                                                            GetVar {
+                                                                                                name: Ident(
+                                                                                                    "one",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        GetVar(
+                                                                                            GetVar {
+                                                                                                name: Ident(
+                                                                                                    "two",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                    Branch {
+                                                                        cond: Binary(
+                                                                            Binary {
+                                                                                op: Eq,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "one",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                right: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "two",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        body: [
+                                                                            Print(
+                                                                                Print {
+                                                                                    values: [
+                                                                                        Literal(
+                                                                                            String(
+                                                                                                "one == two",
+                                                                                            ),
+                                                                                        ),
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                ],
+                                                                default: Some(
+                                                                    [
+                                                                        Print(
+                                                                            Print {
+                                                                                values: [
+                                                                                    Literal(
+                                                                                        String(
+                                                                                            "unreachable",
+                                                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ],
+}
