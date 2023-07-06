@@ -1171,9 +1171,9 @@ check_module! {
 check_module! {
   import_statements_support_semicolons,
   r#"#!hebi
-  import a; import b
-  from a import b; import x; from c import d;
-  import http; from json import parse; print parse(http.get("https://jsonplaceholder.typicode.com/todos/1"))
+    import a; import b
+    from a import b; import x; from c import d;
+    import http; from json import parse; print parse(http.get("https://jsonplaceholder.typicode.com/todos/1"))
   "#
 }
 
@@ -1247,47 +1247,50 @@ check_module! {
   "#
 }
 
-#[test]
-fn semicolons_bad() {
-  check_error! {
-    r#"#!hebi
-      if true: print x
-        print y
-    "#
-  }
+check_error! {
+  scope_no_semi,
+  r#"#!hebi
+    if true: print x
+      print y
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      if true: print x;
-        print y
-    "#
-  }
+check_error! {
+  scope_single_semi,
+  r#"#!hebi
+    if true: print x;
+      print y
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      if true: print x;;
-        print y
-    "#
-  }
+check_error! {
+  scope_double_semi,
+  r#"#!hebi
+    if true: print x;;
+      print y
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      if true: if true: print x
-        print y
-    "#
-  }
+check_error! {
+  scope_nested_no_semi,
+  r#"#!hebi
+    if true: if true: print x
+      print y
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      if true: if true: print x;
-        print y
-    "#
-  }
+check_error! {
+  scope_nested_single_semi,
+  r#"#!hebi
+    if true: if true: print x;
+      print y
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      if true: if true: print x;;
-        print y
-    "#
-  }
+check_error! {
+  scoped_nested_double_semi,
+  r#"#!hebi
+    if true: if true: print x;;
+      print y
+  "#
 }
