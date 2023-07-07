@@ -204,6 +204,28 @@ impl Object for Table {
     this.insert(key, value);
     Ok(())
   }
+
+  fn eq(scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    if this.len() != other.len() {
+      return Ok(false);
+    }
+
+    let this_data = this.data.borrow();
+    let other_data = other.data.borrow();
+    for (this_key, this_value) in this_data.iter() {
+      let other_value = match other_data.get(this_key) {
+        Some(value) => value,
+        None => return Ok(false),
+      };
+
+      let are_equal = scope.are_equal(this_value.clone(), other_value.clone())?;
+      if !are_equal {
+        return Ok(false);
+      }
+    }
+
+    Ok(true)
+  }
 }
 
 declare_object_type!(Table);

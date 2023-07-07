@@ -1796,3 +1796,87 @@ check! {
     none <= none
   "#
 }
+
+check! {
+  heterogenous_type_equality,
+  r#"#!hebi
+  print 1 == "0"
+  print 1 == false
+  print 1 == true
+  print 1 == none
+  print none == "string"
+  print none == []
+  print [] == "string"
+  class Test: pass
+  print Test() == "string"
+  print Test() == none
+  print Test() == []
+  print to_str == to_int
+  print Test() == to_int
+  "#
+}
+
+check! {
+  heterogenous_type_unequality,
+  r#"#!hebi
+  print 1 != "0"
+  print 1 != false
+  print 1 != true
+  print 1 != none
+  print none != "string"
+  print none != []
+  print [] != "string"
+  class Test: pass
+  print Test() != "string"
+  print Test() != none
+  print Test() != []
+  print to_str != to_int
+  print Test() != to_int
+  "#
+}
+
+check! {
+  object_equality,
+  r#"#!hebi
+  print to_int == to_int
+  print to_str == to_str
+  print to_int != to_str
+  print [].push != [].push
+  x := []
+  print x.push == x.push
+  print x.is_empty != x.push
+  print collect == collect
+  print collect != to_int
+  print "a" == "a"
+  print "a" + "b" == "ab"
+  print "a" + "b" != "ba"
+  "#
+}
+
+check! {
+  array_equality,
+  r#"#!hebi
+    print [] == []
+    print [1] == [1]
+    print [1, 2] == [1, 2]
+    print [1] != []
+    print [] != [1]
+    print [1, 2] != [2, 1]
+    print [1, 2] != ["1", 2]
+    print [to_int, to_str] == [to_int, to_str]
+  "#
+}
+
+check! {
+  table_equality,
+  r#"#!hebi
+    print {} == {}
+    print {x: 3} == {x: 3}
+    print {x: 3} != {x: none}
+    print {x: 3} != {y: 3}
+    print {x: 3} != {}
+    print {x: 3} != {x: 3, y: 4}
+    print {x: [1, 2]} == {x: [1, 2]}
+    print {x: [1, 2]} != {x: [2, 3]}
+  "#
+}

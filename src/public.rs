@@ -383,6 +383,14 @@ impl<'cx> Scope<'cx> {
   pub(crate) fn leave(mut self) {
     self.thread.truncate_stack(self.stack_base);
   }
+
+  pub(crate) fn are_equal(
+    &self,
+    lhs: crate::internal::value::Value,
+    rhs: crate::internal::value::Value,
+  ) -> Result<bool> {
+    Thread::check_equality(self.clone(), lhs, rhs)
+  }
 }
 
 impl<'cx> Global<'cx> {

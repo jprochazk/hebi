@@ -1,0 +1,35 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+print to_int == to_int
+print to_str == to_str
+print to_int != to_str
+print [].push != [].push
+x := []
+print x.push == x.push
+print x.is_empty != x.push
+print collect == collect
+print collect != to_int
+print "a" == "a"
+print "a" + "b" == "ab"
+print "a" + "b" != "ba"
+
+
+# Result:
+None
+
+# Output:
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+
