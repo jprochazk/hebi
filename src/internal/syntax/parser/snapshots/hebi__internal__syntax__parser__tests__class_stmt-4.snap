@@ -1,8 +1,0 @@
----
-source: src/internal/syntax/parser/tests.rs
-expression: errors
----
-invalid indentation
-| class T: [4;31ma[0m = b
-
-

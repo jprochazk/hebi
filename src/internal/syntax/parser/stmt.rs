@@ -296,24 +296,34 @@ impl<'src> Parser<'src> {
   fn class_members(&mut self) -> Result<ast::ClassMembers<'src>, SpannedError> {
     let mut members = ast::ClassMembers::new();
 
+    let mut inline = false;
     if self.no_indent().is_ok() {
-      // empty class (single line)
-      self
-        .expect(Kw_Pass)
-        .map_err(|e| SpannedError::new("invalid indentation", e.span))?;
+      inline = true;
+    } else {
+      self.indent_gt()?;
+    }
+
+    if self.bump_if(Kw_Pass) {
+      // empty class (indented)
+      if !inline {
+        self.dedent()?;
+      }
       return Ok(members);
     }
 
-    self.indent_gt()?;
-    if self.bump_if(Kw_Pass) {
-      // empty class (indented)
-      self.dedent()?;
-      return Ok(members);
+    macro_rules! indent_check {
+      ($inline:ident, $self:ident, first = $is_first:expr) => {{
+        if $inline {
+          $self.no_indent().is_ok() && ($is_first || $self.is_allowed_to_parse_inline())
+        } else {
+          $self.indent_eq().is_ok()
+        }
+      }};
     }
 
     let mut names = HashSet::new();
 
-    while self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
+    while self.current().is(Lit_Ident) && indent_check!(inline, self, first = names.is_empty()) {
       let name = self.ident()?;
 
       if name == "init" {
@@ -340,10 +350,11 @@ impl<'src> Parser<'src> {
         self.no_indent()?;
         let default = self.expr()?;
         members.fields.push(ast::Field { name, default });
+        self.bump_if(Tok_Semicolon);
       }
     }
 
-    while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
+    while self.current().is(Kw_Fn) && indent_check!(inline, self, first = names.is_empty()) {
       self.expect(Kw_Fn)?;
 
       let name = self.ident()?;
@@ -367,13 +378,18 @@ impl<'src> Parser<'src> {
       self.no_indent()?; // func's opening paren must be unindented
       let f = self.func(name)?;
       members.methods.push(f);
+      self.bump_if(Tok_Semicolon);
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       fail!(@self.current().span, "fields may not appear after methods",);
     }
 
-    self.dedent()?;
+    if inline {
+      self.bump_if(Tok_SemicolonSemicolon);
+    } else {
+      self.dedent()?;
+    }
 
     Ok(members)
   }
@@ -383,10 +399,7 @@ impl<'src> Parser<'src> {
     if self.no_indent().is_ok() {
       let mut body = vec![self.stmt()?];
 
-      while (self.previous().is(Tok_Semicolon) || self.previous().is(Tok_SemicolonSemicolon))
-        && !self.current().is(Tok_SemicolonSemicolon)
-        && !self.current().is(Tok_Eof)
-      {
+      while self.is_allowed_to_parse_inline() && !self.current().is(Tok_Eof) {
         self.no_indent()?;
         body.push(self.stmt()?);
       }
@@ -405,6 +418,11 @@ impl<'src> Parser<'src> {
       self.dedent()?;
       Ok(body)
     }
+  }
+
+  fn is_allowed_to_parse_inline(&self) -> bool {
+    (self.previous().is(Tok_Semicolon) || self.previous().is(Tok_SemicolonSemicolon))
+      && !self.current().is(Tok_SemicolonSemicolon)
   }
 
   fn simple_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {

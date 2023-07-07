@@ -692,80 +692,71 @@ fn print_stmt() {
   }
 }
 
-#[test]
-fn class_stmt() {
-  check_module! {
-    r#"#!hebi
-      class T: pass
-      class T:
+check_module! {
+  valid_class_stmts,
+  r#"#!hebi
+    class T: pass
+    class T:
+      pass
+    class T:
+      fn f(v): pass
+    class T:
+      a = b
+      fn f(v): pass
+    class T(U): pass
+    class T(U):
+      pass
+    class T(U):
+      a = b
+    class T(U):
+      a = b
+      fn f(v): pass
+    class T(U):
+      a = b
+      fn f(v):
         pass
-      class T:
-        fn f(v): pass
-      class T:
-        a = b
-        fn f(v): pass
-      class T(U): pass
-      class T(U):
-        pass
-      class T(U):
-        a = b
-      class T(U):
-        a = b
-        fn f(v): pass
-      class T(U):
-        a = b
-        fn f(v):
-          pass
-    "#
-  }
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      class
-        T: pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_name,
+  r#"#!hebi
+    class
+      T: pass
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      class T
-        : pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_colon_1,
+  r#"#!hebi
+    class T
+      : pass
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      class T: a = b
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_colon_2,
+  r#"#!hebi
+    class T(U)
+      : pass
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      class T: fn f(v): pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_base,
+  r#"#!hebi
+    class T
+      (U): pass
+  "#
+}
 
-  check_error! {
-    r#"#!hebi
-      class T
-        (U): pass
-    "#
-  }
-
-  check_error! {
-    r#"#!hebi
-      class T(U)
-        : pass
-    "#
-  }
-
-  check_error! {
-    r#"#!hebi
-      class T(U):
-        fn f(v): pass
-        a = b
-    "#
-  }
+check_error! {
+  bad_class_stmt_fields_after_methods,
+  r#"#!hebi
+    class T(U):
+      fn f(v): pass
+      a = b
+  "#
 }
 
 #[test]
@@ -1125,6 +1116,7 @@ check_module! {
     if true: print x; print y;; print z; if false: print a;; print b
     if true: print x; print y;; elif false: print a;; else: print z; print zz
     if one: print one; if two: print two;; else: print two_else;;;; else: print one_else
+    class One: pass; class Two: pass;
   "#
 }
 
@@ -1174,6 +1166,42 @@ check_module! {
     import a; import b
     from a import b; import x; from c import d;
     import http; from json import parse; print parse(http.get("https://jsonplaceholder.typicode.com/todos/1"))
+  "#
+}
+
+check_module! {
+  class_statements_support_inline_fields,
+  r#"#!hebi
+    class A1: a = 1
+    class A2: a = 1; class B: b = 2
+    class A3: a = 1; b = 2; class B3(A3): b = 3;
+    class A4: a = 1; b = 2;; A4().a += 3
+  "#
+}
+
+check_module! {
+  class_statements_support_inline_methods,
+  r#"#!hebi
+    class A1: fn f(self): pass
+    class A2: fn x(self): pass;; fn y(self): pass
+  "#
+}
+
+check_module! {
+  class_statements_inline_method_scoping,
+  r#"#!hebi
+    class A2: fn inner1(self): pass;; fn inner2(self): pass;;;; fn outer(): pass
+  "#
+}
+
+check_module! {
+  class_statements_allow_oneliners_in_multiline_mode,
+  r#"#!hebi
+    class Multiline:
+      a = 1; b = 2; c = 3;
+      init(self, x): self.a = x; self.b = x * x;;  # <-- must close scope
+      fn add(self): return self.a + self.b + self.c
+      fn mul(self): return self.a * self.b * self.c
   "#
 }
 

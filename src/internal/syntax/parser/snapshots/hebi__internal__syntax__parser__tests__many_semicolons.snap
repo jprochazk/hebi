@@ -581,5 +581,31 @@ Module {
                 ),
             },
         ),
+        Class(
+            Class {
+                name: Ident(
+                    "One",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "Two",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [],
+                },
+            },
+        ),
     ],
 }
