@@ -1,0 +1,37 @@
+---
+source: src/internal/vm/tests.rs
+expression: snapshot
+---
+# Source:
+print 1 == "0"
+print 1 == false
+print 1 == true
+print 1 == none
+print none == "string"
+print none == []
+print [] == "string"
+class Test: pass
+print Test() == "string"
+print Test() == none
+print Test() == []
+print to_str == to_int
+print Test() == to_int
+
+
+# Result:
+None
+
+# Output:
+false
+false
+false
+false
+false
+false
+false
+false
+false
+false
+false
+false
+

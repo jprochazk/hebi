@@ -196,6 +196,10 @@ impl Object for Str {
   fn cmp(_: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<Ordering> {
     Ok(this.as_str().cmp(other.as_str()))
   }
+
+  fn eq(_: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    Ok(this.as_str() == other.as_str())
+  }
 }
 
 pub fn register_builtin_functions(global: &Global) {

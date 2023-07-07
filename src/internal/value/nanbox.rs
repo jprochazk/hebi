@@ -139,6 +139,11 @@ impl Value {
   pub fn is_object(&self) -> bool {
     self.type_tag() == ty::OBJECT
   }
+
+  #[inline]
+  pub fn bitwise_eq(&self, other: &Self) -> bool {
+    self.bits == other.bits
+  }
 }
 
 impl Clone for Value {

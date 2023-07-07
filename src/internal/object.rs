@@ -272,6 +272,11 @@ declare_object_trait! {
       let this = Self::type_name(this);
       fail!("`{this}` does not support comparison")
     }
+
+    fn eq(scope, this, other: Self) -> Result<bool> {
+      let _ = scope;
+      Ok(this.ptr_eq(&other))
+    }
   }
 }
 

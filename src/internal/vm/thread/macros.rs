@@ -62,6 +62,7 @@ macro_rules! binary {
       any => $any_expr,
       bool => fail!("cannot `**` `bool`"),
       none => fail!("cannot `**` `none`"),
+      incompatible_types => fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs),
     })
   }};
   ($lhs:ident $op:tt $rhs:ident {
@@ -75,6 +76,7 @@ macro_rules! binary {
       any => $any_expr,
       bool => fail!("cannot `{}` `bool`", stringify!($op)),
       none => fail!("cannot `{}` `none`", stringify!($op)),
+      incompatible_types => fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs),
     })
   }};
   ($lhs:ident, $rhs:ident {
@@ -83,6 +85,7 @@ macro_rules! binary {
     any => $any_expr:expr,
     bool => $bool_expr:expr,
     none => $none_expr:expr,
+    incompatible_types => $on_different_object_types_expr:expr,
   }) => {{
     if $lhs.is_int() && $rhs.is_int() {
       let $lhs = unsafe { $lhs.to_int_unchecked() };
@@ -112,11 +115,12 @@ macro_rules! binary {
       let $lhs = unsafe { $lhs.to_any_unchecked() };
       let $rhs = unsafe { $rhs.to_any_unchecked() };
       if $lhs.ty() != $rhs.ty() {
-        fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+        $on_different_object_types_expr
+      } else {
+        $any_expr
       }
-      $any_expr
     } else {
-      fail!("operands must have the same type: `{}`, `{}`", $lhs, $rhs)
+      $on_different_object_types_expr
     }
   }};
 }
