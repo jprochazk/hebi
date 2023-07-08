@@ -59,6 +59,11 @@ impl Object for BuiltinFunction {
     todo!()
   }
 
+  fn eq(_scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    // This is a pointer comparison.
+    Ok(this.function.eq(&other.function))
+  }
+
   fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
     BuiltinFunction::call(this.as_ref(), scope).map(CallResult::Return)
   }
@@ -110,6 +115,11 @@ impl Object for BuiltinAsyncFunction {
       stack_base: scope.stack_base,
       fut: BuiltinAsyncFunction::call(this.as_ref(), scope),
     }))
+  }
+
+  fn eq(_scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    // This is a pointer comparison.
+    Ok(this.function.eq(&other.function))
   }
 }
 
@@ -240,6 +250,14 @@ impl Object for BuiltinMethod {
 
   fn call(scope: Scope<'_>, this: Ptr<Self>, _: ReturnAddr) -> Result<CallResult> {
     BuiltinMethod::call(this.as_ref(), scope).map(CallResult::Return)
+  }
+
+  fn eq(_scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    // Bound methods must belong to the *same* object in memory, identified by an
+    // unaliased pointer. Therefore, their values must have the exact same
+    // representation as values, which means that we don't need to unbox them in
+    // order to compare.
+    Ok(this.this.bitwise_eq(&other.this) && this.function.eq(&other.function))
   }
 }
 

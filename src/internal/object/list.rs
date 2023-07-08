@@ -312,6 +312,25 @@ impl Object for List {
     };
     Ok(())
   }
+
+  fn eq(scope: Scope<'_>, this: Ptr<Self>, other: Ptr<Self>) -> Result<bool> {
+    if this.len() != other.len() {
+      return Ok(false);
+    }
+
+    let this_data = this.data.borrow();
+    let other_data = other.data.borrow();
+    for i in 0..this_data.len() {
+      let lhs = this_data[i].clone();
+      let rhs = other_data[i].clone();
+      let are_equal = scope.are_equal(lhs, rhs)?;
+      if !are_equal {
+        return Ok(false);
+      }
+    }
+
+    Ok(true)
+  }
 }
 
 pub fn register_builtin_functions(global: &Global) {

@@ -374,6 +374,18 @@ impl Thread {
   fn stack_base(&self) -> usize {
     current_call_frame!(self).stack_base
   }
+
+  // idk what should be the public API for this
+  pub(crate) fn check_equality(scope: Scope<'_>, lhs: Value, rhs: Value) -> Result<bool> {
+    Ok(binary!(lhs, rhs {
+      i32 => lhs == rhs,
+      f64 => lhs == rhs,
+      any => lhs.eq(scope, rhs)?,
+      bool => lhs == rhs,
+      none => true,
+      incompatible_types => false,
+    }))
+  }
 }
 
 pub enum CallResult {
@@ -1206,13 +1218,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
-      i32 => Value::bool(lhs == rhs),
-      f64 => Value::bool(lhs == rhs),
-      any => Value::bool(matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
-      bool => Value::bool(lhs == rhs),
-      none => Value::bool(true),
-    });
+    let value = Value::bool(Self::check_equality(self.get_empty_scope(), lhs, rhs)?);
     self.acc = value;
     Ok(())
   }
@@ -1223,13 +1229,7 @@ impl Handler for Thread {
 
     let lhs = self.get_register(lhs);
     let rhs = take(&mut self.acc);
-    let value = binary!(lhs, rhs {
-      i32 => Value::bool(lhs != rhs),
-      f64 => Value::bool(lhs != rhs),
-      any => Value::bool(!matches!(lhs.cmp(self.get_empty_scope(), rhs)?, Ordering::Equal)),
-      bool => Value::bool(lhs != rhs),
-      none => Value::bool(false),
-    });
+    let value = Value::bool(!Self::check_equality(self.get_empty_scope(), lhs, rhs)?);
     self.acc = value;
     Ok(())
   }
