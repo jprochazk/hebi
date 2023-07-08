@@ -1880,3 +1880,12 @@ check! {
     print {x: [1, 2]} != {x: [2, 3]}
   "#
 }
+
+check! {
+  const_jump_regression,
+  r#"#!hebi
+    for i in 0..3:
+      x := i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i + i
+      print i
+  "#
+}

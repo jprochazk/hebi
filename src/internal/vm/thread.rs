@@ -1071,8 +1071,8 @@ impl Handler for Thread {
     let offset = unsafe { offset.unwrap_unchecked() };
 
     match is_truthy(take(&mut self.acc)) {
-      true => Ok(super::dispatch::Jump::Move(offset)),
-      false => Ok(super::dispatch::Jump::Skip),
+      true => Ok(super::dispatch::Jump::Skip),
+      false => Ok(super::dispatch::Jump::Move(offset)),
     }
   }
 
