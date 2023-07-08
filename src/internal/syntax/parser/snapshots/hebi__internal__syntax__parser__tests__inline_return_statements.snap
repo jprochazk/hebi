@@ -1,0 +1,98 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: Ident(
+                    "T",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "test1",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                If(
+                                    If {
+                                        branches: [
+                                            Branch {
+                                                cond: Literal(
+                                                    Bool(
+                                                        true,
+                                                    ),
+                                                ),
+                                                body: [
+                                                    Ctrl(
+                                                        Return(
+                                                            Return {
+                                                                value: Some(
+                                                                    Literal(
+                                                                        Int(
+                                                                            1,
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ],
+                                        default: None,
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "test2",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                If(
+                                    If {
+                                        branches: [
+                                            Branch {
+                                                cond: Literal(
+                                                    Bool(
+                                                        true,
+                                                    ),
+                                                ),
+                                                body: [
+                                                    Ctrl(
+                                                        Return(
+                                                            Return {
+                                                                value: None,
+                                                            },
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ],
+                                        default: None,
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+    ],
+}

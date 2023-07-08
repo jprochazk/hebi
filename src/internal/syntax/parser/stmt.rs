@@ -452,7 +452,16 @@ impl<'src> Parser<'src> {
     if current_fn_name == "init" && self.state.current_class.is_some() && self.no_indent().is_ok() {
       fail!(@self.current().span, "return in `init` may not return a value");
     }
-    let value = self.no_indent().ok().map(|_| self.expr()).transpose()?;
+    let mut value = None;
+
+    if self.no_indent().is_ok() {
+      if self.current().is(Tok_Semicolon) || self.current().is(Tok_SemicolonSemicolon) {
+        // next token closes statement or inline block scope, do nothing
+      } else {
+        value = Some(self.expr()?)
+      }
+    }
+
     let end = self.previous().span.end;
     Ok(ast::return_stmt(start..end, value))
   }
