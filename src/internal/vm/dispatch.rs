@@ -192,7 +192,7 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::Jump => {
-          let width_adjustment = width.size() - 1;
+          let width_adjustment = if width.size() > 1 { 1 } else { 0 };
           #[allow(unused_assignments)] // ip is overwritten by start+offset
           let (offset,) = read_operands!(Jump, ip, end, width);
           let offset = handler.op_jump(offset)?;
@@ -200,7 +200,7 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::JumpConst => {
-          let width_adjustment = width.size() - 1;
+          let width_adjustment = if width.size() > 1 { 1 } else { 0 };
           #[allow(unused_assignments)] // ip is overwritten by start+offset
           let (idx,) = read_operands!(JumpConst, ip, end, width);
           let offset = handler.op_jump_const(idx)?;
@@ -208,7 +208,7 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::JumpLoop => {
-          let width_adjustment = width.size() - 1;
+          let width_adjustment = if width.size() > 1 { 1 } else { 0 };
           #[allow(unused_assignments)] // ip is overwritten by start-offset
           let (offset,) = read_operands!(JumpLoop, ip, end, width);
           let offset = handler.op_jump_loop(offset)?;
@@ -216,7 +216,7 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::JumpIfFalse => {
-          let width_adjustment = width.size() - 1;
+          let width_adjustment = if width.size() > 1 { 1 } else { 0 };
           let (offset,) = read_operands!(JumpIfFalse, ip, end, width);
           let offset = handler.op_jump_if_false(offset)?;
           match offset {
@@ -226,7 +226,7 @@ pub fn dispatch<T: Handler>(
           continue;
         }
         Opcode::JumpIfFalseConst => {
-          let width_adjustment = width.size() - 1;
+          let width_adjustment = if width.size() > 1 { 1 } else { 0 };
           let (idx,) = read_operands!(JumpIfFalseConst, ip, end, width);
           let offset = handler.op_jump_if_false_const(idx)?;
           match offset {
