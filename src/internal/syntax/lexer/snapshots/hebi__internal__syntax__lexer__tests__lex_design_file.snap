@@ -513,4 +513,10 @@ expression: tokens
     (>_ Brk_ParenL @1920..1921),
     (>_ Lit_Ident `v` @1921..1922),
     (>_ Brk_ParenR @1922..1923),
+    (>0 Tok_Semicolon @1941..1942),
+    (>0 Tok_SemicolonSemicolon @1943..1945),
+    (>0 Tok_SemicolonSemicolon @1946..1948),
+    (>_ Tok_Semicolon @1948..1949),
+    (>0 Tok_SemicolonSemicolon @1950..1952),
+    (>_ Tok_SemicolonSemicolon @1952..1954),
 ]

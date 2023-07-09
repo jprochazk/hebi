@@ -3,6 +3,6 @@ source: src/internal/syntax/parser/tests.rs
 expression: errors
 ---
 invalid indentation
-| class T: [4;31ma[0m = b
+| [4;31mif[0m x != 46656: print "broken arithmetics"
 
 

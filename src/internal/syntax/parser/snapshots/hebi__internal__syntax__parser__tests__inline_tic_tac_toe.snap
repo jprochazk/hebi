@@ -1,0 +1,2252 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Import(
+            Symbols {
+                path: [
+                    Ident(
+                        "io",
+                    ),
+                ],
+                symbols: [
+                    ImportSymbol {
+                        name: Ident(
+                            "input",
+                        ),
+                        alias: None,
+                    },
+                    ImportSymbol {
+                        name: Ident(
+                            "parse",
+                        ),
+                        alias: None,
+                    },
+                ],
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "TicTacToe",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [
+                        Field {
+                            name: Ident(
+                                "board",
+                            ),
+                            default: Literal(
+                                List(
+                                    [
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                        Literal(
+                                            String(
+                                                "-",
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        },
+                        Field {
+                            name: Ident(
+                                "running",
+                            ),
+                            default: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                        Field {
+                            name: Ident(
+                                "current_player",
+                            ),
+                            default: Literal(
+                                String(
+                                    "X",
+                                ),
+                            ),
+                        },
+                    ],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "display_board",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Loop(
+                                    For(
+                                        For {
+                                            item: Ident(
+                                                "i",
+                                            ),
+                                            iter: Range(
+                                                IterRange {
+                                                    start: Literal(
+                                                        Int(
+                                                            0,
+                                                        ),
+                                                    ),
+                                                    end: Literal(
+                                                        Int(
+                                                            3,
+                                                        ),
+                                                    ),
+                                                    inclusive: false,
+                                                },
+                                            ),
+                                            body: [
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "line",
+                                                        ),
+                                                        value: Literal(
+                                                            String(
+                                                                "",
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "map",
+                                                        ),
+                                                        value: Literal(
+                                                            String(
+                                                                "",
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                                Loop(
+                                                    For(
+                                                        For {
+                                                            item: Ident(
+                                                                "j",
+                                                            ),
+                                                            iter: Range(
+                                                                IterRange {
+                                                                    start: Literal(
+                                                                        Int(
+                                                                            0,
+                                                                        ),
+                                                                    ),
+                                                                    end: Literal(
+                                                                        Int(
+                                                                            3,
+                                                                        ),
+                                                                    ),
+                                                                    inclusive: false,
+                                                                },
+                                                            ),
+                                                            body: [
+                                                                Var(
+                                                                    Var {
+                                                                        name: Ident(
+                                                                            "row",
+                                                                        ),
+                                                                        value: Binary(
+                                                                            Binary {
+                                                                                op: Mul,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "i",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                right: Literal(
+                                                                                    Int(
+                                                                                        3,
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                Expr(
+                                                                    SetVar(
+                                                                        SetVar {
+                                                                            target: GetVar {
+                                                                                name: Ident(
+                                                                                    "line",
+                                                                                ),
+                                                                            },
+                                                                            value: Binary(
+                                                                                Binary {
+                                                                                    op: Add,
+                                                                                    left: GetVar(
+                                                                                        GetVar {
+                                                                                            name: Ident(
+                                                                                                "line",
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "row",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "j",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                                Expr(
+                                                                    SetVar(
+                                                                        SetVar {
+                                                                            target: GetVar {
+                                                                                name: Ident(
+                                                                                    "map",
+                                                                                ),
+                                                                            },
+                                                                            value: Binary(
+                                                                                Binary {
+                                                                                    op: Add,
+                                                                                    left: GetVar(
+                                                                                        GetVar {
+                                                                                            name: Ident(
+                                                                                                "map",
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: Call(
+                                                                                        Call {
+                                                                                            target: GetVar(
+                                                                                                GetVar {
+                                                                                                    name: Ident(
+                                                                                                        "to_str",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            args: [
+                                                                                                Binary(
+                                                                                                    Binary {
+                                                                                                        op: Add,
+                                                                                                        left: Binary(
+                                                                                                            Binary {
+                                                                                                                op: Add,
+                                                                                                                left: GetVar(
+                                                                                                                    GetVar {
+                                                                                                                        name: Ident(
+                                                                                                                            "row",
+                                                                                                                        ),
+                                                                                                                    },
+                                                                                                                ),
+                                                                                                                right: GetVar(
+                                                                                                                    GetVar {
+                                                                                                                        name: Ident(
+                                                                                                                            "j",
+                                                                                                                        ),
+                                                                                                                    },
+                                                                                                                ),
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        right: Literal(
+                                                                                                            Int(
+                                                                                                                1,
+                                                                                                            ),
+                                                                                                        ),
+                                                                                                    },
+                                                                                                ),
+                                                                                            ],
+                                                                                        },
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                                If(
+                                                                    If {
+                                                                        branches: [
+                                                                            Branch {
+                                                                                cond: Binary(
+                                                                                    Binary {
+                                                                                        op: Less,
+                                                                                        left: GetVar(
+                                                                                            GetVar {
+                                                                                                name: Ident(
+                                                                                                    "j",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        right: Literal(
+                                                                                            Int(
+                                                                                                2,
+                                                                                            ),
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                body: [
+                                                                                    Expr(
+                                                                                        SetVar(
+                                                                                            SetVar {
+                                                                                                target: GetVar {
+                                                                                                    name: Ident(
+                                                                                                        "line",
+                                                                                                    ),
+                                                                                                },
+                                                                                                value: Binary(
+                                                                                                    Binary {
+                                                                                                        op: Add,
+                                                                                                        left: GetVar(
+                                                                                                            GetVar {
+                                                                                                                name: Ident(
+                                                                                                                    "line",
+                                                                                                                ),
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        right: Literal(
+                                                                                                            String(
+                                                                                                                " | ",
+                                                                                                            ),
+                                                                                                        ),
+                                                                                                    },
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                    ),
+                                                                                    Expr(
+                                                                                        SetVar(
+                                                                                            SetVar {
+                                                                                                target: GetVar {
+                                                                                                    name: Ident(
+                                                                                                        "map",
+                                                                                                    ),
+                                                                                                },
+                                                                                                value: Binary(
+                                                                                                    Binary {
+                                                                                                        op: Add,
+                                                                                                        left: GetVar(
+                                                                                                            GetVar {
+                                                                                                                name: Ident(
+                                                                                                                    "map",
+                                                                                                                ),
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        right: Literal(
+                                                                                                            String(
+                                                                                                                "|",
+                                                                                                            ),
+                                                                                                        ),
+                                                                                                    },
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            },
+                                                                        ],
+                                                                        default: None,
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                                Print(
+                                                    Print {
+                                                        values: [
+                                                            Binary(
+                                                                Binary {
+                                                                    op: Add,
+                                                                    left: Binary(
+                                                                        Binary {
+                                                                            op: Add,
+                                                                            left: GetVar(
+                                                                                GetVar {
+                                                                                    name: Ident(
+                                                                                        "line",
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                            right: Literal(
+                                                                                String(
+                                                                                    "      ",
+                                                                                ),
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    right: GetVar(
+                                                                        GetVar {
+                                                                            name: Ident(
+                                                                                "map",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "read_move",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Print(
+                                    Print {
+                                        values: [
+                                            Binary(
+                                                Binary {
+                                                    op: Add,
+                                                    left: Literal(
+                                                        String(
+                                                            "> Playing as ",
+                                                        ),
+                                                    ),
+                                                    right: GetField(
+                                                        GetField {
+                                                            target: GetSelf,
+                                                            name: Ident(
+                                                                "current_player",
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                                Loop(
+                                    Infinite(
+                                        Infinite {
+                                            body: [
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "pos",
+                                                        ),
+                                                        value: Call(
+                                                            Call {
+                                                                target: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "parse",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                args: [
+                                                                    Call(
+                                                                        Call {
+                                                                            target: GetVar(
+                                                                                GetVar {
+                                                                                    name: Ident(
+                                                                                        "input",
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                            args: [
+                                                                                Literal(
+                                                                                    String(
+                                                                                        "> Enter the position number (1-9): ",
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                If(
+                                                    If {
+                                                        branches: [
+                                                            Branch {
+                                                                cond: Binary(
+                                                                    Binary {
+                                                                        op: And,
+                                                                        left: Binary(
+                                                                            Binary {
+                                                                                op: And,
+                                                                                left: Binary(
+                                                                                    Binary {
+                                                                                        op: Neq,
+                                                                                        left: GetVar(
+                                                                                            GetVar {
+                                                                                                name: Ident(
+                                                                                                    "pos",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        right: Literal(
+                                                                                            None,
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                right: Binary(
+                                                                                    Binary {
+                                                                                        op: MoreEq,
+                                                                                        left: GetVar(
+                                                                                            GetVar {
+                                                                                                name: Ident(
+                                                                                                    "pos",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        right: Literal(
+                                                                                            Int(
+                                                                                                1,
+                                                                                            ),
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: Binary(
+                                                                            Binary {
+                                                                                op: LessEq,
+                                                                                left: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "pos",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                right: Literal(
+                                                                                    Int(
+                                                                                        9,
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                body: [
+                                                                    If(
+                                                                        If {
+                                                                            branches: [
+                                                                                Branch {
+                                                                                    cond: Binary(
+                                                                                        Binary {
+                                                                                            op: Neq,
+                                                                                            left: GetIndex(
+                                                                                                GetIndex {
+                                                                                                    target: GetField(
+                                                                                                        GetField {
+                                                                                                            target: GetSelf,
+                                                                                                            name: Ident(
+                                                                                                                "board",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    key: Binary(
+                                                                                                        Binary {
+                                                                                                            op: Sub,
+                                                                                                            left: GetVar(
+                                                                                                                GetVar {
+                                                                                                                    name: Ident(
+                                                                                                                        "pos",
+                                                                                                                    ),
+                                                                                                                },
+                                                                                                            ),
+                                                                                                            right: Literal(
+                                                                                                                Int(
+                                                                                                                    1,
+                                                                                                                ),
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            right: Literal(
+                                                                                                String(
+                                                                                                    "-",
+                                                                                                ),
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    body: [
+                                                                                        Print(
+                                                                                            Print {
+                                                                                                values: [
+                                                                                                    Binary(
+                                                                                                        Binary {
+                                                                                                            op: Add,
+                                                                                                            left: Binary(
+                                                                                                                Binary {
+                                                                                                                    op: Add,
+                                                                                                                    left: Literal(
+                                                                                                                        String(
+                                                                                                                            "Position ",
+                                                                                                                        ),
+                                                                                                                    ),
+                                                                                                                    right: Call(
+                                                                                                                        Call {
+                                                                                                                            target: GetVar(
+                                                                                                                                GetVar {
+                                                                                                                                    name: Ident(
+                                                                                                                                        "to_str",
+                                                                                                                                    ),
+                                                                                                                                },
+                                                                                                                            ),
+                                                                                                                            args: [
+                                                                                                                                GetVar(
+                                                                                                                                    GetVar {
+                                                                                                                                        name: Ident(
+                                                                                                                                            "pos",
+                                                                                                                                        ),
+                                                                                                                                    },
+                                                                                                                                ),
+                                                                                                                            ],
+                                                                                                                        },
+                                                                                                                    ),
+                                                                                                                },
+                                                                                                            ),
+                                                                                                            right: Literal(
+                                                                                                                String(
+                                                                                                                    " already taken. Try again.",
+                                                                                                                ),
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                ],
+                                                                                            },
+                                                                                        ),
+                                                                                        Ctrl(
+                                                                                            Continue,
+                                                                                        ),
+                                                                                    ],
+                                                                                },
+                                                                            ],
+                                                                            default: None,
+                                                                        },
+                                                                    ),
+                                                                    Ctrl(
+                                                                        Return(
+                                                                            Return {
+                                                                                value: Some(
+                                                                                    GetVar(
+                                                                                        GetVar {
+                                                                                            name: Ident(
+                                                                                                "pos",
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ],
+                                                        default: None,
+                                                    },
+                                                ),
+                                                Print(
+                                                    Print {
+                                                        values: [
+                                                            Literal(
+                                                                String(
+                                                                    "Invalid position. Try again.",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "swap_player",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                If(
+                                    If {
+                                        branches: [
+                                            Branch {
+                                                cond: Binary(
+                                                    Binary {
+                                                        op: Eq,
+                                                        left: GetField(
+                                                            GetField {
+                                                                target: GetSelf,
+                                                                name: Ident(
+                                                                    "current_player",
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: Literal(
+                                                            String(
+                                                                "X",
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                                body: [
+                                                    Expr(
+                                                        SetField(
+                                                            SetField {
+                                                                target: GetField {
+                                                                    target: GetSelf,
+                                                                    name: Ident(
+                                                                        "current_player",
+                                                                    ),
+                                                                },
+                                                                value: Literal(
+                                                                    String(
+                                                                        "O",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ],
+                                        default: Some(
+                                            [
+                                                Expr(
+                                                    SetField(
+                                                        SetField {
+                                                            target: GetField {
+                                                                target: GetSelf,
+                                                                name: Ident(
+                                                                    "current_player",
+                                                                ),
+                                                            },
+                                                            value: Literal(
+                                                                String(
+                                                                    "X",
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        ),
+                                    },
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "check_board",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                If(
+                                    If {
+                                        branches: [
+                                            Branch {
+                                                cond: Binary(
+                                                    Binary {
+                                                        op: Or,
+                                                        left: Call(
+                                                            Call {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "check_rows_and_cols",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                        right: Call(
+                                                            Call {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "check_diagonals",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                body: [
+                                                    Ctrl(
+                                                        Return(
+                                                            Return {
+                                                                value: Some(
+                                                                    GetField(
+                                                                        GetField {
+                                                                            target: GetSelf,
+                                                                            name: Ident(
+                                                                                "current_player",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ],
+                                        default: None,
+                                    },
+                                ),
+                                Loop(
+                                    For(
+                                        For {
+                                            item: Ident(
+                                                "i",
+                                            ),
+                                            iter: Range(
+                                                IterRange {
+                                                    start: Literal(
+                                                        Int(
+                                                            0,
+                                                        ),
+                                                    ),
+                                                    end: Call(
+                                                        Call {
+                                                            target: GetField(
+                                                                GetField {
+                                                                    target: GetField(
+                                                                        GetField {
+                                                                            target: GetSelf,
+                                                                            name: Ident(
+                                                                                "board",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    name: Ident(
+                                                                        "len",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                    inclusive: false,
+                                                },
+                                            ),
+                                            body: [
+                                                If(
+                                                    If {
+                                                        branches: [
+                                                            Branch {
+                                                                cond: Binary(
+                                                                    Binary {
+                                                                        op: Eq,
+                                                                        left: GetIndex(
+                                                                            GetIndex {
+                                                                                target: GetField(
+                                                                                    GetField {
+                                                                                        target: GetSelf,
+                                                                                        name: Ident(
+                                                                                            "board",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                key: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident(
+                                                                                            "i",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: Literal(
+                                                                            String(
+                                                                                "-",
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                body: [
+                                                                    Ctrl(
+                                                                        Return(
+                                                                            Return {
+                                                                                value: Some(
+                                                                                    Literal(
+                                                                                        None,
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ],
+                                                        default: None,
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Literal(
+                                                    String(
+                                                        "draw",
+                                                    ),
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "check_rows_and_cols",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Loop(
+                                    For(
+                                        For {
+                                            item: Ident(
+                                                "i",
+                                            ),
+                                            iter: Range(
+                                                IterRange {
+                                                    start: Literal(
+                                                        Int(
+                                                            0,
+                                                        ),
+                                                    ),
+                                                    end: Literal(
+                                                        Int(
+                                                            3,
+                                                        ),
+                                                    ),
+                                                    inclusive: false,
+                                                },
+                                            ),
+                                            body: [
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "same_in_row_or_col",
+                                                        ),
+                                                        value: Call(
+                                                            Call {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "check_row_or_col",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                args: [
+                                                                    GetVar(
+                                                                        GetVar {
+                                                                            name: Ident(
+                                                                                "i",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                If(
+                                                    If {
+                                                        branches: [
+                                                            Branch {
+                                                                cond: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "same_in_row_or_col",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                body: [
+                                                                    Ctrl(
+                                                                        Return(
+                                                                            Return {
+                                                                                value: Some(
+                                                                                    Literal(
+                                                                                        Bool(
+                                                                                            true,
+                                                                                        ),
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ],
+                                                        default: None,
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Literal(
+                                                    Bool(
+                                                        false,
+                                                    ),
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "check_row_or_col",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    Param {
+                                        name: Ident(
+                                            "i",
+                                        ),
+                                        default: None,
+                                    },
+                                ],
+                            },
+                            body: [
+                                Var(
+                                    Var {
+                                        name: Ident(
+                                            "same_in_row",
+                                        ),
+                                        value: Literal(
+                                            Bool(
+                                                true,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                                Var(
+                                    Var {
+                                        name: Ident(
+                                            "same_in_col",
+                                        ),
+                                        value: Literal(
+                                            Bool(
+                                                true,
+                                            ),
+                                        ),
+                                    },
+                                ),
+                                Loop(
+                                    For(
+                                        For {
+                                            item: Ident(
+                                                "j",
+                                            ),
+                                            iter: Range(
+                                                IterRange {
+                                                    start: Literal(
+                                                        Int(
+                                                            1,
+                                                        ),
+                                                    ),
+                                                    end: Literal(
+                                                        Int(
+                                                            3,
+                                                        ),
+                                                    ),
+                                                    inclusive: false,
+                                                },
+                                            ),
+                                            body: [
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "row",
+                                                        ),
+                                                        value: Binary(
+                                                            Binary {
+                                                                op: Mul,
+                                                                left: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "i",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: Literal(
+                                                                    Int(
+                                                                        3,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "col",
+                                                        ),
+                                                        value: Binary(
+                                                            Binary {
+                                                                op: Mul,
+                                                                left: GetVar(
+                                                                    GetVar {
+                                                                        name: Ident(
+                                                                            "j",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: Literal(
+                                                                    Int(
+                                                                        3,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                Var(
+                                                    Var {
+                                                        name: Ident(
+                                                            "prev_col",
+                                                        ),
+                                                        value: Binary(
+                                                            Binary {
+                                                                op: Mul,
+                                                                left: Binary(
+                                                                    Binary {
+                                                                        op: Sub,
+                                                                        left: GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "j",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: Literal(
+                                                                            Int(
+                                                                                1,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: Literal(
+                                                                    Int(
+                                                                        3,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
+                                                                name: Ident(
+                                                                    "same_in_row",
+                                                                ),
+                                                            },
+                                                            value: Binary(
+                                                                Binary {
+                                                                    op: And,
+                                                                    left: GetVar(
+                                                                        GetVar {
+                                                                            name: Ident(
+                                                                                "same_in_row",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    right: Binary(
+                                                                        Binary {
+                                                                            op: And,
+                                                                            left: Binary(
+                                                                                Binary {
+                                                                                    op: Eq,
+                                                                                    left: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "row",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "j",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Sub,
+                                                                                                    left: Binary(
+                                                                                                        Binary {
+                                                                                                            op: Add,
+                                                                                                            left: GetVar(
+                                                                                                                GetVar {
+                                                                                                                    name: Ident(
+                                                                                                                        "row",
+                                                                                                                    ),
+                                                                                                                },
+                                                                                                            ),
+                                                                                                            right: GetVar(
+                                                                                                                GetVar {
+                                                                                                                    name: Ident(
+                                                                                                                        "j",
+                                                                                                                    ),
+                                                                                                                },
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: Literal(
+                                                                                                        Int(
+                                                                                                            1,
+                                                                                                        ),
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                            right: Binary(
+                                                                                Binary {
+                                                                                    op: Neq,
+                                                                                    left: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "row",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "j",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: Literal(
+                                                                                        String(
+                                                                                            "-",
+                                                                                        ),
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
+                                                                name: Ident(
+                                                                    "same_in_col",
+                                                                ),
+                                                            },
+                                                            value: Binary(
+                                                                Binary {
+                                                                    op: And,
+                                                                    left: GetVar(
+                                                                        GetVar {
+                                                                            name: Ident(
+                                                                                "same_in_col",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    right: Binary(
+                                                                        Binary {
+                                                                            op: And,
+                                                                            left: Binary(
+                                                                                Binary {
+                                                                                    op: Eq,
+                                                                                    left: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "col",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "i",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "prev_col",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "i",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                            right: Binary(
+                                                                                Binary {
+                                                                                    op: Neq,
+                                                                                    left: GetIndex(
+                                                                                        GetIndex {
+                                                                                            target: GetField(
+                                                                                                GetField {
+                                                                                                    target: GetSelf,
+                                                                                                    name: Ident(
+                                                                                                        "board",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            key: Binary(
+                                                                                                Binary {
+                                                                                                    op: Add,
+                                                                                                    left: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "col",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                    right: GetVar(
+                                                                                                        GetVar {
+                                                                                                            name: Ident(
+                                                                                                                "i",
+                                                                                                            ),
+                                                                                                        },
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    right: Literal(
+                                                                                        String(
+                                                                                            "-",
+                                                                                        ),
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Binary(
+                                                    Binary {
+                                                        op: Or,
+                                                        left: GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "same_in_row",
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "same_in_col",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "check_diagonals",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Var(
+                                    Var {
+                                        name: Ident(
+                                            "left_diag",
+                                        ),
+                                        value: Binary(
+                                            Binary {
+                                                op: And,
+                                                left: Binary(
+                                                    Binary {
+                                                        op: And,
+                                                        left: Binary(
+                                                            Binary {
+                                                                op: Neq,
+                                                                left: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                0,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: Literal(
+                                                                    String(
+                                                                        "-",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: Binary(
+                                                            Binary {
+                                                                op: Eq,
+                                                                left: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                0,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                4,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                right: Binary(
+                                                    Binary {
+                                                        op: Eq,
+                                                        left: GetIndex(
+                                                            GetIndex {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "board",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                key: Literal(
+                                                                    Int(
+                                                                        0,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetIndex(
+                                                            GetIndex {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "board",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                key: Literal(
+                                                                    Int(
+                                                                        8,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                                Var(
+                                    Var {
+                                        name: Ident(
+                                            "right_diag",
+                                        ),
+                                        value: Binary(
+                                            Binary {
+                                                op: And,
+                                                left: Binary(
+                                                    Binary {
+                                                        op: And,
+                                                        left: Binary(
+                                                            Binary {
+                                                                op: Neq,
+                                                                left: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                2,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: Literal(
+                                                                    String(
+                                                                        "-",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: Binary(
+                                                            Binary {
+                                                                op: Eq,
+                                                                left: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                2,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: GetIndex(
+                                                                    GetIndex {
+                                                                        target: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "board",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        key: Literal(
+                                                                            Int(
+                                                                                4,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                                right: Binary(
+                                                    Binary {
+                                                        op: Eq,
+                                                        left: GetIndex(
+                                                            GetIndex {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "board",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                key: Literal(
+                                                                    Int(
+                                                                        2,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetIndex(
+                                                            GetIndex {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "board",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                key: Literal(
+                                                                    Int(
+                                                                        6,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Binary(
+                                                    Binary {
+                                                        op: Or,
+                                                        left: GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "left_diag",
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "right_diag",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "play",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Loop(
+                                    Infinite(
+                                        Infinite {
+                                            body: [
+                                                Expr(
+                                                    Call(
+                                                        Call {
+                                                            target: GetField(
+                                                                GetField {
+                                                                    target: GetSelf,
+                                                                    name: Ident(
+                                                                        "display_board",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ),
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
+                                                                name: Ident(
+                                                                    "pos",
+                                                                ),
+                                                            },
+                                                            value: Call(
+                                                                Call {
+                                                                    target: GetField(
+                                                                        GetField {
+                                                                            target: GetSelf,
+                                                                            name: Ident(
+                                                                                "read_move",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Expr(
+                                                    SetIndex(
+                                                        SetIndex {
+                                                            target: GetIndex {
+                                                                target: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "board",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                key: Binary(
+                                                                    Binary {
+                                                                        op: Sub,
+                                                                        left: GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "pos",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: Literal(
+                                                                            Int(
+                                                                                1,
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                            value: GetField(
+                                                                GetField {
+                                                                    target: GetSelf,
+                                                                    name: Ident(
+                                                                        "current_player",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                Expr(
+                                                    SetVar(
+                                                        SetVar {
+                                                            target: GetVar {
+                                                                name: Ident(
+                                                                    "result",
+                                                                ),
+                                                            },
+                                                            value: Call(
+                                                                Call {
+                                                                    target: GetField(
+                                                                        GetField {
+                                                                            target: GetSelf,
+                                                                            name: Ident(
+                                                                                "check_board",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                                If(
+                                                    If {
+                                                        branches: [
+                                                            Branch {
+                                                                cond: Binary(
+                                                                    Binary {
+                                                                        op: Eq,
+                                                                        left: GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "result",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: Literal(
+                                                                            String(
+                                                                                "draw",
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                body: [
+                                                                    Expr(
+                                                                        Call(
+                                                                            Call {
+                                                                                target: GetField(
+                                                                                    GetField {
+                                                                                        target: GetSelf,
+                                                                                        name: Ident(
+                                                                                            "display_board",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                args: [],
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                    Print(
+                                                                        Print {
+                                                                            values: [
+                                                                                Literal(
+                                                                                    String(
+                                                                                        "It's a draw!",
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    Ctrl(
+                                                                        Return(
+                                                                            Return {
+                                                                                value: None,
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                            Branch {
+                                                                cond: Binary(
+                                                                    Binary {
+                                                                        op: Eq,
+                                                                        left: GetVar(
+                                                                            GetVar {
+                                                                                name: Ident(
+                                                                                    "result",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                        right: GetField(
+                                                                            GetField {
+                                                                                target: GetSelf,
+                                                                                name: Ident(
+                                                                                    "current_player",
+                                                                                ),
+                                                                            },
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                body: [
+                                                                    Expr(
+                                                                        Call(
+                                                                            Call {
+                                                                                target: GetField(
+                                                                                    GetField {
+                                                                                        target: GetSelf,
+                                                                                        name: Ident(
+                                                                                            "display_board",
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                                args: [],
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                    Print(
+                                                                        Print {
+                                                                            values: [
+                                                                                Binary(
+                                                                                    Binary {
+                                                                                        op: Add,
+                                                                                        left: GetField(
+                                                                                            GetField {
+                                                                                                target: GetSelf,
+                                                                                                name: Ident(
+                                                                                                    "current_player",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        right: Literal(
+                                                                                            String(
+                                                                                                " wins!",
+                                                                                            ),
+                                                                                        ),
+                                                                                    },
+                                                                                ),
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    Ctrl(
+                                                                        Return(
+                                                                            Return {
+                                                                                value: None,
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ],
+                                                        default: None,
+                                                    },
+                                                ),
+                                                Expr(
+                                                    Call(
+                                                        Call {
+                                                            target: GetField(
+                                                                GetField {
+                                                                    target: GetSelf,
+                                                                    name: Ident(
+                                                                        "swap_player",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "MachineControlledT3",
+                ),
+                parent: Some(
+                    Ident(
+                        "TicTacToe",
+                    ),
+                ),
+                members: ClassMembers {
+                    init: None,
+                    fields: [
+                        Field {
+                            name: Ident(
+                                "i",
+                            ),
+                            default: Literal(
+                                Int(
+                                    0,
+                                ),
+                            ),
+                        },
+                    ],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "read_move",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "i",
+                                                ),
+                                            },
+                                            value: Binary(
+                                                Binary {
+                                                    op: Add,
+                                                    left: GetField(
+                                                        GetField {
+                                                            target: GetSelf,
+                                                            name: Ident(
+                                                                "i",
+                                                            ),
+                                                        },
+                                                    ),
+                                                    right: Literal(
+                                                        Int(
+                                                            1,
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                GetField(
+                                                    GetField {
+                                                        target: GetSelf,
+                                                        name: Ident(
+                                                            "i",
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+        Var(
+            Var {
+                name: Ident(
+                    "t3",
+                ),
+                value: Call(
+                    Call {
+                        target: GetVar(
+                            GetVar {
+                                name: Ident(
+                                    "MachineControlledT3",
+                                ),
+                            },
+                        ),
+                        args: [],
+                    },
+                ),
+            },
+        ),
+        Expr(
+            Call(
+                Call {
+                    target: GetField(
+                        GetField {
+                            target: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "t3",
+                                    ),
+                                },
+                            ),
+                            name: Ident(
+                                "play",
+                            ),
+                        },
+                    ),
+                    args: [],
+                },
+            ),
+        ),
+    ],
+}

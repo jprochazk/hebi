@@ -185,6 +185,8 @@ pub enum TokenKind {
   Tok_Comma,
   #[token(";")]
   Tok_Semicolon,
+  #[token(";;")]
+  Tok_SemicolonSemicolon,
   #[token(":")]
   Tok_Colon,
   #[token("?")]
@@ -261,7 +263,7 @@ pub enum TokenKind {
   #[token("true")]
   #[token("false")]
   Lit_Bool,
-  #[regex(r#""([^"\\]|\\.)*""#)]
+  #[regex(r#""([^"\\]|\\.)*""#)] // fix highlighting -> "
   Lit_String,
   /// `a`, `b_c`, `__x0`, etc.
   #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
@@ -315,6 +317,7 @@ impl TokenKind {
       TokenKind::Op_Dot => ".",
       TokenKind::Tok_Comma => ",",
       TokenKind::Tok_Semicolon => ";",
+      TokenKind::Tok_SemicolonSemicolon => ";;",
       TokenKind::Tok_Colon => ":",
       TokenKind::Tok_Question => "?",
       TokenKind::Op_Equal => "=",

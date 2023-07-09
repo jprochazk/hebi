@@ -134,12 +134,15 @@ impl<'src> Parser<'src> {
   }
 
   fn indent_eq(&self) -> Result<(), SpannedError> {
+    let previous = self.previous();
     let token = self.current();
     if self.state.ignore_indent
       || token.is(Tok_Eof)
       || matches!(token.ws, Some(n) if self.indent.is_eq(n))
     {
       Ok(())
+    } else if previous.is(Tok_Semicolon) || previous.is(Tok_SemicolonSemicolon) {
+      self.no_indent()
     } else {
       Err(SpannedError::new("invalid indentation", token.span))
     }

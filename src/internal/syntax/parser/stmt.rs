@@ -15,6 +15,10 @@ impl<'src> Parser<'src> {
       Some(stmt) => Ok(stmt),
       None => self.simple_stmt(),
     }
+    .map(|v| {
+      self.bump_if(Tok_Semicolon);
+      v
+    })
   }
 
   fn scoped_stmt(&mut self) -> Result<Option<ast::Stmt<'src>>, SpannedError> {
@@ -183,7 +187,6 @@ impl<'src> Parser<'src> {
     let (state, body) = self.with_state2(state, Self::body)?;
     // yield may appear in loop, in which case we have to propagate it upwards here
     self.state.current_func = state.current_func;
-
     Ok(body)
   }
 
@@ -293,24 +296,34 @@ impl<'src> Parser<'src> {
   fn class_members(&mut self) -> Result<ast::ClassMembers<'src>, SpannedError> {
     let mut members = ast::ClassMembers::new();
 
+    let mut inline = false;
     if self.no_indent().is_ok() {
-      // empty class (single line)
-      self
-        .expect(Kw_Pass)
-        .map_err(|e| SpannedError::new("invalid indentation", e.span))?;
+      inline = true;
+    } else {
+      self.indent_gt()?;
+    }
+
+    if self.bump_if(Kw_Pass) {
+      // empty class (indented)
+      if !inline {
+        self.dedent()?;
+      }
       return Ok(members);
     }
 
-    self.indent_gt()?;
-    if self.bump_if(Kw_Pass) {
-      // empty class (indented)
-      self.dedent()?;
-      return Ok(members);
+    macro_rules! indent_check {
+      ($inline:ident, $self:ident, first = $is_first:expr) => {{
+        if $inline {
+          $self.no_indent().is_ok() && ($is_first || $self.is_allowed_to_parse_inline())
+        } else {
+          $self.indent_eq().is_ok()
+        }
+      }};
     }
 
     let mut names = HashSet::new();
 
-    while self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
+    while self.current().is(Lit_Ident) && indent_check!(inline, self, first = names.is_empty()) {
       let name = self.ident()?;
 
       if name == "init" {
@@ -337,10 +350,11 @@ impl<'src> Parser<'src> {
         self.no_indent()?;
         let default = self.expr()?;
         members.fields.push(ast::Field { name, default });
+        self.bump_if(Tok_Semicolon);
       }
     }
 
-    while self.current().is(Kw_Fn) && self.indent_eq().is_ok() {
+    while self.current().is(Kw_Fn) && indent_check!(inline, self, first = names.is_empty()) {
       self.expect(Kw_Fn)?;
 
       let name = self.ident()?;
@@ -364,13 +378,18 @@ impl<'src> Parser<'src> {
       self.no_indent()?; // func's opening paren must be unindented
       let f = self.func(name)?;
       members.methods.push(f);
+      self.bump_if(Tok_Semicolon);
     }
 
     if self.current().is(Lit_Ident) && self.indent_eq().is_ok() {
       fail!(@self.current().span, "fields may not appear after methods",);
     }
 
-    self.dedent()?;
+    if inline {
+      self.bump_if(Tok_SemicolonSemicolon);
+    } else {
+      self.dedent()?;
+    }
 
     Ok(members)
   }
@@ -378,7 +397,16 @@ impl<'src> Parser<'src> {
   fn body(&mut self) -> Result<Vec<ast::Stmt<'src>>, SpannedError> {
     self.check_recursion_limit(self.current().span)?;
     if self.no_indent().is_ok() {
-      Ok(vec![self.simple_stmt()?])
+      let mut body = vec![self.stmt()?];
+
+      while self.is_allowed_to_parse_inline() && !self.current().is(Tok_Eof) {
+        self.no_indent()?;
+        body.push(self.stmt()?);
+      }
+
+      self.bump_if(Tok_SemicolonSemicolon);
+
+      Ok(body)
     } else {
       self.indent_gt()?;
 
@@ -390,6 +418,11 @@ impl<'src> Parser<'src> {
       self.dedent()?;
       Ok(body)
     }
+  }
+
+  fn is_allowed_to_parse_inline(&self) -> bool {
+    (self.previous().is(Tok_Semicolon) || self.previous().is(Tok_SemicolonSemicolon))
+      && !self.current().is(Tok_SemicolonSemicolon)
   }
 
   fn simple_stmt(&mut self) -> Result<ast::Stmt<'src>, SpannedError> {
@@ -419,7 +452,16 @@ impl<'src> Parser<'src> {
     if current_fn_name == "init" && self.state.current_class.is_some() && self.no_indent().is_ok() {
       fail!(@self.current().span, "return in `init` may not return a value");
     }
-    let value = self.no_indent().ok().map(|_| self.expr()).transpose()?;
+    let mut value = None;
+
+    if self.no_indent().is_ok() {
+      if self.current().is(Tok_Semicolon) || self.current().is(Tok_SemicolonSemicolon) {
+        // next token closes statement or inline block scope, do nothing
+      } else {
+        value = Some(self.expr()?)
+      }
+    }
+
     let end = self.previous().span.end;
     Ok(ast::return_stmt(start..end, value))
   }

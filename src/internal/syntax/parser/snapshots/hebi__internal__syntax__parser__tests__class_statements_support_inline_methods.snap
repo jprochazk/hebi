@@ -1,0 +1,75 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: Ident(
+                    "A1",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "f",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "A2",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "x",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "y",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Pass,
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+    ],
+}

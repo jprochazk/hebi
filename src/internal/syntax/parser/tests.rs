@@ -21,6 +21,12 @@ macro_rules! check_module {
       }
     };
   };
+  ($name:ident, $input:literal) => {
+    #[test]
+    fn $name() {
+      check_module!($input);
+    }
+  };
 }
 
 macro_rules! check_expr {
@@ -53,12 +59,18 @@ macro_rules! check_error {
       }
     };
   };
+  ($name:ident, $input:literal) => {
+    #[test]
+    fn $name() {
+      check_error!($input);
+    }
+  };
 }
 
 #[test]
 fn import_stmt() {
   check_module! {
-    r#"
+    r#"#!hebi
       import module
       from module import z
       from module import x, y, z
@@ -70,7 +82,7 @@ fn import_stmt() {
   };
 
   check_module! {
-    r#"
+    r#"#!hebi
       import module as temp
       from module import z as temp
       from module import x as temp, y as temp, z as temp
@@ -82,42 +94,42 @@ fn import_stmt() {
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       import a
         import b
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       from m import a
         from m import b
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       from
         m
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       from m import
         a
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       from m import a,
         b
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       from m
         .b
     "#
@@ -145,14 +157,14 @@ fn binary_expr() {
   check_expr!(r#"a ?? b"#);
 
   check_module! {
-    r#"
+    r#"#!hebi
       a + b
       c + d
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       a +
         b
     "#
@@ -171,20 +183,20 @@ fn unary_expr() {
 fn postfix_expr() {
   check_expr!(r#"a.b[c].d"#);
   check_module! {
-    r#"
+    r#"#!hebi
       a.b[c].d
       a.b[c].d
     "#
   };
 
   check_error! {
-    r#"
+    r#"#!hebi
       a
       .b[c].d
     "#
   }
   check_error! {
-    r#"
+    r#"#!hebi
       a.b[c]
       .d
     "#
@@ -198,7 +210,7 @@ fn postfix_expr() {
 fn call_expr() {
   check_expr!(r#"a(b, c,)"#);
   check_module! {
-    r#"
+    r#"#!hebi
       a(b, c,)
       a(
         b,
@@ -212,7 +224,7 @@ fn call_expr() {
 #[test]
 fn simple_literal_expr() {
   check_module! {
-    r#"
+    r#"#!hebi
       none
       true
       false
@@ -228,7 +240,7 @@ fn simple_literal_expr() {
 #[test]
 fn array_literal_expr() {
   check_module! {
-    r#"
+    r#"#!hebi
       [0, 1, 2]
       [0,
        1,
@@ -245,7 +257,7 @@ fn array_literal_expr() {
 #[test]
 fn table_literal_expr() {
   check_module! {
-    r#"
+    r#"#!hebi
       {a:b, c:d, e:f}
       {a:b,
         c:d,
@@ -259,7 +271,7 @@ fn table_literal_expr() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       {[a]:b, [c]:d, [e]:f}
       {[a]:b,
        [c]:d,
@@ -276,7 +288,7 @@ fn table_literal_expr() {
 #[test]
 fn grouping_expr() {
   check_module! {
-    r#"
+    r#"#!hebi
       # asdf
       (a + b)
       (
@@ -294,7 +306,7 @@ fn grouping_expr() {
 #[test]
 fn assign_expr() {
   check_module! {
-    r#"
+    r#"#!hebi
       # asdf
       a = b
       a := b
@@ -309,7 +321,7 @@ fn assign_expr() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       # asdf
       a.b = b
       a.b += b
@@ -323,13 +335,13 @@ fn assign_expr() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       a
         = b
     "#
   }
   check_error! {
-    r#"
+    r#"#!hebi
       a =
         b
     "#
@@ -347,7 +359,7 @@ fn assign_expr() {
 #[test]
 fn if_stmt() {
   check_module! {
-    r#"
+    r#"#!hebi
       if a: pass
       elif b: pass
       elif c: pass
@@ -356,7 +368,7 @@ fn if_stmt() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       if a:
         pass
       elif b:
@@ -369,7 +381,7 @@ fn if_stmt() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       if a:
         a
         b
@@ -386,7 +398,7 @@ fn if_stmt() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       if a:
         if b:
           pass
@@ -394,7 +406,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a:
         a
           b
@@ -403,7 +415,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a
         : pass
       else: pass
@@ -411,7 +423,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a: pass
       elif b
         : pass
@@ -420,7 +432,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a: pass
       elif b: pass
       else
@@ -429,7 +441,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a: pass
       elif b: pass
         else: pass
@@ -437,7 +449,7 @@ fn if_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       if a: pass
         elif b: pass
       else: pass
@@ -445,7 +457,7 @@ fn if_stmt() {
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       if (
         some_very_long_condition &&
         with_many_sub_expressions() ||
@@ -459,7 +471,7 @@ fn if_stmt() {
 #[test]
 fn loop_stmts() {
   check_module! {
-    r#"
+    r#"#!hebi
       loop: pass
       loop:
         pass
@@ -467,14 +479,14 @@ fn loop_stmts() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       loop:
       pass
     "#
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       while true: pass
       while true:
         pass
@@ -482,14 +494,14 @@ fn loop_stmts() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       while true:
       pass
     "#
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       for i in iter(): pass
       for i in iter():
         pass
@@ -509,14 +521,14 @@ fn loop_stmts() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       for i in iter():
       pass
     "#
   }
 
   check_module! {
-    r#"
+    r#"#!hebi
       loop:
         loop:
           a
@@ -528,7 +540,7 @@ fn loop_stmts() {
 #[test]
 fn func_stmt() {
   check_module! {
-    r#"
+    r#"#!hebi
       fn f(a, b, c,): pass
       fn f(a, b, c=d): pass
       fn f(a, b=c, d=e,): pass
@@ -545,13 +557,13 @@ fn func_stmt() {
   check_error!(r#"fn f(a, *, a): pass"#);
   check_error!(r#"fn f(a, **a): pass"#);
   check_error! {
-    r#"
+    r#"#!hebi
       fn f():
       pass
     "#
   }
   check_error! {
-    r#"
+    r#"#!hebi
       fn():
         pass
     "#
@@ -561,7 +573,7 @@ fn func_stmt() {
 #[test]
 fn ctrl_stmt() {
   check_module! {
-    r#"
+    r#"#!hebi
       # simple
       loop:
         break
@@ -639,25 +651,25 @@ fn ctrl_stmt() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       return v
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       yield v
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       continue
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       break
     "#
   }
@@ -666,100 +678,91 @@ fn ctrl_stmt() {
 #[test]
 fn print_stmt() {
   check_module! {
-    r#"
+    r#"#!hebi
       print "a", 0, true
       print "a", 0, true
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       print
         "a"
     "#
   }
 }
 
-#[test]
-fn class_stmt() {
-  check_module! {
-    r#"
-      class T: pass
-      class T:
+check_module! {
+  valid_class_stmts,
+  r#"#!hebi
+    class T: pass
+    class T:
+      pass
+    class T:
+      fn f(v): pass
+    class T:
+      a = b
+      fn f(v): pass
+    class T(U): pass
+    class T(U):
+      pass
+    class T(U):
+      a = b
+    class T(U):
+      a = b
+      fn f(v): pass
+    class T(U):
+      a = b
+      fn f(v):
         pass
-      class T:
-        fn f(v): pass
-      class T:
-        a = b
-        fn f(v): pass
-      class T(U): pass
-      class T(U):
-        pass
-      class T(U):
-        a = b
-      class T(U):
-        a = b
-        fn f(v): pass
-      class T(U):
-        a = b
-        fn f(v):
-          pass
-    "#
-  }
+  "#
+}
 
-  check_error! {
-    r#"
-      class
-        T: pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_name,
+  r#"#!hebi
+    class
+      T: pass
+  "#
+}
 
-  check_error! {
-    r#"
-      class T
-        : pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_colon_1,
+  r#"#!hebi
+    class T
+      : pass
+  "#
+}
 
-  check_error! {
-    r#"
-      class T: a = b
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_colon_2,
+  r#"#!hebi
+    class T(U)
+      : pass
+  "#
+}
 
-  check_error! {
-    r#"
-      class T: fn f(v): pass
-    "#
-  }
+check_error! {
+  bad_class_stmt_indented_base,
+  r#"#!hebi
+    class T
+      (U): pass
+  "#
+}
 
-  check_error! {
-    r#"
-      class T
-        (U): pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T(U)
-        : pass
-    "#
-  }
-
-  check_error! {
-    r#"
-      class T(U):
-        fn f(v): pass
-        a = b
-    "#
-  }
+check_error! {
+  bad_class_stmt_fields_after_methods,
+  r#"#!hebi
+    class T(U):
+      fn f(v): pass
+      a = b
+  "#
 }
 
 #[test]
 fn class_self_and_super() {
   check_module! {
-    r#"
+    r#"#!hebi
       class T:
         fn f(self):
           print self
@@ -775,27 +778,27 @@ fn class_self_and_super() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       self
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T:
         v = self.f()
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       fn f():
         print self
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T:
         fn f():
           print self
@@ -803,20 +806,20 @@ fn class_self_and_super() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       super
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       fn f():
         print super
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T:
         fn f():
           print self
@@ -824,14 +827,14 @@ fn class_self_and_super() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T:
         v = super
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T:
         fn f():
           print super
@@ -839,14 +842,14 @@ fn class_self_and_super() {
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T(U):
         v = super
     "#
   }
 
   check_error! {
-    r#"
+    r#"#!hebi
       class T(U):
         fn f():
           print super
@@ -857,21 +860,21 @@ fn class_self_and_super() {
 #[test]
 fn duplicate_fields() {
   check_error! {
-    r#"
+    r#"#!hebi
       class Test:
         a = 0
         a = 1
     "#
   }
   check_error! {
-    r#"
+    r#"#!hebi
       class Test:
         a = 0
         fn a(): pass
     "#
   }
   check_error! {
-    r#"
+    r#"#!hebi
       class Test:
         fn a(): pass
         fn a(): pass
@@ -882,7 +885,7 @@ fn duplicate_fields() {
 #[test]
 fn whole_module() {
   check_module! {
-    r#"
+    r#"#!hebi
       # variable declaration
       v := 0
 
@@ -1086,8 +1089,253 @@ fn whole_module() {
 /* #[test]
 fn _temp() {
   check_error! {
-    r#"
+    r#"#!hebi
       class T: fn f(v): pass
     "#
   }
 } */
+
+// semicolons
+
+check_module! {
+  many_semicolons,
+  r#"#!hebi
+    1 + 2; 3 + 4
+    1 + 2; 3 + 4;
+    print 5; print 6;
+    pass; print 7; pass;
+    a; b; c; d;
+    a + b - c; a / d || c; print abcd;
+    print (
+      a + b
+    ); print (
+        c + d
+      ); print (
+          e + f
+        );  
+    if true: print x; print y;; print z; if false: print a;; print b
+    if true: print x; print y;; elif false: print a;; else: print z; print zz
+    if one: print one; if two: print two;; else: print two_else;;;; else: print one_else
+    class One: pass; class Two: pass;
+  "#
+}
+
+check_module! {
+  if_statement_supports_semicolons,
+  r#"#!hebi
+    if true:
+      if true: print x; print y
+      if true: print z
+  "#
+}
+
+check_module! {
+  for_statement_supports_semicolons,
+  r#"#!hebi
+    for i in 0..10: print x
+    x := 0; for i in 0..10: x += i; print x;; print x;
+    "#
+}
+
+check_module! {
+  for_statements_can_be_nested_on_the_same_line,
+  r#"#!hebi
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;; print "------------"
+  "#
+}
+
+check_module! {
+  infinite_loop_statements_support_semicolons,
+  r#"#!hebi
+    loop: print x; print y
+    loop: print x;; print y
+    loop: print x; print y;; print z
+  "#
+}
+
+check_module! {
+  while_statements_support_semicolons,
+  r#"#!hebi
+    x := 1; while x % 96 != 0: x += x * 17; x += x * 11;; if x != 46656: print "broken arithmetics"
+  "#
+}
+
+check_module! {
+  import_statements_support_semicolons,
+  r#"#!hebi
+    import a; import b
+    from a import b; import x; from c import d;
+    import http; from json import parse; print parse(http.get("https://jsonplaceholder.typicode.com/todos/1"))
+  "#
+}
+
+check_module! {
+  class_statements_support_inline_fields,
+  r#"#!hebi
+    class A1: a = 1
+    class A2: a = 1; class B: b = 2
+    class A3: a = 1; b = 2; class B3(A3): b = 3;
+    class A4: a = 1; b = 2;; A4().a += 3
+  "#
+}
+
+check_module! {
+  class_statements_support_inline_methods,
+  r#"#!hebi
+    class A1: fn f(self): pass
+    class A2: fn x(self): pass;; fn y(self): pass
+  "#
+}
+
+check_module! {
+  class_statements_inline_method_scoping,
+  r#"#!hebi
+    class A2: fn inner1(self): pass;; fn inner2(self): pass;;;; fn outer(): pass
+  "#
+}
+
+check_module! {
+  class_statements_allow_oneliners_in_multiline_mode,
+  r#"#!hebi
+    class Multiline:
+      a = 1; b = 2; c = 3;
+      init(self, x): self.a = x; self.b = x * x;;  # <-- must close scope
+      fn add(self): return self.a + self.b + self.c
+      fn mul(self): return self.a * self.b * self.c
+  "#
+}
+
+check_module! {
+  trailing_statements_of_nested_blocks_are_included_in_outer_block_body,
+  r#"#!hebi
+    while outer: print "outer"; while inner: break;; print "after inner";
+  "#
+}
+
+check_module! {
+  fn_statement_supports_semicolons,
+  r#"#!hebi
+    fn add(a, b): s := a + b; print "a + b = ", s; return s;; print add(1,2); 
+    fn reduce(it, init, func): acc := init; for x in it: acc = func(acc, x);; return acc;; fn reducer(acc, i): return acc + i;; print reduce([1,2,3,4],0, reducer)
+  "#
+}
+
+check_error! {
+  inline_for_indentation_enforcement,
+  r#"#!hebi
+    for i in 0..10: print x;
+      print y
+
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;
+        print x, y
+
+    for y in 0..10: for x in 0..10: print "x * y =", x * y;;
+      print "---------"
+  "#
+}
+
+check_error! {
+  inline_while_indentation_enforcement,
+  r#"#!hebi
+    while x % 96 != 0: x += x * 17; x += x * 11;
+      if x != 46656: print "broken arithmetics"
+  "#
+}
+
+check_module! {
+  funky_inline_indentation_mix,
+  r#"#!hebi
+    if cond: print 1;; else:
+      print "i == j"
+
+    for i in (call()
+    ): for j in (call()
+      ): if (
+          i 
+          != 
+          j
+        ): print (
+            i, 
+            j
+          ); print (
+            j, 
+            i
+          );; else: 
+          print (
+          "i == j"
+        )
+
+    for one in x(): for two in (
+      y()
+    ): for three in z(): if (one != two
+    ): print one, two;; elif one == two: print (
+      "one == two"
+                          );; else: 
+    print "unreachable"
+  "#
+}
+
+check_module! {
+  inline_return_statements,
+  r#"#!hebi
+    class T:
+      fn test1(self): if true: return 1;;;;
+      # inline return without a value
+      fn test2(self): if true: return;
+  "#
+}
+
+check_module! {
+  inline_tic_tac_toe,
+  r#"#!hebi
+    from io import input,parse;class TicTacToe:board=["-","-","-","-","-","-","-","-","-"];running=true;current_player="X";fn display_board(self):for i in 0..3:line:="";map:="";for j in 0..3:row:=i*3;line+=self.board[row+j];map+=to_str(row+j+1);if j<2:line+=" | ";map+="|";;;;print line+"      "+map;;;;fn read_move(self):print"> Playing as "+self.current_player;loop:pos:=parse(input("> Enter the position number (1-9): "));if pos!=none&&pos>=1&&pos<=9:if self.board[pos-1]!="-":print"Position "+to_str(pos)+" already taken. Try again.";continue;;return pos;;print"Invalid position. Try again.";;;;fn swap_player(self):if self.current_player=="X":self.current_player="O";;else:self.current_player="X";;;;fn check_board(self):if self.check_rows_and_cols()||self.check_diagonals():return self.current_player;;for i in 0..self.board.len():if self.board[i]=="-":return none;;;;return"draw";;fn check_rows_and_cols(self):for i in 0..3:same_in_row_or_col:=self.check_row_or_col(i);if same_in_row_or_col:return true;;;;return false;;fn check_row_or_col(self, i):same_in_row:=true;same_in_col:=true;for j in 1..3:row:=i*3;col:=j*3;prev_col:=(j-1)*3;same_in_row=same_in_row&&(self.board[row+j]==self.board[row+j-1]&&self.board[row+j]!="-");same_in_col=same_in_col&&(self.board[col+i]==self.board[prev_col+i]&&self.board[col+i]!="-");;return same_in_row||same_in_col;;fn check_diagonals(self):left_diag:=self.board[0]!="-"&&self.board[0]==self.board[4]&&self.board[0]==self.board[8];right_diag:=self.board[2]!="-"&&self.board[2]==self.board[4]&&self.board[2]==self.board[6];return left_diag||right_diag;;fn play(self):loop:self.display_board();pos=self.read_move();self.board[pos-1]=self.current_player;result=self.check_board();if result=="draw":self.display_board();print"It's a draw!";return;;elif result==self.current_player:self.display_board();print self.current_player+" wins!";return;;self.swap_player();;;;class MachineControlledT3(TicTacToe):i = 0;fn read_move(self):self.i+=1;return self.i;;;;t3:=MachineControlledT3();t3.play()
+  "#
+}
+
+check_error! {
+  scope_no_semi,
+  r#"#!hebi
+    if true: print x
+      print y
+  "#
+}
+
+check_error! {
+  scope_single_semi,
+  r#"#!hebi
+    if true: print x;
+      print y
+  "#
+}
+
+check_error! {
+  scope_double_semi,
+  r#"#!hebi
+    if true: print x;;
+      print y
+  "#
+}
+
+check_error! {
+  scope_nested_no_semi,
+  r#"#!hebi
+    if true: if true: print x
+      print y
+  "#
+}
+
+check_error! {
+  scope_nested_single_semi,
+  r#"#!hebi
+    if true: if true: print x;
+      print y
+  "#
+}
+
+check_error! {
+  scoped_nested_double_semi,
+  r#"#!hebi
+    if true: if true: print x;;
+      print y
+  "#
+}

@@ -1,0 +1,231 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Class(
+            Class {
+                name: Ident(
+                    "Multiline",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: Some(
+                        Func {
+                            name: Ident(
+                                "init",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [
+                                    Param {
+                                        name: Ident(
+                                            "x",
+                                        ),
+                                        default: None,
+                                    },
+                                ],
+                            },
+                            body: [
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "a",
+                                                ),
+                                            },
+                                            value: GetVar(
+                                                GetVar {
+                                                    name: Ident(
+                                                        "x",
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                                Expr(
+                                    SetField(
+                                        SetField {
+                                            target: GetField {
+                                                target: GetSelf,
+                                                name: Ident(
+                                                    "b",
+                                                ),
+                                            },
+                                            value: Binary(
+                                                Binary {
+                                                    op: Mul,
+                                                    left: GetVar(
+                                                        GetVar {
+                                                            name: Ident(
+                                                                "x",
+                                                            ),
+                                                        },
+                                                    ),
+                                                    right: GetVar(
+                                                        GetVar {
+                                                            name: Ident(
+                                                                "x",
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ),
+                    fields: [
+                        Field {
+                            name: Ident(
+                                "a",
+                            ),
+                            default: Literal(
+                                Int(
+                                    1,
+                                ),
+                            ),
+                        },
+                        Field {
+                            name: Ident(
+                                "b",
+                            ),
+                            default: Literal(
+                                Int(
+                                    2,
+                                ),
+                            ),
+                        },
+                        Field {
+                            name: Ident(
+                                "c",
+                            ),
+                            default: Literal(
+                                Int(
+                                    3,
+                                ),
+                            ),
+                        },
+                    ],
+                    methods: [
+                        Func {
+                            name: Ident(
+                                "add",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Binary(
+                                                    Binary {
+                                                        op: Add,
+                                                        left: Binary(
+                                                            Binary {
+                                                                op: Add,
+                                                                left: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "a",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "b",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetField(
+                                                            GetField {
+                                                                target: GetSelf,
+                                                                name: Ident(
+                                                                    "c",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                        Func {
+                            name: Ident(
+                                "mul",
+                            ),
+                            params: Params {
+                                has_self: true,
+                                pos: [],
+                            },
+                            body: [
+                                Ctrl(
+                                    Return(
+                                        Return {
+                                            value: Some(
+                                                Binary(
+                                                    Binary {
+                                                        op: Mul,
+                                                        left: Binary(
+                                                            Binary {
+                                                                op: Mul,
+                                                                left: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "a",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                                right: GetField(
+                                                                    GetField {
+                                                                        target: GetSelf,
+                                                                        name: Ident(
+                                                                            "b",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                        right: GetField(
+                                                            GetField {
+                                                                target: GetSelf,
+                                                                name: Ident(
+                                                                    "c",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ],
+                            has_yield: false,
+                        },
+                    ],
+                },
+            },
+        ),
+    ],
+}

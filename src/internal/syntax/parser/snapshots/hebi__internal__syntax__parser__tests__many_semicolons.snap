@@ -1,0 +1,611 @@
+---
+source: src/internal/syntax/parser/tests.rs
+expression: module
+---
+Module {
+    body: [
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: Literal(
+                        Int(
+                            1,
+                        ),
+                    ),
+                    right: Literal(
+                        Int(
+                            2,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: Literal(
+                        Int(
+                            3,
+                        ),
+                    ),
+                    right: Literal(
+                        Int(
+                            4,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: Literal(
+                        Int(
+                            1,
+                        ),
+                    ),
+                    right: Literal(
+                        Int(
+                            2,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Add,
+                    left: Literal(
+                        Int(
+                            3,
+                        ),
+                    ),
+                    right: Literal(
+                        Int(
+                            4,
+                        ),
+                    ),
+                },
+            ),
+        ),
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        Int(
+                            5,
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        Int(
+                            6,
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Pass,
+        Print(
+            Print {
+                values: [
+                    Literal(
+                        Int(
+                            7,
+                        ),
+                    ),
+                ],
+            },
+        ),
+        Pass,
+        Expr(
+            GetVar(
+                GetVar {
+                    name: Ident(
+                        "a",
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetVar(
+                GetVar {
+                    name: Ident(
+                        "b",
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetVar(
+                GetVar {
+                    name: Ident(
+                        "c",
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            GetVar(
+                GetVar {
+                    name: Ident(
+                        "d",
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Sub,
+                    left: Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    right: GetVar(
+                        GetVar {
+                            name: Ident(
+                                "c",
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Expr(
+            Binary(
+                Binary {
+                    op: Or,
+                    left: Binary(
+                        Binary {
+                            op: Div,
+                            left: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    right: GetVar(
+                        GetVar {
+                            name: Ident(
+                                "c",
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+        Print(
+            Print {
+                values: [
+                    GetVar(
+                        GetVar {
+                            name: Ident(
+                                "abcd",
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "a",
+                                    ),
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "b",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "c",
+                                    ),
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "d",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    Binary(
+                        Binary {
+                            op: Add,
+                            left: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "e",
+                                    ),
+                                },
+                            ),
+                            right: GetVar(
+                                GetVar {
+                                    name: Ident(
+                                        "f",
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Literal(
+                            Bool(
+                                true,
+                            ),
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "x",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "y",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: None,
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    GetVar(
+                        GetVar {
+                            name: Ident(
+                                "z",
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Literal(
+                            Bool(
+                                false,
+                            ),
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "a",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: None,
+            },
+        ),
+        Print(
+            Print {
+                values: [
+                    GetVar(
+                        GetVar {
+                            name: Ident(
+                                "b",
+                            ),
+                        },
+                    ),
+                ],
+            },
+        ),
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: Literal(
+                            Bool(
+                                true,
+                            ),
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "x",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "y",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    Branch {
+                        cond: Literal(
+                            Bool(
+                                false,
+                            ),
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "a",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: Some(
+                    [
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "z",
+                                            ),
+                                        },
+                                    ),
+                                ],
+                            },
+                        ),
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "zz",
+                                            ),
+                                        },
+                                    ),
+                                ],
+                            },
+                        ),
+                    ],
+                ),
+            },
+        ),
+        If(
+            If {
+                branches: [
+                    Branch {
+                        cond: GetVar(
+                            GetVar {
+                                name: Ident(
+                                    "one",
+                                ),
+                            },
+                        ),
+                        body: [
+                            Print(
+                                Print {
+                                    values: [
+                                        GetVar(
+                                            GetVar {
+                                                name: Ident(
+                                                    "one",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            If(
+                                If {
+                                    branches: [
+                                        Branch {
+                                            cond: GetVar(
+                                                GetVar {
+                                                    name: Ident(
+                                                        "two",
+                                                    ),
+                                                },
+                                            ),
+                                            body: [
+                                                Print(
+                                                    Print {
+                                                        values: [
+                                                            GetVar(
+                                                                GetVar {
+                                                                    name: Ident(
+                                                                        "two",
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ],
+                                    default: Some(
+                                        [
+                                            Print(
+                                                Print {
+                                                    values: [
+                                                        GetVar(
+                                                            GetVar {
+                                                                name: Ident(
+                                                                    "two_else",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    ),
+                                },
+                            ),
+                        ],
+                    },
+                ],
+                default: Some(
+                    [
+                        Print(
+                            Print {
+                                values: [
+                                    GetVar(
+                                        GetVar {
+                                            name: Ident(
+                                                "one_else",
+                                            ),
+                                        },
+                                    ),
+                                ],
+                            },
+                        ),
+                    ],
+                ),
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "One",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [],
+                },
+            },
+        ),
+        Class(
+            Class {
+                name: Ident(
+                    "Two",
+                ),
+                parent: None,
+                members: ClassMembers {
+                    init: None,
+                    fields: [],
+                    methods: [],
+                },
+            },
+        ),
+    ],
+}
