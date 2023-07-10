@@ -1,0 +1,20 @@
+fn count_primes(max_number):
+  prime_mask := []
+  prime_mask.extend(max_number + 1, true)
+
+  prime_mask[0] = false
+  prime_mask[1] = false
+
+  total_primes_found := 0
+  for p in 2..=max_number:
+    if !prime_mask[p]: continue
+    total_primes_found += 1
+
+    i := 2 * p
+    while i < max_number + 1:
+        prime_mask[i] = false
+        i += p
+
+  return total_primes_found
+
+print "π(1000) =",  count_primes(1000)

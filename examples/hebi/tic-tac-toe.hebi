@@ -1,0 +1,103 @@
+import parsing
+from io import input
+
+class TicTacToe:
+  board = ["-","-","-",
+          "-","-","-",
+          "-","-","-"]
+  current_player = "X"
+
+  fn display_board(self):
+    for i in 0..3:
+      line := ""
+      map := ""
+      for j in 0..3:
+        row := i * 3
+        line += self.board[row + j]
+        map += to_str(row + j + 1)
+        if j < 2:
+          line += " | "
+          map += "|"
+
+      print line + "      " + map
+
+  fn read_move(self):
+    print "> Playing as " + self.current_player
+
+    loop:
+      pos := parsing.int(input("> Enter the position number (1-9): "));
+      if pos != none && pos >= 1 && pos <= 9:
+        if self.board[pos - 1] != "-":
+          print "Position " + to_str(pos) + " already taken. Try again."
+          continue
+        return pos
+
+      print "Invalid position. Try again."
+
+  fn swap_player(self):
+    if self.current_player == "X":
+      self.current_player = "O"
+    else:
+      self.current_player = "X"
+
+  fn check_board(self):
+    if self.check_rows_and_cols() || self.check_diagonals():
+      return self.current_player
+
+    for i in 0..self.board.len():
+      if self.board[i] == "-":
+        return none
+
+    return "draw"
+
+  fn check_rows_and_cols(self):
+    for i in 0..3:
+      same_in_row_or_col := self.check_row_or_col(i)
+      if same_in_row_or_col:
+        return true
+
+    return false
+
+  fn check_row_or_col(self, i):
+      same_in_row := true
+      same_in_col := true
+      for j in 1..3:
+        row := i * 3
+        col := j * 3
+        prev_col := (j - 1) * 3
+
+        same_in_row = same_in_row && (
+          self.board[row + j] == self.board[row + j - 1]
+           && self.board[row + j] != "-"
+        )
+        same_in_col = same_in_col && (
+          self.board[col + i] == self.board[prev_col + i]
+           && self.board[col + i] != "-"
+        )
+      return same_in_row || same_in_col
+
+  fn check_diagonals(self):
+    left_diag := self.board[0] != "-" && self.board[0] == self.board[4] && self.board[0] == self.board[8]
+    right_diag := self.board[2] != "-" && self.board[2] == self.board[4] && self.board[2] == self.board[6]
+    return left_diag || right_diag
+
+  fn play(self):
+    loop:
+      self.display_board()
+      pos = self.read_move()
+      self.board[pos - 1] = self.current_player
+
+      result = self.check_board()
+      if result == "draw":
+        self.display_board()
+        print "It's a draw!"
+        return
+      elif result == self.current_player:
+        self.display_board()
+        print self.current_player + " wins!"
+        return
+
+      self.swap_player()
+
+t3 := TicTacToe()
+t3.play()

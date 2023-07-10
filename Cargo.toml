@@ -61,6 +61,7 @@ indoc = { opt-level = 3 }
 
 [workspace]
 members = ["cli", "xtask"]
+default-members = ["cli"]
 
 
 [[bench]]
