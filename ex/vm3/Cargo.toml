@@ -1,0 +1,28 @@
+[package]
+name = "vm3"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+beef = "0.5.2"
+bumpalo = { version = "3.13.0", features = ["collections", "boxed"] }
+indexmap = "2.0.0"
+logos = "0.13.0"
+
+[dev-dependencies]
+indoc = "2.0.2"
+insta = { version = "1.30.0", features = ["glob"] }
+
+
+[profile.dev.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+
+[profile.test.package]
+insta = { opt-level = 3 }
+indoc = { opt-level = 3 }
+
+[profile.release]
+lto = "fat"

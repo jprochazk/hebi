@@ -60,7 +60,7 @@ indoc = { opt-level = 3 }
 
 
 [workspace]
-members = ["cli", "xtask"]
+members = ["cli", "xtask", "ex/vm3"]
 
 
 [[bench]]

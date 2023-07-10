@@ -1,0 +1,88 @@
+
+let c
+let b = 2
+let a = 1 + 1
+c = b + a
+
+if true {
+  print("foo")
+} else {
+  print("bar")
+}
+
+{
+  print("block")
+}
+
+let d = {
+  print("expression-based grammar")
+  c
+}
+
+let i = 0
+loop {
+  if i > 10 { break }
+  if i % 2 == 0 { continue }
+  print(i)
+  i += 1
+}
+
+fn named_bare {
+  print("named_bare")
+  let closure = c
+  closure
+}
+
+fn named_args(n) {
+  if n > 10 { print("limit") }
+  else { print("next") }
+}
+
+let anon = fn {
+  print("anonymous functions")
+}
+
+let anon_args = fn(n) {
+  print("anonymous function with args", n)
+}
+
+let ternary =
+  if true { 1 }
+  else { 0 }
+
+let logic =
+  true || false
+  && !true
+
+let comparison =
+  c > d && d < c && a >= c && a <= c
+  == true != false
+
+let arithmetic =
+  -c + d - a * 0 / 1 % 2 ** 2
+
+fn make_record {
+  #{
+    list: #[
+      0,
+      1.0,
+      true,
+      false,
+      none,
+      "str",
+      #(
+        0,
+        1.0,
+        true,
+        false,
+        none,
+        "str"
+      ),
+    ],
+  }
+}
+
+let postfix =
+  make_record().list[6]
+
+make_record().list[6] = #("empty")
