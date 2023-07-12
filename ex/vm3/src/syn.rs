@@ -253,7 +253,11 @@ mod stmt {
       };
       let br = br.into_bump_slice();
       let end = self.previous().span.end;
-      Ok(mk!(self, If { br, tail } @ start..end))
+      let expr = Expr::new(
+        ExprKind::If(self.alloc(If { br, tail })),
+        (start..end).into(),
+      );
+      Ok(mk!(self, Expr(expr) @ start..end))
     }
 
     fn loop_(&mut self) -> Result<Stmt<'arena, 'src>> {

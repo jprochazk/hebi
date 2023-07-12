@@ -180,109 +180,117 @@ input_file: ex/vm3/tests/input/basic.h2
             start: 42,
             end: 92,
         },
-        kind: If(
-            If {
-                br: [
-                    Branch {
-                        cond: Expr {
-                            span: Span {
-                                start: 45,
-                                end: 49,
-                            },
-                            kind: Lit(
-                                Bool(
-                                    true,
-                                ),
-                            ),
-                        },
-                        body: Block {
-                            body: [],
-                            last: Some(
-                                Expr {
+        kind: Expr(
+            Expr {
+                span: Span {
+                    start: 42,
+                    end: 92,
+                },
+                kind: If(
+                    If {
+                        br: [
+                            Branch {
+                                cond: Expr {
                                     span: Span {
-                                        start: 54,
-                                        end: 66,
+                                        start: 45,
+                                        end: 49,
                                     },
-                                    kind: Call(
-                                        Call {
-                                            target: Expr {
-                                                span: Span {
-                                                    start: 54,
-                                                    end: 59,
-                                                },
-                                                kind: GetVar(
-                                                    GetVar {
-                                                        name: Ident {
-                                                            span: Span {
-                                                                start: 54,
-                                                                end: 59,
-                                                            },
-                                                            lexeme: "print",
-                                                        },
-                                                    },
-                                                ),
-                                            },
-                                            args: [
-                                                Expr {
-                                                    span: Span {
-                                                        start: 60,
-                                                        end: 65,
-                                                    },
-                                                    kind: Lit(
-                                                        String(
-                                                            "foo",
-                                                        ),
-                                                    ),
-                                                },
-                                            ],
-                                        },
+                                    kind: Lit(
+                                        Bool(
+                                            true,
+                                        ),
                                     ),
                                 },
-                            ),
-                        },
-                    },
-                ],
-                tail: Some(
-                    Block {
-                        body: [],
-                        last: Some(
-                            Expr {
-                                span: Span {
-                                    start: 78,
-                                    end: 90,
-                                },
-                                kind: Call(
-                                    Call {
-                                        target: Expr {
+                                body: Block {
+                                    body: [],
+                                    last: Some(
+                                        Expr {
                                             span: Span {
-                                                start: 78,
-                                                end: 83,
+                                                start: 54,
+                                                end: 66,
                                             },
-                                            kind: GetVar(
-                                                GetVar {
-                                                    name: Ident {
+                                            kind: Call(
+                                                Call {
+                                                    target: Expr {
                                                         span: Span {
-                                                            start: 78,
-                                                            end: 83,
+                                                            start: 54,
+                                                            end: 59,
                                                         },
-                                                        lexeme: "print",
+                                                        kind: GetVar(
+                                                            GetVar {
+                                                                name: Ident {
+                                                                    span: Span {
+                                                                        start: 54,
+                                                                        end: 59,
+                                                                    },
+                                                                    lexeme: "print",
+                                                                },
+                                                            },
+                                                        ),
                                                     },
+                                                    args: [
+                                                        Expr {
+                                                            span: Span {
+                                                                start: 60,
+                                                                end: 65,
+                                                            },
+                                                            kind: Lit(
+                                                                String(
+                                                                    "foo",
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ],
                                                 },
                                             ),
                                         },
-                                        args: [
-                                            Expr {
-                                                span: Span {
-                                                    start: 84,
-                                                    end: 89,
-                                                },
-                                                kind: Lit(
-                                                    String(
-                                                        "bar",
+                                    ),
+                                },
+                            },
+                        ],
+                        tail: Some(
+                            Block {
+                                body: [],
+                                last: Some(
+                                    Expr {
+                                        span: Span {
+                                            start: 78,
+                                            end: 90,
+                                        },
+                                        kind: Call(
+                                            Call {
+                                                target: Expr {
+                                                    span: Span {
+                                                        start: 78,
+                                                        end: 83,
+                                                    },
+                                                    kind: GetVar(
+                                                        GetVar {
+                                                            name: Ident {
+                                                                span: Span {
+                                                                    start: 78,
+                                                                    end: 83,
+                                                                },
+                                                                lexeme: "print",
+                                                            },
+                                                        },
                                                     ),
-                                                ),
+                                                },
+                                                args: [
+                                                    Expr {
+                                                        span: Span {
+                                                            start: 84,
+                                                            end: 89,
+                                                        },
+                                                        kind: Lit(
+                                                            String(
+                                                                "bar",
+                                                            ),
+                                                        ),
+                                                    },
+                                                ],
                                             },
-                                        ],
+                                        ),
                                     },
                                 ),
                             },
@@ -495,64 +503,72 @@ input_file: ex/vm3/tests/input/basic.h2
                                 start: 188,
                                 end: 207,
                             },
-                            kind: If(
-                                If {
-                                    br: [
-                                        Branch {
-                                            cond: Expr {
-                                                span: Span {
-                                                    start: 191,
-                                                    end: 197,
-                                                },
-                                                kind: Binary(
-                                                    Binary {
-                                                        op: Gt,
-                                                        lhs: Expr {
-                                                            span: Span {
-                                                                start: 191,
-                                                                end: 192,
-                                                            },
-                                                            kind: GetVar(
-                                                                GetVar {
-                                                                    name: Ident {
-                                                                        span: Span {
-                                                                            start: 191,
-                                                                            end: 192,
-                                                                        },
-                                                                        lexeme: "i",
-                                                                    },
-                                                                },
-                                                            ),
-                                                        },
-                                                        rhs: Expr {
-                                                            span: Span {
-                                                                start: 195,
-                                                                end: 197,
-                                                            },
-                                                            kind: Lit(
-                                                                Int(
-                                                                    10,
-                                                                ),
-                                                            ),
-                                                        },
-                                                    },
-                                                ),
-                                            },
-                                            body: Block {
-                                                body: [
-                                                    Stmt {
+                            kind: Expr(
+                                Expr {
+                                    span: Span {
+                                        start: 188,
+                                        end: 207,
+                                    },
+                                    kind: If(
+                                        If {
+                                            br: [
+                                                Branch {
+                                                    cond: Expr {
                                                         span: Span {
-                                                            start: 200,
-                                                            end: 205,
+                                                            start: 191,
+                                                            end: 197,
                                                         },
-                                                        kind: Break,
+                                                        kind: Binary(
+                                                            Binary {
+                                                                op: Gt,
+                                                                lhs: Expr {
+                                                                    span: Span {
+                                                                        start: 191,
+                                                                        end: 192,
+                                                                    },
+                                                                    kind: GetVar(
+                                                                        GetVar {
+                                                                            name: Ident {
+                                                                                span: Span {
+                                                                                    start: 191,
+                                                                                    end: 192,
+                                                                                },
+                                                                                lexeme: "i",
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                },
+                                                                rhs: Expr {
+                                                                    span: Span {
+                                                                        start: 195,
+                                                                        end: 197,
+                                                                    },
+                                                                    kind: Lit(
+                                                                        Int(
+                                                                            10,
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                            },
+                                                        ),
                                                     },
-                                                ],
-                                                last: None,
-                                            },
+                                                    body: Block {
+                                                        body: [
+                                                            Stmt {
+                                                                span: Span {
+                                                                    start: 200,
+                                                                    end: 205,
+                                                                },
+                                                                kind: Break,
+                                                            },
+                                                        ],
+                                                        last: None,
+                                                    },
+                                                },
+                                            ],
+                                            tail: None,
                                         },
-                                    ],
-                                    tail: None,
+                                    ),
                                 },
                             ),
                         },
@@ -561,86 +577,94 @@ input_file: ex/vm3/tests/input/basic.h2
                                 start: 210,
                                 end: 236,
                             },
-                            kind: If(
-                                If {
-                                    br: [
-                                        Branch {
-                                            cond: Expr {
-                                                span: Span {
-                                                    start: 213,
-                                                    end: 223,
-                                                },
-                                                kind: Binary(
-                                                    Binary {
-                                                        op: Eq,
-                                                        lhs: Expr {
-                                                            span: Span {
-                                                                start: 213,
-                                                                end: 218,
-                                                            },
-                                                            kind: Binary(
-                                                                Binary {
-                                                                    op: Rem,
-                                                                    lhs: Expr {
-                                                                        span: Span {
-                                                                            start: 213,
-                                                                            end: 214,
-                                                                        },
-                                                                        kind: GetVar(
-                                                                            GetVar {
-                                                                                name: Ident {
-                                                                                    span: Span {
-                                                                                        start: 213,
-                                                                                        end: 214,
-                                                                                    },
-                                                                                    lexeme: "i",
-                                                                                },
-                                                                            },
-                                                                        ),
-                                                                    },
-                                                                    rhs: Expr {
-                                                                        span: Span {
-                                                                            start: 217,
-                                                                            end: 218,
-                                                                        },
-                                                                        kind: Lit(
-                                                                            Int(
-                                                                                2,
-                                                                            ),
-                                                                        ),
-                                                                    },
-                                                                },
-                                                            ),
-                                                        },
-                                                        rhs: Expr {
-                                                            span: Span {
-                                                                start: 222,
-                                                                end: 223,
-                                                            },
-                                                            kind: Lit(
-                                                                Int(
-                                                                    0,
-                                                                ),
-                                                            ),
-                                                        },
-                                                    },
-                                                ),
-                                            },
-                                            body: Block {
-                                                body: [
-                                                    Stmt {
+                            kind: Expr(
+                                Expr {
+                                    span: Span {
+                                        start: 210,
+                                        end: 236,
+                                    },
+                                    kind: If(
+                                        If {
+                                            br: [
+                                                Branch {
+                                                    cond: Expr {
                                                         span: Span {
-                                                            start: 226,
-                                                            end: 234,
+                                                            start: 213,
+                                                            end: 223,
                                                         },
-                                                        kind: Continue,
+                                                        kind: Binary(
+                                                            Binary {
+                                                                op: Eq,
+                                                                lhs: Expr {
+                                                                    span: Span {
+                                                                        start: 213,
+                                                                        end: 218,
+                                                                    },
+                                                                    kind: Binary(
+                                                                        Binary {
+                                                                            op: Rem,
+                                                                            lhs: Expr {
+                                                                                span: Span {
+                                                                                    start: 213,
+                                                                                    end: 214,
+                                                                                },
+                                                                                kind: GetVar(
+                                                                                    GetVar {
+                                                                                        name: Ident {
+                                                                                            span: Span {
+                                                                                                start: 213,
+                                                                                                end: 214,
+                                                                                            },
+                                                                                            lexeme: "i",
+                                                                                        },
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                            rhs: Expr {
+                                                                                span: Span {
+                                                                                    start: 217,
+                                                                                    end: 218,
+                                                                                },
+                                                                                kind: Lit(
+                                                                                    Int(
+                                                                                        2,
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                },
+                                                                rhs: Expr {
+                                                                    span: Span {
+                                                                        start: 222,
+                                                                        end: 223,
+                                                                    },
+                                                                    kind: Lit(
+                                                                        Int(
+                                                                            0,
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                            },
+                                                        ),
                                                     },
-                                                ],
-                                                last: None,
-                                            },
+                                                    body: Block {
+                                                        body: [
+                                                            Stmt {
+                                                                span: Span {
+                                                                    start: 226,
+                                                                    end: 234,
+                                                                },
+                                                                kind: Continue,
+                                                            },
+                                                        ],
+                                                        last: None,
+                                                    },
+                                                },
+                                            ],
+                                            tail: None,
                                         },
-                                    ],
-                                    tail: None,
+                                    ),
                                 },
                             ),
                         },
@@ -887,8 +911,9 @@ input_file: ex/vm3/tests/input/basic.h2
                     },
                 ],
                 body: Block {
-                    body: [
-                        Stmt {
+                    body: [],
+                    last: Some(
+                        Expr {
                             span: Span {
                                 start: 350,
                                 end: 403,
@@ -1033,8 +1058,7 @@ input_file: ex/vm3/tests/input/basic.h2
                                 },
                             ),
                         },
-                    ],
-                    last: None,
+                    ),
                 },
             },
         ),

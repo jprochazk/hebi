@@ -23,7 +23,6 @@ impl<'arena, 'src> Stmt<'arena, 'src> {
 #[derive(Debug)]
 pub enum StmtKind<'arena, 'src> {
   Let(&'arena Let<'arena, 'src>),
-  If(&'arena If<'arena, 'src>),
   Loop(&'arena Loop<'arena, 'src>),
   Break,
   Continue,
