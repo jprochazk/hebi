@@ -293,47 +293,55 @@ input_file: ex/vm3/tests/input/basic.h2
             start: 94,
             end: 114,
         },
-        kind: Block(
-            Block {
-                body: [],
-                last: Some(
-                    Expr {
-                        span: Span {
-                            start: 98,
-                            end: 112,
-                        },
-                        kind: Call(
-                            Call {
-                                target: Expr {
-                                    span: Span {
-                                        start: 98,
-                                        end: 103,
-                                    },
-                                    kind: GetVar(
-                                        GetVar {
-                                            name: Ident {
-                                                span: Span {
-                                                    start: 98,
-                                                    end: 103,
-                                                },
-                                                lexeme: "print",
-                                            },
-                                        },
-                                    ),
+        kind: Expr(
+            Expr {
+                span: Span {
+                    start: 94,
+                    end: 114,
+                },
+                kind: Block(
+                    Block {
+                        body: [],
+                        last: Some(
+                            Expr {
+                                span: Span {
+                                    start: 98,
+                                    end: 112,
                                 },
-                                args: [
-                                    Expr {
-                                        span: Span {
-                                            start: 104,
-                                            end: 111,
-                                        },
-                                        kind: Lit(
-                                            String(
-                                                "block",
+                                kind: Call(
+                                    Call {
+                                        target: Expr {
+                                            span: Span {
+                                                start: 98,
+                                                end: 103,
+                                            },
+                                            kind: GetVar(
+                                                GetVar {
+                                                    name: Ident {
+                                                        span: Span {
+                                                            start: 98,
+                                                            end: 103,
+                                                        },
+                                                        lexeme: "print",
+                                                    },
+                                                },
                                             ),
-                                        ),
+                                        },
+                                        args: [
+                                            Expr {
+                                                span: Span {
+                                                    start: 104,
+                                                    end: 111,
+                                                },
+                                                kind: Lit(
+                                                    String(
+                                                        "block",
+                                                    ),
+                                                ),
+                                            },
+                                        ],
                                     },
-                                ],
+                                ),
                             },
                         ),
                     },

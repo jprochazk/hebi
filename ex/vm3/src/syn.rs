@@ -284,7 +284,8 @@ mod stmt {
       let start = self.current().span.start;
       let block = self.block()?;
       let end = self.previous().span.end;
-      Ok(mk!(self, Block(block) @ start..end))
+      let block = Expr::new(ExprKind::Block(self.alloc(block)), (start..end).into());
+      Ok(mk!(self, Expr(block) @ start..end))
     }
 
     fn assign(&mut self) -> Result<Stmt<'arena, 'src>> {
