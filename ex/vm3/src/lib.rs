@@ -1,3 +1,6 @@
+// not public because danger
+mod gc;
+
 pub mod ast;
 pub mod lex;
 pub mod syn;
