@@ -1,0 +1,597 @@
+---
+source: ex/vm3/tests/parse.rs
+expression: snapshot
+input_file: ex/vm3/tests/input/if.h2
+---
+[
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 0,
+                end: 2,
+            },
+        },
+    ),
+    (
+        "true",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 3,
+                end: 7,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 8,
+                end: 9,
+            },
+        },
+    ),
+    (
+        "0",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 10,
+                end: 11,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 12,
+                end: 13,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 15,
+                end: 17,
+            },
+        },
+    ),
+    (
+        "true",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 18,
+                end: 22,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 23,
+                end: 24,
+            },
+        },
+    ),
+    (
+        "0",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 25,
+                end: 26,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 27,
+                end: 28,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 29,
+                end: 33,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 34,
+                end: 35,
+            },
+        },
+    ),
+    (
+        "1",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 36,
+                end: 37,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 38,
+                end: 39,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 41,
+                end: 43,
+            },
+        },
+    ),
+    (
+        "true",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 44,
+                end: 48,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 49,
+                end: 50,
+            },
+        },
+    ),
+    (
+        "0",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 51,
+                end: 52,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 53,
+                end: 54,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 55,
+                end: 59,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 60,
+                end: 62,
+            },
+        },
+    ),
+    (
+        "false",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 63,
+                end: 68,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 69,
+                end: 70,
+            },
+        },
+    ),
+    (
+        "1",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 71,
+                end: 72,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 73,
+                end: 74,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 75,
+                end: 79,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 80,
+                end: 81,
+            },
+        },
+    ),
+    (
+        "2",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 82,
+                end: 83,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 84,
+                end: 85,
+            },
+        },
+    ),
+    (
+        "let",
+        Token {
+            kind: KwLet,
+            span: Span {
+                start: 87,
+                end: 90,
+            },
+        },
+    ),
+    (
+        "_0",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 91,
+                end: 93,
+            },
+        },
+    ),
+    (
+        "=",
+        Token {
+            kind: OpEqual,
+            span: Span {
+                start: 94,
+                end: 95,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 98,
+                end: 100,
+            },
+        },
+    ),
+    (
+        "true",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 101,
+                end: 105,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 106,
+                end: 107,
+            },
+        },
+    ),
+    (
+        "0",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 108,
+                end: 109,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 110,
+                end: 111,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 114,
+                end: 118,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 119,
+                end: 120,
+            },
+        },
+    ),
+    (
+        "1",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 121,
+                end: 122,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 123,
+                end: 124,
+            },
+        },
+    ),
+    (
+        "let",
+        Token {
+            kind: KwLet,
+            span: Span {
+                start: 126,
+                end: 129,
+            },
+        },
+    ),
+    (
+        "_1",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 130,
+                end: 132,
+            },
+        },
+    ),
+    (
+        "=",
+        Token {
+            kind: OpEqual,
+            span: Span {
+                start: 133,
+                end: 134,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 137,
+                end: 139,
+            },
+        },
+    ),
+    (
+        "true",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 140,
+                end: 144,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 145,
+                end: 146,
+            },
+        },
+    ),
+    (
+        "0",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 147,
+                end: 148,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 149,
+                end: 150,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 153,
+                end: 157,
+            },
+        },
+    ),
+    (
+        "if",
+        Token {
+            kind: KwIf,
+            span: Span {
+                start: 158,
+                end: 160,
+            },
+        },
+    ),
+    (
+        "false",
+        Token {
+            kind: LitBool,
+            span: Span {
+                start: 161,
+                end: 166,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 167,
+                end: 168,
+            },
+        },
+    ),
+    (
+        "1",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 169,
+                end: 170,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 171,
+                end: 172,
+            },
+        },
+    ),
+    (
+        "else",
+        Token {
+            kind: KwElse,
+            span: Span {
+                start: 175,
+                end: 179,
+            },
+        },
+    ),
+    (
+        "{",
+        Token {
+            kind: BrkCurlyL,
+            span: Span {
+                start: 180,
+                end: 181,
+            },
+        },
+    ),
+    (
+        "2",
+        Token {
+            kind: LitInt,
+            span: Span {
+                start: 182,
+                end: 183,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 184,
+                end: 185,
+            },
+        },
+    ),
+]

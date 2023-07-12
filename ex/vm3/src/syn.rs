@@ -190,6 +190,8 @@ impl<'arena, 'src> Parser<'arena, 'src> {
 }
 
 mod stmt {
+  use bumpalo::vec;
+
   use super::*;
 
   macro_rules! mk {
@@ -234,15 +236,24 @@ mod stmt {
     fn if_(&mut self) -> Result<Stmt<'arena, 'src>> {
       self.expect(KwIf)?;
       let start = self.previous().span.start;
-      let cond = self.expr()?;
-      let body = self.block()?;
-      let tail = if self.eat(KwElse)? {
-        Some(self.block()?)
-      } else {
-        None
+      let mut br = vec![in self.arena];
+      let tail = loop {
+        br.push(Branch {
+          cond: self.expr()?,
+          body: self.block()?,
+        });
+        if !self.eat(KwElse)? {
+          break None;
+        }
+        if self.eat(KwIf)? {
+          continue;
+        } else {
+          break Some(self.block()?);
+        }
       };
+      let br = br.into_bump_slice();
       let end = self.previous().span.end;
-      Ok(mk!(self, If { cond, body, tail } @ start..end))
+      Ok(mk!(self, If { br, tail } @ start..end))
     }
 
     fn loop_(&mut self) -> Result<Stmt<'arena, 'src>> {
@@ -694,12 +705,22 @@ mod expr {
     fn lit_if(&mut self) -> Result<Expr<'arena, 'src>> {
       self.expect(KwIf)?;
       let start = self.previous().span.start;
-      let cond = self.expr()?;
-      let body = self.block()?;
-      self.expect(KwElse)?;
-      let tail = Some(self.block()?);
+      let mut br = vec![in self.arena];
+      let tail = loop {
+        br.push(Branch {
+          cond: self.expr()?,
+          body: self.block()?,
+        });
+        self.expect(KwElse)?;
+        if self.eat(KwIf)? {
+          continue;
+        } else {
+          break Some(self.block()?);
+        }
+      };
+      let br = br.into_bump_slice();
       let end = self.previous().span.end;
-      Ok(mk!(self, If { cond, body, tail } @ start..end))
+      Ok(mk!(self, If { br, tail } @ start..end))
     }
 
     fn lit_block(&mut self) -> Result<Expr<'arena, 'src>> {

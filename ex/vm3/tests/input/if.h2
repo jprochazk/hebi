@@ -1,0 +1,17 @@
+if true { 0 }
+
+if true { 0 }
+else { 1 }
+
+if true { 0 }
+else if false { 1 }
+else { 2 }
+
+let _0 =
+  if true { 0 }
+  else { 1 }
+
+let _1 =
+  if true { 0 }
+  else if false { 1 }
+  else { 2 }

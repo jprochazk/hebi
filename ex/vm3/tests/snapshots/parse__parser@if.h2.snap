@@ -1,0 +1,381 @@
+---
+source: ex/vm3/tests/parse.rs
+expression: snapshot
+input_file: ex/vm3/tests/input/if.h2
+---
+[
+    Stmt {
+        span: Span {
+            start: 0,
+            end: 13,
+        },
+        kind: If(
+            If {
+                br: [
+                    Branch {
+                        cond: Expr {
+                            span: Span {
+                                start: 3,
+                                end: 7,
+                            },
+                            kind: Lit(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                        body: Block {
+                            body: [],
+                            last: Some(
+                                Expr {
+                                    span: Span {
+                                        start: 10,
+                                        end: 11,
+                                    },
+                                    kind: Lit(
+                                        Int(
+                                            0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        },
+                    },
+                ],
+                tail: None,
+            },
+        ),
+    },
+    Stmt {
+        span: Span {
+            start: 15,
+            end: 39,
+        },
+        kind: If(
+            If {
+                br: [
+                    Branch {
+                        cond: Expr {
+                            span: Span {
+                                start: 18,
+                                end: 22,
+                            },
+                            kind: Lit(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                        body: Block {
+                            body: [],
+                            last: Some(
+                                Expr {
+                                    span: Span {
+                                        start: 25,
+                                        end: 26,
+                                    },
+                                    kind: Lit(
+                                        Int(
+                                            0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        },
+                    },
+                ],
+                tail: Some(
+                    Block {
+                        body: [],
+                        last: Some(
+                            Expr {
+                                span: Span {
+                                    start: 36,
+                                    end: 37,
+                                },
+                                kind: Lit(
+                                    Int(
+                                        1,
+                                    ),
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ),
+    },
+    Stmt {
+        span: Span {
+            start: 41,
+            end: 85,
+        },
+        kind: If(
+            If {
+                br: [
+                    Branch {
+                        cond: Expr {
+                            span: Span {
+                                start: 44,
+                                end: 48,
+                            },
+                            kind: Lit(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                        },
+                        body: Block {
+                            body: [],
+                            last: Some(
+                                Expr {
+                                    span: Span {
+                                        start: 51,
+                                        end: 52,
+                                    },
+                                    kind: Lit(
+                                        Int(
+                                            0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        },
+                    },
+                    Branch {
+                        cond: Expr {
+                            span: Span {
+                                start: 63,
+                                end: 68,
+                            },
+                            kind: Lit(
+                                Bool(
+                                    false,
+                                ),
+                            ),
+                        },
+                        body: Block {
+                            body: [],
+                            last: Some(
+                                Expr {
+                                    span: Span {
+                                        start: 71,
+                                        end: 72,
+                                    },
+                                    kind: Lit(
+                                        Int(
+                                            1,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        },
+                    },
+                ],
+                tail: Some(
+                    Block {
+                        body: [],
+                        last: Some(
+                            Expr {
+                                span: Span {
+                                    start: 82,
+                                    end: 83,
+                                },
+                                kind: Lit(
+                                    Int(
+                                        2,
+                                    ),
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ),
+    },
+    Stmt {
+        span: Span {
+            start: 87,
+            end: 124,
+        },
+        kind: Let(
+            Let {
+                name: Ident {
+                    span: Span {
+                        start: 91,
+                        end: 93,
+                    },
+                    lexeme: "_0",
+                },
+                value: Some(
+                    Expr {
+                        span: Span {
+                            start: 98,
+                            end: 124,
+                        },
+                        kind: If(
+                            If {
+                                br: [
+                                    Branch {
+                                        cond: Expr {
+                                            span: Span {
+                                                start: 101,
+                                                end: 105,
+                                            },
+                                            kind: Lit(
+                                                Bool(
+                                                    true,
+                                                ),
+                                            ),
+                                        },
+                                        body: Block {
+                                            body: [],
+                                            last: Some(
+                                                Expr {
+                                                    span: Span {
+                                                        start: 108,
+                                                        end: 109,
+                                                    },
+                                                    kind: Lit(
+                                                        Int(
+                                                            0,
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ],
+                                tail: Some(
+                                    Block {
+                                        body: [],
+                                        last: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 121,
+                                                    end: 122,
+                                                },
+                                                kind: Lit(
+                                                    Int(
+                                                        1,
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ),
+    },
+    Stmt {
+        span: Span {
+            start: 126,
+            end: 185,
+        },
+        kind: Let(
+            Let {
+                name: Ident {
+                    span: Span {
+                        start: 130,
+                        end: 132,
+                    },
+                    lexeme: "_1",
+                },
+                value: Some(
+                    Expr {
+                        span: Span {
+                            start: 137,
+                            end: 185,
+                        },
+                        kind: If(
+                            If {
+                                br: [
+                                    Branch {
+                                        cond: Expr {
+                                            span: Span {
+                                                start: 140,
+                                                end: 144,
+                                            },
+                                            kind: Lit(
+                                                Bool(
+                                                    true,
+                                                ),
+                                            ),
+                                        },
+                                        body: Block {
+                                            body: [],
+                                            last: Some(
+                                                Expr {
+                                                    span: Span {
+                                                        start: 147,
+                                                        end: 148,
+                                                    },
+                                                    kind: Lit(
+                                                        Int(
+                                                            0,
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    },
+                                    Branch {
+                                        cond: Expr {
+                                            span: Span {
+                                                start: 161,
+                                                end: 166,
+                                            },
+                                            kind: Lit(
+                                                Bool(
+                                                    false,
+                                                ),
+                                            ),
+                                        },
+                                        body: Block {
+                                            body: [],
+                                            last: Some(
+                                                Expr {
+                                                    span: Span {
+                                                        start: 169,
+                                                        end: 170,
+                                                    },
+                                                    kind: Lit(
+                                                        Int(
+                                                            1,
+                                                        ),
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    },
+                                ],
+                                tail: Some(
+                                    Block {
+                                        body: [],
+                                        last: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 182,
+                                                    end: 183,
+                                                },
+                                                kind: Lit(
+                                                    Int(
+                                                        2,
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ),
+    },
+]

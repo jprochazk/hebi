@@ -56,9 +56,14 @@ pub struct Block<'arena, 'src> {
 
 #[derive(Debug)]
 pub struct If<'arena, 'src> {
+  pub br: &'arena [Branch<'arena, 'src>],
+  pub tail: Option<Block<'arena, 'src>>,
+}
+
+#[derive(Debug)]
+pub struct Branch<'arena, 'src> {
   pub cond: Expr<'arena, 'src>,
   pub body: Block<'arena, 'src>,
-  pub tail: Option<Block<'arena, 'src>>,
 }
 
 #[derive(Debug)]
