@@ -206,6 +206,12 @@ mod stmt {
     };
   }
 
+  // TODO: in the actual parser everything that may appear in both statement and
+  // expression position should be parsed as an expression, but eagerly in
+  // `stmt()`, without going down super far into the expression parsing stuff.
+  // even better if we use pratt parsing for expressions so they don't eat all the
+  // stack
+
   impl<'arena, 'src> Parser<'arena, 'src> {
     pub(super) fn stmt(&mut self) -> Result<Stmt<'arena, 'src>> {
       match self.current().kind {
@@ -215,6 +221,7 @@ mod stmt {
         KwFn => self.func(),
         KwBreak => self.break_(),
         KwContinue => self.continue_(),
+        KwReturn => self.return_(),
         BrkCurlyL => self.top_level_block(),
         _ => self.assign(),
       }
@@ -293,6 +300,18 @@ mod stmt {
       self.expect(KwContinue)?;
       let span = self.previous().span;
       Ok(mk!(self, Continue @ span))
+    }
+
+    fn return_(&mut self) -> Result<Stmt<'arena, 'src>> {
+      self.expect(KwReturn)?;
+      let start = self.previous().span.start;
+      let value = if self.current().begins_expr() {
+        Some(self.expr()?)
+      } else {
+        None
+      };
+      let end = self.previous().span.end;
+      Ok(mk!(self, Return { value } @ start..end))
     }
 
     fn top_level_block(&mut self) -> Result<Stmt<'arena, 'src>> {

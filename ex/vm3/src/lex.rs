@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::mem::{discriminant, swap};
 use std::ops::{Index, Range};
 
-use logos::Logos;
+use logos::{FilterResult, Logos};
 
 pub struct Lexer<'src> {
   src: &'src str,
@@ -148,6 +148,27 @@ impl Token {
   }
 
   #[inline]
+  pub fn begins_expr(&self) -> bool {
+    matches!(
+      self.kind,
+      TokenKind::KwFn
+        | TokenKind::KwIf
+        | TokenKind::BrkCurlyL
+        | TokenKind::OpMinus
+        | TokenKind::OpBang
+        | TokenKind::LitNone
+        | TokenKind::LitInt
+        | TokenKind::LitFloat
+        | TokenKind::LitBool
+        | TokenKind::LitString
+        | TokenKind::LitRecord
+        | TokenKind::LitList
+        | TokenKind::LitTuple
+        | TokenKind::TokIdent
+    )
+  }
+
+  #[inline]
   pub fn is(&self, kind: impl Borrow<TokenKind>) -> bool {
     discriminant(&self.kind) == discriminant(kind.borrow())
   }
@@ -164,6 +185,8 @@ pub enum TokenKind {
   KwBreak,
   #[token("continue")]
   KwContinue,
+  #[token("return")]
+  KwReturn,
   #[token("if")]
   KwIf,
   #[token("else")]
@@ -267,6 +290,13 @@ pub enum TokenKind {
   #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
   TokIdent,
 
+  #[regex("//[^\n]*", logos::skip)]
+  TokComment,
+  #[regex("/\\*", multi_line_comment)]
+  TokCommentMultiLine,
+  #[regex("#![^\n]*", logos::skip)]
+  TokShebang,
+
   TokError,
   TokEof,
 }
@@ -278,6 +308,7 @@ impl TokenKind {
       TokenKind::KwLoop => "loop",
       TokenKind::KwBreak => "break",
       TokenKind::KwContinue => "continue",
+      TokenKind::KwReturn => "return",
       TokenKind::KwIf => "if",
       TokenKind::KwElse => "else",
       TokenKind::KwLet => "let",
@@ -321,6 +352,9 @@ impl TokenKind {
       TokenKind::LitList => "#[",
       TokenKind::LitTuple => "#(",
       TokenKind::TokIdent => "identifier",
+      TokenKind::TokComment => "comment",
+      TokenKind::TokCommentMultiLine => "multi-line comment",
+      TokenKind::TokShebang => "shebang",
       TokenKind::TokError => "error",
       TokenKind::TokEof => "eof",
     }
@@ -340,5 +374,53 @@ impl<'src> Iterator for Tokens<'src> {
     } else {
       None
     }
+  }
+}
+
+fn multi_line_comment(lex: &mut logos::Lexer<'_, TokenKind>) -> FilterResult<(), ()> {
+  // how many characters we went through
+  let mut n = 0;
+  // Mitigate DOS attacks on the lexer with many unclosed comments:
+  //
+  // /*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*
+  //
+  // Without this step, the lexer would re-attempt parsing until EOF from every
+  // occurrence of /*, leading to O(N^2) worst case performance.
+  let mut n_at_last_seen_opening = 0;
+
+  // how many multi-line comment opening tokens we found
+  // this starts at one, because the initial /* is already consumed
+  let mut opening_count = 1;
+  let mut previous_two = [b'*', b'\0'];
+
+  for ch in lex.remainder().bytes() {
+    n += 1;
+    previous_two = [previous_two[1], ch];
+
+    match previous_two {
+      [b'/', b'*'] => {
+        opening_count += 1;
+        n_at_last_seen_opening = n
+      }
+      [b'*', b'/'] => opening_count -= 1,
+      _ => {
+        continue;
+      }
+    }
+
+    if opening_count == 0 {
+      break;
+    }
+
+    // Set the last byte to /0, so comments like /*/**/*/ get parsed correctly
+    previous_two[1] = b'\0';
+  }
+
+  if opening_count == 0 {
+    lex.bump(n);
+    FilterResult::Skip
+  } else {
+    lex.bump(n_at_last_seen_opening);
+    FilterResult::Error(())
   }
 }

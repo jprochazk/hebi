@@ -1,0 +1,38 @@
+#!/usr/bin/hebi
+
+not_comment
+
+// a
+
+not_comment
+
+// // a
+
+not_comment
+
+/* a */
+
+not_comment
+
+/*
+a
+*/
+
+not_comment
+
+/* /* a */ */
+
+not_comment
+
+/*
+  /* a */ */
+
+not_comment
+
+/*
+  /*
+    a
+      */
+        */
+
+not_comment

@@ -1,0 +1,31 @@
+/*
+TokenKind::KwFn
+| TokenKind::KwIf
+| TokenKind::BrkCurlyL
+| TokenKind::OpMinus
+| TokenKind::OpBang
+| TokenKind::LitNone
+| TokenKind::LitInt
+| TokenKind::LitFloat
+| TokenKind::LitBool
+| TokenKind::LitString
+| TokenKind::LitRecord
+| TokenKind::LitList
+| TokenKind::LitTuple
+| TokenKind::TokIdent
+*/
+
+fn _0 { return }
+fn _1 { return none }
+fn _2 { return 0 }
+fn _3 { return 0.1 }
+fn _4 { return true }
+fn _5 { return "test" }
+fn _6 { return #{} }
+fn _7 { return #[] }
+fn _8 { return #() }
+fn _9 { return value }
+fn _10 { return fn {} }
+fn _11 { return if true { 0 } else { 1 } }
+fn _12 { return -1 }
+fn _13 { return !true }

@@ -20,12 +20,15 @@ impl<'arena, 'src> Stmt<'arena, 'src> {
   }
 }
 
+// TODO: `loop`, `break`, `continue`, `return`,
+// and `func` should probably always be expressions.
 #[derive(Debug)]
 pub enum StmtKind<'arena, 'src> {
   Let(&'arena Let<'arena, 'src>),
   Loop(&'arena Loop<'arena, 'src>),
   Break,
   Continue,
+  Return(&'arena Return<'arena, 'src>),
   Func(&'arena Func<'arena, 'src>),
   Expr(&'arena Expr<'arena, 'src>),
 }
@@ -68,6 +71,11 @@ pub struct Branch<'arena, 'src> {
 #[derive(Debug)]
 pub struct Loop<'arena, 'src> {
   pub body: Block<'arena, 'src>,
+}
+
+#[derive(Debug)]
+pub struct Return<'arena, 'src> {
+  pub value: Option<Expr<'arena, 'src>>,
 }
 
 #[derive(Debug)]

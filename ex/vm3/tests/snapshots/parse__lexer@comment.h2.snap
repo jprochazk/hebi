@@ -1,0 +1,87 @@
+---
+source: ex/vm3/tests/parse.rs
+expression: snapshot
+input_file: ex/vm3/tests/input/comment.h2
+---
+[
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 17,
+                end: 28,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 36,
+                end: 47,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 58,
+                end: 69,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 80,
+                end: 91,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 102,
+                end: 113,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 130,
+                end: 141,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 160,
+                end: 171,
+            },
+        },
+    ),
+    (
+        "not_comment",
+        Token {
+            kind: TokIdent,
+            span: Span {
+                start: 208,
+                end: 219,
+            },
+        },
+    ),
+]
