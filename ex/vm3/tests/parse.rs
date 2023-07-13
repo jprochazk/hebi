@@ -2,6 +2,7 @@ use bumpalo::Bump;
 use vm3::lex::{Lexer, Tokens};
 use vm3::syn::Parser;
 
+#[cfg(not(miri))]
 #[test]
 fn parser() {
   insta::glob!("input/*.h2", |path| {
@@ -17,6 +18,7 @@ fn parser() {
   });
 }
 
+#[cfg(not(miri))]
 #[test]
 fn lexer() {
   insta::glob!("input/*.h2", |path| {
