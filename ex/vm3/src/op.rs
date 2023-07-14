@@ -33,6 +33,16 @@ impl<T: Into<usize>> Const<T> {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MVar<T: Into<usize>>(pub T);
+
+impl<T: Into<usize>> MVar<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Smi<T: Into<i32>>(pub T);
 
 impl<T: Into<i32>> Smi<T> {
@@ -54,28 +64,28 @@ pub enum Op {
     idx: Const<u16>,
   },
   LoadUpvalue {
-    idx: Const<u16>,
     dst: Reg<u8>,
+    idx: Const<u16>,
   },
   SetUpvalue {
-    idx: Const<u16>,
     src: Reg<u8>,
+    idx: Const<u16>,
   },
   LoadMVar {
-    idx: Const<u16>,
     dst: Reg<u8>,
+    idx: MVar<u16>,
   },
   SetMVar {
-    idx: Const<u16>,
     src: Reg<u8>,
+    idx: MVar<u16>,
   },
   LoadGlobal {
-    name: Const<u16>,
     dst: Reg<u8>,
+    name: Const<u16>,
   },
   SetGlobal {
-    name: Const<u16>,
     reg: Reg<u8>,
+    name: Const<u16>,
   },
   LoadFieldReg {
     obj: Reg<u8>,
@@ -130,24 +140,24 @@ pub enum Op {
     dst: Reg<u8>,
   },
   LoadSmi {
-    value: Smi<i16>,
     dst: Reg<u8>,
+    value: Smi<i16>,
   },
   MakeFn {
-    desc: Const<u16>,
     dst: Reg<u8>,
+    desc: Const<u16>,
   },
   MakeClass {
-    desc: Const<u16>,
     dst: Reg<u8>,
+    desc: Const<u16>,
   },
   MakeClassDerived {
-    desc: Const<u16>,
     dst: Reg<u8>,
+    desc: Const<u16>,
   },
   MakeList {
-    desc: Const<u16>,
     dst: Reg<u8>,
+    desc: Const<u16>,
   },
   MakeListSmall {
     start: Reg<u8>,
@@ -158,8 +168,8 @@ pub enum Op {
     dst: Reg<u8>,
   },
   MakeTable {
-    desc: Const<u16>,
     dst: Reg<u8>,
+    desc: Const<u16>,
   },
   MakeTableSmall {
     start: Reg<u8>,
@@ -266,8 +276,8 @@ pub enum Op {
     func: Reg<u8>,
   },
   Import {
-    path: Const<u16>,
     dst: Reg<u8>,
+    path: Const<u16>,
   },
   FinalizeModule,
   Return {
@@ -277,3 +287,5 @@ pub enum Op {
     val: Reg<u8>,
   },
 }
+
+static_assert_size!(Op, u32);
