@@ -20,21 +20,12 @@ hashbrown = { version = "0.14.0", features = [
   "allocator-api2",
   "inline-more",
 ], default-features = false }
-logos = { version = "0.13.0", default-features = false, features = ["logos-derive", "export_derive"] }
+logos = { version = "0.13.0", default-features = false, features = [
+  "logos-derive",
+  "export_derive",
+] }
 rustc-hash = { version = "1.1.0", default-features = false }
 
 [dev-dependencies]
 indoc = "2.0.2"
 insta = { version = "1.30.0", features = ["glob"] }
-
-
-[profile.dev.package]
-insta = { opt-level = 3 }
-indoc = { opt-level = 3 }
-
-[profile.test.package]
-insta = { opt-level = 3 }
-indoc = { opt-level = 3 }
-
-[profile.release]
-lto = "fat"
