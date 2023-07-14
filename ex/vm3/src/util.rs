@@ -7,3 +7,11 @@ impl<T: Display> Debug for DelegateDebugToDisplay<T> {
     Display::fmt(&self.0, f)
   }
 }
+
+macro_rules! static_assert_size {
+  ($T:ty, $U:ty) => {
+    const _: () = {
+      ::core::mem::transmute::<$T, $U>;
+    };
+  };
+}

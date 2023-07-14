@@ -1,6 +1,7 @@
 #![no_std]
 extern crate alloc;
 
+#[macro_use]
 pub mod util;
 
 pub mod ast;
