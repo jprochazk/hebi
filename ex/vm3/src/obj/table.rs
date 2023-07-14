@@ -24,11 +24,16 @@ use crate::val::Value;
 pub struct Table {
   table: UnsafeCell<RawTable<usize, NoAlloc>>,
   vec: UnsafeCell<Vec<Entry, NoAlloc>>,
-  // TODO: feature for DOS-resistant hasher (just RandomState)
+  // TODO: feature for DOS-resistant hasher
   hash_builder: BuildHasherDefault<FxHasher>,
 }
 
 impl Table {
+  /// Allocates a new table.
+  ///
+  /// The table is initially empty.
+  /// The only allocation done here is to put the `Table` object
+  /// onto the garbage-collected heap.
   pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocErr> {
     let table = UnsafeCell::new(RawTable::new_in(NO_ALLOC));
     let vec = UnsafeCell::new(Vec::new_in(NO_ALLOC));
@@ -40,14 +45,16 @@ impl Table {
     })
   }
 
+  /// Allocates a new table with space for at least `capacity` entries.
   pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocErr> {
-    let table =
-      RawTable::<usize, _>::try_with_capacity_in(capacity, Alloc::new(gc)).map_err(|_| AllocErr)?;
-    let table = unsafe { transmute::<_, RawTable<usize, NoAlloc>>(table) };
+    let table = RawTable::try_with_capacity_in(capacity, Alloc::new(gc)).map_err(|_| AllocErr)?;
+    // We promise never to attempt to grow a `NoAlloc` table, so this is safe.
+    let table = unsafe { transmute::<RawTable<usize, _>, RawTable<usize, NoAlloc>>(table) };
 
-    let mut vec = Vec::<Entry, _>::new_in(Alloc::new(gc));
+    let mut vec = Vec::new_in(Alloc::new(gc));
     vec.try_reserve_exact(capacity).map_err(|_| AllocErr)?;
-    let vec = unsafe { transmute::<_, Vec<Entry, NoAlloc>>(vec) };
+    // We promise never to attempt to grow a `NoAlloc` table, so this is safe.
+    let vec = unsafe { transmute::<Vec<Entry, _>, Vec<Entry, NoAlloc>>(vec) };
 
     let hash_builder = BuildHasherDefault::default();
 
@@ -58,21 +65,27 @@ impl Table {
     })
   }
 
+  /// Returns the number of entries currently in the table.
   #[inline]
   pub fn len(&self) -> usize {
-    self.get_table().len()
+    unsafe { self.get_table() }.len()
   }
 
+  /// Returns the table's remaining capacity.
   #[inline]
   pub fn capacity(&self) -> usize {
-    cmp::min(self.get_vec().capacity(), self.get_table().capacity())
+    let vec_cap = unsafe { self.get_vec().capacity() };
+    let table_cap = unsafe { self.get_table().capacity() };
+    cmp::min(vec_cap, table_cap)
   }
 
+  /// Returns `true` if the table is empty.
   #[inline]
   pub fn is_empty(&self) -> bool {
-    self.get_table().is_empty()
+    unsafe { self.get_table() }.is_empty()
   }
 
+  /// Inserts `value` into the table associated with the key `key`.
   pub fn try_insert(
     &self,
     gc: &Gc,
@@ -83,10 +96,11 @@ impl Table {
     Ok(unsafe { self.try_insert_no_grow(key, value).unwrap_unchecked() })
   }
 
+  /// Removes `key` from the table, returning it if it exists.
   pub fn remove(&self, key: &str) -> Option<Value> {
     let hash = self.hash(key);
-    let vec = self.get_vec_mut_no_alloc();
-    let table = self.get_table_mut_no_alloc();
+    let vec = unsafe { self.get_vec_mut_no_alloc() };
+    let table = unsafe { self.get_table_mut_no_alloc() };
     let eq = |i: &usize| unsafe { vec.get_unchecked(*i) }.key.as_str() == key;
     match table.remove_entry(hash, eq) {
       Some(index) => {
@@ -102,22 +116,27 @@ impl Table {
     }
   }
 
+  /// Like [`Table::try_insert`], but will return the `(key, value)` pair
+  /// if the table does not have enough spare capacity.
   pub fn try_insert_no_grow(
     &self,
     key: Ref<Str>,
     value: Value,
   ) -> Result<Option<Value>, (Ref<Str>, Value)> {
     let hash = self.hash(key.as_str());
-    let vec = self.get_vec_mut_no_alloc();
-    let table = self.get_table_mut_no_alloc();
+    let vec = unsafe { self.get_vec_mut_no_alloc() };
+    let table = unsafe { self.get_table_mut_no_alloc() };
     match table.find_or_find_insert_slot(
       hash,
+      // The indices are guaranteed to exist in `vec`.
       |i| unsafe { vec.get_unchecked(*i) }.key.as_str() == key.as_str(),
       |i| unsafe { vec.get_unchecked(*i) }.hash,
     ) {
       Ok(bucket) => {
-        let index = unsafe { *bucket.as_ref() };
-        let prev = replace(&mut vec[index].value, value);
+        // The pointer in the bucket is valid for reads.
+        let index = unsafe { bucket.as_ptr().read() };
+        // The index is guaranteed to exist.
+        let prev = replace(&mut unsafe { vec.get_unchecked_mut(index) }.value, value);
         Ok(Some(prev))
       }
       Err(slot) => {
@@ -136,10 +155,11 @@ impl Table {
 
   #[inline]
   pub fn try_reserve(&self, gc: &Gc, additional: usize) -> Result<(), AllocErr> {
-    let table = self.get_table_mut_alloc(gc);
-    let vec = self.get_vec_mut_alloc(gc);
+    let table = unsafe { self.get_table_mut_alloc(gc) };
+    let vec = unsafe { self.get_vec_mut_alloc(gc) };
 
     table
+      // The index is guaranteed to exist
       .try_reserve(additional, |i| unsafe { vec.get_unchecked(*i) }.hash)
       .map_err(|_| AllocErr)?;
     vec.try_reserve(additional).map_err(|_| AllocErr)?;
@@ -149,50 +169,60 @@ impl Table {
 
   pub fn get(&self, key: &str) -> Option<Value> {
     let hash = self.hash(key);
-    let table = self.get_table();
-    let vec = self.get_vec();
+    let table = unsafe { self.get_table() };
+    let vec = unsafe { self.get_vec() };
+    // The indices are guaranteed to exist
     let eq = |i: &usize| unsafe { vec.get_unchecked(*i) }.key.as_str() == key;
     table
       .get(hash, eq)
       .map(|index| unsafe { vec.get_unchecked(*index).value })
   }
 
+  #[inline]
   fn hash(&self, key: &str) -> u64 {
     let mut hasher = self.hash_builder.build_hasher();
     key.hash(&mut hasher);
     hasher.finish()
   }
 
-  fn get_table(&self) -> &RawTable<usize, NoAlloc> {
-    unsafe { self.table.get().as_ref().unwrap_unchecked() }
+  #[inline]
+  unsafe fn get_table(&self) -> &RawTable<usize, NoAlloc> {
+    // `get()` returns a possibly null pointer, which is never null here.
+    self.table.get().as_ref().unwrap_unchecked()
   }
 
   #[allow(clippy::mut_from_ref)]
-  fn get_table_mut_no_alloc(&self) -> &mut RawTable<usize, NoAlloc> {
-    unsafe { self.table.get().as_mut().unwrap_unchecked() }
+  #[inline]
+  unsafe fn get_table_mut_no_alloc(&self) -> &mut RawTable<usize, NoAlloc> {
+    // `get()` returns a possibly null pointer, which is never null here.
+    self.table.get().as_mut().unwrap_unchecked()
   }
 
   #[allow(clippy::mut_from_ref)]
-  fn get_table_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut RawTable<usize, Alloc<'gc>> {
+  #[inline]
+  unsafe fn get_table_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut RawTable<usize, Alloc<'gc>> {
     let table = self.get_table_mut_no_alloc();
-    let table = unsafe { transmute::<_, &mut RawTable<usize, Alloc<'gc>>>(table) };
+    let table = transmute::<_, &mut RawTable<usize, Alloc<'gc>>>(table);
     table.allocator().set(gc);
     table
   }
 
-  fn get_vec(&self) -> &Vec<Entry, NoAlloc> {
-    unsafe { self.vec.get().as_ref().unwrap_unchecked() }
+  #[inline]
+  unsafe fn get_vec(&self) -> &Vec<Entry, NoAlloc> {
+    self.vec.get().as_ref().unwrap_unchecked()
   }
 
   #[allow(clippy::mut_from_ref)]
-  fn get_vec_mut_no_alloc(&self) -> &mut Vec<Entry, NoAlloc> {
-    unsafe { self.vec.get().as_mut().unwrap_unchecked() }
+  #[inline]
+  unsafe fn get_vec_mut_no_alloc(&self) -> &mut Vec<Entry, NoAlloc> {
+    self.vec.get().as_mut().unwrap_unchecked()
   }
 
   #[allow(clippy::mut_from_ref)]
-  fn get_vec_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut Vec<Entry, Alloc<'gc>> {
+  #[inline]
+  unsafe fn get_vec_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut Vec<Entry, Alloc<'gc>> {
     let vec = self.get_vec_mut_no_alloc();
-    let vec = unsafe { transmute::<_, &mut Vec<Entry, Alloc<'gc>>>(vec) };
+    let vec = transmute::<_, &mut Vec<Entry, Alloc<'gc>>>(vec);
     vec.allocator().set(gc);
     vec
   }
@@ -214,7 +244,7 @@ impl Object for Table {
 impl Debug for Table {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let mut f = f.debug_map();
-    for entry in self.get_vec().iter() {
+    for entry in unsafe { self.get_vec() }.iter() {
       f.entry(&entry.key, &entry.value);
     }
     f.finish()
@@ -224,7 +254,7 @@ impl Debug for Table {
 impl Display for Table {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let mut f = f.debug_map();
-    for entry in self.get_vec().iter() {
+    for entry in unsafe { self.get_vec() }.iter() {
       f.entry(
         &DelegateDebugToDisplay(entry.key),
         &DelegateDebugToDisplay(entry.value),
