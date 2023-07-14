@@ -39,21 +39,32 @@
 //! incremental algorithm. The plan is to eventually implement the full
 //! quad-color algorithm.
 
-use std::any::type_name;
-use std::cell::Cell;
-use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::{mem, ptr};
+use core::alloc::Layout;
+use core::any::type_name;
+use core::cell::Cell;
+use core::fmt::{Debug, Display};
+use core::hash::Hash;
+use core::marker::PhantomData;
+use core::ops::Deref;
+use core::ptr::{addr_of, addr_of_mut, copy_nonoverlapping, NonNull};
+use core::{mem, ptr, slice, str};
 
-use bumpalo::Bump;
+use allocator_api2::alloc::Allocator;
+use bumpalo::{AllocErr, Bump};
 
-pub trait Object: Debug + Display {}
+use crate::val::Value;
 
-// TODO:
-pub struct Value {
-  _v: u64,
+pub trait Object: Debug + Display {
+  /// Whether or not `Self` needs to have its `Drop` impl called.
+  ///
+  /// This has a default implementation using `core::mem::needs_drop::<Self>`,
+  /// which does the right thing in most cases, but it can be overridden in
+  /// case the default is incorrect.
+  ///
+  /// For example, this always returns `false` for `List`, because we don't
+  /// want the underlying `Vec` to drop its contents, as they will be GC'd
+  /// automatically, and the GC is responsible for calling `Drop` impls.
+  const NEEDS_DROP: bool = core::mem::needs_drop::<Self>();
 }
 
 pub trait Tracer: private::Sealed {
@@ -104,24 +115,34 @@ impl Default for Gc {
 }
 
 impl Gc {
-  pub fn alloc<T: Object + 'static>(&self, obj: T) -> Ref<T> {
-    if mem::needs_drop::<T>() {
-      let ptr = NonNull::from(self.heap.alloc(Box {
+  pub fn try_alloc<T: Object + 'static>(&self, obj: T) -> Result<Ref<T>, AllocErr> {
+    let ptr = if T::NEEDS_DROP {
+      let ptr = self.heap.try_alloc(Box {
         next: self.drop_chain.get(),
         info: vtable::<T>(),
         data: obj,
-      }));
+      })?;
+      let ptr = NonNull::from(ptr);
       self.drop_chain.replace(Some(ptr.cast()));
-      Ref { ptr }
+      ptr
     } else {
-      Ref {
-        ptr: NonNull::from(self.heap.alloc(Box {
-          next: None,
-          info: vtable::<T>(),
-          data: obj,
-        })),
-      }
-    }
+      NonNull::from(self.heap.try_alloc(Box {
+        next: None,
+        info: vtable::<T>(),
+        data: obj,
+      })?)
+    };
+
+    Ok(Ref { ptr })
+  }
+
+  pub fn try_alloc_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocErr> {
+    let dst = self.heap.try_alloc_layout(Layout::for_value(src))?;
+    let dst = unsafe {
+      copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
+      slice::from_raw_parts(dst.as_ptr(), src.len())
+    };
+    Ok(unsafe { str::from_utf8_unchecked(dst) })
   }
 }
 
@@ -132,9 +153,9 @@ impl Drop for Gc {
       let mut ptr = self.drop_chain.get();
       while let Some(v) = ptr {
         let v = v.as_ptr();
-        ptr = ptr::addr_of!((*v).next).read();
-        let drop_in_place = ptr::addr_of!((*v).info).read().drop_in_place;
-        let data = ptr::addr_of_mut!((*v).data);
+        ptr = addr_of!((*v).next).read();
+        let drop_in_place = addr_of!((*v).info).read().drop_in_place;
+        let data = addr_of_mut!((*v).data);
         drop_in_place(data);
       }
     }
@@ -213,9 +234,15 @@ impl Any {
   }
 }
 
-#[derive(Clone, Copy)]
 pub struct Ref<T: 'static> {
   ptr: NonNull<Box<T>>,
+}
+
+impl<T> Copy for Ref<T> {}
+impl<T> Clone for Ref<T> {
+  fn clone(&self) -> Self {
+    *self
+  }
 }
 
 impl<T> Ref<T> {
@@ -225,6 +252,11 @@ impl<T> Ref<T> {
       ptr: self.ptr.cast(),
     }
   }
+
+  #[inline]
+  pub fn get_ref(&self) -> &T {
+    unsafe { &self.ptr.as_ref().data }
+  }
 }
 
 impl<T> Deref for Ref<T> {
@@ -232,31 +264,55 @@ impl<T> Deref for Ref<T> {
 
   #[inline]
   fn deref(&self) -> &Self::Target {
-    unsafe { &self.ptr.as_ref().data }
+    self.get_ref()
   }
 }
 
 impl Display for Any {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     (self.vtable().display_fmt)(self.data(), f)
   }
 }
 
 impl Debug for Any {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     (self.vtable().debug_fmt)(self.data(), f)
   }
 }
 
 impl<T: Object> Display for Ref<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     Display::fmt(self.deref(), f)
   }
 }
 
 impl<T: Object> Debug for Ref<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     Debug::fmt(self.deref(), f)
+  }
+}
+
+impl<T: Hash> Hash for Ref<T> {
+  fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    self.get_ref().hash(state)
+  }
+}
+
+impl<T: PartialEq> PartialEq for Ref<T> {
+  fn eq(&self, other: &Ref<T>) -> bool {
+    self.get_ref().eq(other.get_ref())
+  }
+}
+impl<T: Eq> Eq for Ref<T> {}
+
+impl<T: PartialOrd> PartialOrd for Ref<T> {
+  fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+    self.get_ref().partial_cmp(other.get_ref())
+  }
+}
+impl<T: Ord> Ord for Ref<T> {
+  fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+    self.get_ref().cmp(other.get_ref())
   }
 }
 
@@ -275,8 +331,8 @@ const fn vtable<T: HasVTable<T>>() -> &'static VTable<T> {
 #[doc(hidden)]
 struct VTable<T> {
   drop_in_place: unsafe fn(*mut T),
-  display_fmt: fn(*const T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-  debug_fmt: fn(*const T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+  display_fmt: fn(*const T, &mut core::fmt::Formatter<'_>) -> core::fmt::Result,
+  debug_fmt: fn(*const T, &mut core::fmt::Formatter<'_>) -> core::fmt::Result,
 }
 
 impl<T> VTable<T> {
@@ -288,27 +344,169 @@ impl<T> VTable<T> {
 trait HasVTable<T: 'static> {
   const VTABLE: &'static VTable<T>;
 }
-impl<T: Sized + Object + 'static> HasVTable<T> for T {
+impl<T: Object + 'static> HasVTable<T> for T {
   const VTABLE: &'static VTable<T> = &VTable {
     drop_in_place: ptr::drop_in_place::<T>,
     display_fmt: |p, f| {
       // Safety:
       // `p` is guaranteed to be non-null and valid for reads.
       // See `NonNull` in `Any` and `Ref<T>`
-      <T as std::fmt::Display>::fmt(unsafe { p.as_ref().unwrap_unchecked() }, f)
+      <T as core::fmt::Display>::fmt(unsafe { p.as_ref().unwrap_unchecked() }, f)
     },
     debug_fmt: |p, f| {
       // Safety:
       // `p` is guaranteed to be non-null and valid for reads.
       // See `NonNull` in `Any` and `Ref<T>`
-      <T as std::fmt::Debug>::fmt(unsafe { p.as_ref().unwrap_unchecked() }, f)
+      <T as core::fmt::Debug>::fmt(unsafe { p.as_ref().unwrap_unchecked() }, f)
     },
   };
 }
 
+impl Gc {
+  #[inline(always)]
+  fn allocator(&self) -> impl Allocator + '_ {
+    &self.heap
+  }
+}
+
+#[doc(hidden)]
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct NoAlloc(usize, PhantomData<&'static ()>);
+pub const NO_ALLOC: NoAlloc = NoAlloc(0, PhantomData);
+unsafe impl Allocator for NoAlloc {
+  fn allocate(
+    &self,
+    _: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    unreachable!()
+  }
+
+  unsafe fn deallocate(&self, _: NonNull<u8>, _: core::alloc::Layout) {
+    unreachable!()
+  }
+
+  fn allocate_zeroed(
+    &self,
+    _: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    unreachable!()
+  }
+
+  unsafe fn grow(
+    &self,
+    _: NonNull<u8>,
+    _: core::alloc::Layout,
+    _: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    unreachable!()
+  }
+
+  unsafe fn grow_zeroed(
+    &self,
+    _: NonNull<u8>,
+    _: core::alloc::Layout,
+    _: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    unreachable!()
+  }
+
+  unsafe fn shrink(
+    &self,
+    _: NonNull<u8>,
+    _: core::alloc::Layout,
+    _: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    unreachable!()
+  }
+
+  fn by_ref(&self) -> &Self
+  where
+    Self: Sized,
+  {
+    self
+  }
+}
+
+#[derive(Clone)]
+#[repr(C)]
+pub struct Alloc<'gc>(Cell<*const Gc>, PhantomData<&'gc ()>);
+
+impl<'gc> Alloc<'gc> {
+  pub fn new(gc: &'gc Gc) -> Self {
+    Self(Cell::new(gc), PhantomData)
+  }
+
+  pub fn set(&self, gc: &'gc Gc) {
+    self.0.set(gc);
+  }
+
+  fn inner(&self) -> &'gc Gc {
+    unsafe { self.0.get().as_ref().unwrap_unchecked() }
+  }
+}
+
+unsafe impl<'gc> Allocator for Alloc<'gc> {
+  fn allocate(
+    &self,
+    layout: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    self.inner().allocator().allocate(layout)
+  }
+
+  unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: core::alloc::Layout) {
+    self.inner().allocator().deallocate(ptr, layout)
+  }
+
+  fn allocate_zeroed(
+    &self,
+    layout: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    self.inner().allocator().allocate_zeroed(layout)
+  }
+
+  unsafe fn grow(
+    &self,
+    ptr: NonNull<u8>,
+    old_layout: core::alloc::Layout,
+    new_layout: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    self.inner().allocator().grow(ptr, old_layout, new_layout)
+  }
+
+  unsafe fn grow_zeroed(
+    &self,
+    ptr: NonNull<u8>,
+    old_layout: core::alloc::Layout,
+    new_layout: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    self
+      .inner()
+      .allocator()
+      .grow_zeroed(ptr, old_layout, new_layout)
+  }
+
+  unsafe fn shrink(
+    &self,
+    ptr: NonNull<u8>,
+    old_layout: core::alloc::Layout,
+    new_layout: core::alloc::Layout,
+  ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+    self.inner().allocator().shrink(ptr, old_layout, new_layout)
+  }
+
+  fn by_ref(&self) -> &Self
+  where
+    Self: Sized,
+  {
+    self
+  }
+}
+
 #[cfg(test)]
 mod tests {
-  use std::fmt::{Debug, Display};
+  use alloc::format;
+  use core::fmt::{Debug, Display};
 
   use super::*;
 
@@ -320,13 +518,13 @@ mod tests {
     }
     impl Object for Foo {}
     impl Display for Foo {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "<foo {}>", self.n)
       }
     }
 
     let gc = Gc::new();
-    let v = gc.alloc(Foo { n: 10 });
+    let v = gc.try_alloc(Foo { n: 10 }).unwrap();
     assert_eq!(v.n, 10);
     let v = v.erase();
     let v = v.cast::<Foo>().unwrap();
@@ -341,13 +539,13 @@ mod tests {
     }
     impl Object for Foo {}
     impl Display for Foo {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "<foo {}>", self.n)
       }
     }
 
     let gc = Gc::new();
-    let v = gc.alloc(Foo { n: 10 });
+    let v = gc.try_alloc(Foo { n: 10 }).unwrap();
     assert_eq!("Foo { n: 10 }", format!("{v:?}"));
     assert_eq!("<foo 10>", format!("{v}"));
 
@@ -376,22 +574,22 @@ mod tests {
     impl Object for NotDropped {}
     impl Object for Dropped {}
     impl Display for NotDropped {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "<not dropped>")
       }
     }
     impl Display for Dropped {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "<dropped>")
       }
     }
     impl Debug for NotDropped {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("NotDropped").finish()
       }
     }
     impl Debug for Dropped {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Dropped").finish()
       }
     }
@@ -400,16 +598,69 @@ mod tests {
     let mut d1 = false;
     {
       let gc = Gc::new();
-      let _ = gc.alloc(NotDropped {
-        dropped: &mut d0 as _,
-      });
-      let _ = gc.alloc(Dropped {
-        dropped: &mut d1 as _,
-      });
+      let _ = gc
+        .try_alloc(NotDropped {
+          dropped: &mut d0 as _,
+        })
+        .unwrap();
+      let _ = gc
+        .try_alloc(Dropped {
+          dropped: &mut d1 as _,
+        })
+        .unwrap();
       drop(gc);
     }
 
     assert!(!d0, "0 was dropped");
     assert!(d1, "1 was not dropped");
+  }
+
+  fn _assert_needs_drop() {
+    #[derive(Debug)]
+    struct Dropped {}
+    impl Drop for Dropped {
+      fn drop(&mut self) {
+        unimplemented!()
+      }
+    }
+
+    #[derive(Debug)]
+    struct NoDropPod(i32);
+    impl Object for NoDropPod {}
+    impl Display for NoDropPod {
+      fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        unimplemented!()
+      }
+    }
+
+    #[derive(Debug)]
+    struct PropagateDrop(Dropped);
+    impl Object for PropagateDrop {}
+    impl Display for PropagateDrop {
+      fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        unimplemented!()
+      }
+    }
+
+    #[derive(Debug)]
+    struct ForceNoDrop(Dropped);
+    impl Object for ForceNoDrop {
+      const NEEDS_DROP: bool = false;
+    }
+    impl Display for ForceNoDrop {
+      fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        unimplemented!()
+      }
+    }
+
+    const fn static_assert(v: bool) {
+      if !v {
+        panic!("assertion failed");
+      }
+    }
+
+    const _: () = static_assert(!NoDropPod::NEEDS_DROP);
+    const _: () = static_assert(PropagateDrop::NEEDS_DROP);
+    const _: () = static_assert(!ForceNoDrop::NEEDS_DROP);
   }
 }

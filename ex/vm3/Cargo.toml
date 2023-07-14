@@ -6,10 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-beef = "0.5.2"
-bumpalo = { version = "3.13.0", features = ["collections", "boxed"] }
-indexmap = "2.0.0"
-logos = "0.13.0"
+allocator-api2 = { version = "0.2.16", default-features = false, features = [
+  "alloc",
+] }
+beef = { version = "0.5.2", default-features = false }
+bumpalo = { version = "3.13.0", features = [
+  "collections",
+  "boxed",
+  "allocator-api2",
+], default-features = false }
+hashbrown = { version = "0.14.0", features = [
+  "raw",
+  "allocator-api2",
+  "inline-more",
+], default-features = false }
+logos = { version = "0.13.0", default-features = false, features = ["logos-derive", "export_derive"] }
+rustc-hash = { version = "1.1.0", default-features = false }
 
 [dev-dependencies]
 indoc = "2.0.2"

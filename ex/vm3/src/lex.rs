@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
-use std::fmt::Display;
-use std::mem::{discriminant, swap};
-use std::ops::{Index, Range};
+use core::borrow::Borrow;
+use core::fmt::Display;
+use core::mem::{discriminant, swap};
+use core::ops::{Index, Range};
 
 use logos::{FilterResult, Logos};
 
@@ -128,7 +128,7 @@ impl Index<Span> for str {
 }
 
 impl Display for Span {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "{}..{}", self.start, self.end)
   }
 }

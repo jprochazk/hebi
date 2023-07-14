@@ -1,9 +1,8 @@
-#![allow(clippy::wrong_self_convention)]
+use core::fmt::{Debug, Display};
+use core::marker::PhantomData;
+use core::mem::transmute;
 
-use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
-
-use crate::gc::Any;
+use crate::gc::{Any, Object, Ref};
 
 mod mask {
   //! Generic mask bits
@@ -22,7 +21,7 @@ mod ty {
   //                         ▼              ▼▼
   pub const INT    : u64 = 0b01111111_11111100_00000000_00000000_00000000_00000000_00000000_00000000;
   pub const BOOL   : u64 = 0b01111111_11111101_00000000_00000000_00000000_00000000_00000000_00000000;
-  pub const NONE   : u64 = 0b01111111_11111110_00000000_00000000_00000000_00000000_00000000_00000000;
+  pub const NIL    : u64 = 0b01111111_11111110_00000000_00000000_00000000_00000000_00000000_00000000;
   pub const OBJECT : u64 = 0b01111111_11111111_00000000_00000000_00000000_00000000_00000000_00000000;
 }
 
@@ -35,7 +34,7 @@ enum PhantomValue {
   Float(f64),
   Int(i32),
   Bool(bool),
-  None,
+  Nil,
   Object(Any),
 }
 
@@ -51,18 +50,47 @@ pub enum Type {
   Float,
   Int,
   Bool,
-  None,
+  Nil,
   Object,
 }
 
 // Constructors
 impl Value {
   #[inline(always)]
-  const fn new(bits: u64) -> Self {
+  pub fn new(v: impl Into<Value>) -> Self {
+    v.into()
+  }
+
+  /// Construct a `Value` directly from bits.
+  ///
+  /// # Safety
+  /// `bits` must be properly tagged.
+  #[inline(always)]
+  const unsafe fn from_bits(bits: u64) -> Self {
     Self {
       bits,
       _p: PhantomData,
     }
+  }
+
+  #[inline(always)]
+  pub fn is<T: ValueType>(self) -> bool {
+    T::is(self)
+  }
+
+  /// Convert `self` into a `T` if it is currently inhabited by `T`.
+  #[inline(always)]
+  pub fn cast<T: TryFrom<Value>>(self) -> Option<T> {
+    self.try_into().ok()
+  }
+
+  /// The unchecked version of [`Value::cast`].
+  ///
+  /// # Safety
+  /// `self.is::<T>()` must be `true`
+  #[inline(always)]
+  pub unsafe fn coerce<T: TryFrom<Value>>(self) -> T {
+    T::try_from(self).unwrap_unchecked()
   }
 
   /// Returns the type of this value.
@@ -80,7 +108,7 @@ impl Value {
       match tag {
         ty::INT => Type::Int,
         ty::BOOL => Type::Bool,
-        ty::NONE => Type::None,
+        ty::NIL => Type::Nil,
         ty::OBJECT => Type::Object,
         _ => unsafe { core::hint::unreachable_unchecked() },
       }
@@ -88,47 +116,7 @@ impl Value {
   }
 
   #[inline(always)]
-  pub fn float(v: f64) -> Self {
-    let bits = v.to_bits();
-    if bits & mask::QNAN == mask::QNAN {
-      panic!("cannot construct a Value from an f64 which is already a quiet NaN");
-    }
-    Self::new(bits)
-  }
-
-  #[inline(always)]
-  pub fn int(v: i32) -> Self {
-    // We want the bits of `v`, not for it to be reinterpreted as an unsigned int.
-    let bits = unsafe { std::mem::transmute::<i32, u32>(v) } as u64;
-    let bits = bits | ty::INT;
-    Self::new(bits)
-  }
-
-  #[inline(always)]
-  pub fn bool(v: bool) -> Self {
-    let bits = v as u64;
-    let bits = bits | ty::BOOL;
-    Self::new(bits)
-  }
-
-  #[inline(always)]
-  pub const fn none() -> Self {
-    let bits = ty::NONE;
-    Self::new(bits)
-  }
-
-  #[inline(always)]
-  pub fn object(ptr: Any) -> Self {
-    let bits = ptr.addr() as u64;
-    let bits = (bits & mask::VALUE) | ty::OBJECT;
-    Self::new(bits)
-  }
-}
-
-// Type checks
-impl Value {
-  #[inline(always)]
-  fn value(&self) -> u64 {
+  fn unmask(&self) -> u64 {
     self.bits & mask::VALUE
   }
 
@@ -136,215 +124,307 @@ impl Value {
   fn type_tag(&self) -> u64 {
     self.bits & mask::TAG
   }
+}
 
-  #[inline(always)]
-  pub fn is_float(&self) -> bool {
-    (self.bits & mask::QNAN) != mask::QNAN
-  }
+pub trait ValueType: private::Sealed {
+  fn is(value: Value) -> bool;
+}
 
-  #[inline(always)]
-  pub fn is_int(&self) -> bool {
-    self.type_tag() == ty::INT
-  }
-
-  #[inline(always)]
-  pub fn is_bool(&self) -> bool {
-    self.type_tag() == ty::BOOL
-  }
-
-  #[inline(always)]
-  pub fn is_none(&self) -> bool {
-    self.type_tag() == ty::NONE
-  }
-
-  #[inline(always)]
-  pub fn is_object(&self) -> bool {
-    self.type_tag() == ty::OBJECT
+impl private::Sealed for f64 {}
+impl ValueType for f64 {
+  #[inline]
+  fn is(value: Value) -> bool {
+    (value.bits & mask::QNAN) != mask::QNAN
   }
 }
 
-impl Value {
-  #[inline(always)]
-  pub fn to_float(self) -> Option<f64> {
-    if self.is_float() {
-      Some(unsafe { self.to_float_unchecked() })
+impl private::Sealed for i32 {}
+impl ValueType for i32 {
+  #[inline]
+  fn is(value: Value) -> bool {
+    value.type_tag() == ty::INT
+  }
+}
+
+impl private::Sealed for bool {}
+impl ValueType for bool {
+  #[inline]
+  fn is(value: Value) -> bool {
+    value.type_tag() == ty::BOOL
+  }
+}
+
+impl private::Sealed for nil {}
+impl ValueType for nil {
+  #[inline]
+  fn is(value: Value) -> bool {
+    value.type_tag() == ty::NIL
+  }
+}
+
+impl private::Sealed for Any {}
+impl ValueType for Any {
+  #[inline]
+  fn is(value: Value) -> bool {
+    value.type_tag() == ty::OBJECT
+  }
+}
+
+impl<T: Object + 'static> private::Sealed for Ref<T> {}
+impl<T: Object + 'static> ValueType for Ref<T> {
+  fn is(value: Value) -> bool {
+    if value.type_tag() == ty::OBJECT {
+      let obj = unsafe { value.coerce::<Any>() };
+      obj.is::<T>()
     } else {
-      None
+      false
     }
   }
+}
 
-  /// # Safety
-  /// `self.is_float()` must be `true`
+// Constructors
+impl From<f64> for Value {
   #[inline(always)]
-  pub unsafe fn to_float_unchecked(self) -> f64 {
-    debug_assert!(self.is_float());
-    f64::from_bits(self.bits)
+  fn from(value: f64) -> Self {
+    let bits = value.to_bits();
+    if bits & mask::QNAN == mask::QNAN {
+      panic!("cannot construct a Value from an f64 which is already a quiet NaN");
+    }
+    unsafe { Value::from_bits(bits) }
   }
+}
 
-  #[inline(always)]
-  pub fn to_int(self) -> Option<i32> {
-    if self.is_int() {
-      Some(unsafe { self.to_int_unchecked() })
+impl TryFrom<Value> for f64 {
+  type Error = ();
+
+  fn try_from(value: Value) -> Result<f64, Self::Error> {
+    if value.is::<f64>() {
+      Ok(f64::from_bits(value.bits))
     } else {
-      None
+      Err(())
     }
   }
+}
 
-  /// # Safety
-  /// `self.is_int()` must be `true`
+impl From<i32> for Value {
   #[inline(always)]
-  pub unsafe fn to_int_unchecked(self) -> i32 {
-    debug_assert!(self.is_int());
-    self.value() as u32 as i32
+  fn from(value: i32) -> Self {
+    // We want the bits of `v`, not for it to be reinterpreted as an unsigned int.
+    let bits = unsafe { transmute::<i32, u32>(value) } as u64;
+    let bits = bits | ty::INT;
+    unsafe { Value::from_bits(bits) }
   }
+}
 
-  #[inline(always)]
-  pub fn to_bool(self) -> Option<bool> {
-    if self.is_bool() {
-      Some(unsafe { self.to_bool_unchecked() })
+impl TryFrom<Value> for i32 {
+  type Error = ();
+
+  fn try_from(value: Value) -> Result<i32, Self::Error> {
+    if value.is::<i32>() {
+      Ok(unsafe { transmute::<u32, i32>(value.unmask() as u32) })
     } else {
-      None
+      Err(())
     }
   }
+}
 
-  /// # Safety
-  /// `self.is_bool()` must be `true`
-  #[allow(clippy::transmute_int_to_bool)]
+impl From<bool> for Value {
   #[inline(always)]
-  pub unsafe fn to_bool_unchecked(self) -> bool {
-    debug_assert!(self.is_bool());
-    unsafe { ::core::mem::transmute(self.value() as u8) }
+  fn from(value: bool) -> Self {
+    let bits = value as u64;
+    let bits = bits | ty::BOOL;
+    unsafe { Value::from_bits(bits) }
   }
+}
 
-  #[inline(always)]
-  pub fn to_none(self) -> Option<()> {
-    if self.is_none() {
-      Some(())
+impl TryFrom<Value> for bool {
+  type Error = ();
+
+  fn try_from(value: Value) -> Result<bool, Self::Error> {
+    if value.is::<bool>() {
+      Ok(value.unmask() != 0)
     } else {
-      None
+      Err(())
     }
   }
+}
 
-  /// # Safety
-  /// `self.is_none()` must be `true`
-  #[allow(clippy::unused_unit)]
-  #[inline(always)]
-  pub unsafe fn to_none_unchecked(self) -> () {
-    debug_assert!(self.is_none());
-    ()
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct nil;
+
+impl From<()> for nil {
+  #[inline]
+  fn from(_: ()) -> Self {
+    nil {}
   }
+}
 
-  #[inline(always)]
-  pub fn to_object(self) -> Option<Any> {
-    if self.is_object() {
-      Some(unsafe { self.to_object_unchecked() })
+impl From<nil> for () {
+  #[inline]
+  fn from(_: nil) -> Self {}
+}
+
+impl From<nil> for Value {
+  #[inline]
+  fn from(_: nil) -> Self {
+    let bits = ty::NIL;
+    unsafe { Value::from_bits(bits) }
+  }
+}
+
+impl TryFrom<Value> for nil {
+  type Error = ();
+
+  #[inline]
+  fn try_from(value: Value) -> Result<nil, Self::Error> {
+    if value.is::<nil>() {
+      Ok(nil {})
     } else {
-      None
+      Err(())
     }
   }
+}
 
-  /// # Safety
-  /// `self.is_object()` must be `true`
-  #[inline(always)]
-  pub unsafe fn to_object_unchecked(self) -> Any {
-    debug_assert!(self.is_object());
-    unsafe { Any::from_addr(self.value() as usize) }
+impl From<Any> for Value {
+  #[inline]
+  fn from(value: Any) -> Self {
+    let bits = value.addr() as u64;
+    let bits = (bits & mask::VALUE) | ty::OBJECT;
+    unsafe { Value::from_bits(bits) }
+  }
+}
+
+impl TryFrom<Value> for Any {
+  type Error = ();
+
+  #[inline]
+  fn try_from(value: Value) -> Result<Any, Self::Error> {
+    if value.is::<Any>() {
+      Ok(unsafe { Any::from_addr(value.unmask() as usize) })
+    } else {
+      Err(())
+    }
+  }
+}
+
+impl<T: Object + 'static> From<Ref<T>> for Value {
+  #[inline]
+  fn from(value: Ref<T>) -> Self {
+    <Value as From<Any>>::from(value.erase())
+  }
+}
+
+impl<T: Object + 'static> TryFrom<Value> for Ref<T> {
+  type Error = ();
+
+  #[inline]
+  fn try_from(value: Value) -> Result<Self, Self::Error> {
+    <Any as TryFrom<Value>>::try_from(value).and_then(|o| o.cast().ok_or(()))
   }
 }
 
 impl Debug for Value {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    if self.is_float() {
-      f.debug_tuple("Float")
-        .field(&unsafe { self.to_float_unchecked() })
-        .finish()
-    } else if self.is_int() {
-      f.debug_tuple("Int")
-        .field(&unsafe { self.to_int_unchecked() })
-        .finish()
-    } else if self.is_bool() {
-      f.debug_tuple("Bool")
-        .field(&unsafe { self.to_bool_unchecked() })
-        .finish()
-    } else if self.is_none() {
-      f.debug_tuple("None").finish()
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    if let Some(v) = self.cast::<f64>() {
+      Debug::fmt(&v, f)
+    } else if let Some(v) = self.cast::<i32>() {
+      Debug::fmt(&v, f)
+    } else if let Some(v) = self.cast::<bool>() {
+      Debug::fmt(&v, f)
+    } else if self.is::<nil>() {
+      f.debug_tuple("Nil").finish()
     } else {
-      Debug::fmt(&unsafe { self.to_object_unchecked() }, f)
+      let v = unsafe { self.coerce::<Any>() };
+      Debug::fmt(&v, f)
     }
   }
 }
 
 impl Display for Value {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    if self.is_float() {
-      write!(f, "{}", unsafe { self.to_float_unchecked() })
-    } else if self.is_int() {
-      write!(f, "{}", unsafe { self.to_int_unchecked() })
-    } else if self.is_bool() {
-      write!(f, "{}", unsafe { self.to_bool_unchecked() })
-    } else if self.is_none() {
-      write!(f, "()")
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    if let Some(v) = self.cast::<f64>() {
+      Display::fmt(&v, f)
+    } else if let Some(v) = self.cast::<i32>() {
+      Display::fmt(&v, f)
+    } else if let Some(v) = self.cast::<bool>() {
+      write!(f, "{v}")
+    } else if self.is::<nil>() {
+      write!(f, "nil")
     } else {
-      Display::fmt(&unsafe { self.to_object_unchecked() }, f)
+      Display::fmt(&unsafe { self.coerce::<Any>() }, f)
     }
   }
 }
 
+mod private {
+  pub trait Sealed {}
+}
+
 #[cfg(test)]
 mod tests {
-  use std::fmt::Display;
+  use core::fmt::Display;
 
   use super::*;
   use crate::gc::{Gc, Object};
 
   #[test]
   fn to_int() {
-    let v = 0i32;
-    let v = Value::int(v);
-    let v = v.to_int().unwrap();
+    let v = Value::new(0i32);
+    assert!(v.is::<i32>());
+    let v = v.cast::<i32>().unwrap();
     assert_eq!(v, 0i32);
   }
 
   #[test]
   fn to_float() {
-    let v = 0.1f64;
-    let v = Value::float(v);
-    let v = v.to_float().unwrap();
+    let v = Value::new(0.1f64);
+    assert!(v.is::<f64>());
+    let v = v.cast::<f64>().unwrap();
     assert_eq!(v, 0.1f64);
   }
 
   #[test]
   fn to_bool() {
-    let v = true;
-    let v = Value::bool(v);
-    let v = v.to_bool().unwrap();
+    let v = Value::new(true);
+    assert!(v.is::<bool>());
+    let v = v.cast::<bool>().unwrap();
     assert!(v);
   }
 
   #[test]
-  fn to_none() {
-    let v = Value::none();
-    v.to_none().unwrap();
+  fn to_nil() {
+    let v = Value::new(nil);
+    assert!(v.is::<nil>());
+    v.cast::<nil>().unwrap();
   }
 
   #[test]
   fn to_obj() {
     #[derive(Debug)]
-    struct T {
+    struct Foo {
       n: i32,
     }
-    impl Object for T {}
-    impl Display for T {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl Object for Foo {}
+    impl Display for Foo {
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "T")
       }
     }
 
     let gc = Gc::default();
-    let v = gc.alloc(T { n: i16::MAX as i32 }).erase();
-    let v = Value::object(v);
-    let v = v.to_object().unwrap();
-    let v = v.cast::<T>().unwrap();
-    assert_eq!(v.n, i16::MAX as i32);
+    let v = gc.try_alloc(Foo { n: i16::MAX as i32 }).unwrap().erase();
+    let v = Value::new(v);
+    assert!(v.is::<Any>());
+    assert!(v.is::<Ref<Foo>>());
+    {
+      let v = v.cast::<Any>().unwrap();
+      let v = v.cast::<Foo>().unwrap();
+      assert_eq!(v.n, i16::MAX as i32);
+    }
+    {
+      let v = v.cast::<Ref<Foo>>().unwrap();
+      assert_eq!(v.n, i16::MAX as i32);
+    }
   }
 }

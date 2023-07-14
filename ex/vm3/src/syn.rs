@@ -1,4 +1,5 @@
-use std::fmt::Display;
+use alloc::string::String;
+use core::fmt::Display;
 
 use bumpalo::collections::Vec;
 use bumpalo::vec;
@@ -6,6 +7,7 @@ use TokenKind::*;
 
 use super::ast::*;
 use super::lex::*;
+use super::Arena;
 
 macro_rules! err {
   ($self:ident, @$span:expr, $($args:tt)*) => {
@@ -22,14 +24,12 @@ macro_rules! err {
   };
 }
 
-pub type Arena = bumpalo::Bump;
-
 pub struct Parser<'arena, 'src> {
   arena: &'arena Arena,
   lex: Lexer<'src>,
 }
 
-pub type Result<T, E = String> = std::result::Result<T, E>;
+pub type Result<T, E = alloc::string::String> = core::result::Result<T, E>;
 
 impl<'arena, 'src> Parser<'arena, 'src> {
   pub fn new(arena: &'arena Arena, lex: Lexer<'src>) -> Self {
@@ -49,7 +49,7 @@ impl<'arena, 'src> Parser<'arena, 'src> {
   }
 
   fn error(&self, message: impl Display, span: impl Into<Span>) -> String {
-    use std::fmt::Write;
+    use core::fmt::Write;
 
     let span: Span = span.into();
     let src = self.lex.src();
@@ -762,7 +762,7 @@ mod expr {
 }
 
 fn num_digits(v: usize) -> usize {
-  use std::iter::successors;
+  use core::iter::successors;
 
   successors(Some(v), |&n| (n >= 10).then_some(n / 10)).count()
 }

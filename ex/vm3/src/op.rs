@@ -1,3 +1,5 @@
+pub mod emit;
+
 mod ux;
 use ux::u24;
 
