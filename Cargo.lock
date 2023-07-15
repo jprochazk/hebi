@@ -1834,6 +1834,7 @@ dependencies = [
  "indoc",
  "insta",
  "logos",
+ "paste",
  "rustc-hash",
 ]
 

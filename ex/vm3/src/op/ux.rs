@@ -2,6 +2,20 @@
 #[derive(Clone, Copy)]
 pub struct u24([u8; 3]);
 
+impl From<u8> for u24 {
+  fn from(value: u8) -> Self {
+    Self([value, 0, 0])
+  }
+}
+
+impl From<u16> for u24 {
+  fn from(value: u16) -> Self {
+    let mut bytes = [0; 3];
+    bytes.copy_from_slice(&value.to_le_bytes()[0..=1]);
+    u24(bytes)
+  }
+}
+
 impl TryFrom<u32> for u24 {
   type Error = ();
 

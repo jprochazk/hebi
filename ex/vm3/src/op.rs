@@ -15,7 +15,7 @@ codegen notes:
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Reg<T: Into<usize>>(pub T);
+pub struct Reg<T>(pub T);
 
 impl<T: Into<usize>> Reg<T> {
   pub fn wide(self) -> usize {
@@ -25,7 +25,7 @@ impl<T: Into<usize>> Reg<T> {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Const<T: Into<usize>>(pub T);
+pub struct Const<T>(pub T);
 
 impl<T: Into<usize>> Const<T> {
   pub fn wide(self) -> usize {
@@ -35,9 +35,9 @@ impl<T: Into<usize>> Const<T> {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MVar<T: Into<usize>>(pub T);
+pub struct Offset<T>(pub T);
 
-impl<T: Into<usize>> MVar<T> {
+impl<T: Into<usize>> Offset<T> {
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -45,7 +45,27 @@ impl<T: Into<usize>> MVar<T> {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Smi<T: Into<i32>>(pub T);
+pub struct Count<T>(pub T);
+
+impl<T: Into<usize>> Count<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Mvar<T>(pub T);
+
+impl<T: Into<usize>> Mvar<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Smi<T>(pub T);
 
 impl<T: Into<i32>> Smi<T> {
   pub fn wide(self) -> i32 {
@@ -57,7 +77,7 @@ impl<T: Into<i32>> Smi<T> {
 #[derive(Clone, Copy)]
 pub enum Op {
   Nop,
-  Move {
+  Mov {
     src: Reg<u8>,
     dst: Reg<u8>,
   },
@@ -73,13 +93,13 @@ pub enum Op {
     src: Reg<u8>,
     idx: Const<u16>,
   },
-  LoadMVar {
+  LoadMvar {
     dst: Reg<u8>,
-    idx: MVar<u16>,
+    idx: Mvar<u16>,
   },
-  SetMVar {
+  SetMvar {
     src: Reg<u8>,
-    idx: MVar<u16>,
+    idx: Mvar<u16>,
   },
   LoadGlobal {
     dst: Reg<u8>,
@@ -161,11 +181,6 @@ pub enum Op {
     dst: Reg<u8>,
     desc: Const<u16>,
   },
-  MakeListSmall {
-    start: Reg<u8>,
-    count: u8,
-    dst: Reg<u8>,
-  },
   MakeListEmpty {
     dst: Reg<u8>,
   },
@@ -173,28 +188,23 @@ pub enum Op {
     dst: Reg<u8>,
     desc: Const<u16>,
   },
-  MakeTableSmall {
-    start: Reg<u8>,
-    count: u8,
-    dst: Reg<u8>,
-  },
   MakeTableEmpty {
     dst: Reg<u8>,
   },
   Jump {
-    offset: u24,
+    offset: Offset<u24>,
   },
   JumpConst {
     offset: Const<u24>,
   },
   JumpLoop {
-    offset: u24,
+    offset: Offset<u24>,
   },
   JumpLoopConst {
     offset: Const<u24>,
   },
   JumpIfFalse {
-    offset: u24,
+    offset: Offset<u24>,
   },
   JumpIfFalseConst {
     offset: Const<u24>,
@@ -272,7 +282,7 @@ pub enum Op {
   },
   Call {
     func: Reg<u8>,
-    count: u8,
+    count: Count<u8>,
   },
   Call0 {
     func: Reg<u8>,
@@ -282,12 +292,15 @@ pub enum Op {
     path: Const<u16>,
   },
   FinalizeModule,
-  Return {
+  Ret {
     val: Reg<u8>,
   },
-  Yield {
+  Yld {
     val: Reg<u8>,
   },
 }
 
 const _: () = static_assert_size::<Op>(4, "expected a size of 4 bytes");
+
+#[rustfmt::skip]
+pub mod asm;
