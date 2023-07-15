@@ -1,4 +1,5 @@
 use core::fmt::{Debug, Display};
+use core::mem::size_of;
 
 pub struct DelegateDebugToDisplay<T: Display>(pub T);
 
@@ -8,10 +9,20 @@ impl<T: Display> Debug for DelegateDebugToDisplay<T> {
   }
 }
 
-macro_rules! static_assert_size {
-  ($T:ty, $U:ty) => {
-    const _: () = {
-      ::core::mem::transmute::<$T, $U>;
-    };
-  };
+#[track_caller]
+#[inline(never)]
+#[cold]
+pub const fn static_assert_size<T: Sized>(bytes: usize, msg: &'static str) {
+  if size_of::<T>() != bytes {
+    panic!("{}", msg)
+  }
+}
+
+#[track_caller]
+#[inline(never)]
+#[cold]
+pub const fn static_assert(v: bool, msg: &'static str) {
+  if !v {
+    panic!("{}", msg);
+  }
 }

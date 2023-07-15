@@ -3,6 +3,8 @@ pub mod emit;
 mod ux;
 use ux::u24;
 
+use crate::util::static_assert_size;
+
 /*
 codegen notes:
 - for constant indices stored as `u8`, the constant can
@@ -288,4 +290,4 @@ pub enum Op {
   },
 }
 
-static_assert_size!(Op, u32);
+const _: () = static_assert_size::<Op>(4, "expected a size of 4 bytes");

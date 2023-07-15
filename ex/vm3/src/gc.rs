@@ -508,6 +508,8 @@ mod tests {
   use alloc::format;
   use core::fmt::{Debug, Display};
 
+  use crate::util::static_assert;
+
   use super::*;
 
   #[test]
@@ -653,14 +655,8 @@ mod tests {
       }
     }
 
-    const fn static_assert(v: bool) {
-      if !v {
-        panic!("assertion failed");
-      }
-    }
-
-    const _: () = static_assert(!NoDropPod::NEEDS_DROP);
-    const _: () = static_assert(PropagateDrop::NEEDS_DROP);
-    const _: () = static_assert(!ForceNoDrop::NEEDS_DROP);
+    const _: () = static_assert(!NoDropPod::NEEDS_DROP, "failed drop check");
+    const _: () = static_assert(PropagateDrop::NEEDS_DROP, "failed drop check");
+    const _: () = static_assert(!ForceNoDrop::NEEDS_DROP, "failed drop check");
   }
 }
