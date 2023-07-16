@@ -6,23 +6,23 @@ input_file: ex/vm3/tests/input/vars.h2
 [
     Stmt {
         span: Span {
-            start: 15,
-            end: 25,
+            start: 58,
+            end: 68,
         },
         kind: Let(
             Let {
                 name: Ident {
                     span: Span {
-                        start: 19,
-                        end: 20,
+                        start: 62,
+                        end: 63,
                     },
                     lexeme: "a",
                 },
                 value: Some(
                     Expr {
                         span: Span {
-                            start: 23,
-                            end: 25,
+                            start: 66,
+                            end: 68,
                         },
                         kind: Lit(
                             Int(
@@ -36,23 +36,23 @@ input_file: ex/vm3/tests/input/vars.h2
     },
     Stmt {
         span: Span {
-            start: 26,
-            end: 36,
+            start: 69,
+            end: 79,
         },
         kind: Let(
             Let {
                 name: Ident {
                     span: Span {
-                        start: 30,
-                        end: 31,
+                        start: 73,
+                        end: 74,
                     },
                     lexeme: "b",
                 },
                 value: Some(
                     Expr {
                         span: Span {
-                            start: 34,
-                            end: 36,
+                            start: 77,
+                            end: 79,
                         },
                         kind: Lit(
                             Int(
@@ -66,30 +66,30 @@ input_file: ex/vm3/tests/input/vars.h2
     },
     Stmt {
         span: Span {
-            start: 37,
-            end: 46,
+            start: 80,
+            end: 89,
         },
         kind: Let(
             Let {
                 name: Ident {
                     span: Span {
-                        start: 41,
-                        end: 42,
+                        start: 84,
+                        end: 85,
                     },
                     lexeme: "c",
                 },
                 value: Some(
                     Expr {
                         span: Span {
-                            start: 45,
-                            end: 46,
+                            start: 88,
+                            end: 89,
                         },
                         kind: GetVar(
                             GetVar {
                                 name: Ident {
                                     span: Span {
-                                        start: 45,
-                                        end: 46,
+                                        start: 88,
+                                        end: 89,
                                     },
                                     lexeme: "b",
                                 },
@@ -102,30 +102,30 @@ input_file: ex/vm3/tests/input/vars.h2
     },
     Stmt {
         span: Span {
-            start: 47,
-            end: 56,
+            start: 90,
+            end: 99,
         },
         kind: Let(
             Let {
                 name: Ident {
                     span: Span {
-                        start: 51,
-                        end: 52,
+                        start: 94,
+                        end: 95,
                     },
                     lexeme: "a",
                 },
                 value: Some(
                     Expr {
                         span: Span {
-                            start: 55,
-                            end: 56,
+                            start: 98,
+                            end: 99,
                         },
                         kind: GetVar(
                             GetVar {
                                 name: Ident {
                                     span: Span {
-                                        start: 55,
-                                        end: 56,
+                                        start: 98,
+                                        end: 99,
                                     },
                                     lexeme: "c",
                                 },
@@ -138,37 +138,37 @@ input_file: ex/vm3/tests/input/vars.h2
     },
     Stmt {
         span: Span {
-            start: 58,
-            end: 123,
+            start: 101,
+            end: 166,
         },
         kind: Expr(
             Expr {
                 span: Span {
-                    start: 58,
-                    end: 123,
+                    start: 101,
+                    end: 166,
                 },
                 kind: Block(
                     Block {
                         body: [
                             Stmt {
                                 span: Span {
-                                    start: 74,
-                                    end: 84,
+                                    start: 117,
+                                    end: 127,
                                 },
                                 kind: Let(
                                     Let {
                                         name: Ident {
                                             span: Span {
-                                                start: 78,
-                                                end: 79,
+                                                start: 121,
+                                                end: 122,
                                             },
                                             lexeme: "a",
                                         },
                                         value: Some(
                                             Expr {
                                                 span: Span {
-                                                    start: 82,
-                                                    end: 84,
+                                                    start: 125,
+                                                    end: 127,
                                                 },
                                                 kind: Lit(
                                                     Int(
@@ -182,23 +182,23 @@ input_file: ex/vm3/tests/input/vars.h2
                             },
                             Stmt {
                                 span: Span {
-                                    start: 87,
-                                    end: 97,
+                                    start: 130,
+                                    end: 140,
                                 },
                                 kind: Let(
                                     Let {
                                         name: Ident {
                                             span: Span {
-                                                start: 91,
-                                                end: 92,
+                                                start: 134,
+                                                end: 135,
                                             },
                                             lexeme: "b",
                                         },
                                         value: Some(
                                             Expr {
                                                 span: Span {
-                                                    start: 95,
-                                                    end: 97,
+                                                    start: 138,
+                                                    end: 140,
                                                 },
                                                 kind: Lit(
                                                     Int(
@@ -212,30 +212,30 @@ input_file: ex/vm3/tests/input/vars.h2
                             },
                             Stmt {
                                 span: Span {
-                                    start: 100,
-                                    end: 109,
+                                    start: 143,
+                                    end: 152,
                                 },
                                 kind: Let(
                                     Let {
                                         name: Ident {
                                             span: Span {
-                                                start: 104,
-                                                end: 105,
+                                                start: 147,
+                                                end: 148,
                                             },
                                             lexeme: "c",
                                         },
                                         value: Some(
                                             Expr {
                                                 span: Span {
-                                                    start: 108,
-                                                    end: 109,
+                                                    start: 151,
+                                                    end: 152,
                                                 },
                                                 kind: GetVar(
                                                     GetVar {
                                                         name: Ident {
                                                             span: Span {
-                                                                start: 108,
-                                                                end: 109,
+                                                                start: 151,
+                                                                end: 152,
                                                             },
                                                             lexeme: "b",
                                                         },
@@ -248,30 +248,30 @@ input_file: ex/vm3/tests/input/vars.h2
                             },
                             Stmt {
                                 span: Span {
-                                    start: 112,
-                                    end: 121,
+                                    start: 155,
+                                    end: 164,
                                 },
                                 kind: Let(
                                     Let {
                                         name: Ident {
                                             span: Span {
-                                                start: 116,
-                                                end: 117,
+                                                start: 159,
+                                                end: 160,
                                             },
                                             lexeme: "a",
                                         },
                                         value: Some(
                                             Expr {
                                                 span: Span {
-                                                    start: 120,
-                                                    end: 121,
+                                                    start: 163,
+                                                    end: 164,
                                                 },
                                                 kind: GetVar(
                                                     GetVar {
                                                         name: Ident {
                                                             span: Span {
-                                                                start: 120,
-                                                                end: 121,
+                                                                start: 163,
+                                                                end: 164,
                                                             },
                                                             lexeme: "c",
                                                         },

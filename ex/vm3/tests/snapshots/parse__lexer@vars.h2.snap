@@ -9,8 +9,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 15,
-                end: 18,
+                start: 58,
+                end: 61,
             },
         },
     ),
@@ -19,8 +19,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 19,
-                end: 20,
+                start: 62,
+                end: 63,
             },
         },
     ),
@@ -29,8 +29,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 21,
-                end: 22,
+                start: 64,
+                end: 65,
             },
         },
     ),
@@ -39,8 +39,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 23,
-                end: 25,
+                start: 66,
+                end: 68,
             },
         },
     ),
@@ -49,8 +49,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 26,
-                end: 29,
+                start: 69,
+                end: 72,
             },
         },
     ),
@@ -59,8 +59,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 30,
-                end: 31,
+                start: 73,
+                end: 74,
             },
         },
     ),
@@ -69,8 +69,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 32,
-                end: 33,
+                start: 75,
+                end: 76,
             },
         },
     ),
@@ -79,8 +79,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 34,
-                end: 36,
+                start: 77,
+                end: 79,
             },
         },
     ),
@@ -89,8 +89,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 37,
-                end: 40,
+                start: 80,
+                end: 83,
             },
         },
     ),
@@ -99,8 +99,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 41,
-                end: 42,
+                start: 84,
+                end: 85,
             },
         },
     ),
@@ -109,8 +109,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 43,
-                end: 44,
+                start: 86,
+                end: 87,
             },
         },
     ),
@@ -119,8 +119,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 45,
-                end: 46,
+                start: 88,
+                end: 89,
             },
         },
     ),
@@ -129,8 +129,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 47,
-                end: 50,
+                start: 90,
+                end: 93,
             },
         },
     ),
@@ -139,8 +139,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 51,
-                end: 52,
+                start: 94,
+                end: 95,
             },
         },
     ),
@@ -149,8 +149,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 53,
-                end: 54,
+                start: 96,
+                end: 97,
             },
         },
     ),
@@ -159,8 +159,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 55,
-                end: 56,
+                start: 98,
+                end: 99,
             },
         },
     ),
@@ -169,8 +169,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: BrkCurlyL,
             span: Span {
-                start: 58,
-                end: 59,
+                start: 101,
+                end: 102,
             },
         },
     ),
@@ -179,8 +179,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 74,
-                end: 77,
+                start: 117,
+                end: 120,
             },
         },
     ),
@@ -189,8 +189,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 78,
-                end: 79,
+                start: 121,
+                end: 122,
             },
         },
     ),
@@ -199,8 +199,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 80,
-                end: 81,
+                start: 123,
+                end: 124,
             },
         },
     ),
@@ -209,8 +209,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 82,
-                end: 84,
+                start: 125,
+                end: 127,
             },
         },
     ),
@@ -219,8 +219,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 87,
-                end: 90,
+                start: 130,
+                end: 133,
             },
         },
     ),
@@ -229,8 +229,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 91,
-                end: 92,
+                start: 134,
+                end: 135,
             },
         },
     ),
@@ -239,8 +239,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 93,
-                end: 94,
+                start: 136,
+                end: 137,
             },
         },
     ),
@@ -249,8 +249,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 95,
-                end: 97,
+                start: 138,
+                end: 140,
             },
         },
     ),
@@ -259,8 +259,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 100,
-                end: 103,
+                start: 143,
+                end: 146,
             },
         },
     ),
@@ -269,8 +269,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 104,
-                end: 105,
+                start: 147,
+                end: 148,
             },
         },
     ),
@@ -279,8 +279,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 106,
-                end: 107,
+                start: 149,
+                end: 150,
             },
         },
     ),
@@ -289,8 +289,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 108,
-                end: 109,
+                start: 151,
+                end: 152,
             },
         },
     ),
@@ -299,8 +299,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: KwLet,
             span: Span {
-                start: 112,
-                end: 115,
+                start: 155,
+                end: 158,
             },
         },
     ),
@@ -309,8 +309,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 116,
-                end: 117,
+                start: 159,
+                end: 160,
             },
         },
     ),
@@ -319,8 +319,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 118,
-                end: 119,
+                start: 161,
+                end: 162,
             },
         },
     ),
@@ -329,8 +329,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 120,
-                end: 121,
+                start: 163,
+                end: 164,
             },
         },
     ),
@@ -339,8 +339,8 @@ input_file: ex/vm3/tests/input/vars.h2
         Token {
             kind: BrkCurlyR,
             span: Span {
-                start: 122,
-                end: 123,
+                start: 165,
+                end: 166,
             },
         },
     ),
