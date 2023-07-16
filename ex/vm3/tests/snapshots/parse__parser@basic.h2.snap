@@ -1873,7 +1873,7 @@ input_file: ex/vm3/tests/input/basic.h2
     Stmt {
         span: Span {
             start: 733,
-            end: 949,
+            end: 947,
         },
         kind: Func(
             Func {
@@ -1892,8 +1892,8 @@ input_file: ex/vm3/tests/input/basic.h2
                     last: Some(
                         Expr {
                             span: Span {
-                                start: 946,
-                                end: 947,
+                                start: 944,
+                                end: 945,
                             },
                             kind: Lit(
                                 Record(
@@ -1908,8 +1908,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                             },
                                             Expr {
                                                 span: Span {
-                                                    start: 941,
-                                                    end: 942,
+                                                    start: 939,
+                                                    end: 940,
                                                 },
                                                 kind: Lit(
                                                     List(
@@ -1961,16 +1961,16 @@ input_file: ex/vm3/tests/input/basic.h2
                                                             Expr {
                                                                 span: Span {
                                                                     start: 819,
-                                                                    end: 823,
+                                                                    end: 822,
                                                                 },
                                                                 kind: Lit(
-                                                                    None,
+                                                                    Nil,
                                                                 ),
                                                             },
                                                             Expr {
                                                                 span: Span {
-                                                                    start: 831,
-                                                                    end: 836,
+                                                                    start: 830,
+                                                                    end: 835,
                                                                 },
                                                                 kind: Lit(
                                                                     String(
@@ -1980,16 +1980,16 @@ input_file: ex/vm3/tests/input/basic.h2
                                                             },
                                                             Expr {
                                                                 span: Span {
-                                                                    start: 934,
-                                                                    end: 935,
+                                                                    start: 932,
+                                                                    end: 933,
                                                                 },
                                                                 kind: Lit(
                                                                     Tuple(
                                                                         [
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 855,
-                                                                                    end: 856,
+                                                                                    start: 854,
+                                                                                    end: 855,
                                                                                 },
                                                                                 kind: Lit(
                                                                                     Int(
@@ -1999,8 +1999,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                                                             },
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 866,
-                                                                                    end: 869,
+                                                                                    start: 865,
+                                                                                    end: 868,
                                                                                 },
                                                                                 kind: Lit(
                                                                                     Float(
@@ -2010,8 +2010,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                                                             },
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 879,
-                                                                                    end: 883,
+                                                                                    start: 878,
+                                                                                    end: 882,
                                                                                 },
                                                                                 kind: Lit(
                                                                                     Bool(
@@ -2021,8 +2021,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                                                             },
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 893,
-                                                                                    end: 898,
+                                                                                    start: 892,
+                                                                                    end: 897,
                                                                                 },
                                                                                 kind: Lit(
                                                                                     Bool(
@@ -2032,17 +2032,17 @@ input_file: ex/vm3/tests/input/basic.h2
                                                                             },
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 908,
-                                                                                    end: 912,
+                                                                                    start: 907,
+                                                                                    end: 910,
                                                                                 },
                                                                                 kind: Lit(
-                                                                                    None,
+                                                                                    Nil,
                                                                                 ),
                                                                             },
                                                                             Expr {
                                                                                 span: Span {
-                                                                                    start: 922,
-                                                                                    end: 927,
+                                                                                    start: 920,
+                                                                                    end: 925,
                                                                                 },
                                                                                 kind: Lit(
                                                                                     String(
@@ -2070,51 +2070,51 @@ input_file: ex/vm3/tests/input/basic.h2
     },
     Stmt {
         span: Span {
-            start: 951,
-            end: 988,
+            start: 949,
+            end: 986,
         },
         kind: Let(
             Let {
                 name: Ident {
                     span: Span {
-                        start: 955,
-                        end: 962,
+                        start: 953,
+                        end: 960,
                     },
                     lexeme: "postfix",
                 },
                 value: Some(
                     Expr {
                         span: Span {
-                            start: 967,
-                            end: 988,
+                            start: 965,
+                            end: 986,
                         },
                         kind: GetIndex(
                             GetIndex {
                                 target: Expr {
                                     span: Span {
-                                        start: 967,
-                                        end: 985,
+                                        start: 965,
+                                        end: 983,
                                     },
                                     kind: GetField(
                                         GetField {
                                             target: Expr {
                                                 span: Span {
-                                                    start: 967,
-                                                    end: 980,
+                                                    start: 965,
+                                                    end: 978,
                                                 },
                                                 kind: Call(
                                                     Call {
                                                         target: Expr {
                                                             span: Span {
-                                                                start: 967,
-                                                                end: 978,
+                                                                start: 965,
+                                                                end: 976,
                                                             },
                                                             kind: GetVar(
                                                                 GetVar {
                                                                     name: Ident {
                                                                         span: Span {
-                                                                            start: 967,
-                                                                            end: 978,
+                                                                            start: 965,
+                                                                            end: 976,
                                                                         },
                                                                         lexeme: "make_record",
                                                                     },
@@ -2128,8 +2128,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                             key: Ident(
                                                 Ident {
                                                     span: Span {
-                                                        start: 981,
-                                                        end: 985,
+                                                        start: 979,
+                                                        end: 983,
                                                     },
                                                     lexeme: "list",
                                                 },
@@ -2139,8 +2139,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                 },
                                 index: Expr {
                                     span: Span {
-                                        start: 986,
-                                        end: 987,
+                                        start: 984,
+                                        end: 985,
                                     },
                                     kind: Lit(
                                         Int(
@@ -2157,42 +2157,42 @@ input_file: ex/vm3/tests/input/basic.h2
     },
     Stmt {
         span: Span {
-            start: 990,
-            end: 1024,
+            start: 988,
+            end: 1022,
         },
         kind: Expr(
             Expr {
                 span: Span {
-                    start: 990,
-                    end: 1024,
+                    start: 988,
+                    end: 1022,
                 },
                 kind: SetIndex(
                     SetIndex {
                         target: Expr {
                             span: Span {
-                                start: 990,
-                                end: 1008,
+                                start: 988,
+                                end: 1006,
                             },
                             kind: GetField(
                                 GetField {
                                     target: Expr {
                                         span: Span {
-                                            start: 990,
-                                            end: 1003,
+                                            start: 988,
+                                            end: 1001,
                                         },
                                         kind: Call(
                                             Call {
                                                 target: Expr {
                                                     span: Span {
-                                                        start: 990,
-                                                        end: 1001,
+                                                        start: 988,
+                                                        end: 999,
                                                     },
                                                     kind: GetVar(
                                                         GetVar {
                                                             name: Ident {
                                                                 span: Span {
-                                                                    start: 990,
-                                                                    end: 1001,
+                                                                    start: 988,
+                                                                    end: 999,
                                                                 },
                                                                 lexeme: "make_record",
                                                             },
@@ -2206,8 +2206,8 @@ input_file: ex/vm3/tests/input/basic.h2
                                     key: Ident(
                                         Ident {
                                             span: Span {
-                                                start: 1004,
-                                                end: 1008,
+                                                start: 1002,
+                                                end: 1006,
                                             },
                                             lexeme: "list",
                                         },
@@ -2217,8 +2217,8 @@ input_file: ex/vm3/tests/input/basic.h2
                         },
                         index: Expr {
                             span: Span {
-                                start: 1009,
-                                end: 1010,
+                                start: 1007,
+                                end: 1008,
                             },
                             kind: Lit(
                                 Int(
@@ -2228,16 +2228,16 @@ input_file: ex/vm3/tests/input/basic.h2
                         },
                         value: Expr {
                             span: Span {
-                                start: 1023,
-                                end: 1024,
+                                start: 1021,
+                                end: 1022,
                             },
                             kind: Lit(
                                 Tuple(
                                     [
                                         Expr {
                                             span: Span {
-                                                start: 1016,
-                                                end: 1023,
+                                                start: 1014,
+                                                end: 1021,
                                             },
                                             kind: Lit(
                                                 String(

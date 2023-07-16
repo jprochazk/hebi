@@ -1,22 +1,5 @@
-/*
-TokenKind::KwFn
-| TokenKind::KwIf
-| TokenKind::BrkCurlyL
-| TokenKind::OpMinus
-| TokenKind::OpBang
-| TokenKind::LitNone
-| TokenKind::LitInt
-| TokenKind::LitFloat
-| TokenKind::LitBool
-| TokenKind::LitString
-| TokenKind::LitRecord
-| TokenKind::LitList
-| TokenKind::LitTuple
-| TokenKind::TokIdent
-*/
-
 fn _0 { return }
-fn _1 { return none }
+fn _1 { return nil }
 fn _2 { return 0 }
 fn _3 { return 0.1 }
 fn _4 { return true }

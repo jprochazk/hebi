@@ -1,6 +1,8 @@
 pub mod emit;
 
 mod ux;
+use core::fmt::Display;
+
 use ux::u24;
 
 use crate::util::static_assert_size;
@@ -12,66 +14,6 @@ codegen notes:
   `LoadConst` stores the constant index as `u16`, allowing
   a much greater range
 */
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Reg<T>(pub T);
-
-impl<T: Into<usize>> Reg<T> {
-  pub fn wide(self) -> usize {
-    self.0.into()
-  }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Const<T>(pub T);
-
-impl<T: Into<usize>> Const<T> {
-  pub fn wide(self) -> usize {
-    self.0.into()
-  }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Offset<T>(pub T);
-
-impl<T: Into<usize>> Offset<T> {
-  pub fn wide(self) -> usize {
-    self.0.into()
-  }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Count<T>(pub T);
-
-impl<T: Into<usize>> Count<T> {
-  pub fn wide(self) -> usize {
-    self.0.into()
-  }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Mvar<T>(pub T);
-
-impl<T: Into<usize>> Mvar<T> {
-  pub fn wide(self) -> usize {
-    self.0.into()
-  }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Smi<T>(pub T);
-
-impl<T: Into<i32>> Smi<T> {
-  pub fn wide(self) -> i32 {
-    self.0.into()
-  }
-}
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
@@ -87,11 +29,11 @@ pub enum Op {
   },
   LoadUpvalue {
     dst: Reg<u8>,
-    idx: Const<u16>,
+    idx: Upvalue<u16>,
   },
   SetUpvalue {
     src: Reg<u8>,
-    idx: Const<u16>,
+    idx: Upvalue<u16>,
   },
   LoadMvar {
     dst: Reg<u8>,
@@ -106,53 +48,53 @@ pub enum Op {
     name: Const<u16>,
   },
   SetGlobal {
-    reg: Reg<u8>,
+    src: Reg<u8>,
     name: Const<u16>,
   },
   LoadFieldReg {
     obj: Reg<u8>,
     name: Reg<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   LoadFieldConst {
     obj: Reg<u8>,
     name: Const<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   LoadFieldOptReg {
     obj: Reg<u8>,
     name: Reg<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   LoadFieldOptConst {
     obj: Reg<u8>,
     name: Const<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   SetField {
     obj: Reg<u8>,
     name: Reg<u8>,
-    reg: Reg<u8>,
+    src: Reg<u8>,
   },
   LoadIndex {
     obj: Reg<u8>,
     key: Reg<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   LoadIndexOpt {
     obj: Reg<u8>,
     key: Reg<u8>,
-    reg: Reg<u8>,
+    dst: Reg<u8>,
   },
   SetIndex {
     obj: Reg<u8>,
     key: Reg<u8>,
-    reg: Reg<u8>,
+    src: Reg<u8>,
   },
   LoadSuper {
     dst: Reg<u8>,
   },
-  LoadNone {
+  LoadNil {
     dst: Reg<u8>,
   },
   LoadTrue {
@@ -301,6 +243,118 @@ pub enum Op {
 }
 
 const _: () = static_assert_size::<Op>(4, "expected a size of 4 bytes");
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Reg<T>(pub T);
+
+impl<T: Into<usize>> Reg<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Reg<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "%{}", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Const<T>(pub T);
+
+impl<T: Into<usize>> Const<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Const<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "[{}]", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Upvalue<T>(pub T);
+
+impl<T: Into<usize>> Upvalue<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Upvalue<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "^{}", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Offset<T>(pub T);
+
+impl<T: Into<usize>> Offset<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Offset<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "~{}", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Count<T>(pub T);
+
+impl<T: Into<usize>> Count<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Count<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "#{}", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Mvar<T>(pub T);
+
+impl<T: Into<usize>> Mvar<T> {
+  pub fn wide(self) -> usize {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Mvar<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "{{{}}}", self.0)
+  }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Smi<T>(pub T);
+
+impl<T: Into<i32>> Smi<T> {
+  pub fn wide(self) -> i32 {
+    self.0.into()
+  }
+}
+
+impl<T: Display> Display for Smi<T> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "{}", self.0)
+  }
+}
 
 #[rustfmt::skip]
 pub mod asm;

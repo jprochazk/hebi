@@ -68,14 +68,14 @@ fn make_record {
       1.0,
       true,
       false,
-      none,
+      nil,
       "str",
       #(
         0,
         1.0,
         true,
         false,
-        none,
+        nil,
         "str"
       ),
     ],

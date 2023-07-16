@@ -1,4 +1,4 @@
-use super::{u24, Const, Count, Mvar, Offset, Reg, Smi};
+use super::{u24, Const, Count, Mvar, Offset, Reg, Smi, Upvalue};
 
 macro_rules! _asm {
   ($inst:ident $(, $($arg:ident : $ty:ident<$g:ident>),*)?) => {
@@ -18,22 +18,22 @@ macro_rules! _asm {
 _asm!(nop);
 _asm!(mov,                   src: Reg<u8>, dst: Reg<u8>);
 _asm!(load_const,            dst: Reg<u8>, idx: Const<u16>);
-_asm!(load_upvalue,          dst: Reg<u8>, idx: Const<u16>);
-_asm!(set_upvalue,           src: Reg<u8>, idx: Const<u16>);
-_asm!(load_mvar,            dst: Reg<u8>, idx: Mvar<u16>);
-_asm!(set_mvar,             src: Reg<u8>, idx: Mvar<u16>);
+_asm!(load_upvalue,          dst: Reg<u8>, idx: Upvalue<u16>);
+_asm!(set_upvalue,           src: Reg<u8>, idx: Upvalue<u16>);
+_asm!(load_mvar,             dst: Reg<u8>, idx: Mvar<u16>);
+_asm!(set_mvar,              src: Reg<u8>, idx: Mvar<u16>);
 _asm!(load_global,           dst: Reg<u8>, name: Const<u16>);
-_asm!(set_global,            reg: Reg<u8>, name: Const<u16>);
-_asm!(load_field_reg,        obj: Reg<u8>, name: Reg<u8>, reg: Reg<u8>);
-_asm!(load_field_const,      obj: Reg<u8>, name: Const<u8>, reg: Reg<u8>);
-_asm!(load_field_opt_reg,    obj: Reg<u8>, name: Reg<u8>, reg: Reg<u8>);
-_asm!(load_field_opt_const,  obj: Reg<u8>, name: Const<u8>, reg: Reg<u8>);
-_asm!(set_field,             obj: Reg<u8>, name: Reg<u8>, reg: Reg<u8>);
-_asm!(load_index,            obj: Reg<u8>, key: Reg<u8>, reg: Reg<u8>);
-_asm!(load_index_opt,        obj: Reg<u8>, key: Reg<u8>, reg: Reg<u8>);
-_asm!(set_index,             obj: Reg<u8>, key: Reg<u8>, reg: Reg<u8>);
+_asm!(set_global,            src: Reg<u8>, name: Const<u16>);
+_asm!(load_field_reg,        obj: Reg<u8>, name: Reg<u8>, dst: Reg<u8>);
+_asm!(load_field_const,      obj: Reg<u8>, name: Const<u8>, dst: Reg<u8>);
+_asm!(load_field_opt_reg,    obj: Reg<u8>, name: Reg<u8>, dst: Reg<u8>);
+_asm!(load_field_opt_const,  obj: Reg<u8>, name: Const<u8>, dst: Reg<u8>);
+_asm!(set_field,             obj: Reg<u8>, name: Reg<u8>, src: Reg<u8>);
+_asm!(load_index,            obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8>);
+_asm!(load_index_opt,        obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8>);
+_asm!(set_index,             obj: Reg<u8>, key: Reg<u8>, src: Reg<u8>);
 _asm!(load_super,            dst: Reg<u8>);
-_asm!(load_none,             dst: Reg<u8>);
+_asm!(load_nil,              dst: Reg<u8>);
 _asm!(load_true,             dst: Reg<u8>);
 _asm!(load_false,            dst: Reg<u8>);
 _asm!(load_smi,              dst: Reg<u8>, value: Smi<i16>);

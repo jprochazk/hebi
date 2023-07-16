@@ -38,7 +38,6 @@
 //! NOTE: For the time being, the garbage collector uses a simpler tri-color
 //! incremental algorithm. The plan is to eventually implement the full
 //! quad-color algorithm.
-
 use core::alloc::Layout;
 use core::any::type_name;
 use core::cell::Cell;
@@ -143,6 +142,19 @@ impl Gc {
       slice::from_raw_parts(dst.as_ptr(), src.len())
     };
     Ok(unsafe { str::from_utf8_unchecked(dst) })
+  }
+
+  /// Allocate a slice on the GC heap.
+  ///
+  /// The contents of the slice will _not_ be dropped.
+  pub fn try_alloc_slice<'gc, T>(&'gc self, src: &[T]) -> Result<&'gc [T], AllocErr> {
+    let dst = self.heap.try_alloc_layout(Layout::for_value(src))?;
+    let dst = dst.cast::<T>();
+    let dst = unsafe {
+      copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
+      slice::from_raw_parts(dst.as_ptr(), src.len())
+    };
+    Ok(dst)
   }
 }
 
@@ -505,12 +517,11 @@ unsafe impl<'gc> Allocator for Alloc<'gc> {
 
 #[cfg(test)]
 mod tests {
-  use alloc::format;
   use core::fmt::{Debug, Display};
 
-  use crate::util::static_assert;
-
   use super::*;
+  use crate::alloc::format;
+  use crate::util::static_assert;
 
   #[test]
   fn type_cast() {

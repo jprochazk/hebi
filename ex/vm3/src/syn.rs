@@ -8,6 +8,34 @@ use TokenKind::*;
 use super::ast::*;
 use super::lex::*;
 use super::Arena;
+use crate::alloc;
+use crate::error::StdError;
+
+// TODO: make this robust against allocation failures
+// should've done that from the start, oops...
+
+pub type Result<T, E = SyntaxError> = core::result::Result<T, E>;
+
+#[derive(Debug)]
+pub struct SyntaxError {
+  pub message: String,
+}
+
+impl SyntaxError {
+  pub fn new(message: impl Into<String>) -> SyntaxError {
+    SyntaxError {
+      message: message.into(),
+    }
+  }
+}
+
+impl Display for SyntaxError {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "syntax error: {}", self.message)
+  }
+}
+
+impl StdError for SyntaxError {}
 
 macro_rules! err {
   ($self:ident, @$span:expr, $($args:tt)*) => {
@@ -29,8 +57,6 @@ pub struct Parser<'arena, 'src> {
   lex: Lexer<'src>,
 }
 
-pub type Result<T, E = alloc::string::String> = core::result::Result<T, E>;
-
 impl<'arena, 'src> Parser<'arena, 'src> {
   pub fn new(arena: &'arena Arena, lex: Lexer<'src>) -> Self {
     Self { arena, lex }
@@ -48,7 +74,7 @@ impl<'arena, 'src> Parser<'arena, 'src> {
     Ok(list.into_bump_slice())
   }
 
-  fn error(&self, message: impl Display, span: impl Into<Span>) -> String {
+  fn error(&self, message: impl Display, span: impl Into<Span>) -> SyntaxError {
     use core::fmt::Write;
 
     let span: Span = span.into();
@@ -58,7 +84,7 @@ impl<'arena, 'src> Parser<'arena, 'src> {
     // empty span
     if span.start == span.end {
       writeln!(&mut out, "syntax error: {message} at {span}").unwrap();
-      return out;
+      return SyntaxError::new(out);
     }
 
     writeln!(&mut out, "{message} at {span}:").unwrap();
@@ -88,7 +114,7 @@ impl<'arena, 'src> Parser<'arena, 'src> {
     )
     .unwrap();
 
-    out
+    SyntaxError::new(out)
   }
 
   fn alloc<T>(&self, v: T) -> &'arena T {
@@ -577,7 +603,7 @@ mod expr {
         LitInt => self.lit_int(),
         LitFloat => self.lit_float(),
         LitBool => self.lit_bool(),
-        LitNone => self.lit_none(),
+        LitNil => self.lit_none(),
         LitString => self.lit_str(),
         LitRecord => self.lit_record(),
         LitList => self.lit_list(),
@@ -632,8 +658,8 @@ mod expr {
     }
 
     fn lit_none(&mut self) -> Result<Expr<'arena, 'src>> {
-      self.expect(LitNone)?;
-      let inner = Lit::None;
+      self.expect(LitNil)?;
+      let inner = Lit::Nil;
       let span = self.previous().span;
       Ok(mk!(self, Lit(inner) @ span))
     }

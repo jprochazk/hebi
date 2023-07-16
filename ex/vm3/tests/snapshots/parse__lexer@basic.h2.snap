@@ -2155,12 +2155,12 @@ input_file: ex/vm3/tests/input/basic.h2
         },
     ),
     (
-        "none",
+        "nil",
         Token {
-            kind: LitNone,
+            kind: LitNil,
             span: Span {
                 start: 819,
-                end: 823,
+                end: 822,
             },
         },
     ),
@@ -2169,8 +2169,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 823,
-                end: 824,
+                start: 822,
+                end: 823,
             },
         },
     ),
@@ -2179,8 +2179,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitString,
             span: Span {
-                start: 831,
-                end: 836,
+                start: 830,
+                end: 835,
             },
         },
     ),
@@ -2189,8 +2189,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 836,
-                end: 837,
+                start: 835,
+                end: 836,
             },
         },
     ),
@@ -2199,8 +2199,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitTuple,
             span: Span {
-                start: 844,
-                end: 846,
+                start: 843,
+                end: 845,
             },
         },
     ),
@@ -2209,8 +2209,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 855,
-                end: 856,
+                start: 854,
+                end: 855,
             },
         },
     ),
@@ -2219,8 +2219,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 856,
-                end: 857,
+                start: 855,
+                end: 856,
             },
         },
     ),
@@ -2229,8 +2229,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitFloat,
             span: Span {
-                start: 866,
-                end: 869,
+                start: 865,
+                end: 868,
             },
         },
     ),
@@ -2239,8 +2239,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 869,
-                end: 870,
+                start: 868,
+                end: 869,
             },
         },
     ),
@@ -2249,8 +2249,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitBool,
             span: Span {
-                start: 879,
-                end: 883,
+                start: 878,
+                end: 882,
             },
         },
     ),
@@ -2259,8 +2259,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 883,
-                end: 884,
+                start: 882,
+                end: 883,
             },
         },
     ),
@@ -2269,28 +2269,28 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitBool,
             span: Span {
-                start: 893,
+                start: 892,
+                end: 897,
+            },
+        },
+    ),
+    (
+        ",",
+        Token {
+            kind: TokComma,
+            span: Span {
+                start: 897,
                 end: 898,
             },
         },
     ),
     (
-        ",",
+        "nil",
         Token {
-            kind: TokComma,
+            kind: LitNil,
             span: Span {
-                start: 898,
-                end: 899,
-            },
-        },
-    ),
-    (
-        "none",
-        Token {
-            kind: LitNone,
-            span: Span {
-                start: 908,
-                end: 912,
+                start: 907,
+                end: 910,
             },
         },
     ),
@@ -2299,8 +2299,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 912,
-                end: 913,
+                start: 910,
+                end: 911,
             },
         },
     ),
@@ -2309,8 +2309,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitString,
             span: Span {
-                start: 922,
-                end: 927,
+                start: 920,
+                end: 925,
             },
         },
     ),
@@ -2319,8 +2319,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkParenR,
             span: Span {
-                start: 934,
-                end: 935,
+                start: 932,
+                end: 933,
             },
         },
     ),
@@ -2329,8 +2329,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 935,
-                end: 936,
+                start: 933,
+                end: 934,
             },
         },
     ),
@@ -2339,8 +2339,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkSquareR,
             span: Span {
-                start: 941,
-                end: 942,
+                start: 939,
+                end: 940,
             },
         },
     ),
@@ -2349,8 +2349,18 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokComma,
             span: Span {
-                start: 942,
-                end: 943,
+                start: 940,
+                end: 941,
+            },
+        },
+    ),
+    (
+        "}",
+        Token {
+            kind: BrkCurlyR,
+            span: Span {
+                start: 944,
+                end: 945,
             },
         },
     ),
@@ -2365,22 +2375,12 @@ input_file: ex/vm3/tests/input/basic.h2
         },
     ),
     (
-        "}",
-        Token {
-            kind: BrkCurlyR,
-            span: Span {
-                start: 948,
-                end: 949,
-            },
-        },
-    ),
-    (
         "let",
         Token {
             kind: KwLet,
             span: Span {
-                start: 951,
-                end: 954,
+                start: 949,
+                end: 952,
             },
         },
     ),
@@ -2389,8 +2389,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 955,
-                end: 962,
+                start: 953,
+                end: 960,
             },
         },
     ),
@@ -2399,8 +2399,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 963,
-                end: 964,
+                start: 961,
+                end: 962,
             },
         },
     ),
@@ -2409,8 +2409,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 967,
-                end: 978,
+                start: 965,
+                end: 976,
             },
         },
     ),
@@ -2418,6 +2418,26 @@ input_file: ex/vm3/tests/input/basic.h2
         "(",
         Token {
             kind: BrkParenL,
+            span: Span {
+                start: 976,
+                end: 977,
+            },
+        },
+    ),
+    (
+        ")",
+        Token {
+            kind: BrkParenR,
+            span: Span {
+                start: 977,
+                end: 978,
+            },
+        },
+    ),
+    (
+        ".",
+        Token {
+            kind: OpDot,
             span: Span {
                 start: 978,
                 end: 979,
@@ -2425,32 +2445,12 @@ input_file: ex/vm3/tests/input/basic.h2
         },
     ),
     (
-        ")",
-        Token {
-            kind: BrkParenR,
-            span: Span {
-                start: 979,
-                end: 980,
-            },
-        },
-    ),
-    (
-        ".",
-        Token {
-            kind: OpDot,
-            span: Span {
-                start: 980,
-                end: 981,
-            },
-        },
-    ),
-    (
         "list",
         Token {
             kind: TokIdent,
             span: Span {
-                start: 981,
-                end: 985,
+                start: 979,
+                end: 983,
             },
         },
     ),
@@ -2459,8 +2459,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkSquareL,
             span: Span {
-                start: 985,
-                end: 986,
+                start: 983,
+                end: 984,
             },
         },
     ),
@@ -2469,8 +2469,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 986,
-                end: 987,
+                start: 984,
+                end: 985,
             },
         },
     ),
@@ -2479,8 +2479,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkSquareR,
             span: Span {
-                start: 987,
-                end: 988,
+                start: 985,
+                end: 986,
             },
         },
     ),
@@ -2489,8 +2489,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 990,
-                end: 1001,
+                start: 988,
+                end: 999,
             },
         },
     ),
@@ -2499,8 +2499,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkParenL,
             span: Span {
-                start: 1001,
-                end: 1002,
+                start: 999,
+                end: 1000,
             },
         },
     ),
@@ -2509,8 +2509,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkParenR,
             span: Span {
-                start: 1002,
-                end: 1003,
+                start: 1000,
+                end: 1001,
             },
         },
     ),
@@ -2519,8 +2519,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: OpDot,
             span: Span {
-                start: 1003,
-                end: 1004,
+                start: 1001,
+                end: 1002,
             },
         },
     ),
@@ -2529,8 +2529,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: TokIdent,
             span: Span {
-                start: 1004,
-                end: 1008,
+                start: 1002,
+                end: 1006,
             },
         },
     ),
@@ -2539,8 +2539,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkSquareL,
             span: Span {
-                start: 1008,
-                end: 1009,
+                start: 1006,
+                end: 1007,
             },
         },
     ),
@@ -2549,8 +2549,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitInt,
             span: Span {
-                start: 1009,
-                end: 1010,
+                start: 1007,
+                end: 1008,
             },
         },
     ),
@@ -2559,8 +2559,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkSquareR,
             span: Span {
-                start: 1010,
-                end: 1011,
+                start: 1008,
+                end: 1009,
             },
         },
     ),
@@ -2569,8 +2569,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: OpEqual,
             span: Span {
-                start: 1012,
-                end: 1013,
+                start: 1010,
+                end: 1011,
             },
         },
     ),
@@ -2579,8 +2579,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitTuple,
             span: Span {
-                start: 1014,
-                end: 1016,
+                start: 1012,
+                end: 1014,
             },
         },
     ),
@@ -2589,8 +2589,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: LitString,
             span: Span {
-                start: 1016,
-                end: 1023,
+                start: 1014,
+                end: 1021,
             },
         },
     ),
@@ -2599,8 +2599,8 @@ input_file: ex/vm3/tests/input/basic.h2
         Token {
             kind: BrkParenR,
             span: Span {
-                start: 1023,
-                end: 1024,
+                start: 1021,
+                end: 1022,
             },
         },
     ),

@@ -12,7 +12,7 @@ fn parser() {
     let parser = Parser::new(&arena, lex);
     let snapshot = match parser.parse() {
       Ok(ast) => format!("{ast:#?}"),
-      Err(e) => e,
+      Err(e) => format!("{e}"),
     };
     insta::assert_snapshot!(snapshot)
   });

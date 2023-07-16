@@ -80,6 +80,14 @@ impl Span {
   pub fn end(&self) -> usize {
     self.end as usize
   }
+
+  pub fn empty() -> Span {
+    Span { start: 0, end: 0 }
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.start == self.end
+  }
 }
 
 impl From<Range<usize>> for Span {
@@ -156,7 +164,7 @@ impl Token {
         | TokenKind::BrkCurlyL
         | TokenKind::OpMinus
         | TokenKind::OpBang
-        | TokenKind::LitNone
+        | TokenKind::LitNil
         | TokenKind::LitInt
         | TokenKind::LitFloat
         | TokenKind::LitBool
@@ -264,9 +272,9 @@ pub enum TokenKind {
   #[token("&&")]
   OpAndAnd,
 
-  /// `none`
-  #[token("none")]
-  LitNone,
+  /// `nil`
+  #[token("nil")]
+  LitNil,
   #[regex("[0-9]([0-9_]*[0-9])?", priority = 10)]
   LitInt,
   /// `0`, `1.0`, `5e10`, etc.
@@ -343,7 +351,7 @@ impl TokenKind {
       TokenKind::OpLessEqual => "<=",
       TokenKind::OpPipePipe => "||",
       TokenKind::OpAndAnd => "&&",
-      TokenKind::LitNone => "none",
+      TokenKind::LitNil => "nil",
       TokenKind::LitInt => "int",
       TokenKind::LitFloat => "float",
       TokenKind::LitBool => "bool",

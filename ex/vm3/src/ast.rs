@@ -207,7 +207,7 @@ pub struct Call<'arena, 'src> {
 pub enum Lit<'arena, 'src> {
   Float(f64),
   Int(i32),
-  None,
+  Nil,
   Bool(bool),
   String(&'src str),
   Record(&'arena [(Ident<'src>, Expr<'arena, 'src>)]),
