@@ -1338,8 +1338,8 @@ input_file: ex/vm3/tests/parse/input/basic.h2
                             start: 585,
                             end: 609,
                         },
-                        kind: Binary(
-                            Binary {
+                        kind: Logical(
+                            Logical {
                                 op: Or,
                                 lhs: Expr {
                                     span: Span {
@@ -1357,8 +1357,8 @@ input_file: ex/vm3/tests/parse/input/basic.h2
                                         start: 593,
                                         end: 609,
                                     },
-                                    kind: Binary(
-                                        Binary {
+                                    kind: Logical(
+                                        Logical {
                                             op: And,
                                             lhs: Expr {
                                                 span: Span {
@@ -1423,24 +1423,24 @@ input_file: ex/vm3/tests/parse/input/basic.h2
                             start: 630,
                             end: 683,
                         },
-                        kind: Binary(
-                            Binary {
+                        kind: Logical(
+                            Logical {
                                 op: And,
                                 lhs: Expr {
                                     span: Span {
                                         start: 630,
                                         end: 654,
                                     },
-                                    kind: Binary(
-                                        Binary {
+                                    kind: Logical(
+                                        Logical {
                                             op: And,
                                             lhs: Expr {
                                                 span: Span {
                                                     start: 630,
                                                     end: 644,
                                                 },
-                                                kind: Binary(
-                                                    Binary {
+                                                kind: Logical(
+                                                    Logical {
                                                         op: And,
                                                         lhs: Expr {
                                                             span: Span {

@@ -31,7 +31,7 @@ impl Object for Str {}
 
 impl Debug for Str {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    f.debug_struct("Str").field("data", &self.as_str()).finish()
+    Debug::fmt(self.as_str(), f)
   }
 }
 

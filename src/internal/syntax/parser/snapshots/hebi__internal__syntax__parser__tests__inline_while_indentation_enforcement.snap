@@ -1,8 +1,0 @@
----
-source: src/internal/syntax/parser/tests.rs
-expression: errors
----
-invalid indentation
-| [4;31mif[0m x != 46656: print "broken arithmetics"
-
-

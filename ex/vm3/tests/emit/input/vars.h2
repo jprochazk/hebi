@@ -1,5 +1,3 @@
-// TODO: shadowed vars, upvalues, globals
-
 // module vars
 let a = 10
 let b = 20

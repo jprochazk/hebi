@@ -71,7 +71,10 @@ impl<'arena, 'src> Parser<'arena, 'src> {
     while !self.end() {
       list.push(self.stmt()?);
     }
-    Ok(list.into_bump_slice())
+    Ok(Module {
+      src: self.lex.src(),
+      body: list.into_bump_slice(),
+    })
   }
 
   fn error(&self, message: impl Display, span: impl Into<Span>) -> SyntaxError {
@@ -435,7 +438,7 @@ mod expr {
       while !self.end() && self.eat(OpPipePipe)? {
         let rhs = self.and()?;
         let span = lhs.span.start..rhs.span.end;
-        lhs = mk!(self, Binary { op: BinaryOp::Or, lhs, rhs } @ span);
+        lhs = mk!(self, Logical { op: LogicalOp::Or, lhs, rhs } @ span);
       }
       Ok(lhs)
     }
@@ -445,7 +448,7 @@ mod expr {
       while !self.end() && self.eat(OpAndAnd)? {
         let rhs = self.eq()?;
         let span = lhs.span.start..rhs.span.end;
-        lhs = mk!(self, Binary { op: BinaryOp::And, lhs, rhs } @ span);
+        lhs = mk!(self, Logical { op: LogicalOp::And, lhs, rhs } @ span);
       }
       Ok(lhs)
     }

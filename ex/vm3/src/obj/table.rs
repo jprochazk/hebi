@@ -14,10 +14,12 @@ use core::mem::{replace, transmute};
 use allocator_api2::vec::Vec;
 use bumpalo::AllocErr;
 use hashbrown::raw::RawTable;
+use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
 use super::string::Str;
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
+use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
 
@@ -262,6 +264,51 @@ impl Display for Table {
     }
     f.finish()
   }
+}
+
+#[derive(Debug)]
+pub struct TableDescriptor {
+  start: Reg<u8>,
+  keys: HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, NoAlloc>,
+}
+
+impl TableDescriptor {
+  pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocErr> {
+    let mut key_set: HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, _> = HashSet::with_hasher_in(
+      BuildHasherDefault::default(),
+      Alloc::new(unsafe { &*(gc as *const _) }),
+    );
+    key_set.try_reserve(keys.len()).map_err(|_| AllocErr)?;
+    key_set.extend(keys);
+
+    let keys = unsafe { transmute::<_, HashSet<_, _, NoAlloc>>(key_set) };
+    gc.try_alloc(Self { start, keys })
+  }
+
+  #[inline]
+  pub fn start(&self) -> Reg<u8> {
+    self.start
+  }
+
+  #[inline]
+  pub fn count(&self) -> u8 {
+    self.keys.len() as u8
+  }
+
+  #[inline]
+  pub fn keys(&self) -> &HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, NoAlloc> {
+    &self.keys
+  }
+}
+
+impl Display for TableDescriptor {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "<table>")
+  }
+}
+
+impl Object for TableDescriptor {
+  const NEEDS_DROP: bool = false;
 }
 
 #[cfg(test)]

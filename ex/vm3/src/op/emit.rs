@@ -8,19 +8,25 @@ use core::fmt::{Debug, Display};
 use core::hash::BuildHasherDefault;
 
 use beef::lean::Cow;
-use bumpalo::collections::{CollectionAllocErr, Vec};
-use bumpalo::AllocErr;
+use bumpalo::collections::Vec;
+use bumpalo::{vec, AllocErr};
 use rustc_hash::FxHasher;
 
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder};
 use super::{Mvar, Op, Reg, Upvalue};
-use crate::ast::{Block, Expr, Func, GetVar, Let, Lit, Loop, Module, Return, Stmt};
+use crate::ast::{
+  Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, Loop, Module, Return, SetVar,
+  Stmt, Unary, UnaryOp,
+};
 use crate::error::StdError;
 use crate::gc::{Gc, Ref};
 use crate::lex::Span;
 use crate::obj::func::{Code, FunctionDescriptor, Params};
+use crate::obj::list::ListDescriptor;
 use crate::obj::module::ModuleDescriptor;
 use crate::obj::string::Str;
+use crate::obj::table::TableDescriptor;
+use crate::obj::tuple::TupleDescriptor;
 use crate::op::asm::*;
 use crate::op::Smi;
 use crate::{alloc, Arena};
@@ -40,15 +46,6 @@ impl EmitError {
   }
 }
 
-impl From<CollectionAllocErr> for EmitError {
-  fn from(e: CollectionAllocErr) -> Self {
-    match e {
-      CollectionAllocErr::CapacityOverflow => Self::new("capacity overflow"),
-      CollectionAllocErr::AllocErr => Self::new(format!("{}", AllocErr)),
-    }
-  }
-}
-
 impl From<AllocErr> for EmitError {
   fn from(e: AllocErr) -> Self {
     Self::new(format!("{}", e))
@@ -63,7 +60,7 @@ impl Display for EmitError {
 
 impl StdError for EmitError {}
 
-type HashSet<T, A> = hashbrown::HashSet<T, BuildHasherDefault<FxHasher>, A>;
+// type HashSet<T, A> = hashbrown::HashSet<T, BuildHasherDefault<FxHasher>, A>;
 type HashMap<K, V, A> = hashbrown::HashMap<K, V, BuildHasherDefault<FxHasher>, A>;
 
 struct ModuleState<'arena, 'gc, 'src> {
@@ -72,6 +69,7 @@ struct ModuleState<'arena, 'gc, 'src> {
   name: &'src str,
   ast: Module<'arena, 'src>,
 
+  src: Ref<Str>,
   /// This is a map of top-level variables, a.k.a. global variables.
   /// In hebi they're referred to as "module" variables, because
   /// they're instantiated per module.
@@ -89,6 +87,7 @@ struct FunctionState<'arena, 'gc, 'src, 'state> {
   builder: BytecodeBuilder<'arena>,
   registers: Registers,
 
+  params: Params,
   scope: Scope,
   locals: Vec<'arena, (Scope, &'src str, Reg<u8>)>,
 }
@@ -100,7 +99,7 @@ struct Registers {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct Scope(usize);
+pub struct Scope(usize);
 
 impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
   #[inline]
@@ -152,15 +151,20 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
   }
 
   #[inline]
+  fn is_global_scope(&self) -> bool {
+    self.is_top_level() && self.scope.0 <= 1
+  }
+
+  #[inline]
   fn is_top_level(&self) -> bool {
-    self.parent.is_none() && self.scope.0 <= 1
+    self.parent.is_none()
   }
 
   /// Invariant: `reg` must already contain the value
   ///
   /// Note: This frees `reg` if necessary
   fn declare_var(&mut self, name: &'src str, reg: Reg<u8>, span: impl Into<Span>) -> Result<()> {
-    if self.is_top_level() {
+    if self.is_global_scope() {
       // module variable
       // value is in `reg`, we have to add the var to module.vars
       let last = self.module.vars.len();
@@ -209,7 +213,16 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
         Var::Global
       }
     } else if let Some(reg) = self.resolve_local(name) {
-      Var::Local(reg)
+      // `0` is `self` or the callee
+      // `1..=params.max` are the params, e.g. `params.max=5`,
+      // then `1, 2, 3, 4, 5` would be params
+      if reg.wide() == 0 {
+        Var::Self_
+      } else if reg.wide() <= self.params.max as usize {
+        Var::Param(reg)
+      } else {
+        Var::Local(reg)
+      }
     } else if let Some(idx) = self.resolve_upvalue(name) {
       Var::Upvalue(idx)
     } else if let Some(idx) = self.module.vars.get(name).copied() {
@@ -246,12 +259,14 @@ pub fn module<'arena, 'gc, 'src>(
   name: &'src str,
   ast: Module<'arena, 'src>,
 ) -> Result<Ref<ModuleDescriptor>> {
+  let src = Str::try_new_in(gc, ast.src)?;
   let mut module = ModuleState {
     arena,
     gc,
     name,
     ast,
 
+    src,
     vars: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
   };
   let root = top_level(&mut module, arena, gc)?;
@@ -278,12 +293,14 @@ fn top_level<'arena, 'gc, 'src>(
 
     builder: BytecodeBuilder::new_in(arena),
     registers: Registers::default(),
+
+    params: Params::empty(),
     scope: Scope(0),
     locals: Vec::new_in(arena),
   };
 
   f.scope(|f| {
-    for node in f.module.ast {
+    for node in f.module.ast.body {
       stmt(f, node)?;
     }
     Ok(())
@@ -295,13 +312,15 @@ fn top_level<'arena, 'gc, 'src>(
   f.emit(load_nil(dst), Span::empty())?;
   f.emit(ret(dst), Span::empty())?;
 
-  let stack_space = f.registers.total;
-  let (ops, pool, loc) = f.builder.finish();
+  let (ops, pool, spans, labels) = f.builder.finish();
   let code = Code {
-    stack_space,
+    src: f.module.src,
     ops: &ops,
     pool: &pool,
-    loc: &loc,
+    spans: &spans,
+    locals: &f.locals[..],
+    labels: &labels,
+    stack_space: f.registers.total,
   };
 
   Ok(FunctionDescriptor::try_new_in(
@@ -344,12 +363,7 @@ fn let_<'arena, 'gc, 'src, 'state>(
   };
 
   if let Some(value) = &node.value {
-    if let Some(out) = expr(f, Some(dst), value)? {
-      // `expr` was written to `out`
-      f.emit(mov(out, dst), value.span)?;
-    } else {
-      // `expr` was written to `dst`
-    }
+    assign_to(f, dst, value)?;
   } else {
     f.emit(load_nil(dst), span)?;
   }
@@ -399,21 +413,81 @@ fn expr<'arena, 'gc, 'src, 'state>(
 ) -> Result<Option<Reg<u8>>> {
   use crate::ast::ExprKind::*;
 
+  let span = node.span;
   match node.kind {
-    Binary(_) => todo!(),
-    Unary(_) => todo!(),
-    Block(inner) => block(f, dst, inner),
-    If(_) => todo!(),
+    Logical(node) => logical(f, dst, node, span),
+    Binary(node) => binary(f, dst, node, span),
+    Unary(node) => unary(f, dst, node, span),
+    Block(node) => block(f, dst, node),
+    If(node) => if_(f, dst, node),
     Func(_) => todo!(),
-    GetVar(inner) => get_var(f, dst, inner, node.span),
-    SetVar(_) => todo!(),
+    GetVar(node) => get_var(f, dst, node, span),
+    SetVar(node) => set_var(f, node, span),
     GetField(_) => todo!(),
     SetField(_) => todo!(),
     GetIndex(_) => todo!(),
     SetIndex(_) => todo!(),
     Call(_) => todo!(),
-    Lit(inner) => lit(f, dst, inner, node.span),
+    Lit(inner) => lit(f, dst, inner, span),
   }
+}
+
+fn logical<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  dst: Option<Reg<u8>>,
+  node: &Logical<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
+}
+
+fn binary<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  dst: Option<Reg<u8>>,
+  node: &Binary<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  let lhs = expr(f, dst, &node.lhs)?.or(dst);
+  let rhs = f.reg()?;
+  let rhs = expr(f, Some(rhs), &node.rhs)?.unwrap_or(rhs);
+
+  use BinaryOp::*;
+  if let (Some(dst), Some(lhs)) = (dst, lhs) {
+    match node.op {
+      Add => f.emit(add(dst, lhs, rhs), span)?,
+      Sub => f.emit(sub(dst, lhs, rhs), span)?,
+      Div => f.emit(div(dst, lhs, rhs), span)?,
+      Mul => f.emit(mul(dst, lhs, rhs), span)?,
+      Rem => f.emit(rem(dst, lhs, rhs), span)?,
+      Pow => f.emit(pow(dst, lhs, rhs), span)?,
+      Eq => f.emit(cmp_eq(dst, lhs, rhs), span)?,
+      Ne => f.emit(cmp_ne(dst, lhs, rhs), span)?,
+      Gt => f.emit(cmp_gt(dst, lhs, rhs), span)?,
+      Ge => f.emit(cmp_ge(dst, lhs, rhs), span)?,
+      Lt => f.emit(cmp_lt(dst, lhs, rhs), span)?,
+      Le => f.emit(cmp_le(dst, lhs, rhs), span)?,
+    }
+  }
+
+  f.free(rhs);
+
+  Ok(None)
+}
+
+fn unary<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  dst: Option<Reg<u8>>,
+  node: &Unary<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  if let Some(dst) = expr(f, dst, &node.rhs)?.or(dst) {
+    use UnaryOp::*;
+    match node.op {
+      Min => f.emit(inv(dst), span)?,
+      Not => f.emit(not(dst), span)?,
+    }
+  }
+  Ok(None)
 }
 
 fn block<'arena, 'gc, 'src, 'state>(
@@ -433,7 +507,17 @@ fn block<'arena, 'gc, 'src, 'state>(
   })
 }
 
+fn if_<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  dst: Option<Reg<u8>>,
+  node: &If<'arena, 'src>,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
+}
+
 enum Var {
+  Self_,
+  Param(Reg<u8>),
   Local(Reg<u8>),
   Upvalue(Upvalue<u16>),
   Module(Mvar<u16>),
@@ -449,8 +533,15 @@ fn get_var<'arena, 'gc, 'src, 'state>(
   use Var::*;
 
   match f.resolve_var(node.name.lexeme) {
+    Self_ => Ok(Some(Reg(0))),
+    Param(reg) => Ok(Some(reg)),
     Local(reg) => Ok(Some(reg)),
-    Upvalue(idx) => todo!(),
+    Upvalue(idx) => {
+      if let Some(dst) = dst {
+        f.emit(load_upvalue(dst, idx), span)?;
+      }
+      Ok(None)
+    }
     Module(var) => {
       if let Some(dst) = dst {
         f.emit(load_mvar(dst, var), span)?;
@@ -461,6 +552,72 @@ fn get_var<'arena, 'gc, 'src, 'state>(
       todo!()
     }
   }
+}
+
+fn set_var<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  node: &SetVar<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  use Var::*;
+
+  // TODO: test all cases here
+
+  match f.resolve_var(node.name.lexeme) {
+    Self_ => {
+      return Err(EmitError::new(if f.params.has_self {
+        Cow::borrowed("cannot assign to `self`")
+      } else {
+        Cow::owned(format!("cannot assign to function `{}`", node.name.lexeme))
+      }));
+    }
+    Param(_) => {
+      return Err(EmitError::new(format!(
+        "cannot assign to parameter `{}`",
+        node.name.lexeme
+      )));
+    }
+    Local(reg) => {
+      assign_to(f, reg, &node.value)?;
+    }
+    Upvalue(_) => {
+      return Err(EmitError::new(format!(
+        "cannot assign to non-local variable `{}`",
+        node.name.lexeme
+      )))
+    }
+    Module(idx) => {
+      let dst = f.reg()?;
+      let out = expr(f, Some(dst), &node.value)?.unwrap_or(dst);
+      f.emit(set_mvar(out, idx), span)?;
+      f.free(dst);
+    }
+    Global => {
+      let name = Str::try_intern_in(f.gc, node.name.lexeme)?;
+      let name = f.pool().str(name)?;
+      let dst = f.reg()?;
+      let out = expr(f, Some(dst), &node.value)?.unwrap_or(dst);
+      f.emit(set_global(out, name), span)?;
+      f.free(dst);
+    }
+  }
+
+  Ok(None)
+}
+
+fn assign_to<'arena, 'gc, 'src, 'state>(
+  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+  dst: Reg<u8>,
+  value: &Expr<'arena, 'src>,
+) -> Result<()> {
+  if let Some(out) = expr(f, Some(dst), value)? {
+    // `expr` was written to `out`
+    f.emit(mov(out, dst), value.span)?;
+  } else {
+    // `expr` was written to `dst`
+  }
+
+  Ok(())
 }
 
 fn lit<'arena, 'gc, 'src, 'state>(
@@ -498,9 +655,56 @@ fn lit<'arena, 'gc, 'src, 'state>(
       let v = f.pool().str(v)?;
       f.emit(load_const(dst, v), span)?;
     }
-    Record(v) => todo!(),
-    List(v) => todo!(),
-    Tuple(v) => todo!(),
+    Record([]) => {
+      f.emit(make_table_empty(dst), span)?;
+    }
+    Record(fields) => {
+      let mut regs = vec![in f.arena];
+      let mut keys = vec![in f.arena];
+      for _ in fields.iter() {
+        regs.push(f.reg()?);
+      }
+      for ((key, value), reg) in fields.iter().zip(regs.iter()) {
+        assign_to(f, *reg, value)?;
+        keys.push(Str::try_intern_in(f.gc, key.lexeme)?);
+      }
+      let desc = TableDescriptor::try_new_in(f.gc, regs[0], &keys)?;
+      let desc = f.pool().table(desc)?;
+      f.emit(make_table(dst, desc), span)?;
+      f.free(regs[0]);
+    }
+    List([]) => {
+      f.emit(make_list_empty(dst), span)?;
+    }
+    List(items) => {
+      let mut regs = vec![in f.arena];
+      for _ in items.iter() {
+        regs.push(f.reg()?);
+      }
+      for (value, reg) in items.iter().zip(regs.iter()) {
+        assign_to(f, *reg, value)?;
+      }
+      let desc = ListDescriptor::try_new_in(f.gc, regs[0], regs.len() as u8)?;
+      let desc = f.pool().list(desc)?;
+      f.emit(make_list(dst, desc), span)?;
+      f.free(regs[0]);
+    }
+    Tuple([]) => {
+      f.emit(make_tuple_empty(dst), span)?;
+    }
+    Tuple(elems) => {
+      let mut regs = vec![in f.arena];
+      for _ in elems.iter() {
+        regs.push(f.reg()?);
+      }
+      for (value, reg) in elems.iter().zip(regs.iter()) {
+        assign_to(f, *reg, value)?;
+      }
+      let desc = TupleDescriptor::try_new_in(f.gc, regs[0], regs.len() as u8)?;
+      let desc = f.pool().tuple(desc)?;
+      f.emit(make_tuple(dst, desc), span)?;
+      f.free(regs[0]);
+    }
   }
 
   Ok(None)

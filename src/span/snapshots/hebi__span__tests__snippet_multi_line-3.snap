@@ -1,7 +1,0 @@
----
-source: src/span/tests.rs
-expression: "SpannedError::new(\"error: test\", 1..3).report(\"\\n\\\\n\", true)"
----
-error: test
-| [4;31m\n[0m
-

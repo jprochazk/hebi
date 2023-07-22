@@ -1,10 +1,19 @@
-use crate::gc::Ref;
-use crate::obj::string::Str;
+use core::fmt::{Debug, Display};
 
+use crate::gc::Ref;
+use crate::obj::list::ListDescriptor;
+use crate::obj::string::Str;
+use crate::obj::table::TableDescriptor;
+use crate::obj::tuple::TupleDescriptor;
+
+#[derive(Debug, Clone, Copy)]
 pub enum Constant {
   Float(NFloat),
   Offset(u64),
   Str(Ref<Str>),
+  Table(Ref<TableDescriptor>),
+  List(Ref<ListDescriptor>),
+  Tuple(Ref<TupleDescriptor>),
 }
 
 impl From<NFloat> for Constant {
@@ -22,6 +31,24 @@ impl From<u64> for Constant {
 impl From<Ref<Str>> for Constant {
   fn from(value: Ref<Str>) -> Self {
     Self::Str(value)
+  }
+}
+
+impl From<Ref<TableDescriptor>> for Constant {
+  fn from(value: Ref<TableDescriptor>) -> Self {
+    Self::Table(value)
+  }
+}
+
+impl From<Ref<ListDescriptor>> for Constant {
+  fn from(value: Ref<ListDescriptor>) -> Self {
+    Self::List(value)
+  }
+}
+
+impl From<Ref<TupleDescriptor>> for Constant {
+  fn from(value: Ref<TupleDescriptor>) -> Self {
+    Self::Tuple(value)
   }
 }
 
@@ -60,5 +87,30 @@ impl TryFrom<f64> for NFloat {
 
   fn try_from(value: f64) -> Result<Self, Self::Error> {
     NFloat::new(value).ok_or(())
+  }
+}
+
+impl Display for NFloat {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    Display::fmt(&self.value(), f)
+  }
+}
+
+impl Debug for NFloat {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    Debug::fmt(&self.value(), f)
+  }
+}
+
+impl Display for Constant {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    match self {
+      Constant::Float(v) => Display::fmt(v, f),
+      Constant::Offset(v) => Display::fmt(v, f),
+      Constant::Str(v) => Display::fmt(v, f),
+      Constant::Table(v) => Display::fmt(v, f),
+      Constant::List(v) => Display::fmt(v, f),
+      Constant::Tuple(v) => Display::fmt(v, f),
+    }
   }
 }

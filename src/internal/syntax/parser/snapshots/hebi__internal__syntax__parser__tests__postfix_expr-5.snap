@@ -1,6 +1,0 @@
----
-source: src/internal/syntax/parser/tests.rs
-expression: errors
----
-expected `identifier`
-

@@ -6,6 +6,7 @@ use allocator_api2::vec::Vec;
 use bumpalo::AllocErr;
 
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
+use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
 
@@ -84,6 +85,21 @@ impl List {
     }
   }
 
+  pub fn extend_from_slice(&self, gc: &Gc, items: &[Value]) -> Result<(), AllocErr> {
+    let vec = unsafe { self.get_vec_mut_alloc(gc) };
+    vec.try_reserve(items.len()).map_err(|_| AllocErr)?;
+    let len = vec.len();
+    for (i, item) in items.iter().enumerate() {
+      unsafe {
+        vec.as_mut_ptr().add(i).write(*item);
+      }
+    }
+    unsafe {
+      vec.set_len(len + items.len());
+    }
+    Ok(())
+  }
+
   /// # Safety
   /// `index` must be a valid index
   #[inline]
@@ -126,6 +142,11 @@ impl List {
   }
 }
 
+/* #[inline(always)]
+fn handle_size_hint(size_hint: (usize, Option<usize>)) -> usize {
+  size_hint.1.unwrap_or(size_hint.0)
+} */
+
 impl Object for List {
   // We don't want to call `Drop` on the contents of the inner `Vec`.
   // The `List` object and its backing storage will be deallocated
@@ -149,6 +170,36 @@ impl Display for List {
     f.finish()
   }
 }
+
+#[derive(Debug)]
+pub struct ListDescriptor {
+  start: Reg<u8>,
+  count: u8,
+}
+
+impl ListDescriptor {
+  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocErr> {
+    gc.try_alloc(ListDescriptor { start, count })
+  }
+
+  #[inline]
+  pub fn start(&self) -> Reg<u8> {
+    self.start
+  }
+
+  #[inline]
+  pub fn count(&self) -> u8 {
+    self.count
+  }
+}
+
+impl Display for ListDescriptor {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "<list>")
+  }
+}
+
+impl Object for ListDescriptor {}
 
 #[cfg(test)]
 mod tests {

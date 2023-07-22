@@ -1,8 +1,0 @@
----
-source: src/internal/syntax/parser/tests.rs
-expression: errors
----
-break outside of loop
-| [4;31mbreak[0m
-
-

@@ -1,12 +1,17 @@
-use core::fmt::{Debug, Display};
+use core::fmt::{Debug, Display, Write};
+use core::hash::BuildHasherDefault;
+use core::mem::transmute;
 use core::ptr::NonNull;
 
 use bumpalo::AllocErr;
+use hashbrown::HashMap;
+use rustc_hash::FxHasher;
 
 use super::string::Str;
-use crate::gc::{Gc, Object, Ref};
+use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref};
 use crate::lex::Span;
-use crate::op::Op;
+use crate::op::emit::Scope;
+use crate::op::{Op, Reg};
 use crate::val::Constant;
 
 pub struct FunctionDescriptor {
@@ -15,7 +20,32 @@ pub struct FunctionDescriptor {
   stack_space: u8,
   ops: NonNull<[Op]>,
   pool: NonNull<[Constant]>,
-  loc: NonNull<[Span]>,
+  dbg: DebugInfo,
+}
+
+type LabelMap = HashMap<usize, LabelInfo, BuildHasherDefault<FxHasher>, NoAlloc>;
+
+pub struct DebugInfo {
+  src: Ref<Str>,
+  spans: NonNull<[Span]>,
+  locals: NonNull<[(Ref<Str>, Reg<u8>)]>,
+  labels: LabelMap,
+}
+
+impl DebugInfo {
+  pub fn src(&self) -> &str {
+    self.src.as_str()
+  }
+
+  pub fn loc(&self) -> &[Span] {
+    unsafe { self.spans.as_ref() }
+  }
+}
+
+#[derive(Clone, Copy)]
+pub struct LabelInfo {
+  pub name: &'static str,
+  pub index: usize,
 }
 
 impl FunctionDescriptor {
@@ -25,25 +55,37 @@ impl FunctionDescriptor {
     params: Params,
     code: Code,
   ) -> Result<Ref<Self>, AllocErr> {
-    let Code {
-      ops,
-      pool,
-      loc,
-      stack_space,
-    } = code;
-
     let name = Str::try_new_in(gc, name)?;
-    let ops = gc.try_alloc_slice(ops)?.into();
-    let pool = gc.try_alloc_slice(pool)?.into();
-    let loc = gc.try_alloc_slice(loc)?.into();
+    let ops = gc.try_alloc_slice(code.ops)?.into();
+    let pool = gc.try_alloc_slice(code.pool)?.into();
+    let spans = gc.try_alloc_slice(code.spans)?.into();
+    let locals = code
+      .locals
+      .iter()
+      .map(|(_, name, reg)| Ok((Str::try_intern_in(gc, name)?, *reg)));
+    let locals = gc.try_collect_slice(locals)?.into();
+    let hash_builder = BuildHasherDefault::<FxHasher>::default();
+    let mut label_map = HashMap::with_hasher_in(hash_builder, Alloc::new(gc));
+    label_map
+      .try_reserve(code.labels.len())
+      .map_err(|_| AllocErr)?;
+    for (pos, label) in code.labels {
+      label_map.insert(*pos, *label);
+    }
+    let labels = unsafe { transmute(label_map) };
 
     gc.try_alloc(FunctionDescriptor {
       name,
       params,
-      stack_space,
+      stack_space: code.stack_space,
       ops,
       pool,
-      loc,
+      dbg: DebugInfo {
+        src: code.src,
+        spans,
+        locals,
+        labels,
+      },
     })
   }
 
@@ -74,7 +116,12 @@ impl FunctionDescriptor {
 
   #[inline]
   pub fn loc(&self) -> &[Span] {
-    unsafe { self.loc.as_ref() }
+    unsafe { self.dbg.spans.as_ref() }
+  }
+
+  #[inline]
+  pub fn dbg(&self) -> &DebugInfo {
+    &self.dbg
   }
 }
 
@@ -101,18 +148,26 @@ impl Object for FunctionDescriptor {
 pub struct Params {
   pub min: u8,
   pub max: u8,
+  pub has_self: bool,
 }
 
 impl Params {
   pub fn empty() -> Self {
-    Self { min: 0, max: 0 }
+    Self {
+      min: 0,
+      max: 0,
+      has_self: false,
+    }
   }
 }
 
 pub struct Code<'a> {
+  pub src: Ref<Str>,
   pub ops: &'a [Op],
   pub pool: &'a [Constant],
-  pub loc: &'a [Span],
+  pub spans: &'a [Span],
+  pub locals: &'a [(Scope, &'a str, Reg<u8>)],
+  pub labels: &'a [(usize, LabelInfo)],
   pub stack_space: u8,
 }
 
@@ -128,30 +183,23 @@ impl<'a> Display for Disasm<'a> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let func = self.0;
 
-    let (ops, _, loc) = (func.ops(), func.pool(), func.loc());
-
-    /* for constant in constants {
-      match constant {
-        Constant::Function(function) => {
-          writeln!(f, "{}\n", function.disassemble())?;
-        }
-        Constant::Class(class) => {
-          for method in class.methods.values() {
-            writeln!(f, "{}\n", method.disassemble_as_method(class.name.clone()))?;
-          }
-        }
-        _ => {}
-      }
-    } */
+    let src = func.dbg.src.as_str();
+    let locals = unsafe { func.dbg.locals.as_ref() };
+    let label_map = &func.dbg.labels;
+    let ops = func.ops();
+    let pool = func.pool();
+    let loc = func.loc();
 
     writeln!(
       f,
       "function `{}` (registers: {}, length: {} ({} bytes))",
       func.name,
       func.stack_space(),
-      ops.len(),
-      ops.len() * 4,
+      func.ops.len(),
+      func.ops.len() * 4,
     )?;
+
+    // TODO: emit upvalues
     /* if !function.upvalues.borrow().is_empty() {
       writeln!(f, ".upvalues")?;
       for (index, upvalue) in function.upvalues.borrow().iter().enumerate() {
@@ -161,89 +209,156 @@ impl<'a> Display for Disasm<'a> {
         }
       }
     } */
-    writeln!(f, ".code")?;
 
-    // let mut prev_loc = Span::empty();
-    for (op, loc) in ops.iter().zip(loc.iter()) {
-      disasm_op(op, loc, f)?;
+    if !pool.is_empty() {
+      writeln!(f, ".const")?;
+      for (i, v) in pool.iter().enumerate() {
+        writeln!(f, "  {i}: {v:?}")?;
+      }
     }
+
+    if !locals.is_empty() {
+      writeln!(f, ".locals")?;
+      for (name, reg) in locals.iter() {
+        writeln!(f, "  {name}: {reg}")?;
+      }
+    }
+
+    if !ops.is_empty() {
+      writeln!(f, ".code")?;
+      let mut prev_line_span = Span::empty();
+      for (offset, (op, span)) in ops.iter().zip(loc.iter()).enumerate() {
+        // write label if one exists at the current offset
+        if let Some(label) = label_map.get(&offset) {
+          writeln!(f, "{}.{}:", label.name, label.index)?;
+        }
+        let written = disasm_op(op, f)?;
+        let padding = remainder_to(20, written);
+        // write line at `span`
+        let line_span = find_line(src, span);
+        if !span.is_empty() && line_span != prev_line_span {
+          write!(f, "{:padding$}; {}", "", src[line_span].trim())?;
+          prev_line_span = line_span;
+        }
+        writeln!(f)?;
+      }
+    }
+
+    // TODO: emit nested functions
+    /* for v in pool {
+
+    } */
 
     Ok(())
   }
 }
 
 #[rustfmt::skip]
-fn disasm_op(op: &Op, loc: &Span, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-  // TODO: print constants
-  // TODO: finish the rest of this
-  write!(f, "  ")?;
-  match op {
-    Op::Nop => write!(f, "nop")?,
-    Op::Mov { src, dst } => write!(f, "mov {src}, {dst}")?,
-    Op::LoadConst { dst, idx } => write!(f, "lc {idx}, {dst}")?,
-    Op::LoadUpvalue { dst, idx } => write!(f, "lup {idx}, {dst}")?,
-    Op::SetUpvalue { src, idx } => write!(f, "sup {src}, {idx}")?,
-    Op::LoadMvar { dst, idx } => write!(f, "lmv {idx}, {dst}")?,
-    Op::SetMvar { src, idx } => write!(f, "smv {src}, {idx}")?,
-    Op::LoadGlobal { dst, name } => write!(f, "lg {name}, {dst}")?,
-    Op::SetGlobal { src, name } => write!(f, "sg {src}, {name}")?,
-    Op::LoadFieldReg { obj, name, dst } => write!(f, "ln {obj}, {name}, {dst}")?,
-    Op::LoadFieldConst { obj, name, dst } => write!(f, "ln {obj}, {name}, {dst}")?,
-    Op::LoadFieldOptReg { obj, name, dst } => write!(f, "ln? {obj}, {name}, {dst}")?,
-    Op::LoadFieldOptConst { obj, name, dst } => write!(f, "ln? {obj}, {name}, {dst}")?,
-    Op::SetField { obj, name, src } => write!(f, "sn {src}, {obj}, {name}")?,
-    Op::LoadIndex { obj, key, dst } => write!(f, "li {obj}, {key}, {dst}")?,
-    Op::LoadIndexOpt { obj, key, dst } => write!(f, "li? {obj}, {key}, {dst}")?,
-    Op::SetIndex { obj, key, src } => write!(f, "si {src}, {obj}, {key}")?,
-    Op::LoadSuper { dst } => write!(f, "lsup {dst}")?,
-    Op::LoadNil { dst } => write!(f, "lnil {dst}")?,
-    Op::LoadTrue { dst } => write!(f, "lbt {dst}")?,
-    Op::LoadFalse { dst } => write!(f, "lbf {dst}")?,
-    Op::LoadSmi { dst, value } => write!(f, "lsmi {value}, {dst}")?,
-    Op::MakeFn { dst, desc } => write!(f, "mfn {desc}, {dst}")?,
-    Op::MakeClass { dst, desc } => write!(f, "mcl {desc}, {dst}")?,
-    Op::MakeClassDerived { dst, desc } => write!(f, "mcld {desc}, {dst}")?,
-    Op::MakeList { dst, desc } => write!(f, "ml {desc}, {dst}")?,
-    Op::MakeListEmpty { dst } => write!(f, "mle {dst}")?,
-    Op::MakeTable { dst, desc } => write!(f, "mt {desc}, {dst}")?,
-    Op::MakeTableEmpty { dst } => write!(f, "mte {dst}")?,
-    Op::Jump { offset } => write!(f, "jmp {offset}")?,
-    Op::JumpConst { offset } => write!(f, "jmp {offset}")?,
-    Op::JumpLoop { offset } => write!(f, "jl {offset}")?,
-    Op::JumpLoopConst { offset } => write!(f, "jl {offset}")?,
-    Op::JumpIfFalse { offset } => write!(f, "jif {offset}")?,
-    Op::JumpIfFalseConst { offset } => write!(f, "jif {offset}")?,
-    Op::Add { dst, lhs, rhs } => write!(f, "add {lhs}, {rhs}, {dst}")?,
-    Op::Sub { dst, lhs, rhs } => write!(f, "sub {lhs}, {rhs}, {dst}")?,
-    Op::Mul { dst, lhs, rhs } => write!(f, "mul {lhs}, {rhs}, {dst}")?,
-    Op::Div { dst, lhs, rhs } => write!(f, "div {lhs}, {rhs}, {dst}")?,
-    Op::Rem { dst, lhs, rhs } => write!(f, "rem {lhs}, {rhs}, {dst}")?,
-    Op::Pow { dst, lhs, rhs } => write!(f, "pow {lhs}, {rhs}, {dst}")?,
-    Op::Inv { val } => write!(f, "inv {val}")?,
-    Op::Not { val } => write!(f, "not {val}")?,
-    Op::CmpEq { lhs, rhs } => write!(f, "ceq {lhs}, {rhs}")?,
-    Op::CmpNe { lhs, rhs } => write!(f, "cne {lhs}, {rhs}")?,
-    Op::CmpGt { lhs, rhs } => write!(f, "cgt {lhs}, {rhs}")?,
-    Op::CmpGe { lhs, rhs } => write!(f, "cge {lhs}, {rhs}")?,
-    Op::CmpLt { lhs, rhs } => write!(f, "clt {lhs}, {rhs}")?,
-    Op::CmpLe { lhs, rhs } => write!(f, "cle {lhs}, {rhs}")?,
-    Op::CmpType { lhs, rhs } => write!(f, "cty {lhs}, {rhs}")?,
-    Op::Contains { lhs, rhs } => write!(f, "in {lhs}, {rhs}")?,
-    Op::IsNone { val } => write!(f, "cn {val}")?,
-    Op::Call { func, count } => write!(f, "call {func}, {count}")?,
-    Op::Call0 { func } => write!(f, "call {func}, 0")?,
-    Op::Import { dst, path } => write!(f, "imp {path}, {dst}")?,
-    Op::FinalizeModule => write!(f, "fin")?,
-    Op::Ret { val } => write!(f, "ret {val}")?,
-    Op::Yld { val } => write!(f, "yld {val}")?,
+fn disasm_op(op: &Op, f: &mut core::fmt::Formatter) -> core::result::Result<usize, core::fmt::Error> {
+
+  macro_rules! w {
+    ($f:ident, $($tt:tt)*) => {{
+      let mut proxy = ProxyFmt($f, 0);
+      write!(&mut proxy, $($tt)*)?;
+      Ok(proxy.written())
+    }}
   }
 
-  // TODO: write code using `loc`, updating `prev_loc` each time
-  let _ = loc;
-  // TODO: emit + store + print labels
-  /* if !loc.is_empty() && loc != &prev_loc {
-    write!(f, " ; {}", )
-  } */
+  match *op {
+    Op::Nop => w!(f, "  nop"),
+    Op::Mov { src, dst } => w!(f, "  mov {src}, {dst}"),
+    Op::LoadConst { dst, idx } => w!(f, "  lc {idx}, {dst}"),
+    Op::LoadUpvalue { dst, idx } => w!(f, "  lup {idx}, {dst}"),
+    Op::SetUpvalue { src, idx } => w!(f, "  sup {src}, {idx}"),
+    Op::LoadMvar { dst, idx } => w!(f, "  lmv {idx}, {dst}"),
+    Op::SetMvar { src, idx } => w!(f, "  smv {src}, {idx}"),
+    Op::LoadGlobal { dst, name } => w!(f, "  lg {name}, {dst}"),
+    Op::SetGlobal { src, name } => w!(f, "  sg {src}, {name}"),
+    Op::LoadFieldReg { obj, name, dst } => w!(f, "  ln {obj}, {name}, {dst}"),
+    Op::LoadFieldConst { obj, name, dst } => w!(f, "  ln {obj}, {name}, {dst}"),
+    Op::LoadFieldOptReg { obj, name, dst } => w!(f, "  ln? {obj}, {name}, {dst}"),
+    Op::LoadFieldOptConst { obj, name, dst } => w!(f, "  ln? {obj}, {name}, {dst}"),
+    Op::SetField { obj, name, src } => w!(f, "  sn {src}, {obj}, {name}"),
+    Op::LoadIndex { obj, key, dst } => w!(f, "  li {obj}, {key}, {dst}"),
+    Op::LoadIndexOpt { obj, key, dst } => w!(f, "  li? {obj}, {key}, {dst}"),
+    Op::SetIndex { obj, key, src } => w!(f, "  si {src}, {obj}, {key}"),
+    Op::LoadSuper { dst } => w!(f, "  lsup {dst}"),
+    Op::LoadNil { dst } => w!(f, "  lnil {dst}"),
+    Op::LoadTrue { dst } => w!(f, "  lbt {dst}"),
+    Op::LoadFalse { dst } => w!(f, "  lbf {dst}"),
+    Op::LoadSmi { dst, value } => w!(f, "  lsmi {value}, {dst}"),
+    Op::MakeFn { dst, desc } => w!(f, "  mfn {desc}, {dst}"),
+    Op::MakeClass { dst, desc } => w!(f, "  mcls {desc}, {dst}"),
+    Op::MakeClassDerived { dst, desc } => w!(f, "  mclsd {desc}, {dst}"),
+    Op::MakeList { dst, desc } => w!(f, "  mlst {desc}, {dst}"),
+    Op::MakeListEmpty { dst } => w!(f, "  mlste {dst}"),
+    Op::MakeTable { dst, desc } => w!(f, "  mtbl {desc}, {dst}"),
+    Op::MakeTableEmpty { dst } => w!(f, "  mtble {dst}"),
+    Op::MakeTuple { dst, desc } => w!(f, "  mtup {desc}, {dst}"),
+    Op::MakeTupleEmpty { dst } => w!(f, "  mtupe {dst}"),
+    Op::Jump { offset } => w!(f, "  jmp {offset}"),
+    Op::JumpConst { offset } => w!(f, "  jmp {offset}"),
+    Op::JumpLoop { offset } => w!(f, "  jl {offset}"),
+    Op::JumpLoopConst { offset } => w!(f, "  jl {offset}"),
+    Op::JumpIfFalse { offset } => w!(f, "  jif {offset}"),
+    Op::JumpIfFalseConst { offset } => w!(f, "  jif {offset}"),
+    Op::Add { dst, lhs, rhs } => w!(f, "  add {lhs}, {rhs}, {dst}"),
+    Op::Sub { dst, lhs, rhs } => w!(f, "  sub {lhs}, {rhs}, {dst}"),
+    Op::Mul { dst, lhs, rhs } => w!(f, "  mul {lhs}, {rhs}, {dst}"),
+    Op::Div { dst, lhs, rhs } => w!(f, "  div {lhs}, {rhs}, {dst}"),
+    Op::Rem { dst, lhs, rhs } => w!(f, "  rem {lhs}, {rhs}, {dst}"),
+    Op::Pow { dst, lhs, rhs } => w!(f, "  pow {lhs}, {rhs}, {dst}"),
+    Op::Inv { val } => w!(f, "  inv {val}"),
+    Op::Not { val } => w!(f, "  not {val}"),
+    Op::CmpEq { dst, lhs, rhs } => w!(f, "  ceq {lhs}, {rhs}, {dst}"),
+    Op::CmpNe { dst, lhs, rhs } => w!(f, "  cne {lhs}, {rhs}, {dst}"),
+    Op::CmpGt { dst, lhs, rhs } => w!(f, "  cgt {lhs}, {rhs}, {dst}"),
+    Op::CmpGe { dst, lhs, rhs } => w!(f, "  cge {lhs}, {rhs}, {dst}"),
+    Op::CmpLt { dst, lhs, rhs } => w!(f, "  clt {lhs}, {rhs}, {dst}"),
+    Op::CmpLe { dst, lhs, rhs } => w!(f, "  cle {lhs}, {rhs}, {dst}"),
+    Op::CmpType { dst, lhs, rhs } => w!(f, "  cty {lhs}, {rhs}, {dst}"),
+    Op::Contains { dst, lhs, rhs } => w!(f, "  in {lhs}, {rhs}, {dst}"),
+    Op::IsNil { dst, val } => w!(f, "  cn {val}, {dst}"),
+    Op::Call { func, count } => w!(f, "  call {func}, {count}"),
+    Op::Call0 { func } => w!(f, "  call {func}, 0"),
+    Op::Import { dst, path } => w!(f, "  imp {path}, {dst}"),
+    Op::FinalizeModule => w!(f, "  fin"),
+    Op::Ret { val } => w!(f, "  ret {val}"),
+    Op::Yld { val } => w!(f, "  yld {val}"),
+  }
+}
 
-  writeln!(f)
+fn find_line(src: &str, span: &Span) -> Span {
+  let start = src[..span.start()].rfind('\n').unwrap_or(0);
+  let end = src[span.end()..]
+    .find('\n')
+    .map(|v| v + span.end())
+    .unwrap_or(src.len());
+  Span {
+    start: start as u32,
+    end: end as u32,
+  }
+}
+
+fn remainder_to(n: usize, v: usize) -> usize {
+  if v < n {
+    n - v
+  } else {
+    0
+  }
+}
+
+struct ProxyFmt<'a>(&'a mut (dyn Write + 'a), usize);
+
+impl<'a> Write for ProxyFmt<'a> {
+  fn write_str(&mut self, s: &str) -> core::fmt::Result {
+    self.1 += s.len();
+    self.0.write_str(s)
+  }
+}
+
+impl<'a> ProxyFmt<'a> {
+  fn written(&self) -> usize {
+    self.1
+  }
 }

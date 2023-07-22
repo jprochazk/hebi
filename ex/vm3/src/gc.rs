@@ -1,6 +1,7 @@
 use core::alloc::Layout;
 use core::any::type_name;
 use core::cell::{Cell, RefCell};
+use core::cmp::max;
 use core::fmt::{Debug, Display};
 use core::hash::{BuildHasherDefault, Hash};
 use core::marker::PhantomData;
@@ -10,7 +11,7 @@ use core::ptr::{addr_of, addr_of_mut, copy_nonoverlapping, NonNull};
 use core::{mem, ptr, slice, str};
 
 use allocator_api2::alloc::Allocator;
-use bumpalo::{AllocErr, Bump};
+use bumpalo::{vec, AllocErr, Bump};
 use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
@@ -135,6 +136,28 @@ impl Gc {
       slice::from_raw_parts(dst.as_ptr(), src.len())
     };
     Ok(dst)
+  }
+
+  pub fn try_collect_slice<'gc, T>(
+    &'gc self,
+    items: impl IntoIterator<Item = Result<T, AllocErr>>,
+  ) -> Result<&'gc [T], AllocErr> {
+    let mut iter = items.into_iter();
+    let size_hint = iter.size_hint();
+    let len = max(size_hint.1.unwrap_or(size_hint.0), 1);
+    let mut v = vec![in &self.heap];
+    v.try_reserve(len).map_err(|_| AllocErr)?;
+    if let Some(item) = iter.next() {
+      let item = item?;
+      // we have space for at least one item
+      v.push(item);
+    }
+    while let Some(item) = iter.next() {
+      let item = item?;
+      v.try_reserve(1).map_err(|_| AllocErr)?;
+      v.push(item);
+    }
+    Ok(v.into_bump_slice())
   }
 }
 

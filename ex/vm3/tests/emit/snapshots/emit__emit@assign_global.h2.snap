@@ -1,0 +1,20 @@
+---
+source: ex/vm3/tests/emit.rs
+expression: snapshot
+input_file: ex/vm3/tests/emit/input/assign_global.h2
+---
+function `__main__` (registers: 1, length: 9 (36 bytes))
+.const
+  0: Str("a")
+  1: Str("b")
+.code
+  lsmi 0, r0        ; a = 0
+  sg r0, [0]
+  lsmi 1, r0        ; b = 1
+  sg r0, [1]
+  lsmi 0, r0        ; a = 0
+  sg r0, [0]
+  fin
+  lnil r0
+  ret r0
+

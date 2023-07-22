@@ -1,7 +1,0 @@
----
-source: src/span/tests.rs
-expression: "SpannedError::new(\"error: test\",\n        17..31).report(\"lorem ipsum\\ndolor sit amet\\nconsectetur adipiscing elit\",\n    true)"
----
-error: test
-| dolor[4;31m sit amet[0m
-| [4;31mcons[0mectetur adipiscing elit

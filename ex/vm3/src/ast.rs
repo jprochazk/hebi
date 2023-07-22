@@ -1,6 +1,17 @@
+use core::fmt::Debug;
+
 use crate::lex::*;
 
-pub type Module<'arena, 'src> = &'arena [Stmt<'arena, 'src>];
+pub struct Module<'arena, 'src> {
+  pub src: &'src str,
+  pub body: &'arena [Stmt<'arena, 'src>],
+}
+
+impl<'arena, 'src> Debug for Module<'arena, 'src> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    Debug::fmt(&self.body, f)
+  }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ident<'src> {
@@ -99,6 +110,7 @@ impl<'arena, 'src> Expr<'arena, 'src> {
 
 #[derive(Clone, Copy, Debug)]
 pub enum ExprKind<'arena, 'src> {
+  Logical(&'arena Logical<'arena, 'src>),
   Binary(&'arena Binary<'arena, 'src>),
   Unary(&'arena Unary<'arena, 'src>),
   Block(&'arena Block<'arena, 'src>),
@@ -115,13 +127,26 @@ pub enum ExprKind<'arena, 'src> {
 }
 
 #[derive(Debug)]
+pub struct Logical<'arena, 'src> {
+  pub op: LogicalOp,
+  pub lhs: Expr<'arena, 'src>,
+  pub rhs: Expr<'arena, 'src>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum LogicalOp {
+  And,
+  Or,
+}
+
+#[derive(Debug)]
 pub struct Binary<'arena, 'src> {
   pub op: BinaryOp,
   pub lhs: Expr<'arena, 'src>,
   pub rhs: Expr<'arena, 'src>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOp {
   Add,
   Sub,
@@ -135,8 +160,6 @@ pub enum BinaryOp {
   Ge,
   Lt,
   Le,
-  And,
-  Or,
 }
 
 #[derive(Debug)]
