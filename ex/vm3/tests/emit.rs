@@ -4,10 +4,14 @@ use vm3::lex::Lexer;
 use vm3::op::emit;
 use vm3::syn::Parser;
 
-#[cfg(not(miri))]
+#[cfg(any(not(miri), rust_analyzer))]
 #[test]
 fn emit() {
-  insta::glob!("input/vars.h2", |path| {
+  let mut settings = insta::Settings::clone_current();
+  settings.set_snapshot_path("./emit/snapshots");
+  let _scope = settings.bind_to_scope();
+
+  insta::glob!("emit/input/*.h2", |path| {
     let file = std::fs::read_to_string(path).unwrap();
     let arena = Bump::new();
     let lex = Lexer::new(&file);

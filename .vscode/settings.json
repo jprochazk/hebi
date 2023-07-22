@@ -1,5 +1,8 @@
 {
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.check.extraArgs": ["--target-dir=./target_ra"],
-  "rust-analyzer.cargo.features": ["serde"]
+  "rust-analyzer.cargo.extraEnv": {
+    "RUSTFLAGS": "--cfg rust_analyzer"
+  },
+  "rust-analyzer.cargo.features": ["serde"],
 }

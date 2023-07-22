@@ -1,55 +1,18 @@
-//! # Garbage collector
-//!
-//! The VM uses an incremental, generational, mark-and-sweep garbage collector
-//! which is designed to be cache-friendly, have low memory overhead, and
-//! minimise pause times.
-//!
-//! The garbage collector supports two modes:
-//! - `frame`
-//! - `trace`
-//!
-//! ## Frame mode
-//!
-//! This mode is intended for use-cases in which you create a new VM instance
-//! for each run of a Hebi program.
-//!
-//! In this mode, memory allocations will never trigger a collection cycle.
-//! This means that the heap will continue to grow, and no memory will ever
-//! be reclaimed while the VM lives. All memory is properly freed once the VM is
-//! dropped.
-//!
-//! This means it completely unsuitable for anything long running- be careful,
-//! as you may find yourself easily running out of memory, or having your
-//! program slow down to a halt due to the OS paging memory in and out of disk.
-//!
-//! ## Trace mode
-//!
-//! This mode is intended for longer-running tasks, where you'd otherwise have a
-//! chance of running out of memory without any memory reclamation mechanism.
-//! Example use-cases include the main loop of a game, or a TCP listener accept
-//! loop.
-//!
-//! Memory is allocated and managed by a proper garbage collector. A memory
-//! allocation may trigger a collection cycle.
-//!
-//! The garbage collector is an implementation of [this design](http://web.archive.org/web/20220107060536/http://wiki.luajit.org/New-Garbage-Collector)
-//! by Mike Pall, originally intended for use in LuaJIT 3.
-//!
-//! NOTE: For the time being, the garbage collector uses a simpler tri-color
-//! incremental algorithm. The plan is to eventually implement the full
-//! quad-color algorithm.
 use core::alloc::Layout;
 use core::any::type_name;
-use core::cell::Cell;
+use core::cell::{Cell, RefCell};
 use core::fmt::{Debug, Display};
-use core::hash::Hash;
+use core::hash::{BuildHasherDefault, Hash};
 use core::marker::PhantomData;
+use core::mem::transmute;
 use core::ops::Deref;
 use core::ptr::{addr_of, addr_of_mut, copy_nonoverlapping, NonNull};
 use core::{mem, ptr, slice, str};
 
 use allocator_api2::alloc::Allocator;
 use bumpalo::{AllocErr, Bump};
+use hashbrown::HashSet;
+use rustc_hash::FxHasher;
 
 use crate::val::Value;
 
@@ -88,6 +51,7 @@ mod private {
 pub struct Gc {
   heap: Bump,
   drop_chain: Cell<Option<NonNull<Box<()>>>>,
+  string_table: RefCell<HashSet<&'static str, BuildHasherDefault<FxHasher>, Alloc<'static>>>,
 
   /// Ensure that `Gc` is not `Send` or `Sync`
   _not_thread_safe: PhantomData<()>,
@@ -102,6 +66,10 @@ impl Gc {
     Gc {
       heap: Bump::with_capacity(capacity),
       drop_chain: Cell::new(None),
+      string_table: RefCell::new(HashSet::with_hasher_in(
+        BuildHasherDefault::default(),
+        Alloc(Cell::new(ptr::null()), PhantomData),
+      )),
       _not_thread_safe: PhantomData,
     }
   }
@@ -142,6 +110,18 @@ impl Gc {
       slice::from_raw_parts(dst.as_ptr(), src.len())
     };
     Ok(unsafe { str::from_utf8_unchecked(dst) })
+  }
+
+  pub fn try_intern_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocErr> {
+    if let Some(str) = self.string_table.borrow().get(src).copied() {
+      return Ok(str);
+    }
+    let str = self.try_alloc_str(src)?;
+    let str = unsafe { transmute::<&'gc str, &'static str>(str) };
+    let mut table = self.string_table.borrow_mut();
+    table.allocator().set(self);
+    table.insert(str);
+    Ok(str)
   }
 
   /// Allocate a slice on the GC heap.

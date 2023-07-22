@@ -3,16 +3,16 @@
 mod builder;
 
 use alloc::format;
-use alloc::string::String;
 use core::cmp::max;
 use core::fmt::{Debug, Display};
 use core::hash::BuildHasherDefault;
 
+use beef::lean::Cow;
 use bumpalo::collections::{CollectionAllocErr, Vec};
 use bumpalo::AllocErr;
 use rustc_hash::FxHasher;
 
-use self::builder::BytecodeBuilder;
+use self::builder::{BytecodeBuilder, ConstantPoolBuilder};
 use super::{Mvar, Op, Reg, Upvalue};
 use crate::ast::{Block, Expr, Func, GetVar, Let, Lit, Loop, Module, Return, Stmt};
 use crate::error::StdError;
@@ -20,6 +20,7 @@ use crate::gc::{Gc, Ref};
 use crate::lex::Span;
 use crate::obj::func::{Code, FunctionDescriptor, Params};
 use crate::obj::module::ModuleDescriptor;
+use crate::obj::string::Str;
 use crate::op::asm::*;
 use crate::op::Smi;
 use crate::{alloc, Arena};
@@ -28,11 +29,11 @@ pub type Result<T> = core::result::Result<T, EmitError>;
 
 #[derive(Debug)]
 pub struct EmitError {
-  pub message: String,
+  pub message: Cow<'static, str>,
 }
 
 impl EmitError {
-  pub fn new(message: impl Into<String>) -> EmitError {
+  pub fn new(message: impl Into<Cow<'static, str>>) -> EmitError {
     EmitError {
       message: message.into(),
     }
@@ -42,7 +43,7 @@ impl EmitError {
 impl From<CollectionAllocErr> for EmitError {
   fn from(e: CollectionAllocErr) -> Self {
     match e {
-      CollectionAllocErr::CapacityOverflow => Self::new(String::from("capacity overflow")),
+      CollectionAllocErr::CapacityOverflow => Self::new("capacity overflow"),
       CollectionAllocErr::AllocErr => Self::new(format!("{}", AllocErr)),
     }
   }
@@ -143,6 +144,11 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
   fn emit(&mut self, op: Op, span: impl Into<Span>) -> Result<()> {
     self.builder.emit(op, span)?;
     Ok(())
+  }
+
+  #[inline]
+  fn pool(&mut self) -> &mut ConstantPoolBuilder<'arena> {
+    self.builder.pool()
   }
 
   #[inline]
@@ -468,7 +474,10 @@ fn lit<'arena, 'gc, 'src, 'state>(
   let Some(dst) = dst else { return Ok(None) };
 
   match node {
-    Float(value) => todo!(),
+    Float(v) => {
+      let v = f.pool().float(*v)?;
+      f.emit(load_const(dst, v), span)?;
+    }
     Int(value) => {
       if let Ok(value) = i16::try_from(*value) {
         f.emit(load_smi(dst, Smi(value)), span)?;
@@ -477,131 +486,22 @@ fn lit<'arena, 'gc, 'src, 'state>(
         todo!()
       }
     }
-    Nil => todo!(),
-    Bool(value) => todo!(),
-    String(value) => todo!(),
-    Record(value) => todo!(),
-    List(value) => todo!(),
-    Tuple(value) => todo!(),
+    Nil => {
+      f.emit(load_nil(dst), span)?;
+    }
+    Bool(v) => match *v {
+      true => f.emit(load_true(dst), span)?,
+      false => f.emit(load_false(dst), span)?,
+    },
+    String(v) => {
+      let v = Str::try_intern_in(f.gc, v)?;
+      let v = f.pool().str(v)?;
+      f.emit(load_const(dst, v), span)?;
+    }
+    Record(v) => todo!(),
+    List(v) => todo!(),
+    Tuple(v) => todo!(),
   }
 
   Ok(None)
 }
-
-/*
-
-register allocation:
-
-follows a stack discipline, registers are allocated as needed
-
-- temporary registers used for intermediate results in expressions
-  are freed at the end of their local scope, which is immediately
-  before exiting the function which emits the expression
-
-- variables are stored in `state.locals`, and freed upon exiting the current scope
-
-  let v = 10 + 10
-  ^ enter let_
-
-  let v = 10 + 10
-      ^ allocate register `r0`
-
-  let v = 10 + 10
-          ^ enter expr(r0)
-
-  let v = 10 + 10
-          ^ lhs emitted first, enter literal(r0)
-
-  let v = 10 + 10
-          ^ literal is directly written to `r0`
-            no register is returned
-
-  let v = 10 + 10
-               ^ rhs is emitted next
-                 allocate fresh register (r1)
-                 enter literal(r1)
-
-  let v = 10 + 10
-               ^ literal is written to `r1`
-                 no register is returned
-
-  let v = 10 + 10
-          ^ lhs and rhs are emitted,
-            emit `add r1, r1, r0`
-            return no register
-            # Q: Is there ever a scenario where we _wouldn't_ use `r1` as `dst`?
-              A: no, but even though `dst` will always be `r1`,
-                 the `lhs` or `rhs` may be variables, which would mean
-                 that `dst` is not always equal to `lhs`
-
-  # exit all the way to let_
-
-  let v = 10 + 10
-      ^ received no register from `value`
-        do not emit anything
-        if global scope: define `v` as mvar (set_mvar(r0))
-        else:            define `v` as local (add `r0` to locals)
-
-  let u = v + 10
-  ^ enter let_
-
-  let u = v + 10
-      ^ allocate register `r1`
-
-  let u = v + 10
-          ^ enter expr(r1)
-
-  let u = v + 10
-          ^ lhs first, enter get_var(r1)
-
-  let u = v + 10
-          ^ do not emit anything
-            return register `r0`
-
-  let u = v + 10
-              ^ alloc fresh register (r2)
-                enter expr(r2)
-
-  let u = v + 10
-              ^ enter literal(r2)
-
-  let u = v + 10
-              ^ literal is written to r2
-
-  let u = v + 10
-          ^ lhs=r0, rhs=r2
-            emit(add r1, r0, r2)
-            return no register
-
-  let u = v + 10
-      ^ got no register
-        do not emit anything
-        if global scope: define `u` as mvar (set_mvar(r1))
-        else:            define `u` as local (add `r1` to locals)
-
-
-
-  # Q: Can we use only 2 registers for the output of:
-  10 + 10 + 10 + 10
-  ^ expr(r0)
-  ^ literal(r0)
-  10 + 10 + 10 + 10
-       ^ expr(r1)
-       ^ literal(r1)
-  10 + 10 + 10 + 10
-            ^ expr(r2)
-            ^ literal(r2)
-  10 + 10 + 10 + 10
-                 ^ expr(r3)
-                 ^ literal(r3)
-  10 + 10 + 10 + 10
-               ^ add r2, r2, r3
-  10 + 10 + 10 + 10
-          ^ add r1, r1, r2
-  10 + 10 + 10 + 10
-     ^ add r0, r0, r1
-
-  # A: No, we have to use extra registers where possible
-
-
-*/

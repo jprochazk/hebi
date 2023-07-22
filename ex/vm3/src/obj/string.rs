@@ -17,6 +17,11 @@ impl Str {
     gc.try_alloc(Str { data })
   }
 
+  pub fn try_intern_in(gc: &Gc, data: &str) -> Result<Ref<Self>, AllocErr> {
+    let data = NonNull::from(gc.try_intern_str(data)?);
+    gc.try_alloc(Str { data })
+  }
+
   pub fn as_str(&self) -> &str {
     unsafe { self.data.as_ref() }
   }
@@ -65,7 +70,7 @@ impl PartialEq<str> for Str {
 
 impl PartialOrd for Str {
   fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-    self.as_str().partial_cmp(other.as_str())
+    Some(self.cmp(other))
   }
 }
 impl Ord for Str {

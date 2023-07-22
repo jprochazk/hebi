@@ -1,7 +1,7 @@
 ---
 source: ex/vm3/tests/parse.rs
 expression: snapshot
-input_file: ex/vm3/tests/input/basic.h2
+input_file: ex/vm3/tests/parse/input/basic.h2
 ---
 [
     Stmt {

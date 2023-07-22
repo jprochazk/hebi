@@ -1,0 +1,15 @@
+// TODO: shadowed vars, upvalues, globals
+
+// module vars
+let a = 10
+let b = 20
+let c = b
+let a = c
+
+{
+  // locals
+  let a = 10
+  let b = 20
+  let c = b
+  let a = c
+}

@@ -1,3 +1,5 @@
+use core::fmt::{Debug, Display};
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub struct u24([u8; 3]);
@@ -43,6 +45,18 @@ impl From<u24> for u32 {
 impl From<u24> for usize {
   fn from(value: u24) -> Self {
     u32::from(value) as usize
+  }
+}
+
+impl Display for u24 {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    Display::fmt(&u32::from(*self), f)
+  }
+}
+
+impl Debug for u24 {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    Debug::fmt(&u32::from(*self), f)
   }
 }
 
