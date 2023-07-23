@@ -1,0 +1,27 @@
+{
+  let a
+  let b
+
+  a && b
+}
+
+{
+  let a
+  let b
+
+  let c = a && b
+}
+
+{
+  let a
+  let b
+
+  a || b
+}
+
+{
+  let a
+  let b
+
+  let c = a || b
+}

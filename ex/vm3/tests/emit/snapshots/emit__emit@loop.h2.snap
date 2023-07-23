@@ -3,11 +3,7 @@ source: ex/vm3/tests/emit.rs
 expression: snapshot
 input_file: ex/vm3/tests/emit/input/loop.h2
 ---
-function `__main__` (registers: 3, length: 15 (60 bytes))
-.locals
-  i: r0
-  a: r1
-  b: r2
+function `__main__` (registers: 2, length: 15 (60 bytes))
 .code
 <loop::start#0>:
   jl    loop::start#0
@@ -18,15 +14,15 @@ function `__main__` (registers: 3, length: 15 (60 bytes))
   jl    loop::start#1
 <loop::end#1>:
 <loop::start#2>:
-  lnil  r1              ; let a
+  lnil  r0              ; let a
   jmp   loop::end#2     ; break
-  lnil  r2              ; let b
+  lnil  r1              ; let b
   jl    loop::end#1
 <loop::end#2>:
 <loop::start#3>:
-  lnil  r1              ; let a
+  lnil  r0              ; let a
   jl    loop::end#2     ; continue
-  lnil  r2              ; let b
+  lnil  r1              ; let b
   jl    loop::end#2
 <loop::end#3>:
   fin

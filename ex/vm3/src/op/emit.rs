@@ -77,22 +77,36 @@ struct Compiler<'arena, 'gc, 'src> {
   /// they're instantiated per module.
   vars: HashMap<&'src str, Mvar<u16>, &'arena Arena>,
 
-  funcs: Vec<'arena, Function<'arena, 'gc, 'src>>,
+  funcs: Vec<'arena, Function<'arena, 'src>>,
 }
 
-struct Function<'arena, 'gc, 'src> {
+struct Function<'arena, 'src> {
   loop_: Option<LoopState<'arena>>,
 
-  arena: &'arena Arena,
-  gc: &'gc Gc,
   name: &'src str,
 
   builder: BytecodeBuilder<'arena>,
   registers: Registers,
 
   params: Params,
-  scope: Scope,
-  locals: Vec<'arena, (Scope, &'src str, Reg<u8>)>,
+  scopes: Vec<'arena, Scope<'arena, 'src>>,
+}
+
+pub struct Scope<'arena, 'src> {
+  pub locals: Vec<'arena, LocalVar<'src>>,
+}
+
+impl<'arena, 'src> Scope<'arena, 'src> {
+  fn new_in(arena: &'arena Arena) -> Self {
+    Self {
+      locals: Vec::new_in(arena),
+    }
+  }
+}
+
+pub struct LocalVar<'src> {
+  pub name: &'src str,
+  pub reg: Reg<u8>,
 }
 
 struct LoopStateBasic<'arena> {
@@ -108,6 +122,7 @@ enum LoopState<'arena> {
   Latched(LoopStateLatched<'arena>),
 }
 
+#[allow(dead_code, clippy::wrong_self_convention)]
 impl<'arena> LoopState<'arena> {
   fn basic(continue_to: LoopLabel, break_to: MultiLabel<'arena>) -> Self {
     Self::Basic(LoopStateBasic {
@@ -162,18 +177,17 @@ macro_rules! fs {
   }};
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Scope(usize);
-
 impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
   #[inline]
   fn scope<F, T>(&mut self, f: F) -> Result<T>
   where
     F: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<T>,
   {
-    fmut!(self).scope.0 += 1;
+    let base = Reg(fs!(self).registers.current);
+    fmut!(self).scopes.push(Scope::new_in(self.arena));
     let result = f(self);
-    fmut!(self).scope.0 -= 1;
+    fmut!(self).scopes.pop();
+    self.free(base);
     result
   }
 
@@ -223,7 +237,7 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
 
   #[inline]
   fn is_global_scope(&self) -> bool {
-    self.is_top_level() && fs!(self).scope.0 <= 1
+    self.is_top_level() && fs!(self).scopes.len() <= 1
   }
 
   #[inline]
@@ -261,11 +275,19 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       // no need to emit anything, just add it to locals
       let func = fmut!(self);
       if !func
+        .scopes
+        .last()
+        .unwrap()
         .locals
         .iter()
-        .any(|(scope, name0, _)| (scope, *name0) == (&func.scope, name))
+        .any(|v| v.name == name)
       {
-        func.locals.push((func.scope, name, reg));
+        func
+          .scopes
+          .last_mut()
+          .unwrap()
+          .locals
+          .push(LocalVar { name, reg });
       }
       // note: doing nothing is fine if `locals` already contains
       // `(scope, name)`, `reg` is already reusing an existing register
@@ -305,19 +327,24 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
   }
 
   fn resolve_local(&self, name: &'src str) -> Option<Reg<u8>> {
-    fs!(self)
-      .locals
-      .iter()
-      .rfind(|(_, var, _)| *var == name)
-      .map(|(_, _, register)| *register)
+    for scope in fs!(self).scopes.iter().rev() {
+      for local in scope.locals.iter().rev() {
+        if local.name == name {
+          return Some(local.reg);
+        }
+      }
+    }
+    None
   }
 
-  fn resolve_local_in_scope(&self, scope: Scope, name: &'src str) -> Option<Reg<u8>> {
-    fs!(self)
-      .locals
-      .iter()
-      .rfind(|(scope0, var, _)| (scope0, *var) == (&scope, name))
-      .map(|(_, _, register)| *register)
+  fn resolve_local_in_scope(&self, name: &'src str) -> Option<Reg<u8>> {
+    let scope = fs!(self).scopes.last().unwrap();
+    for local in scope.locals.iter().rev() {
+      if local.name == name {
+        return Some(local.reg);
+      }
+    }
+    None
   }
 
   fn resolve_upvalue(&self, name: &'src str) -> Option<Upvalue<u16>> {
@@ -359,16 +386,13 @@ fn top_level<'arena, 'gc, 'src>(
   c.funcs.push(Function {
     loop_: None,
 
-    arena,
-    gc,
     name: "__main__",
 
     builder: BytecodeBuilder::new_in(arena),
     registers: Registers::default(),
 
     params: Params::empty(),
-    scope: Scope(0),
-    locals: Vec::new_in(arena),
+    scopes: Vec::new_in(arena),
   });
 
   c.scope(|c| {
@@ -392,7 +416,6 @@ fn top_level<'arena, 'gc, 'src>(
     ops: &ops,
     pool: &pool,
     spans: &spans,
-    locals: &func.locals[..],
     labels: &labels,
     stack_space: func.registers.total,
   };
@@ -432,7 +455,7 @@ fn let_<'arena, 'gc, 'src>(
   span: Span,
 ) -> Result<()> {
   // note: `declare_var` at the end is responsible for freeing `dst` if necessary
-  let dst = match c.resolve_local_in_scope(fs!(c).scope, node.name.lexeme) {
+  let dst = match c.resolve_local_in_scope(node.name.lexeme) {
     Some(reg) => reg,
     None => c.reg()?,
   };
@@ -486,8 +509,7 @@ macro_rules! build_loop {
     lend.bind($c.builder())
   }};
 
-  (latched $name:literal,
-    ($c:ident)
+  (latched $name:literal, ($c:ident)
     start:$start:block
     body:$body:block
     latch:$latch:block
@@ -590,7 +612,7 @@ fn expr<'arena, 'gc, 'src>(
 
   let span = node.span;
   match node.kind {
-    Logical(node) => logical(c, dst, node, span),
+    Logical(node) => logical(c, dst, node),
     Binary(node) => binary(c, dst, node, span),
     Unary(node) => unary(c, dst, node, span),
     Block(node) => block(c, dst, node),
@@ -611,30 +633,37 @@ fn logical<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Logical<'arena, 'src>,
-  span: Span,
 ) -> Result<Option<Reg<u8>>> {
   use LogicalOp::*;
 
   let label_index = c.builder().label_index();
+  let (free, dst) = match dst {
+    Some(dst) => (false, dst),
+    None => (true, c.reg()?),
+  };
+  let name = match node.op {
+    And => "and",
+    Or => "or",
+  };
+  let mut use_lhs = BasicLabel::new(name, label_index);
 
+  assign_to(c, dst, &node.lhs)?;
   match node.op {
     And => {
-      let (free, lhs) = match dst {
-        Some(dst) => (false, dst),
-        None => (true, c.reg()?),
-      };
-
-      let use_lhs = BasicLabel::new("and", label_index);
-      let use_rhs = BasicLabel::new("and", label_index);
-
-      if free {
-        c.free(lhs);
-      }
+      use_lhs.emit(c.builder(), jump_if_false(dst), node.lhs.span)?;
     }
-    Or => {}
+    Or => {
+      use_lhs.emit(c.builder(), jump_if_true(dst), node.lhs.span)?;
+    }
+  }
+  assign_to(c, dst, &node.rhs)?;
+  use_lhs.bind(c.builder())?;
+
+  if free {
+    c.free(dst);
   }
 
-  todo!()
+  Ok(None)
 }
 
 fn binary<'arena, 'gc, 'src>(
@@ -643,29 +672,35 @@ fn binary<'arena, 'gc, 'src>(
   node: &Binary<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  let lhs = expr(c, dst, &node.lhs)?.or(dst);
+  let (free, dst) = match dst {
+    Some(dst) => (false, dst),
+    None => (true, c.reg()?),
+  };
+
+  let lhs = expr(c, Some(dst), &node.lhs)?.unwrap_or(dst);
   let rhs = c.reg()?;
   let rhs = expr(c, Some(rhs), &node.rhs)?.unwrap_or(rhs);
 
   use BinaryOp::*;
-  if let (Some(dst), Some(lhs)) = (dst, lhs) {
-    match node.op {
-      Add => c.emit(add(dst, lhs, rhs), span)?,
-      Sub => c.emit(sub(dst, lhs, rhs), span)?,
-      Div => c.emit(div(dst, lhs, rhs), span)?,
-      Mul => c.emit(mul(dst, lhs, rhs), span)?,
-      Rem => c.emit(rem(dst, lhs, rhs), span)?,
-      Pow => c.emit(pow(dst, lhs, rhs), span)?,
-      Eq => c.emit(cmp_eq(dst, lhs, rhs), span)?,
-      Ne => c.emit(cmp_ne(dst, lhs, rhs), span)?,
-      Gt => c.emit(cmp_gt(dst, lhs, rhs), span)?,
-      Ge => c.emit(cmp_ge(dst, lhs, rhs), span)?,
-      Lt => c.emit(cmp_lt(dst, lhs, rhs), span)?,
-      Le => c.emit(cmp_le(dst, lhs, rhs), span)?,
-    }
+  match node.op {
+    Add => c.emit(add(dst, lhs, rhs), span)?,
+    Sub => c.emit(sub(dst, lhs, rhs), span)?,
+    Div => c.emit(div(dst, lhs, rhs), span)?,
+    Mul => c.emit(mul(dst, lhs, rhs), span)?,
+    Rem => c.emit(rem(dst, lhs, rhs), span)?,
+    Pow => c.emit(pow(dst, lhs, rhs), span)?,
+    Eq => c.emit(cmp_eq(dst, lhs, rhs), span)?,
+    Ne => c.emit(cmp_ne(dst, lhs, rhs), span)?,
+    Gt => c.emit(cmp_gt(dst, lhs, rhs), span)?,
+    Ge => c.emit(cmp_ge(dst, lhs, rhs), span)?,
+    Lt => c.emit(cmp_lt(dst, lhs, rhs), span)?,
+    Le => c.emit(cmp_le(dst, lhs, rhs), span)?,
   }
 
   c.free(rhs);
+  if free {
+    c.free(dst)
+  }
 
   Ok(None)
 }

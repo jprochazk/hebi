@@ -4,8 +4,6 @@ expression: snapshot
 input_file: ex/vm3/tests/emit/input/unary.h2
 ---
 function `__main__` (registers: 1, length: 13 (52 bytes))
-.locals
-  v: r0
 .code
   lnil  r0              ; let v
   lsmi  1, r0           ; v = -1

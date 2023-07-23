@@ -9,8 +9,6 @@ function `__main__` (registers: 4, length: 14 (56 bytes))
   1: TableDescriptor { start: Reg(1), keys: {"c", "b", "a"} }
   2: TableDescriptor { start: Reg(2), keys: {"b"} }
   3: TableDescriptor { start: Reg(1), keys: {"a"} }
-.locals
-  v: r0
 .code
   lnil  r0              ; let v
   mtble r0              ; v = #{}

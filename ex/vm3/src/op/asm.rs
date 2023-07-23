@@ -83,8 +83,15 @@ pub fn jump() -> Op {
   }
 }
 
-pub fn jump_if_false(val: Reg<u8>) -> Op {
-  Op::JumpIfFalse {
+pub fn jump_if_false(val: Reg<u8>) -> impl Fn() -> Op {
+  move || Op::JumpIfFalse {
+    val,
+    offset: Offset(0u8.into()),
+  }
+}
+
+pub fn jump_if_true(val: Reg<u8>) -> impl Fn() -> Op {
+  move || Op::JumpIfTrue {
     val,
     offset: Offset(0u8.into()),
   }

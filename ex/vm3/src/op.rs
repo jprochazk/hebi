@@ -56,6 +56,8 @@ pub enum Op {
   JumpLoopConst { offset: Const<u16> },
   JumpIfFalse { val: Reg<u8>, offset: Offset<u16> },
   JumpIfFalseConst { val: Reg<u8>, offset: Const<u16> },
+  JumpIfTrue { val: Reg<u8>, offset: Offset<u16> },
+  JumpIfTrueConst { val: Reg<u8>, offset: Const<u16> },
   Add { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Sub { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Mul { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
@@ -200,7 +202,12 @@ impl Op {
     use Op::*;
     matches!(
       self,
-      Jump { .. } | JumpConst { .. } | JumpIfFalse { .. } | JumpIfFalseConst { .. }
+      Jump { .. }
+        | JumpConst { .. }
+        | JumpIfFalse { .. }
+        | JumpIfFalseConst { .. }
+        | JumpIfTrue { .. }
+        | JumpIfTrueConst { .. }
     )
   }
 

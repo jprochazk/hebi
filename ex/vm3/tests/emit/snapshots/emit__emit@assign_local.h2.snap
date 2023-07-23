@@ -4,9 +4,6 @@ expression: snapshot
 input_file: ex/vm3/tests/emit/input/assign_local.h2
 ---
 function `__main__` (registers: 2, length: 7 (28 bytes))
-.locals
-  a: r0
-  b: r1
 .code
   lsmi  0, r0           ; let a = 0
   lsmi  1, r1           ; let b = 1

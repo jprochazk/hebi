@@ -31,7 +31,7 @@ fn emit() {
 
 /* #[test]
 fn _temp() {
-  let file = include_str!("./emit/input/binary.h2");
+  let file = include_str!("./emit/input/logical.h2");
   let arena = Bump::new();
   let lex = Lexer::new(file);
   let parser = Parser::new(&arena, lex);

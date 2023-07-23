@@ -6,8 +6,7 @@ use bumpalo::AllocErr;
 use super::string::Str;
 use crate::gc::{Gc, Object, Ref};
 use crate::lex::Span;
-use crate::op::emit::Scope;
-use crate::op::{Op, Reg};
+use crate::op::Op;
 use crate::val::Constant;
 
 pub struct FunctionDescriptor {
@@ -22,7 +21,6 @@ pub struct FunctionDescriptor {
 pub struct DebugInfo {
   src: Ref<Str>,
   spans: NonNull<[Span]>,
-  locals: NonNull<[(Ref<Str>, Reg<u8>)]>,
   labels: NonNull<[(usize, LabelInfo)]>,
 }
 
@@ -53,11 +51,6 @@ impl FunctionDescriptor {
     let ops = gc.try_alloc_slice(code.ops)?.into();
     let pool = gc.try_alloc_slice(code.pool)?.into();
     let spans = gc.try_alloc_slice(code.spans)?.into();
-    let locals = code
-      .locals
-      .iter()
-      .map(|(_, name, reg)| Ok((Str::try_intern_in(gc, name)?, *reg)));
-    let locals = gc.try_collect_slice(locals)?.into();
     let labels = gc.try_alloc_slice(code.labels)?.into();
 
     gc.try_alloc(FunctionDescriptor {
@@ -69,7 +62,6 @@ impl FunctionDescriptor {
       dbg: DebugInfo {
         src: code.src,
         spans,
-        locals,
         labels,
       },
     })
@@ -152,7 +144,6 @@ pub struct Code<'a> {
   pub ops: &'a [Op],
   pub pool: &'a [Constant],
   pub spans: &'a [Span],
-  pub locals: &'a [(Scope, &'a str, Reg<u8>)],
   pub labels: &'a [(usize, LabelInfo)],
   pub stack_space: u8,
 }
@@ -170,7 +161,6 @@ impl<'a> Display for Disasm<'a> {
     let func = self.0;
 
     let src = func.dbg.src.as_str();
-    let locals = unsafe { func.dbg.locals.as_ref() };
     let labels = unsafe { func.dbg.labels.as_ref() };
     let ops = func.ops();
     let pool = func.pool();
@@ -200,13 +190,6 @@ impl<'a> Display for Disasm<'a> {
       writeln!(f, ".const")?;
       for (i, v) in pool.iter().enumerate() {
         writeln!(f, "  {i}: {v:?}")?;
-      }
-    }
-
-    if !locals.is_empty() {
-      writeln!(f, ".locals")?;
-      for (name, reg) in locals.iter() {
-        writeln!(f, "  {name}: {reg}")?;
       }
     }
 
@@ -311,8 +294,10 @@ fn disasm_op(
       Op::JumpConst { offset } =>                 w!(f, "  jmp   {}", label!(labels, +, base, c!(pool, offset, Offset))),
       Op::JumpLoop { offset } =>                  w!(f, "  jl    {}", label!(labels, -, base, offset)),
       Op::JumpLoopConst { offset } =>             w!(f, "  jl    {}", label!(labels, -, base, c!(pool, offset, Offset))),
-      Op::JumpIfFalse { val, offset } =>          w!(f, "  jif   {val}, {}", label!(labels, +, base, offset)),
-      Op::JumpIfFalseConst { val, offset } =>     w!(f, "  jif   {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
+      Op::JumpIfFalse { val, offset } =>          w!(f, "  jf    {val}, {}", label!(labels, +, base, offset)),
+      Op::JumpIfFalseConst { val, offset } =>     w!(f, "  jf    {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
+      Op::JumpIfTrue { val, offset } =>           w!(f, "  jt    {val}, {}", label!(labels, +, base, offset)),
+      Op::JumpIfTrueConst { val, offset } =>      w!(f, "  jt    {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
       Op::Add { dst, lhs, rhs } =>                w!(f, "  add   {lhs}, {rhs}, {dst}"),
       Op::Sub { dst, lhs, rhs } =>                w!(f, "  sub   {lhs}, {rhs}, {dst}"),
       Op::Mul { dst, lhs, rhs } =>                w!(f, "  mul   {lhs}, {rhs}, {dst}"),

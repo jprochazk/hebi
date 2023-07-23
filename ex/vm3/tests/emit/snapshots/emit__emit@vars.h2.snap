@@ -4,10 +4,6 @@ expression: snapshot
 input_file: ex/vm3/tests/emit/input/vars.h2
 ---
 function `__main__` (registers: 3, length: 15 (60 bytes))
-.locals
-  a: r0
-  b: r1
-  c: r2
 .code
   lsmi  10, r0          ; let a = 10
   smv   r0, m0

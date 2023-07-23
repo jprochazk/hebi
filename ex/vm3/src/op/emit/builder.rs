@@ -79,7 +79,7 @@ impl BasicLabel {
 
   pub fn emit<F>(&mut self, b: &mut BytecodeBuilder, op: F, span: Span) -> Result<()>
   where
-    F: Fn() -> Op,
+    F: FnOnce() -> Op,
   {
     self.referrer_offset = Some(b.code.len());
     let op = op();
@@ -269,6 +269,13 @@ fn patch_jump(referrer: usize, b: &mut BytecodeBuilder) -> Result<()> {
       Err(_) => {
         let offset = pool.offset(Offset(offset as u64))?;
         code[referrer] = Op::JumpIfFalseConst { val, offset };
+      }
+    },
+    Op::JumpIfTrue { val, .. } => match u16::try_from(offset).map(Offset) {
+      Ok(offset) => code[referrer] = Op::JumpIfTrue { val, offset },
+      Err(_) => {
+        let offset = pool.offset(Offset(offset as u64))?;
+        code[referrer] = Op::JumpIfTrueConst { val, offset };
       }
     },
     op => {
