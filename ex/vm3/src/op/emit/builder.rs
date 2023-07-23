@@ -256,25 +256,21 @@ fn patch_jump(referrer: usize, b: &mut BytecodeBuilder) -> Result<()> {
   let pool = &mut b.pool;
 
   let offset = code.len() - referrer;
-  let offset = u24::try_from(offset)
-    .map(Offset)
-    .map_err(|_| Offset(offset as u64));
-
-  match (offset, code[referrer]) {
-    (Ok(offset), Op::Jump { .. }) => {
-      code[referrer] = Op::Jump { offset };
-    }
-    (Err(offset), Op::Jump { .. }) => {
-      let offset = pool.offset(offset)?;
-      code[referrer] = Op::JumpConst { offset };
-    }
-    (Ok(offset), Op::JumpIfFalse { .. }) => {
-      code[referrer] = Op::JumpIfFalse { offset };
-    }
-    (Err(offset), Op::JumpIfFalse { .. }) => {
-      let offset = pool.offset(offset)?;
-      code[referrer] = Op::JumpIfFalseConst { offset };
-    }
+  match code[referrer] {
+    Op::Jump { .. } => match u24::try_from(offset).map(Offset) {
+      Ok(offset) => code[referrer] = Op::Jump { offset },
+      Err(_) => {
+        let offset = pool.offset(Offset(offset as u64))?;
+        code[referrer] = Op::JumpConst { offset };
+      }
+    },
+    Op::JumpIfFalse { val, .. } => match u16::try_from(offset).map(Offset) {
+      Ok(offset) => code[referrer] = Op::JumpIfFalse { val, offset },
+      Err(_) => {
+        let offset = pool.offset(Offset(offset as u64))?;
+        code[referrer] = Op::JumpIfFalseConst { val, offset };
+      }
+    },
     op => {
       return Err(EmitError::new(format!(
         "invalid instruction {op:?} at offset {referrer}, expected forward jump instruction"

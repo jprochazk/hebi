@@ -5,25 +5,25 @@ input_file: ex/vm3/tests/emit/input/list.h2
 ---
 function `__main__` (registers: 4, length: 14 (56 bytes))
 .const
-  0: List(ListDescriptor { start: Reg(1), count: 1 })
-  1: List(ListDescriptor { start: Reg(1), count: 3 })
-  2: List(ListDescriptor { start: Reg(2), count: 1 })
-  3: List(ListDescriptor { start: Reg(1), count: 1 })
+  0: ListDescriptor { start: Reg(1), count: 1 }
+  1: ListDescriptor { start: Reg(1), count: 3 }
+  2: ListDescriptor { start: Reg(2), count: 1 }
+  3: ListDescriptor { start: Reg(1), count: 1 }
 .locals
   v: r0
 .code
-  lnil r0           ; let v
+  lnil  r0          ; let v
   mlste r0          ; v = #[]
-  lsmi 0, r1        ; v = #[0]
-  mlst [0], r0
-  lsmi 0, r1        ; v = #[0, 1, 2]
-  lsmi 1, r2
-  lsmi 2, r3
-  mlst [1], r0
-  lsmi 0, r2        ; v = #[#[0]]
-  mlst [2], r1
-  mlst [3], r0
+  lsmi  0, r1       ; v = #[0]
+  mlst  [0], r0
+  lsmi  0, r1       ; v = #[0, 1, 2]
+  lsmi  1, r2
+  lsmi  2, r3
+  mlst  [1], r0
+  lsmi  0, r2       ; v = #[#[0]]
+  mlst  [2], r1
+  mlst  [3], r0
   fin
-  lnil r0
-  ret r0
+  lnil  r0
+  ret   r0
 

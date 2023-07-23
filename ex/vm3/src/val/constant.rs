@@ -7,7 +7,7 @@ use crate::obj::table::TableDescriptor;
 use crate::obj::tuple::TupleDescriptor;
 use crate::op::Offset;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum Constant {
   Float(NFloat),
   Offset(Offset<u64>),
@@ -112,6 +112,19 @@ impl Display for Constant {
       Constant::Table(v) => Display::fmt(v, f),
       Constant::List(v) => Display::fmt(v, f),
       Constant::Tuple(v) => Display::fmt(v, f),
+    }
+  }
+}
+
+impl Debug for Constant {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    match self {
+      Self::Float(arg0) => f.debug_tuple("Float").field(arg0).finish(),
+      Self::Offset(arg0) => f.debug_tuple("Offset").field(arg0).finish(),
+      Self::Str(arg0) => Debug::fmt(arg0, f),
+      Self::Table(arg0) => Debug::fmt(arg0, f),
+      Self::List(arg0) => Debug::fmt(arg0, f),
+      Self::Tuple(arg0) => Debug::fmt(arg0, f),
     }
   }
 }

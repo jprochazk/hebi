@@ -7,17 +7,17 @@ function `__main__` (registers: 1, length: 13 (52 bytes))
 .locals
   v: r0
 .code
-  lnil r0           ; let v
-  lsmi 1, r0        ; v = -1
-  inv r0
-  lbt r0            ; v = !true
-  not r0
-  lsmi 1, r0        ; v = ----1
-  inv r0
-  inv r0
-  inv r0
-  inv r0
+  lnil  r0          ; let v
+  lsmi  1, r0       ; v = -1
+  inv   r0
+  lbt   r0          ; v = !true
+  not   r0
+  lsmi  1, r0       ; v = ----1
+  inv   r0
+  inv   r0
+  inv   r0
+  inv   r0
   fin
-  lnil r0
-  ret r0
+  lnil  r0
+  ret   r0
 

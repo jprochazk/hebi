@@ -10,26 +10,26 @@ function `__main__` (registers: 3, length: 15 (60 bytes))
   b: r2
 .code
  loop.start.0:
-  jl ~0
+  jl    ~0
  loop.end.0:
-  lsmi 0, r0        ; let i = 0
+  lsmi  0, r0       ; let i = 0
  loop.start.1:
-  lsmi 1, r0        ; i += 1
-  jl ~1
+  lsmi  1, r0       ; i += 1
+  jl    ~1
  loop.end.1:
  loop.start.2:
-  lnil r1           ; let a
-  jmp ~3            ; break
-  lnil r2           ; let b
-  jl ~3
+  lnil  r1          ; let a
+  jmp   ~3          ; break
+  lnil  r2          ; let b
+  jl    ~3
  loop.end.2:
  loop.start.3:
-  lnil r1           ; let a
-  jl ~1             ; continue
-  lnil r2           ; let b
-  jl ~3
+  lnil  r1          ; let a
+  jl    ~1          ; continue
+  lnil  r2          ; let b
+  jl    ~3
  loop.end.3:
   fin
-  lnil r0
-  ret r0
+  lnil  r0
+  ret   r0
 

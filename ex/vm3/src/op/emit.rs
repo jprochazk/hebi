@@ -16,8 +16,8 @@ use rustc_hash::FxHasher;
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
 use super::{Mvar, Op, Reg, Upvalue};
 use crate::ast::{
-  Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, Loop, Module, Return, SetVar,
-  Stmt, Unary, UnaryOp,
+  Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, LogicalOp, Loop, Module,
+  Return, SetVar, Stmt, Unary, UnaryOp,
 };
 use crate::error::StdError;
 use crate::gc::{Gc, Ref};
@@ -628,6 +628,17 @@ fn logical<'arena, 'gc, 'src>(
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
   todo!()
+
+  /* use LogicalOp::*;
+
+  match node.op {
+    And => {
+
+    },
+    Or => {
+
+    },
+  } */
 }
 
 fn binary<'arena, 'gc, 'src>(
