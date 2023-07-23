@@ -1,18 +1,19 @@
 #![allow(clippy::needless_lifetimes)]
 
-mod builder;
+pub mod builder;
 
 use alloc::format;
 use core::cmp::max;
 use core::fmt::{Debug, Display};
 use core::hash::BuildHasherDefault;
+use core::mem::replace;
 
 use beef::lean::Cow;
 use bumpalo::collections::Vec;
 use bumpalo::{vec, AllocErr};
 use rustc_hash::FxHasher;
 
-use self::builder::{BytecodeBuilder, ConstantPoolBuilder};
+use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
 use super::{Mvar, Op, Reg, Upvalue};
 use crate::ast::{
   Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, Loop, Module, Return, SetVar,
@@ -63,7 +64,7 @@ impl StdError for EmitError {}
 // type HashSet<T, A> = hashbrown::HashSet<T, BuildHasherDefault<FxHasher>, A>;
 type HashMap<K, V, A> = hashbrown::HashMap<K, V, BuildHasherDefault<FxHasher>, A>;
 
-struct ModuleState<'arena, 'gc, 'src> {
+struct Compiler<'arena, 'gc, 'src> {
   arena: &'arena Arena,
   gc: &'gc Gc,
   name: &'src str,
@@ -74,11 +75,12 @@ struct ModuleState<'arena, 'gc, 'src> {
   /// In hebi they're referred to as "module" variables, because
   /// they're instantiated per module.
   vars: HashMap<&'src str, Mvar<u16>, &'arena Arena>,
+
+  funcs: Vec<'arena, Function<'arena, 'gc, 'src>>,
 }
 
-struct FunctionState<'arena, 'gc, 'src, 'state> {
-  module: &'state mut ModuleState<'arena, 'gc, 'src>,
-  parent: Option<&'state mut FunctionState<'arena, 'gc, 'src, 'state>>,
+struct Function<'arena, 'gc, 'src> {
+  loop_: Option<LoopState<'arena>>,
 
   arena: &'arena Arena,
   gc: &'gc Gc,
@@ -92,42 +94,105 @@ struct FunctionState<'arena, 'gc, 'src, 'state> {
   locals: Vec<'arena, (Scope, &'src str, Reg<u8>)>,
 }
 
+struct LoopStateBasic<'arena> {
+  continue_to: LoopLabel,
+  break_to: MultiLabel<'arena>,
+}
+struct LoopStateLatched<'arena> {
+  continue_to: MultiLabel<'arena>,
+  break_to: MultiLabel<'arena>,
+}
+enum LoopState<'arena> {
+  Basic(LoopStateBasic<'arena>),
+  Latched(LoopStateLatched<'arena>),
+}
+
+impl<'arena> LoopState<'arena> {
+  fn basic(continue_to: LoopLabel, break_to: MultiLabel<'arena>) -> Self {
+    Self::Basic(LoopStateBasic {
+      continue_to,
+      break_to,
+    })
+  }
+
+  fn latched(continue_to: MultiLabel<'arena>, break_to: MultiLabel<'arena>) -> Self {
+    Self::Latched(LoopStateLatched {
+      continue_to,
+      break_to,
+    })
+  }
+
+  fn to_basic(self) -> LoopStateBasic<'arena> {
+    use LoopState::*;
+    match self {
+      Basic(state) => state,
+      _ => panic!("expected LoopStateBasic"),
+    }
+  }
+
+  fn to_latched(self) -> LoopStateLatched<'arena> {
+    use LoopState::*;
+    match self {
+      Latched(state) => state,
+      _ => panic!("expected LoopStateLatched"),
+    }
+  }
+}
+
 #[derive(Clone, Copy, Default)]
 struct Registers {
   current: u8,
   total: u8,
 }
 
+macro_rules! fmut {
+  ($self:expr) => {{
+    let _f = ($self).funcs.last_mut();
+    debug_assert!(_f.is_some());
+    unsafe { _f.unwrap_unchecked() }
+  }};
+}
+
+macro_rules! fs {
+  ($self:expr) => {{
+    let _f = ($self).funcs.last();
+    debug_assert!(_f.is_some());
+    unsafe { _f.unwrap_unchecked() }
+  }};
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Scope(usize);
 
-impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
+impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
   #[inline]
   fn scope<F, T>(&mut self, f: F) -> Result<T>
   where
-    F: FnOnce(&mut FunctionState<'arena, 'gc, 'src, 'state>) -> Result<T>,
+    F: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<T>,
   {
-    self.scope.0 += 1;
+    fmut!(self).scope.0 += 1;
     let result = f(self);
-    self.scope.0 -= 1;
+    fmut!(self).scope.0 -= 1;
     result
   }
 
   #[doc(hidden)]
   #[inline]
   fn _reg(&mut self) -> Reg<u8> {
-    let reg = self.registers.current;
-    self.registers.current += 1;
-    self.registers.total = max(self.registers.current, self.registers.total);
+    let func = fmut!(self);
+    let reg = func.registers.current;
+    func.registers.current += 1;
+    func.registers.total = max(func.registers.current, func.registers.total);
     Reg(reg)
   }
 
   #[inline]
   fn reg(&mut self) -> Result<Reg<u8>> {
-    if self.registers.current == u8::MAX {
+    let func = fmut!(self);
+    if func.registers.current == u8::MAX {
       return Err(EmitError::new(format!(
         "function `{}` uses too many registers, maximum is {}",
-        self.name,
+        func.name,
         u8::MAX
       )));
     }
@@ -136,28 +201,33 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
 
   #[inline]
   fn free(&mut self, r: Reg<u8>) {
-    self.registers.current = r.0;
+    fmut!(self).registers.current = r.0;
   }
 
   #[inline]
   fn emit(&mut self, op: Op, span: impl Into<Span>) -> Result<()> {
-    self.builder.emit(op, span)?;
+    self.builder().emit(op, span)?;
     Ok(())
   }
 
   #[inline]
   fn pool(&mut self) -> &mut ConstantPoolBuilder<'arena> {
-    self.builder.pool()
+    self.builder().pool()
+  }
+
+  #[inline]
+  fn builder(&mut self) -> &mut BytecodeBuilder<'arena> {
+    &mut fmut!(self).builder
   }
 
   #[inline]
   fn is_global_scope(&self) -> bool {
-    self.is_top_level() && self.scope.0 <= 1
+    self.is_top_level() && fs!(self).scope.0 <= 1
   }
 
   #[inline]
   fn is_top_level(&self) -> bool {
-    self.parent.is_none()
+    self.funcs.len() == 1
   }
 
   /// Invariant: `reg` must already contain the value
@@ -167,7 +237,7 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
     if self.is_global_scope() {
       // module variable
       // value is in `reg`, we have to add the var to module.vars
-      let last = self.module.vars.len();
+      let last = self.vars.len();
       if last > u16::MAX as usize {
         return Err(EmitError::new(format!(
           "too many global variables, maximum is {}",
@@ -182,18 +252,19 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
       // is the same as:
       //   let a = 0
       //   a = 0
-      let idx = *self.module.vars.entry(name).or_insert_with(|| Mvar(last));
+      let idx = *self.vars.entry(name).or_insert_with(|| Mvar(last));
       self.emit(set_mvar(reg, idx), span)?;
       self.free(reg);
     } else {
       // local variable
       // no need to emit anything, just add it to locals
-      if !self
+      let func = fmut!(self);
+      if !func
         .locals
         .iter()
-        .any(|(scope, name0, _)| (scope, *name0) == (&self.scope, name))
+        .any(|(scope, name0, _)| (scope, *name0) == (&func.scope, name))
       {
-        self.locals.push((self.scope, name, reg));
+        func.locals.push((func.scope, name, reg));
       }
       // note: doing nothing is fine if `locals` already contains
       // `(scope, name)`, `reg` is already reusing an existing register
@@ -207,7 +278,7 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
     if self.is_top_level() {
       if let Some(reg) = self.resolve_local(name) {
         Var::Local(reg)
-      } else if let Some(idx) = self.module.vars.get(name).copied() {
+      } else if let Some(idx) = self.vars.get(name).copied() {
         Var::Module(idx)
       } else {
         Var::Global
@@ -218,14 +289,14 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
       // then `1, 2, 3, 4, 5` would be params
       if reg.wide() == 0 {
         Var::Self_
-      } else if reg.wide() <= self.params.max as usize {
+      } else if reg.wide() <= fs!(self).params.max as usize {
         Var::Param(reg)
       } else {
         Var::Local(reg)
       }
     } else if let Some(idx) = self.resolve_upvalue(name) {
       Var::Upvalue(idx)
-    } else if let Some(idx) = self.module.vars.get(name).copied() {
+    } else if let Some(idx) = self.vars.get(name).copied() {
       Var::Module(idx)
     } else {
       Var::Global
@@ -233,7 +304,7 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
   }
 
   fn resolve_local(&self, name: &'src str) -> Option<Reg<u8>> {
-    self
+    fs!(self)
       .locals
       .iter()
       .rfind(|(_, var, _)| *var == name)
@@ -241,7 +312,7 @@ impl<'arena, 'gc, 'src, 'state> FunctionState<'arena, 'gc, 'src, 'state> {
   }
 
   fn resolve_local_in_scope(&self, scope: Scope, name: &'src str) -> Option<Reg<u8>> {
-    self
+    fs!(self)
       .locals
       .iter()
       .rfind(|(scope0, var, _)| (scope0, *var) == (&scope, name))
@@ -260,7 +331,7 @@ pub fn module<'arena, 'gc, 'src>(
   ast: Module<'arena, 'src>,
 ) -> Result<Ref<ModuleDescriptor>> {
   let src = Str::try_new_in(gc, ast.src)?;
-  let mut module = ModuleState {
+  let mut module = Compiler {
     arena,
     gc,
     name,
@@ -268,6 +339,7 @@ pub fn module<'arena, 'gc, 'src>(
 
     src,
     vars: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
+    funcs: Vec::new_in(arena),
   };
   let root = top_level(&mut module, arena, gc)?;
   Ok(ModuleDescriptor::try_new_in(
@@ -279,13 +351,12 @@ pub fn module<'arena, 'gc, 'src>(
 }
 
 fn top_level<'arena, 'gc, 'src>(
-  module: &mut ModuleState<'arena, 'gc, 'src>,
+  c: &mut Compiler<'arena, 'gc, 'src>,
   arena: &'arena Arena,
   gc: &'gc Gc,
 ) -> Result<Ref<FunctionDescriptor>> {
-  let mut f = FunctionState {
-    module,
-    parent: None,
+  c.funcs.push(Function {
+    loop_: None,
 
     arena,
     gc,
@@ -297,117 +368,235 @@ fn top_level<'arena, 'gc, 'src>(
     params: Params::empty(),
     scope: Scope(0),
     locals: Vec::new_in(arena),
-  };
+  });
 
-  f.scope(|f| {
-    for node in f.module.ast.body {
-      stmt(f, node)?;
+  c.scope(|c| {
+    for node in c.ast.body {
+      stmt(c, node)?;
     }
     Ok(())
   })?;
 
-  f.emit(finalize_module(), Span::empty())?;
-  f.free(Reg(0));
-  let dst = f.reg()?;
-  f.emit(load_nil(dst), Span::empty())?;
-  f.emit(ret(dst), Span::empty())?;
+  c.emit(finalize_module(), Span::empty())?;
+  c.free(Reg(0));
+  let dst = c.reg()?;
+  c.emit(load_nil(dst), Span::empty())?;
+  c.emit(ret(dst), Span::empty())?;
 
-  let (ops, pool, spans, labels) = f.builder.finish();
+  let func = c.funcs.pop().unwrap();
+
+  let (ops, pool, spans, labels) = func.builder.finish();
   let code = Code {
-    src: f.module.src,
+    src: c.src,
     ops: &ops,
     pool: &pool,
     spans: &spans,
-    locals: &f.locals[..],
+    locals: &func.locals[..],
     labels: &labels,
-    stack_space: f.registers.total,
+    stack_space: func.registers.total,
   };
 
   Ok(FunctionDescriptor::try_new_in(
     gc,
-    f.name,
+    func.name,
     Params::empty(),
     code,
   )?)
 }
 
-fn stmt<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn stmt<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   node: &Stmt<'arena, 'src>,
 ) -> Result<()> {
   use crate::ast::StmtKind::*;
 
+  let span = node.span;
   match node.kind {
-    Let(inner) => let_(f, inner, node.span),
-    Loop(inner) => loop_(f, inner),
-    Break => break_(f),
-    Continue => continue_(f),
-    Return(inner) => return_(f, inner),
-    Func(inner) => func(f, inner),
+    Let(inner) => let_(c, inner, span),
+    Loop(inner) => loop_(c, inner),
+    Break => break_(c, span),
+    Continue => continue_(c, span),
+    Return(inner) => return_(c, inner, span),
+    Func(inner) => func(c, inner),
     Expr(inner) => {
-      let _ = expr(f, None, inner)?;
+      let _ = expr(c, None, inner)?;
       Ok(())
     }
   }
 }
 
-fn let_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn let_<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   node: &Let<'arena, 'src>,
   span: Span,
 ) -> Result<()> {
   // note: `declare_var` at the end is responsible for freeing `dst` if necessary
-  let dst = match f.resolve_local_in_scope(f.scope, node.name.lexeme) {
+  let dst = match c.resolve_local_in_scope(fs!(c).scope, node.name.lexeme) {
     Some(reg) => reg,
-    None => f.reg()?,
+    None => c.reg()?,
   };
 
   if let Some(value) = &node.value {
-    assign_to(f, dst, value)?;
+    assign_to(c, dst, value)?;
   } else {
-    f.emit(load_nil(dst), span)?;
+    c.emit(load_nil(dst), span)?;
   }
 
-  f.declare_var(node.name.lexeme, dst, span)?;
+  c.declare_var(node.name.lexeme, dst, span)?;
 
   Ok(())
 }
 
-fn loop_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
-  node: &Loop,
+fn loop_body<'arena, 'gc, 'src, F>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  loop_: LoopState<'arena>,
+  f: F,
+) -> Result<LoopState<'arena>>
+where
+  F: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+{
+  let prev = fmut!(c).loop_.replace(loop_);
+  let result = f(c);
+  Ok(replace(&mut fmut!(c).loop_, prev).unwrap())
+}
+
+fn build_loop<'arena, 'gc, 'src, Start, Body>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  name: &'static str,
+  start: Start,
+  body: Body,
+) -> Result<()>
+where
+  Start: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+  Body: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+{
+  let index = c.builder().label_index();
+
+  let lstart = format!("{name}.start");
+  let lstart = Str::try_intern_in(c.gc, &lstart)?;
+  let mut lstart = LoopLabel::new(lstart, index);
+
+  let lend = format!("{name}.end");
+  let lend = Str::try_intern_in(c.gc, &lend)?;
+  let lend = MultiLabel::new(&fs!(c).builder, lend, index);
+
+  lstart.bind(c.builder());
+  start(c)?;
+  let LoopStateBasic {
+    continue_to: lstart,
+    break_to: lend,
+  } = loop_body(c, LoopState::basic(lstart, lend), body)?.to_basic();
+  lstart.emit(c.builder(), jump_loop, Span::empty())?;
+  lend.bind(c.builder())
+}
+
+fn build_loop_with_latch<'arena, 'gc, 'src, Start, Body, Latch>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  name: &'static str,
+  start: Start,
+  body: Body,
+  latch: Latch,
+) -> Result<()>
+where
+  Start: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+  Body: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+  Latch: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
+{
+  let index = c.builder().label_index();
+
+  let lstart = Str::try_intern_in(c.gc, &format!("{name}.start"))?;
+  let mut lstart = LoopLabel::new(lstart, index);
+
+  let llatch = Str::try_intern_in(c.gc, &format!("{name}.latch"))?;
+  let llatch = MultiLabel::new(&fs!(c).builder, llatch, index);
+
+  let lend = Str::try_intern_in(c.gc, &format!("{name}.end"))?;
+  let lend = MultiLabel::new(&fs!(c).builder, lend, index);
+
+  lstart.bind(c.builder());
+  start(c)?;
+
+  let LoopStateLatched {
+    continue_to: llatch,
+    break_to: lend,
+  } = loop_body(c, LoopState::latched(llatch, lend), body)?.to_latched();
+
+  llatch.bind(c.builder())?;
+  latch(c)?;
+  lstart.emit(c.builder(), jump_loop, Span::empty())?;
+  lend.bind(c.builder())
+}
+
+fn loop_<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  node: &Loop<'arena, 'src>,
+) -> Result<()> {
+  build_loop(
+    c,
+    "loop",
+    |_| Ok(()),
+    |c| {
+      block(c, None, &node.body)?;
+      Ok(())
+    },
+  )
+}
+
+fn break_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span) -> Result<()> {
+  let f = fmut!(c);
+  let Some(loop_) = f.loop_.as_mut() else {
+    return Err(EmitError::new("cannot use `break` outside of loop"));
+  };
+  match loop_ {
+    LoopState::Basic(state) => state.break_to.emit(&mut f.builder, jump, span),
+    LoopState::Latched(state) => state.break_to.emit(&mut f.builder, jump, span),
+  }
+}
+
+fn continue_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span) -> Result<()> {
+  let f = fmut!(c);
+  let Some(loop_) = f.loop_.as_mut() else {
+    return Err(EmitError::new("cannot use `continue` outside of loop"));
+  };
+  match loop_ {
+    LoopState::Basic(state) => state.continue_to.emit(&mut f.builder, jump_loop, span),
+    LoopState::Latched(state) => state.continue_to.emit(&mut f.builder, jump, span),
+  }
+}
+
+fn return_<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  node: &Return<'arena, 'src>,
+  span: Span,
+) -> Result<()> {
+  if c.is_top_level() {
+    return Err(EmitError::new("cannot use `return` outside of function"));
+  }
+
+  let tmp = c.reg()?;
+  match &node.value {
+    Some(value) => {
+      assign_to(c, tmp, value)?;
+    }
+    None => {
+      c.emit(load_nil(tmp), span)?;
+    }
+  }
+  c.emit(ret(tmp), span)?;
+  c.free(tmp);
+
+  Ok(())
+}
+
+fn func<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  node: &Func<'arena, 'src>,
 ) -> Result<()> {
   todo!()
 }
 
-fn break_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
-) -> Result<()> {
-  todo!()
-}
-
-fn continue_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
-) -> Result<()> {
-  todo!()
-}
-
-fn return_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
-  node: &Return,
-) -> Result<()> {
-  todo!()
-}
-
-fn func<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
-  node: &Func,
-) -> Result<()> {
-  todo!()
-}
-
-fn expr<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn expr<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Expr<'arena, 'src>,
 ) -> Result<Option<Reg<u8>>> {
@@ -415,25 +604,25 @@ fn expr<'arena, 'gc, 'src, 'state>(
 
   let span = node.span;
   match node.kind {
-    Logical(node) => logical(f, dst, node, span),
-    Binary(node) => binary(f, dst, node, span),
-    Unary(node) => unary(f, dst, node, span),
-    Block(node) => block(f, dst, node),
-    If(node) => if_(f, dst, node),
+    Logical(node) => logical(c, dst, node, span),
+    Binary(node) => binary(c, dst, node, span),
+    Unary(node) => unary(c, dst, node, span),
+    Block(node) => block(c, dst, node),
+    If(node) => if_(c, dst, node),
     Func(_) => todo!(),
-    GetVar(node) => get_var(f, dst, node, span),
-    SetVar(node) => set_var(f, node, span),
+    GetVar(node) => get_var(c, dst, node, span),
+    SetVar(node) => set_var(c, node, span),
     GetField(_) => todo!(),
     SetField(_) => todo!(),
     GetIndex(_) => todo!(),
     SetIndex(_) => todo!(),
     Call(_) => todo!(),
-    Lit(inner) => lit(f, dst, inner, span),
+    Lit(inner) => lit(c, dst, inner, span),
   }
 }
 
-fn logical<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn logical<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Logical<'arena, 'src>,
   span: Span,
@@ -441,74 +630,74 @@ fn logical<'arena, 'gc, 'src, 'state>(
   todo!()
 }
 
-fn binary<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn binary<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Binary<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  let lhs = expr(f, dst, &node.lhs)?.or(dst);
-  let rhs = f.reg()?;
-  let rhs = expr(f, Some(rhs), &node.rhs)?.unwrap_or(rhs);
+  let lhs = expr(c, dst, &node.lhs)?.or(dst);
+  let rhs = c.reg()?;
+  let rhs = expr(c, Some(rhs), &node.rhs)?.unwrap_or(rhs);
 
   use BinaryOp::*;
   if let (Some(dst), Some(lhs)) = (dst, lhs) {
     match node.op {
-      Add => f.emit(add(dst, lhs, rhs), span)?,
-      Sub => f.emit(sub(dst, lhs, rhs), span)?,
-      Div => f.emit(div(dst, lhs, rhs), span)?,
-      Mul => f.emit(mul(dst, lhs, rhs), span)?,
-      Rem => f.emit(rem(dst, lhs, rhs), span)?,
-      Pow => f.emit(pow(dst, lhs, rhs), span)?,
-      Eq => f.emit(cmp_eq(dst, lhs, rhs), span)?,
-      Ne => f.emit(cmp_ne(dst, lhs, rhs), span)?,
-      Gt => f.emit(cmp_gt(dst, lhs, rhs), span)?,
-      Ge => f.emit(cmp_ge(dst, lhs, rhs), span)?,
-      Lt => f.emit(cmp_lt(dst, lhs, rhs), span)?,
-      Le => f.emit(cmp_le(dst, lhs, rhs), span)?,
+      Add => c.emit(add(dst, lhs, rhs), span)?,
+      Sub => c.emit(sub(dst, lhs, rhs), span)?,
+      Div => c.emit(div(dst, lhs, rhs), span)?,
+      Mul => c.emit(mul(dst, lhs, rhs), span)?,
+      Rem => c.emit(rem(dst, lhs, rhs), span)?,
+      Pow => c.emit(pow(dst, lhs, rhs), span)?,
+      Eq => c.emit(cmp_eq(dst, lhs, rhs), span)?,
+      Ne => c.emit(cmp_ne(dst, lhs, rhs), span)?,
+      Gt => c.emit(cmp_gt(dst, lhs, rhs), span)?,
+      Ge => c.emit(cmp_ge(dst, lhs, rhs), span)?,
+      Lt => c.emit(cmp_lt(dst, lhs, rhs), span)?,
+      Le => c.emit(cmp_le(dst, lhs, rhs), span)?,
     }
   }
 
-  f.free(rhs);
+  c.free(rhs);
 
   Ok(None)
 }
 
-fn unary<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn unary<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Unary<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  if let Some(dst) = expr(f, dst, &node.rhs)?.or(dst) {
+  if let Some(dst) = expr(c, dst, &node.rhs)?.or(dst) {
     use UnaryOp::*;
     match node.op {
-      Min => f.emit(inv(dst), span)?,
-      Not => f.emit(not(dst), span)?,
+      Min => c.emit(inv(dst), span)?,
+      Not => c.emit(not(dst), span)?,
     }
   }
   Ok(None)
 }
 
-fn block<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn block<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Block<'arena, 'src>,
 ) -> Result<Option<Reg<u8>>> {
-  f.scope(|f| {
+  c.scope(|c| {
     for node in node.body {
-      stmt(f, node)?;
+      stmt(c, node)?;
     }
 
     match &node.last {
-      Some(node) => expr(f, dst, node),
+      Some(node) => expr(c, dst, node),
       None => Ok(None),
     }
   })
 }
 
-fn if_<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn if_<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &If<'arena, 'src>,
 ) -> Result<Option<Reg<u8>>> {
@@ -524,27 +713,27 @@ enum Var {
   Global,
 }
 
-fn get_var<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn get_var<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &GetVar<'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
   use Var::*;
 
-  match f.resolve_var(node.name.lexeme) {
+  match c.resolve_var(node.name.lexeme) {
     Self_ => Ok(Some(Reg(0))),
     Param(reg) => Ok(Some(reg)),
     Local(reg) => Ok(Some(reg)),
     Upvalue(idx) => {
       if let Some(dst) = dst {
-        f.emit(load_upvalue(dst, idx), span)?;
+        c.emit(load_upvalue(dst, idx), span)?;
       }
       Ok(None)
     }
     Module(var) => {
       if let Some(dst) = dst {
-        f.emit(load_mvar(dst, var), span)?;
+        c.emit(load_mvar(dst, var), span)?;
       }
       Ok(None)
     }
@@ -554,8 +743,8 @@ fn get_var<'arena, 'gc, 'src, 'state>(
   }
 }
 
-fn set_var<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn set_var<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   node: &SetVar<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
@@ -563,9 +752,9 @@ fn set_var<'arena, 'gc, 'src, 'state>(
 
   // TODO: test all cases here
 
-  match f.resolve_var(node.name.lexeme) {
+  match c.resolve_var(node.name.lexeme) {
     Self_ => {
-      return Err(EmitError::new(if f.params.has_self {
+      return Err(EmitError::new(if fmut!(c).params.has_self {
         Cow::borrowed("cannot assign to `self`")
       } else {
         Cow::owned(format!("cannot assign to function `{}`", node.name.lexeme))
@@ -578,7 +767,7 @@ fn set_var<'arena, 'gc, 'src, 'state>(
       )));
     }
     Local(reg) => {
-      assign_to(f, reg, &node.value)?;
+      assign_to(c, reg, &node.value)?;
     }
     Upvalue(_) => {
       return Err(EmitError::new(format!(
@@ -587,32 +776,32 @@ fn set_var<'arena, 'gc, 'src, 'state>(
       )))
     }
     Module(idx) => {
-      let dst = f.reg()?;
-      let out = expr(f, Some(dst), &node.value)?.unwrap_or(dst);
-      f.emit(set_mvar(out, idx), span)?;
-      f.free(dst);
+      let dst = c.reg()?;
+      let out = expr(c, Some(dst), &node.value)?.unwrap_or(dst);
+      c.emit(set_mvar(out, idx), span)?;
+      c.free(dst);
     }
     Global => {
-      let name = Str::try_intern_in(f.gc, node.name.lexeme)?;
-      let name = f.pool().str(name)?;
-      let dst = f.reg()?;
-      let out = expr(f, Some(dst), &node.value)?.unwrap_or(dst);
-      f.emit(set_global(out, name), span)?;
-      f.free(dst);
+      let name = Str::try_intern_in(c.gc, node.name.lexeme)?;
+      let name = c.pool().str(name)?;
+      let dst = c.reg()?;
+      let out = expr(c, Some(dst), &node.value)?.unwrap_or(dst);
+      c.emit(set_global(out, name), span)?;
+      c.free(dst);
     }
   }
 
   Ok(None)
 }
 
-fn assign_to<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn assign_to<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Reg<u8>,
   value: &Expr<'arena, 'src>,
 ) -> Result<()> {
-  if let Some(out) = expr(f, Some(dst), value)? {
+  if let Some(out) = expr(c, Some(dst), value)? {
     // `expr` was written to `out`
-    f.emit(mov(out, dst), value.span)?;
+    c.emit(mov(out, dst), value.span)?;
   } else {
     // `expr` was written to `dst`
   }
@@ -620,8 +809,8 @@ fn assign_to<'arena, 'gc, 'src, 'state>(
   Ok(())
 }
 
-fn lit<'arena, 'gc, 'src, 'state>(
-  f: &mut FunctionState<'arena, 'gc, 'src, 'state>,
+fn lit<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Lit<'arena, 'src>,
   span: Span,
@@ -632,78 +821,78 @@ fn lit<'arena, 'gc, 'src, 'state>(
 
   match node {
     Float(v) => {
-      let v = f.pool().float(*v)?;
-      f.emit(load_const(dst, v), span)?;
+      let v = c.pool().float(*v)?;
+      c.emit(load_const(dst, v), span)?;
     }
     Int(value) => {
       if let Ok(value) = i16::try_from(*value) {
-        f.emit(load_smi(dst, Smi(value)), span)?;
+        c.emit(load_smi(dst, Smi(value)), span)?;
       } else {
         // constant + emit load const
         todo!()
       }
     }
     Nil => {
-      f.emit(load_nil(dst), span)?;
+      c.emit(load_nil(dst), span)?;
     }
     Bool(v) => match *v {
-      true => f.emit(load_true(dst), span)?,
-      false => f.emit(load_false(dst), span)?,
+      true => c.emit(load_true(dst), span)?,
+      false => c.emit(load_false(dst), span)?,
     },
     String(v) => {
-      let v = Str::try_intern_in(f.gc, v)?;
-      let v = f.pool().str(v)?;
-      f.emit(load_const(dst, v), span)?;
+      let v = Str::try_intern_in(c.gc, v)?;
+      let v = c.pool().str(v)?;
+      c.emit(load_const(dst, v), span)?;
     }
     Record([]) => {
-      f.emit(make_table_empty(dst), span)?;
+      c.emit(make_table_empty(dst), span)?;
     }
     Record(fields) => {
-      let mut regs = vec![in f.arena];
-      let mut keys = vec![in f.arena];
+      let mut regs = vec![in c.arena];
+      let mut keys = vec![in c.arena];
       for _ in fields.iter() {
-        regs.push(f.reg()?);
+        regs.push(c.reg()?);
       }
       for ((key, value), reg) in fields.iter().zip(regs.iter()) {
-        assign_to(f, *reg, value)?;
-        keys.push(Str::try_intern_in(f.gc, key.lexeme)?);
+        assign_to(c, *reg, value)?;
+        keys.push(Str::try_intern_in(c.gc, key.lexeme)?);
       }
-      let desc = TableDescriptor::try_new_in(f.gc, regs[0], &keys)?;
-      let desc = f.pool().table(desc)?;
-      f.emit(make_table(dst, desc), span)?;
-      f.free(regs[0]);
+      let desc = TableDescriptor::try_new_in(c.gc, regs[0], &keys)?;
+      let desc = c.pool().table(desc)?;
+      c.emit(make_table(dst, desc), span)?;
+      c.free(regs[0]);
     }
     List([]) => {
-      f.emit(make_list_empty(dst), span)?;
+      c.emit(make_list_empty(dst), span)?;
     }
     List(items) => {
-      let mut regs = vec![in f.arena];
+      let mut regs = vec![in c.arena];
       for _ in items.iter() {
-        regs.push(f.reg()?);
+        regs.push(c.reg()?);
       }
       for (value, reg) in items.iter().zip(regs.iter()) {
-        assign_to(f, *reg, value)?;
+        assign_to(c, *reg, value)?;
       }
-      let desc = ListDescriptor::try_new_in(f.gc, regs[0], regs.len() as u8)?;
-      let desc = f.pool().list(desc)?;
-      f.emit(make_list(dst, desc), span)?;
-      f.free(regs[0]);
+      let desc = ListDescriptor::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = c.pool().list(desc)?;
+      c.emit(make_list(dst, desc), span)?;
+      c.free(regs[0]);
     }
     Tuple([]) => {
-      f.emit(make_tuple_empty(dst), span)?;
+      c.emit(make_tuple_empty(dst), span)?;
     }
     Tuple(elems) => {
-      let mut regs = vec![in f.arena];
+      let mut regs = vec![in c.arena];
       for _ in elems.iter() {
-        regs.push(f.reg()?);
+        regs.push(c.reg()?);
       }
       for (value, reg) in elems.iter().zip(regs.iter()) {
-        assign_to(f, *reg, value)?;
+        assign_to(c, *reg, value)?;
       }
-      let desc = TupleDescriptor::try_new_in(f.gc, regs[0], regs.len() as u8)?;
-      let desc = f.pool().tuple(desc)?;
-      f.emit(make_tuple(dst, desc), span)?;
-      f.free(regs[0]);
+      let desc = TupleDescriptor::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = c.pool().tuple(desc)?;
+      c.emit(make_tuple(dst, desc), span)?;
+      c.free(regs[0]);
     }
   }
 

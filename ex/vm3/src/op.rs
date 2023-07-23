@@ -17,7 +17,7 @@ codegen notes:
 
 #[rustfmt::skip]
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Op {
   Nop,
   Mov { src: Reg<u8>, dst: Reg<u8> },
@@ -51,11 +51,11 @@ pub enum Op {
   MakeTuple { dst: Reg<u8>, desc: Const<u16> },
   MakeTupleEmpty { dst: Reg<u8> },
   Jump { offset: Offset<u24> },
-  JumpConst { offset: Const<u24> },
+  JumpConst { offset: Const<u16> },
   JumpLoop { offset: Offset<u24> },
-  JumpLoopConst { offset: Const<u24> },
+  JumpLoopConst { offset: Const<u16> },
   JumpIfFalse { offset: Offset<u24> },
-  JumpIfFalseConst { offset: Const<u24> },
+  JumpIfFalseConst { offset: Const<u16> },
   Add { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Sub { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Mul { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
@@ -132,7 +132,7 @@ impl<T: Display> Display for Upvalue<T> {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Offset<T>(pub T);
 
 impl<T: Into<usize>> Offset<T> {
@@ -192,6 +192,21 @@ impl<T: Into<i32>> Smi<T> {
 impl<T: Display> Display for Smi<T> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "{}", self.0)
+  }
+}
+
+impl Op {
+  pub fn is_fwd_jump(&self) -> bool {
+    use Op::*;
+    matches!(
+      self,
+      Jump { .. } | JumpConst { .. } | JumpIfFalse { .. } | JumpIfFalseConst { .. }
+    )
+  }
+
+  pub fn is_bwd_jump(&self) -> bool {
+    use Op::*;
+    matches!(self, JumpLoop { .. } | JumpLoopConst { .. })
   }
 }
 

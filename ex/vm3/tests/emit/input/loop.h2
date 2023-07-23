@@ -1,0 +1,24 @@
+loop {}
+
+{
+  let i = 0
+  loop {
+    i += 1
+  }
+}
+
+{
+  loop {
+    let a
+    break
+    let b
+  }
+}
+
+{
+  loop {
+    let a
+    continue
+    let b
+  }
+}

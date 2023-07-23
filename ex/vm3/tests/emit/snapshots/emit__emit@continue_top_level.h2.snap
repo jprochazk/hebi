@@ -1,0 +1,6 @@
+---
+source: ex/vm3/tests/emit.rs
+expression: snapshot
+input_file: ex/vm3/tests/emit/input/continue_top_level.h2
+---
+error: cannot use `continue` outside of loop

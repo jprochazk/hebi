@@ -1,14 +1,10 @@
 use core::fmt::{Debug, Display, Write};
-use core::hash::BuildHasherDefault;
-use core::mem::transmute;
 use core::ptr::NonNull;
 
 use bumpalo::AllocErr;
-use hashbrown::HashMap;
-use rustc_hash::FxHasher;
 
 use super::string::Str;
-use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref};
+use crate::gc::{Gc, Object, Ref};
 use crate::lex::Span;
 use crate::op::emit::Scope;
 use crate::op::{Op, Reg};
@@ -23,13 +19,11 @@ pub struct FunctionDescriptor {
   dbg: DebugInfo,
 }
 
-type LabelMap = HashMap<usize, LabelInfo, BuildHasherDefault<FxHasher>, NoAlloc>;
-
 pub struct DebugInfo {
   src: Ref<Str>,
   spans: NonNull<[Span]>,
   locals: NonNull<[(Ref<Str>, Reg<u8>)]>,
-  labels: LabelMap,
+  labels: NonNull<[(usize, LabelInfo)]>,
 }
 
 impl DebugInfo {
@@ -44,7 +38,7 @@ impl DebugInfo {
 
 #[derive(Clone, Copy)]
 pub struct LabelInfo {
-  pub name: &'static str,
+  pub name: Ref<Str>,
   pub index: usize,
 }
 
@@ -64,15 +58,7 @@ impl FunctionDescriptor {
       .iter()
       .map(|(_, name, reg)| Ok((Str::try_intern_in(gc, name)?, *reg)));
     let locals = gc.try_collect_slice(locals)?.into();
-    let hash_builder = BuildHasherDefault::<FxHasher>::default();
-    let mut label_map = HashMap::with_hasher_in(hash_builder, Alloc::new(gc));
-    label_map
-      .try_reserve(code.labels.len())
-      .map_err(|_| AllocErr)?;
-    for (pos, label) in code.labels {
-      label_map.insert(*pos, *label);
-    }
-    let labels = unsafe { transmute(label_map) };
+    let labels = gc.try_alloc_slice(code.labels)?.into();
 
     gc.try_alloc(FunctionDescriptor {
       name,
@@ -185,7 +171,7 @@ impl<'a> Display for Disasm<'a> {
 
     let src = func.dbg.src.as_str();
     let locals = unsafe { func.dbg.locals.as_ref() };
-    let label_map = &func.dbg.labels;
+    let labels = unsafe { func.dbg.labels.as_ref() };
     let ops = func.ops();
     let pool = func.pool();
     let loc = func.loc();
@@ -224,13 +210,15 @@ impl<'a> Display for Disasm<'a> {
       }
     }
 
+    let mut labels = labels.iter().peekable();
     if !ops.is_empty() {
       writeln!(f, ".code")?;
       let mut prev_line_span = Span::empty();
       for (offset, (op, span)) in ops.iter().zip(loc.iter()).enumerate() {
-        // write label if one exists at the current offset
-        if let Some(label) = label_map.get(&offset) {
-          writeln!(f, "{}.{}:", label.name, label.index)?;
+        // write labels if one or more exists at the current offset
+        while labels.peek().is_some_and(|(loff, _)| *loff == offset) {
+          let (_, label) = labels.next().unwrap();
+          writeln!(f, " {}.{}:", label.name, label.index)?;
         }
         let written = disasm_op(op, f)?;
         let padding = remainder_to(20, written);

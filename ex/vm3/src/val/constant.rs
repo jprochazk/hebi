@@ -5,11 +5,12 @@ use crate::obj::list::ListDescriptor;
 use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
 use crate::obj::tuple::TupleDescriptor;
+use crate::op::Offset;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Constant {
   Float(NFloat),
-  Offset(u64),
+  Offset(Offset<u64>),
   Str(Ref<Str>),
   Table(Ref<TableDescriptor>),
   List(Ref<ListDescriptor>),
@@ -22,8 +23,8 @@ impl From<NFloat> for Constant {
   }
 }
 
-impl From<u64> for Constant {
-  fn from(value: u64) -> Self {
+impl From<Offset<u64>> for Constant {
+  fn from(value: Offset<u64>) -> Self {
     Self::Offset(value)
   }
 }

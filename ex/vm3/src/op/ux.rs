@@ -4,6 +4,10 @@ use core::fmt::{Debug, Display};
 #[derive(Clone, Copy)]
 pub struct u24([u8; 3]);
 
+impl u24 {
+  pub const MAX: u24 = u24([255, 255, 255]);
+}
+
 impl From<u8> for u24 {
   fn from(value: u8) -> Self {
     Self([value, 0, 0])
@@ -23,6 +27,15 @@ impl TryFrom<u32> for u24 {
 
   #[inline]
   fn try_from(value: u32) -> Result<Self, Self::Error> {
+    u24::try_from(value as usize)
+  }
+}
+
+impl TryFrom<usize> for u24 {
+  type Error = ();
+
+  #[inline]
+  fn try_from(value: usize) -> Result<Self, Self::Error> {
     if value < (1 << 24) {
       let mut bytes = [0; 3];
       bytes.copy_from_slice(&value.to_le_bytes()[0..=2]);

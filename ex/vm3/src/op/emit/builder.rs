@@ -10,17 +10,17 @@ use crate::obj::list::ListDescriptor;
 use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
 use crate::obj::tuple::TupleDescriptor;
-use crate::op::{Const, Op};
+use crate::op::ux::u24;
+use crate::op::{Const, Offset, Op};
 use crate::val::{Constant, NFloat};
 use crate::Arena;
-
-// TODO: handle spans
 
 pub struct BytecodeBuilder<'arena> {
   code: Vec<'arena, Op>,
   pool: ConstantPoolBuilder<'arena>,
   spans: Vec<'arena, Span>,
   labels: Vec<'arena, (usize, LabelInfo)>,
+  label_index: usize,
 }
 
 impl<'arena> BytecodeBuilder<'arena> {
@@ -30,7 +30,14 @@ impl<'arena> BytecodeBuilder<'arena> {
       pool: ConstantPoolBuilder::new_in(arena),
       spans: Vec::new_in(arena),
       labels: Vec::new_in(arena),
+      label_index: 0,
     }
+  }
+
+  pub fn label_index(&mut self) -> usize {
+    let v = self.label_index;
+    self.label_index += 1;
+    v
   }
 
   #[inline]
@@ -57,10 +64,126 @@ impl<'arena> BytecodeBuilder<'arena> {
   }
 }
 
+pub struct BasicLabel {
+  info: LabelInfo,
+  referrer_offset: Option<usize>,
+}
+
+impl BasicLabel {
+  pub fn new(name: Ref<Str>, index: usize) -> Self {
+    Self {
+      info: LabelInfo { name, index },
+      referrer_offset: None,
+    }
+  }
+
+  pub fn emit<F>(&mut self, b: &mut BytecodeBuilder, op: F, span: Span) -> Result<()>
+  where
+    F: Fn() -> Op,
+  {
+    self.referrer_offset = Some(b.code.len());
+    let op = op();
+    debug_assert!(op.is_fwd_jump());
+    b.emit(op, span)
+  }
+
+  pub fn bind(self, b: &mut BytecodeBuilder) -> Result<()> {
+    let referrer_offset = self.referrer_offset.unwrap();
+    patch_jump(referrer_offset, b)?;
+
+    let offset = b.code.len();
+    b.labels.push((offset, self.info));
+
+    Ok(())
+  }
+}
+
+pub struct MultiLabel<'arena> {
+  info: LabelInfo,
+  referrers: Vec<'arena, usize>,
+}
+
+impl<'arena> MultiLabel<'arena> {
+  pub fn new(b: &BytecodeBuilder<'arena>, name: Ref<Str>, index: usize) -> Self {
+    let arena = b.code.bump();
+    Self {
+      info: LabelInfo { name, index },
+      referrers: Vec::new_in(arena),
+    }
+  }
+
+  pub fn emit<F>(&mut self, b: &mut BytecodeBuilder, op: F, span: Span) -> Result<()>
+  where
+    F: Fn() -> Op,
+  {
+    self.referrers.push(b.code.len());
+    let op = op();
+    debug_assert!(op.is_fwd_jump());
+    b.emit(op, span)
+  }
+
+  pub fn bind(self, b: &mut BytecodeBuilder) -> Result<()> {
+    for referrer in self.referrers.iter().copied() {
+      patch_jump(referrer, b)?;
+    }
+
+    let offset = b.code.len();
+    b.labels.push((offset, self.info));
+
+    Ok(())
+  }
+}
+
+pub struct LoopLabel {
+  info: LabelInfo,
+  offset: usize,
+  bound: bool,
+}
+
+impl LoopLabel {
+  pub fn new(name: Ref<Str>, index: usize) -> Self {
+    Self {
+      info: LabelInfo { name, index },
+      offset: usize::MAX,
+      bound: false,
+    }
+  }
+
+  pub fn emit<F>(&self, b: &mut BytecodeBuilder, op: F, span: Span) -> Result<()>
+  where
+    F: Fn(JumpOffset) -> Op,
+  {
+    let offset = b.code.len() - self.offset;
+    let offset = match u24::try_from(offset)
+      .map(Offset)
+      .map_err(|_| Offset(offset as u64))
+    {
+      Ok(offset) => JumpOffset::Short(offset),
+      Err(offset) => JumpOffset::Long(b.pool().offset(offset)?),
+    };
+    let op = op(offset);
+    debug_assert!(op.is_bwd_jump());
+    b.emit(op, span)
+  }
+
+  pub fn bind(&mut self, b: &mut BytecodeBuilder) {
+    assert!(!self.bound);
+    self.offset = b.code.len();
+    b.labels.push((self.offset, self.info));
+    self.bound = true;
+  }
+}
+
+pub enum JumpOffset {
+  Short(Offset<u24>),
+  Long(Const<u16>),
+}
+
 pub struct ConstantPoolBuilder<'arena> {
   entries: Vec<'arena, Constant>,
   float_map: HashMap<NFloat, Const<u16>, &'arena Arena>,
   str_map: HashMap<Ref<Str>, Const<u16>, &'arena Arena>,
+  offset_map: HashMap<Offset<u64>, Const<u16>, &'arena Arena>,
 }
 
 impl<'arena> ConstantPoolBuilder<'arena> {
@@ -69,6 +192,7 @@ impl<'arena> ConstantPoolBuilder<'arena> {
       entries: Vec::new_in(arena),
       float_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
       str_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
+      offset_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
     }
   }
 
@@ -82,6 +206,15 @@ impl<'arena> ConstantPoolBuilder<'arena> {
     }
     self.entries.push(entry);
     Ok(Const(idx as u16))
+  }
+
+  pub fn offset(&mut self, v: Offset<u64>) -> Result<Const<u16>> {
+    if let Some(idx) = self.offset_map.get(&v).copied() {
+      return Ok(idx);
+    }
+    let idx = self.insert(v.into())?;
+    self.offset_map.insert_unique_unchecked(v, idx);
+    Ok(idx)
   }
 
   pub fn float(&mut self, v: f64) -> Result<Const<u16>> {
@@ -116,4 +249,37 @@ impl<'arena> ConstantPoolBuilder<'arena> {
   pub fn tuple(&mut self, v: Ref<TupleDescriptor>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
+}
+
+fn patch_jump(referrer: usize, b: &mut BytecodeBuilder) -> Result<()> {
+  let code = &mut b.code;
+  let pool = &mut b.pool;
+
+  let offset = code.len() - referrer;
+  let offset = u24::try_from(offset)
+    .map(Offset)
+    .map_err(|_| Offset(offset as u64));
+
+  match (offset, code[referrer]) {
+    (Ok(offset), Op::Jump { .. }) => {
+      code[referrer] = Op::Jump { offset };
+    }
+    (Err(offset), Op::Jump { .. }) => {
+      let offset = pool.offset(offset)?;
+      code[referrer] = Op::JumpConst { offset };
+    }
+    (Ok(offset), Op::JumpIfFalse { .. }) => {
+      code[referrer] = Op::JumpIfFalse { offset };
+    }
+    (Err(offset), Op::JumpIfFalse { .. }) => {
+      let offset = pool.offset(offset)?;
+      code[referrer] = Op::JumpIfFalseConst { offset };
+    }
+    op => {
+      return Err(EmitError::new(format!(
+        "invalid instruction {op:?} at offset {referrer}, expected forward jump instruction"
+      )))
+    }
+  };
+  Ok(())
 }

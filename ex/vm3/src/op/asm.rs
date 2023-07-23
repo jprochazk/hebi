@@ -1,13 +1,14 @@
-use super::{u24, Const, Count, Mvar, Offset, Reg, Smi, Upvalue};
+use super::emit::builder::JumpOffset;
+use super::{Const, Count, Mvar, Offset, Op, Reg, Smi, Upvalue};
 
 macro_rules! _asm {
   ($inst:ident $(, $($arg:ident : $ty:ident<$g:ident>),*)?) => {
     #[allow(non_camel_case_types)]
-    pub fn $inst ($($($arg : $ty<impl Into<$g>>),*)?) -> super::Op {
+    pub fn $inst ($($($arg : $ty<impl Into<$g>>),*)?) -> Op {
       $( $( let $arg = $ty($arg.0.into()); )* )?
 
       paste::paste!(
-        super::Op::[<$inst:camel>] $({
+        Op::[<$inst:camel>] $({
           $($arg),*
         })?
       )
@@ -46,12 +47,12 @@ _asm!(make_table,            dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_table_empty,      dst: Reg<u8>);
 _asm!(make_tuple,            dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_tuple_empty,      dst: Reg<u8>);
-_asm!(jump,                  offset: Offset<u24>);
-_asm!(jump_const,            offset: Const<u24>);
-_asm!(jump_loop,             offset: Offset<u24>);
-_asm!(jump_loop_const,       offset: Const<u24>);
-_asm!(jump_if_false,         offset: Offset<u24>);
-_asm!(jump_if_false_const,   offset: Const<u24>);
+// _asm!(jump,                  offset: Offset<u24>);
+// _asm!(jump_const,            offset: Const<u16>);
+// _asm!(jump_loop,             offset: Offset<u24>);
+// _asm!(jump_loop_const,       offset: Const<u16>);
+// _asm!(jump_if_false,         offset: Offset<u24>);
+// _asm!(jump_if_false_const,   offset: Const<u16>);
 _asm!(add,                   dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8>);
 _asm!(sub,                   dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8>);
 _asm!(mul,                   dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8>);
@@ -75,3 +76,23 @@ _asm!(import,                dst: Reg<u8>, path: Const<u16>);
 _asm!(finalize_module);
 _asm!(ret,                   val: Reg<u8>);
 _asm!(yld,                   val: Reg<u8>);
+
+pub fn jump() -> Op {
+  Op::Jump {
+    offset: Offset(0u8.into()),
+  }
+}
+
+pub fn jump_if_false() -> Op {
+  Op::JumpIfFalse {
+    offset: Offset(0u8.into()),
+  }
+}
+
+pub fn jump_loop(offset: JumpOffset) -> Op {
+  use JumpOffset::*;
+  match offset {
+    Short(offset) => Op::JumpLoop { offset },
+    Long(offset) => Op::JumpLoopConst { offset },
+  }
+}
