@@ -61,6 +61,12 @@ impl From<u24> for usize {
   }
 }
 
+impl From<u24> for u64 {
+  fn from(value: u24) -> Self {
+    u32::from(value) as u64
+  }
+}
+
 impl Display for u24 {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     Display::fmt(&u32::from(*self), f)

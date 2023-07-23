@@ -8,15 +8,15 @@ function `__main__` (registers: 2, length: 12 (48 bytes))
   a: r0
   b: r1
 .code
-  lsmi  0, r0       ; let a = 0
+  lsmi  0, r0           ; let a = 0
   smv   r0, m0
-  lsmi  0, r0       ; let b = 0
+  lsmi  0, r0           ; let b = 0
   smv   r0, m1
-  lsmi  0, r0       ; let a = 0
+  lsmi  0, r0           ; let a = 0
   smv   r0, m0
-  lsmi  0, r0       ; let a = 0
-  lsmi  0, r1       ; let b = 0
-  lsmi  0, r0       ; let a = 0
+  lsmi  0, r0           ; let a = 0
+  lsmi  0, r1           ; let b = 0
+  lsmi  0, r0           ; let a = 0
   fin
   lnil  r0
   ret   r0

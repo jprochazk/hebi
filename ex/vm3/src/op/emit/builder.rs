@@ -70,7 +70,7 @@ pub struct BasicLabel {
 }
 
 impl BasicLabel {
-  pub fn new(name: Ref<Str>, index: usize) -> Self {
+  pub fn new(name: &'static str, index: usize) -> Self {
     Self {
       info: LabelInfo { name, index },
       referrer_offset: None,
@@ -104,7 +104,7 @@ pub struct MultiLabel<'arena> {
 }
 
 impl<'arena> MultiLabel<'arena> {
-  pub fn new(b: &BytecodeBuilder<'arena>, name: Ref<Str>, index: usize) -> Self {
+  pub fn new(b: &BytecodeBuilder<'arena>, name: &'static str, index: usize) -> Self {
     let arena = b.code.bump();
     Self {
       info: LabelInfo { name, index },
@@ -141,7 +141,7 @@ pub struct LoopLabel {
 }
 
 impl LoopLabel {
-  pub fn new(name: Ref<Str>, index: usize) -> Self {
+  pub fn new(name: &'static str, index: usize) -> Self {
     Self {
       info: LabelInfo { name, index },
       offset: usize::MAX,

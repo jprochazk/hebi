@@ -12,15 +12,15 @@ function `__main__` (registers: 4, length: 14 (56 bytes))
 .locals
   v: r0
 .code
-  lnil  r0          ; let v
-  mtupe r0          ; v = #()
-  lsmi  0, r1       ; v = #(0)
+  lnil  r0              ; let v
+  mtupe r0              ; v = #()
+  lsmi  0, r1           ; v = #(0)
   mtup  [0], r0
-  lsmi  0, r1       ; v = #(0, 1, 2)
+  lsmi  0, r1           ; v = #(0, 1, 2)
   lsmi  1, r2
   lsmi  2, r3
   mtup  [1], r0
-  lsmi  0, r2       ; v = #(#(0))
+  lsmi  0, r2           ; v = #(#(0))
   mtup  [2], r1
   mtup  [3], r0
   fin

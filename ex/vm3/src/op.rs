@@ -143,7 +143,7 @@ impl<T: Into<usize>> Offset<T> {
 
 impl<T: Display> Display for Offset<T> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(f, "~{}", self.0)
+    write!(f, "{}", self.0)
   }
 }
 

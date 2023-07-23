@@ -9,18 +9,18 @@ function `__main__` (registers: 3, length: 15 (60 bytes))
   b: r1
   c: r2
 .code
-  lsmi  10, r0      ; let a = 10
+  lsmi  10, r0          ; let a = 10
   smv   r0, m0
-  lsmi  20, r0      ; let b = 20
+  lsmi  20, r0          ; let b = 20
   smv   r0, m1
-  lmv   m1, r0      ; let c = b
+  lmv   m1, r0          ; let c = b
   smv   r0, m2
-  lmv   m2, r0      ; let a = c
+  lmv   m2, r0          ; let a = c
   smv   r0, m0
-  lsmi  10, r0      ; let a = 10
-  lsmi  20, r1      ; let b = 20
-  mov   r1, r2      ; let c = b
-  mov   r2, r0      ; let a = c
+  lsmi  10, r0          ; let a = 10
+  lsmi  20, r1          ; let b = 20
+  mov   r1, r2          ; let c = b
+  mov   r2, r0          ; let a = c
   fin
   lnil  r0
   ret   r0

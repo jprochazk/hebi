@@ -36,9 +36,9 @@ impl DebugInfo {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct LabelInfo {
-  pub name: Ref<Str>,
+  pub name: &'static str,
   pub index: usize,
 }
 
@@ -210,18 +210,18 @@ impl<'a> Display for Disasm<'a> {
       }
     }
 
-    let mut labels = labels.iter().peekable();
+    let mut label_iter = labels.iter().peekable();
     if !ops.is_empty() {
       writeln!(f, ".code")?;
       let mut prev_line_span = Span::empty();
       for (offset, (op, span)) in ops.iter().zip(loc.iter()).enumerate() {
         // write labels if one or more exists at the current offset
-        while labels.peek().is_some_and(|(loff, _)| *loff == offset) {
-          let (_, label) = labels.next().unwrap();
-          writeln!(f, " {}.{}:", label.name, label.index)?;
+        while label_iter.peek().is_some_and(|(loff, _)| *loff == offset) {
+          let (_, label) = label_iter.next().unwrap();
+          writeln!(f, "<{}#{}>:", label.name, label.index)?;
         }
-        let written = disasm_op(op, f)?;
-        let padding = remainder_to(20, written);
+        let written = disasm_op(offset, op, labels, pool, f)?;
+        let padding = remainder_to(24, written);
         // write line at `span`
         let line_span = find_line(src, span);
         if !span.is_empty() && line_span != prev_line_span {
@@ -241,9 +241,13 @@ impl<'a> Display for Disasm<'a> {
   }
 }
 
-#[rustfmt::skip]
-fn disasm_op(op: &Op, f: &mut core::fmt::Formatter) -> core::result::Result<usize, core::fmt::Error> {
-
+fn disasm_op(
+  base: usize,
+  op: &Op,
+  labels: &[(usize, LabelInfo)],
+  pool: &[Constant],
+  f: &mut core::fmt::Formatter,
+) -> core::result::Result<usize, core::fmt::Error> {
   macro_rules! w {
     ($f:ident, $($tt:tt)*) => {{
       let mut proxy = ProxyFmt($f, 0);
@@ -252,68 +256,89 @@ fn disasm_op(op: &Op, f: &mut core::fmt::Formatter) -> core::result::Result<usiz
     }}
   }
 
-  match *op {
-    Op::Nop =>                                  w!(f, "  nop"),
-    Op::Mov { src, dst } =>                     w!(f, "  mov   {src}, {dst}"),
-    Op::LoadConst { dst, idx } =>               w!(f, "  lc    {idx}, {dst}"),
-    Op::LoadUpvalue { dst, idx } =>             w!(f, "  lup   {idx}, {dst}"),
-    Op::SetUpvalue { src, idx } =>              w!(f, "  sup   {src}, {idx}"),
-    Op::LoadMvar { dst, idx } =>                w!(f, "  lmv   {idx}, {dst}"),
-    Op::SetMvar { src, idx } =>                 w!(f, "  smv   {src}, {idx}"),
-    Op::LoadGlobal { dst, name } =>             w!(f, "  lg    {name}, {dst}"),
-    Op::SetGlobal { src, name } =>              w!(f, "  sg    {src}, {name}"),
-    Op::LoadFieldReg { obj, name, dst } =>      w!(f, "  ln    {obj}, {name}, {dst}"),
-    Op::LoadFieldConst { obj, name, dst } =>    w!(f, "  ln    {obj}, {name}, {dst}"),
-    Op::LoadFieldOptReg { obj, name, dst } =>   w!(f, "  ln?   {obj}, {name}, {dst}"),
-    Op::LoadFieldOptConst { obj, name, dst } => w!(f, "  ln?   {obj}, {name}, {dst}"),
-    Op::SetField { obj, name, src } =>          w!(f, "  sn    {src}, {obj}, {name}"),
-    Op::LoadIndex { obj, key, dst } =>          w!(f, "  li    {obj}, {key}, {dst}"),
-    Op::LoadIndexOpt { obj, key, dst } =>       w!(f, "  li?   {obj}, {key}, {dst}"),
-    Op::SetIndex { obj, key, src } =>           w!(f, "  si    {src}, {obj}, {key}"),
-    Op::LoadSuper { dst } =>                    w!(f, "  lsup  {dst}"),
-    Op::LoadNil { dst } =>                      w!(f, "  lnil  {dst}"),
-    Op::LoadTrue { dst } =>                     w!(f, "  lbt   {dst}"),
-    Op::LoadFalse { dst } =>                    w!(f, "  lbf   {dst}"),
-    Op::LoadSmi { dst, value } =>               w!(f, "  lsmi  {value}, {dst}"),
-    Op::MakeFn { dst, desc } =>                 w!(f, "  mfn   {desc}, {dst}"),
-    Op::MakeClass { dst, desc } =>              w!(f, "  mcls  {desc}, {dst}"),
-    Op::MakeClassDerived { dst, desc } =>       w!(f, "  mclsd {desc}, {dst}"),
-    Op::MakeList { dst, desc } =>               w!(f, "  mlst  {desc}, {dst}"),
-    Op::MakeListEmpty { dst } =>                w!(f, "  mlste {dst}"),
-    Op::MakeTable { dst, desc } =>              w!(f, "  mtbl  {desc}, {dst}"),
-    Op::MakeTableEmpty { dst } =>               w!(f, "  mtble {dst}"),
-    Op::MakeTuple { dst, desc } =>              w!(f, "  mtup  {desc}, {dst}"),
-    Op::MakeTupleEmpty { dst } =>               w!(f, "  mtupe {dst}"),
-    Op::Jump { offset } =>                      w!(f, "  jmp   {offset}"),
-    Op::JumpConst { offset } =>                 w!(f, "  jmp   {offset}"),
-    Op::JumpLoop { offset } =>                  w!(f, "  jl    {offset}"),
-    Op::JumpLoopConst { offset } =>             w!(f, "  jl    {offset}"),
-    Op::JumpIfFalse { val, offset } =>          w!(f, "  jif   {val}, {offset}"),
-    Op::JumpIfFalseConst { val, offset } =>     w!(f, "  jif   {val}, {offset}"),
-    Op::Add { dst, lhs, rhs } =>                w!(f, "  add   {lhs}, {rhs}, {dst}"),
-    Op::Sub { dst, lhs, rhs } =>                w!(f, "  sub   {lhs}, {rhs}, {dst}"),
-    Op::Mul { dst, lhs, rhs } =>                w!(f, "  mul   {lhs}, {rhs}, {dst}"),
-    Op::Div { dst, lhs, rhs } =>                w!(f, "  div   {lhs}, {rhs}, {dst}"),
-    Op::Rem { dst, lhs, rhs } =>                w!(f, "  rem   {lhs}, {rhs}, {dst}"),
-    Op::Pow { dst, lhs, rhs } =>                w!(f, "  pow   {lhs}, {rhs}, {dst}"),
-    Op::Inv { val } =>                          w!(f, "  inv   {val}"),
-    Op::Not { val } =>                          w!(f, "  not   {val}"),
-    Op::CmpEq { dst, lhs, rhs } =>              w!(f, "  ceq   {lhs}, {rhs}, {dst}"),
-    Op::CmpNe { dst, lhs, rhs } =>              w!(f, "  cne   {lhs}, {rhs}, {dst}"),
-    Op::CmpGt { dst, lhs, rhs } =>              w!(f, "  cgt   {lhs}, {rhs}, {dst}"),
-    Op::CmpGe { dst, lhs, rhs } =>              w!(f, "  cge   {lhs}, {rhs}, {dst}"),
-    Op::CmpLt { dst, lhs, rhs } =>              w!(f, "  clt   {lhs}, {rhs}, {dst}"),
-    Op::CmpLe { dst, lhs, rhs } =>              w!(f, "  cle   {lhs}, {rhs}, {dst}"),
-    Op::CmpType { dst, lhs, rhs } =>            w!(f, "  cty   {lhs}, {rhs}, {dst}"),
-    Op::Contains { dst, lhs, rhs } =>           w!(f, "  in    {lhs}, {rhs}, {dst}"),
-    Op::IsNil { dst, val } =>                   w!(f, "  cn    {val}, {dst}"),
-    Op::Call { func, count } =>                 w!(f, "  call  {func}, {count}"),
-    Op::Call0 { func } =>                       w!(f, "  call  {func}, 0"),
-    Op::Import { dst, path } =>                 w!(f, "  imp   {path}, {dst}"),
-    Op::FinalizeModule =>                       w!(f, "  fin"),
-    Op::Ret { val } =>                          w!(f, "  ret   {val}"),
-    Op::Yld { val } =>                          w!(f, "  yld   {val}"),
+  macro_rules! c {
+    ($p:expr, $i:expr, $ty:ident) => {{
+      match ($p)[$i.wide()] {
+        crate::val::Constant::$ty(v) => v,
+        _ => unreachable!(),
+      }
+    }};
   }
+
+  macro_rules! label {
+    ($l:expr, $op:tt, $b:expr, $o:expr) => {{
+      let o = $b as u64 $op u64::from(($o).0);
+      let (_, label) = labels.iter().find(|(oo, _)| (*oo) as u64 == o).unwrap();
+      format_args!("{}#{}", label.name, label.index)
+    }}
+  }
+
+  #[rustfmt::skip]
+  let written = {
+    match *op {
+      Op::Nop =>                                  w!(f, "  nop"),
+      Op::Mov { src, dst } =>                     w!(f, "  mov   {src}, {dst}"),
+      Op::LoadConst { dst, idx } =>               w!(f, "  lc    {idx}, {dst}"),
+      Op::LoadUpvalue { dst, idx } =>             w!(f, "  lup   {idx}, {dst}"),
+      Op::SetUpvalue { src, idx } =>              w!(f, "  sup   {src}, {idx}"),
+      Op::LoadMvar { dst, idx } =>                w!(f, "  lmv   {idx}, {dst}"),
+      Op::SetMvar { src, idx } =>                 w!(f, "  smv   {src}, {idx}"),
+      Op::LoadGlobal { dst, name } =>             w!(f, "  lg    {name}, {dst}"),
+      Op::SetGlobal { src, name } =>              w!(f, "  sg    {src}, {name}"),
+      Op::LoadFieldReg { obj, name, dst } =>      w!(f, "  ln    {obj}, {name}, {dst}"),
+      Op::LoadFieldConst { obj, name, dst } =>    w!(f, "  ln    {obj}, {name}, {dst}"),
+      Op::LoadFieldOptReg { obj, name, dst } =>   w!(f, "  ln?   {obj}, {name}, {dst}"),
+      Op::LoadFieldOptConst { obj, name, dst } => w!(f, "  ln?   {obj}, {name}, {dst}"),
+      Op::SetField { obj, name, src } =>          w!(f, "  sn    {src}, {obj}, {name}"),
+      Op::LoadIndex { obj, key, dst } =>          w!(f, "  li    {obj}, {key}, {dst}"),
+      Op::LoadIndexOpt { obj, key, dst } =>       w!(f, "  li?   {obj}, {key}, {dst}"),
+      Op::SetIndex { obj, key, src } =>           w!(f, "  si    {src}, {obj}, {key}"),
+      Op::LoadSuper { dst } =>                    w!(f, "  lsup  {dst}"),
+      Op::LoadNil { dst } =>                      w!(f, "  lnil  {dst}"),
+      Op::LoadTrue { dst } =>                     w!(f, "  lbt   {dst}"),
+      Op::LoadFalse { dst } =>                    w!(f, "  lbf   {dst}"),
+      Op::LoadSmi { dst, value } =>               w!(f, "  lsmi  {value}, {dst}"),
+      Op::MakeFn { dst, desc } =>                 w!(f, "  mfn   {desc}, {dst}"),
+      Op::MakeClass { dst, desc } =>              w!(f, "  mcls  {desc}, {dst}"),
+      Op::MakeClassDerived { dst, desc } =>       w!(f, "  mclsd {desc}, {dst}"),
+      Op::MakeList { dst, desc } =>               w!(f, "  mlst  {desc}, {dst}"),
+      Op::MakeListEmpty { dst } =>                w!(f, "  mlste {dst}"),
+      Op::MakeTable { dst, desc } =>              w!(f, "  mtbl  {desc}, {dst}"),
+      Op::MakeTableEmpty { dst } =>               w!(f, "  mtble {dst}"),
+      Op::MakeTuple { dst, desc } =>              w!(f, "  mtup  {desc}, {dst}"),
+      Op::MakeTupleEmpty { dst } =>               w!(f, "  mtupe {dst}"),
+      Op::Jump { offset } =>                      w!(f, "  jmp   {}", label!(labels, +, base, offset)),
+      Op::JumpConst { offset } =>                 w!(f, "  jmp   {}", label!(labels, +, base, c!(pool, offset, Offset))),
+      Op::JumpLoop { offset } =>                  w!(f, "  jl    {}", label!(labels, -, base, offset)),
+      Op::JumpLoopConst { offset } =>             w!(f, "  jl    {}", label!(labels, -, base, c!(pool, offset, Offset))),
+      Op::JumpIfFalse { val, offset } =>          w!(f, "  jif   {val}, {}", label!(labels, +, base, offset)),
+      Op::JumpIfFalseConst { val, offset } =>     w!(f, "  jif   {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
+      Op::Add { dst, lhs, rhs } =>                w!(f, "  add   {lhs}, {rhs}, {dst}"),
+      Op::Sub { dst, lhs, rhs } =>                w!(f, "  sub   {lhs}, {rhs}, {dst}"),
+      Op::Mul { dst, lhs, rhs } =>                w!(f, "  mul   {lhs}, {rhs}, {dst}"),
+      Op::Div { dst, lhs, rhs } =>                w!(f, "  div   {lhs}, {rhs}, {dst}"),
+      Op::Rem { dst, lhs, rhs } =>                w!(f, "  rem   {lhs}, {rhs}, {dst}"),
+      Op::Pow { dst, lhs, rhs } =>                w!(f, "  pow   {lhs}, {rhs}, {dst}"),
+      Op::Inv { val } =>                          w!(f, "  inv   {val}"),
+      Op::Not { val } =>                          w!(f, "  not   {val}"),
+      Op::CmpEq { dst, lhs, rhs } =>              w!(f, "  ceq   {lhs}, {rhs}, {dst}"),
+      Op::CmpNe { dst, lhs, rhs } =>              w!(f, "  cne   {lhs}, {rhs}, {dst}"),
+      Op::CmpGt { dst, lhs, rhs } =>              w!(f, "  cgt   {lhs}, {rhs}, {dst}"),
+      Op::CmpGe { dst, lhs, rhs } =>              w!(f, "  cge   {lhs}, {rhs}, {dst}"),
+      Op::CmpLt { dst, lhs, rhs } =>              w!(f, "  clt   {lhs}, {rhs}, {dst}"),
+      Op::CmpLe { dst, lhs, rhs } =>              w!(f, "  cle   {lhs}, {rhs}, {dst}"),
+      Op::CmpType { dst, lhs, rhs } =>            w!(f, "  cty   {lhs}, {rhs}, {dst}"),
+      Op::Contains { dst, lhs, rhs } =>           w!(f, "  in    {lhs}, {rhs}, {dst}"),
+      Op::IsNil { dst, val } =>                   w!(f, "  cn    {val}, {dst}"),
+      Op::Call { func, count } =>                 w!(f, "  call  {func}, {count}"),
+      Op::Call0 { func } =>                       w!(f, "  call  {func}, 0"),
+      Op::Import { dst, path } =>                 w!(f, "  imp   {path}, {dst}"),
+      Op::FinalizeModule =>                       w!(f, "  fin"),
+      Op::Ret { val } =>                          w!(f, "  ret   {val}"),
+      Op::Yld { val } =>                          w!(f, "  yld   {val}"),
+    }
+  };
+  written
 }
 
 fn find_line(src: &str, span: &Span) -> Span {

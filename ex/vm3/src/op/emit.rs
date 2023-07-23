@@ -29,6 +29,7 @@ use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
 use crate::obj::tuple::TupleDescriptor;
 use crate::op::asm::*;
+use crate::op::emit::builder::BasicLabel;
 use crate::op::Smi;
 use crate::{alloc, Arena};
 
@@ -457,88 +458,73 @@ where
 {
   let prev = fmut!(c).loop_.replace(loop_);
   let result = f(c);
-  Ok(replace(&mut fmut!(c).loop_, prev).unwrap())
+  let state = replace(&mut fmut!(c).loop_, prev).unwrap();
+  result?;
+  Ok(state)
 }
 
-fn build_loop<'arena, 'gc, 'src, Start, Body>(
-  c: &mut Compiler<'arena, 'gc, 'src>,
-  name: &'static str,
-  start: Start,
-  body: Body,
-) -> Result<()>
-where
-  Start: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
-  Body: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
-{
-  let index = c.builder().label_index();
+macro_rules! build_loop {
+  ($name:literal, ($c:ident)
+    start:$start:block
+    body:$body:block
+  ) => {{
+    #![allow(unused_variables, clippy::redundant_closure_call)]
 
-  let lstart = format!("{name}.start");
-  let lstart = Str::try_intern_in(c.gc, &lstart)?;
-  let mut lstart = LoopLabel::new(lstart, index);
+    let index = $c.builder().label_index();
+    let mut lstart = LoopLabel::new(concat!($name, "::start"), index);
+    let lend = MultiLabel::new(&fs!($c).builder, concat!($name, "::end"), index);
 
-  let lend = format!("{name}.end");
-  let lend = Str::try_intern_in(c.gc, &lend)?;
-  let lend = MultiLabel::new(&fs!(c).builder, lend, index);
+    lstart.bind($c.builder());
+    (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
 
-  lstart.bind(c.builder());
-  start(c)?;
-  let LoopStateBasic {
-    continue_to: lstart,
-    break_to: lend,
-  } = loop_body(c, LoopState::basic(lstart, lend), body)?.to_basic();
-  lstart.emit(c.builder(), jump_loop, Span::empty())?;
-  lend.bind(c.builder())
-}
+    let LoopStateBasic {
+      continue_to: lstart,
+      break_to: lend,
+    } = loop_body($c, LoopState::basic(lstart, lend), (|$c| Ok($body)))?.to_basic();
 
-fn build_loop_with_latch<'arena, 'gc, 'src, Start, Body, Latch>(
-  c: &mut Compiler<'arena, 'gc, 'src>,
-  name: &'static str,
-  start: Start,
-  body: Body,
-  latch: Latch,
-) -> Result<()>
-where
-  Start: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
-  Body: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
-  Latch: FnOnce(&mut Compiler<'arena, 'gc, 'src>) -> Result<()>,
-{
-  let index = c.builder().label_index();
+    lstart.emit($c.builder(), jump_loop, Span::empty())?;
+    lend.bind($c.builder())
+  }};
 
-  let lstart = Str::try_intern_in(c.gc, &format!("{name}.start"))?;
-  let mut lstart = LoopLabel::new(lstart, index);
+  (latched $name:literal,
+    ($c:ident)
+    start:$start:block
+    body:$body:block
+    latch:$latch:block
+  ) => {{
+    #![allow(unused_variables, clippy::redundant_closure_call)]
 
-  let llatch = Str::try_intern_in(c.gc, &format!("{name}.latch"))?;
-  let llatch = MultiLabel::new(&fs!(c).builder, llatch, index);
+    let index = $c.builder().label_index();
 
-  let lend = Str::try_intern_in(c.gc, &format!("{name}.end"))?;
-  let lend = MultiLabel::new(&fs!(c).builder, lend, index);
+    let mut lstart = LoopLabel::new(concat!($name, "::start"), index);
+    let llatch = MultiLabel::new(&fs!($c).builder, concat!($name, "::latch"), index);
+    let lend = MultiLabel::new(&fs!($c).builder, concat!($name, "::end"), index);
 
-  lstart.bind(c.builder());
-  start(c)?;
+    lstart.bind($c.builder());
+    (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
 
-  let LoopStateLatched {
-    continue_to: llatch,
-    break_to: lend,
-  } = loop_body(c, LoopState::latched(llatch, lend), body)?.to_latched();
+    let LoopStateLatched {
+      continue_to: llatch,
+      break_to: lend,
+    } = loop_body($c, LoopState::latched(llatch, lend), (|$c| Ok($body)))?.to_latched();
 
-  llatch.bind(c.builder())?;
-  latch(c)?;
-  lstart.emit(c.builder(), jump_loop, Span::empty())?;
-  lend.bind(c.builder())
+    llatch.bind($c.builder())?;
+    (|$c| Ok::<(), EmitError>($latch))(&mut *$c)?;
+
+    lstart.emit($c.builder(), jump_loop, Span::empty())?;
+    lend.bind($c.builder())
+  }};
 }
 
 fn loop_<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   node: &Loop<'arena, 'src>,
 ) -> Result<()> {
-  build_loop(
-    c,
-    "loop",
-    |_| Ok(()),
-    |c| {
+  build_loop!("loop", (c)
+    start: {}
+    body: {
       block(c, None, &node.body)?;
-      Ok(())
-    },
+    }
   )
 }
 
@@ -627,18 +613,28 @@ fn logical<'arena, 'gc, 'src>(
   node: &Logical<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  use LogicalOp::*;
 
-  /* use LogicalOp::*;
+  let label_index = c.builder().label_index();
 
   match node.op {
     And => {
+      let (free, lhs) = match dst {
+        Some(dst) => (false, dst),
+        None => (true, c.reg()?),
+      };
 
-    },
-    Or => {
+      let use_lhs = BasicLabel::new("and", label_index);
+      let use_rhs = BasicLabel::new("and", label_index);
 
-    },
-  } */
+      if free {
+        c.free(lhs);
+      }
+    }
+    Or => {}
+  }
+
+  todo!()
 }
 
 fn binary<'arena, 'gc, 'src>(
