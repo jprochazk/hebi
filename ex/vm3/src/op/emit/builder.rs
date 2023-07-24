@@ -185,6 +185,7 @@ pub enum JumpOffset {
 pub struct ConstantPoolBuilder<'arena> {
   entries: Vec<'arena, Constant>,
   float_map: BumpHashMap<'arena, NFloat, Const<u16>>,
+  int_map: BumpHashMap<'arena, i32, Const<u16>>,
   str_map: BumpHashMap<'arena, Ref<Str>, Const<u16>>,
   offset_map: BumpHashMap<'arena, Offset<u64>, Const<u16>>,
 }
@@ -194,6 +195,7 @@ impl<'arena> ConstantPoolBuilder<'arena> {
     Self {
       entries: Vec::new_in(arena),
       float_map: BumpHashMap::with_hasher_in(fx(), arena),
+      int_map: BumpHashMap::with_hasher_in(fx(), arena),
       str_map: BumpHashMap::with_hasher_in(fx(), arena),
       offset_map: BumpHashMap::with_hasher_in(fx(), arena),
     }
@@ -229,6 +231,15 @@ impl<'arena> ConstantPoolBuilder<'arena> {
     }
     let idx = self.insert(v.into())?;
     self.float_map.insert_unique_unchecked(v, idx);
+    Ok(idx)
+  }
+
+  pub fn int(&mut self, v: i32) -> Result<Const<u16>> {
+    if let Some(idx) = self.int_map.get(&v).copied() {
+      return Ok(idx);
+    }
+    let idx = self.insert(v.into())?;
+    self.int_map.insert_unique_unchecked(v, idx);
     Ok(idx)
   }
 

@@ -901,12 +901,12 @@ fn lit<'arena, 'gc, 'src>(
       let v = c.pool().float(*v)?;
       c.emit(load_const(dst, v), span)?;
     }
-    Int(value) => {
-      if let Ok(value) = i16::try_from(*value) {
+    Int(v) => {
+      if let Ok(value) = i16::try_from(*v) {
         c.emit(load_smi(dst, Smi(value)), span)?;
       } else {
-        // constant + emit load const
-        todo!()
+        let v = c.pool().int(*v)?;
+        c.emit(load_const(dst, v), span)?;
       }
     }
     Nil => {

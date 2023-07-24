@@ -10,6 +10,7 @@ use crate::op::Offset;
 #[derive(Clone, Copy)]
 pub enum Constant {
   Float(NFloat),
+  Int(i32),
   Offset(Offset<u64>),
   Str(Ref<Str>),
   Table(Ref<TableDescriptor>),
@@ -20,6 +21,12 @@ pub enum Constant {
 impl From<NFloat> for Constant {
   fn from(value: NFloat) -> Self {
     Self::Float(value)
+  }
+}
+
+impl From<i32> for Constant {
+  fn from(value: i32) -> Self {
+    Self::Int(value)
   }
 }
 
@@ -107,6 +114,7 @@ impl Display for Constant {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Constant::Float(v) => Display::fmt(v, f),
+      Constant::Int(v) => Display::fmt(v, f),
       Constant::Offset(v) => Display::fmt(v, f),
       Constant::Str(v) => Display::fmt(v, f),
       Constant::Table(v) => Display::fmt(v, f),
@@ -120,6 +128,7 @@ impl Debug for Constant {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     match self {
       Self::Float(arg0) => f.debug_tuple("Float").field(arg0).finish(),
+      Self::Int(arg0) => f.debug_tuple("Int").field(arg0).finish(),
       Self::Offset(arg0) => f.debug_tuple("Offset").field(arg0).finish(),
       Self::Str(arg0) => Debug::fmt(arg0, f),
       Self::Table(arg0) => Debug::fmt(arg0, f),
