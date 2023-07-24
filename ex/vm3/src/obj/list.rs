@@ -1,53 +1,51 @@
 use core::cell::UnsafeCell;
 use core::fmt::{Debug, Display};
-use core::mem::transmute;
 
-use allocator_api2::vec::Vec;
-
+use crate::ds::vec::{GcVec, GcVecN};
+use crate::ds::{HasAlloc, HasNoAlloc};
 use crate::error::AllocError;
-use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
+use crate::gc::{Alloc, Gc, Object, Ref, NO_ALLOC};
 use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
 
 pub struct List {
-  vec: UnsafeCell<Vec<Value, NoAlloc>>,
+  vec: UnsafeCell<GcVecN<Value>>,
 }
 
 impl List {
   pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(List {
-      vec: UnsafeCell::new(Vec::new_in(NO_ALLOC)),
+      vec: UnsafeCell::new(GcVecN::new_in(NO_ALLOC)),
     })
   }
 
   pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocError> {
-    let mut vec = Vec::<Value, _>::new_in(Alloc::new(gc));
+    let mut vec = GcVec::new_in(Alloc::new(gc));
     vec.try_reserve_exact(capacity).map_err(|_| AllocError)?;
-    let vec = unsafe { transmute::<_, Vec<Value, NoAlloc>>(vec) };
-    gc.try_alloc(List {
-      vec: UnsafeCell::new(vec),
-    })
+    let vec = UnsafeCell::new(vec.to_no_alloc());
+
+    gc.try_alloc(List { vec })
   }
 
   #[inline]
   pub fn len(&self) -> usize {
-    unsafe { self.get_vec().len() }
+    self.vec().len()
   }
 
   #[inline]
   pub fn capacity(&self) -> usize {
-    unsafe { self.get_vec().capacity() }
+    self.vec().capacity()
   }
 
   #[inline]
   pub fn is_empty(&self) -> bool {
-    unsafe { self.get_vec().is_empty() }
+    self.vec().is_empty()
   }
 
   #[inline]
   pub fn try_push(&self, gc: &Gc, value: Value) -> Result<(), AllocError> {
-    let vec = unsafe { self.get_vec_mut_alloc(gc) };
+    let vec = self.vec_alloc(gc);
     vec.try_reserve(1).map_err(|_| AllocError)?;
     unsafe { self.try_push_no_grow(value).unwrap_unchecked() }
     Ok(())
@@ -55,29 +53,29 @@ impl List {
 
   #[inline]
   pub fn try_push_no_grow(&self, value: Value) -> Result<(), Value> {
-    unsafe { self.get_vec_mut_no_alloc().push_within_capacity(value) }
+    self.vec_mut().push_within_capacity(value)
   }
 
   #[inline]
   pub fn pop(&self) -> Option<Value> {
-    unsafe { self.get_vec_mut_no_alloc().pop() }
+    self.vec_mut().pop()
   }
 
   #[inline]
   pub fn get(&self, index: usize) -> Option<Value> {
-    unsafe { self.get_vec().get(index).copied() }
+    self.vec().get(index).copied()
   }
 
   /// # Safety
   /// `index` must be a valid index
   #[inline]
   pub unsafe fn get_unchecked(&self, index: usize) -> Value {
-    *self.get_vec().get_unchecked(index)
+    *self.vec().get_unchecked(index)
   }
 
   #[inline]
   pub fn set(&self, index: usize, value: Value) -> bool {
-    if let Some(slot) = unsafe { self.get_vec_mut_no_alloc().get_mut(index) } {
+    if let Some(slot) = self.vec_mut().get_mut(index) {
       *slot = value;
       true
     } else {
@@ -86,7 +84,7 @@ impl List {
   }
 
   pub fn extend_from_slice(&self, gc: &Gc, items: &[Value]) -> Result<(), AllocError> {
-    let vec = unsafe { self.get_vec_mut_alloc(gc) };
+    let vec = self.vec_alloc(gc);
     vec.try_reserve(items.len()).map_err(|_| AllocError)?;
     let len = vec.len();
     for (i, item) in items.iter().enumerate() {
@@ -104,7 +102,7 @@ impl List {
   /// `index` must be a valid index
   #[inline]
   pub unsafe fn set_unchecked(&self, index: usize, value: Value) {
-    let slot = self.get_vec_mut_no_alloc().get_unchecked_mut(index);
+    let slot = self.vec_mut().get_unchecked_mut(index);
     *slot = value;
   }
 
@@ -114,31 +112,25 @@ impl List {
   /// invalidating the slice.
   #[inline]
   pub unsafe fn as_slice(&self) -> &[Value] {
-    self.get_vec().as_slice()
+    self.vec().as_slice()
   }
 
   #[inline]
-  unsafe fn get_vec(&self) -> &Vec<Value, NoAlloc> {
-    self.vec.get().as_ref().unwrap_unchecked()
-  }
-
-  #[allow(clippy::mut_from_ref)]
-  #[inline]
-  unsafe fn get_vec_mut_no_alloc(&self) -> &mut Vec<Value, NoAlloc> {
-    self.vec.get().as_mut().unwrap_unchecked()
+  fn vec(&self) -> &GcVecN<Value> {
+    unsafe { &*self.vec.get() }
   }
 
   #[allow(clippy::mut_from_ref)]
   #[inline]
-  unsafe fn get_vec_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut Vec<Value, Alloc<'gc>> {
-    let vec = self.vec.get().as_mut().unwrap_unchecked();
-    // This transmute is safe because `NoAlloc` and `Alloc<'a>` have the same layout
-    // and `Alloc<'a>` does not store a slice, but a raw pointer, which is free to
-    // point to invalid memory temporarily before we `set` the allocator to point
-    // to `gc`.
-    let vec = transmute::<_, &mut Vec<Value, Alloc<'gc>>>(vec);
-    vec.allocator().set(gc);
-    vec
+  fn vec_mut(&self) -> &mut GcVecN<Value> {
+    unsafe { &mut *self.vec.get() }
+  }
+
+  #[allow(clippy::mut_from_ref)]
+  #[inline]
+  fn vec_alloc<'gc>(&self, gc: &'gc Gc) -> &mut GcVec<'gc, Value> {
+    let vec = unsafe { &mut *self.vec.get() };
+    vec.as_alloc_mut(gc)
   }
 }
 
@@ -164,7 +156,7 @@ impl Debug for List {
 impl Display for List {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let mut f = f.debug_list();
-    for entry in unsafe { self.get_vec().iter() } {
+    for entry in self.vec().iter() {
       f.entry(&DelegateDebugToDisplay(entry));
     }
     f.finish()

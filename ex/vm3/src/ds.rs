@@ -3,14 +3,7 @@
 pub mod map;
 pub mod vec;
 
-use bumpalo::Bump as Arena;
-
-use crate::gc::{Alloc, Gc, NoAlloc};
-
-pub type Vec<T, A> = allocator_api2::vec::Vec<T, A>;
-pub type BumpVec<'arena, T> = Vec<T, &'arena Arena>;
-pub type GcVec<'gc, T> = Vec<T, Alloc<'gc>>;
-pub type GcVecN<T> = Vec<T, NoAlloc>;
+use crate::gc::Gc;
 
 pub trait HasNoAlloc {
   type Alloc<'gc>;
