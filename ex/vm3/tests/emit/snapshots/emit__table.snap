@@ -20,7 +20,7 @@ function `__main__` (registers: 4, length: 14 (56 bytes))
   lsmi  0, r2           ; v = #{a:#{b:0}}
   mtbl  [2], r1
   mtbl  [3], r0
-  fin
+  fin   
   lnil  r0
   ret   r0
 

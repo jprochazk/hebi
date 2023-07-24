@@ -11,7 +11,7 @@ function `__main__` (registers: 1, length: 7 (28 bytes))
   lc    [0], r0         ; v = 1.0
   lsmi  1, r0           ; v = 1
   lc    [1], r0         ; v = 32768
-  fin
+  fin   
   lnil  r0
   ret   r0
 

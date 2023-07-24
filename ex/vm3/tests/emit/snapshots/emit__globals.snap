@@ -10,7 +10,7 @@ function `__main__` (registers: 2, length: 6 (24 bytes))
   lg    [0], r0         ; a + b
   lg    [1], r1
   add   r0, r1, r0
-  fin
+  fin   
   lnil  r0
   ret   r0
 

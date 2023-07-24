@@ -24,7 +24,7 @@ function `__main__` (registers: 2, length: 15 (60 bytes))
   lnil  r1              ; let b
   jl    loop::start#6
 <loop::end#7>:
-  fin
+  fin   
   lnil  r0
   ret   r0
 

@@ -13,7 +13,7 @@ function `__main__` (registers: 1, length: 9 (36 bytes))
   sg    r0, [1]
   lsmi  0, r0           ; a = 0
   sg    r0, [0]
-  fin
+  fin   
   lnil  r0
   ret   r0
 

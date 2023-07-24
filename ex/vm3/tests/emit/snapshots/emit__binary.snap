@@ -41,7 +41,7 @@ function `__main__` (registers: 2, length: 40 (160 bytes))
   lsmi  1, r0           ; v = 1 <= 1
   lsmi  1, r1
   cle   r0, r1, r0
-  fin
+  fin   
   lnil  r0
   ret   r0
 

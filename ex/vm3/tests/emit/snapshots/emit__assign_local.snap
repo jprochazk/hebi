@@ -8,7 +8,7 @@ function `__main__` (registers: 2, length: 7 (28 bytes))
   lsmi  1, r1           ; let b = 1
   lsmi  1, r0           ; a = 1
   mov   r1, r0          ; a = b
-  fin
+  fin   
   lnil  r0
   ret   r0
 

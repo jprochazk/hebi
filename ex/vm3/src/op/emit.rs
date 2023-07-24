@@ -14,8 +14,8 @@ use bumpalo::vec;
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
 use super::{Mvar, Op, Reg, Upvalue};
 use crate::ast::{
-  Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, LogicalOp, Loop, Module,
-  Return, SetVar, Stmt, Unary, UnaryOp,
+  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, If, Let, Lit, Logical,
+  LogicalOp, Loop, Module, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
 };
 use crate::ds::fx;
 use crate::ds::map::BumpHashMap;
@@ -265,7 +265,7 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       //   let a = 0
       //   a = 0
       let idx = *self.vars.entry(name).or_insert_with(|| Mvar(last));
-      self.emit(set_mvar(reg, idx), span)?;
+      self.emit(store_mvar(reg, idx), span)?;
       self.free(reg);
     } else {
       // local variable
@@ -616,10 +616,10 @@ fn expr<'arena, 'gc, 'src>(
     Func(_) => todo!(),
     GetVar(node) => get_var(c, dst, node, span),
     SetVar(node) => set_var(c, node, span),
-    GetField(_) => todo!(),
-    SetField(_) => todo!(),
-    GetIndex(_) => todo!(),
-    SetIndex(_) => todo!(),
+    GetField(node) => get_field(c, dst, node, span),
+    SetField(node) => set_field(c, dst, node, span),
+    GetIndex(node) => get_index(c, dst, node, span),
+    SetIndex(node) => set_index(c, dst, node, span),
     Call(_) => todo!(),
     Lit(inner) => lit(c, dst, inner, span),
   }
@@ -855,7 +855,7 @@ fn set_var<'arena, 'gc, 'src>(
     Module(idx) => {
       let dst = c.reg()?;
       let out = expr(c, Some(dst), &node.value)?.unwrap_or(dst);
-      c.emit(set_mvar(out, idx), span)?;
+      c.emit(store_mvar(out, idx), span)?;
       c.free(dst);
     }
     Global => {
@@ -863,12 +863,48 @@ fn set_var<'arena, 'gc, 'src>(
       let name = c.pool().str(name)?;
       let dst = c.reg()?;
       let out = expr(c, Some(dst), &node.value)?.unwrap_or(dst);
-      c.emit(set_global(out, name), span)?;
+      c.emit(store_global(out, name), span)?;
       c.free(dst);
     }
   }
 
   Ok(None)
+}
+
+fn get_field<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  node: &GetField<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
+}
+
+fn set_field<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  node: &SetField<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
+}
+
+fn get_index<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  node: &GetIndex<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
+}
+
+fn set_index<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  node: &SetIndex<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  todo!()
 }
 
 fn assign_to<'arena, 'gc, 'src>(

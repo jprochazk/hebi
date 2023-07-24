@@ -28,7 +28,7 @@ function `__main__` (registers: 3, length: 23 (92 bytes))
   jt    r2, or#3
   mov   r1, r2
 <or#3>:
-  fin
+  fin   
   lnil  r0
   ret   r0
 

@@ -14,7 +14,7 @@ function `__main__` (registers: 1, length: 13 (52 bytes))
   inv   r0
   inv   r0
   inv   r0
-  fin
+  fin   
   lnil  r0
   ret   r0
 

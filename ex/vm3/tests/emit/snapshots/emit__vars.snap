@@ -16,7 +16,7 @@ function `__main__` (registers: 3, length: 15 (60 bytes))
   lsmi  20, r1          ; let b = 20
   mov   r1, r2          ; let c = b
   mov   r2, r0          ; let a = c
-  fin
+  fin   
   lnil  r0
   ret   r0
 
