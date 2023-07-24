@@ -8,8 +8,8 @@ use hashbrown::HashMap;
 use rustc_hash::FxHasher;
 
 use super::string::Str;
-use crate::ds::map::{fx, BumpHashMap, GcHashMap};
-use crate::ds::HasAlloc;
+use crate::ds::map::{BumpHashMap, GcHashMap, GcHashMapN};
+use crate::ds::{fx, HasAlloc};
 use crate::error::AllocError;
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref};
 use crate::lex::Span;
@@ -105,8 +105,8 @@ impl<'arena> LabelMapBuilder<'arena> {
 
 pub struct LabelMap {
   labels: NonNull<[LabelInfo]>,
-  offset: HashMap<usize, NonNull<[usize]>, BuildHasherDefault<FxHasher>, NoAlloc>,
-  referrer: HashMap<usize, usize, BuildHasherDefault<FxHasher>, NoAlloc>,
+  offset: GcHashMapN<usize, NonNull<[usize]>>,
+  referrer: GcHashMapN<usize, usize>,
 }
 
 impl LabelMap {

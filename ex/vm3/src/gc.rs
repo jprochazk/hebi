@@ -18,6 +18,8 @@ use bumpalo::{vec, Bump};
 use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
+use crate::ds::fx;
+use crate::ds::set::GcHashSet;
 use crate::error::AllocError;
 use crate::val::Value;
 
@@ -71,8 +73,8 @@ impl Gc {
     Gc {
       heap: Bump::with_capacity(capacity),
       drop_chain: Cell::new(None),
-      string_table: RefCell::new(HashSet::with_hasher_in(
-        BuildHasherDefault::default(),
+      string_table: RefCell::new(GcHashSet::with_hasher_in(
+        fx(),
         Alloc(Cell::new(ptr::null()), PhantomData),
       )),
       _not_thread_safe: PhantomData,

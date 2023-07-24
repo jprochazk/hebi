@@ -8,10 +8,6 @@ pub type OrdHashMap<K, V, A> = ord::OrdHashMap<K, V, A>;
 pub type GcOrdHashMap<'gc, K, V> = ord::OrdHashMap<K, V, Alloc<'gc>>;
 pub type GcOrdHashMapN<K, V> = ord::OrdHashMap<K, V, NoAlloc>;
 
-pub fn fx() -> BuildHasherDefault<FxHasher> {
-  BuildHasherDefault::default()
-}
-
 use core::hash::BuildHasherDefault;
 use core::mem::transmute;
 

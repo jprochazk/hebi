@@ -2,7 +2,9 @@ use core::hash::BuildHasherDefault;
 
 use bumpalo::collections::Vec;
 
-use super::{EmitError, HashMap, Result};
+use super::{EmitError, Result};
+use crate::ds::fx;
+use crate::ds::map::BumpHashMap;
 use crate::gc::Ref;
 use crate::lex::Span;
 use crate::obj::func::{LabelInfo, LabelMapBuilder};
@@ -184,18 +186,18 @@ pub enum JumpOffset {
 
 pub struct ConstantPoolBuilder<'arena> {
   entries: Vec<'arena, Constant>,
-  float_map: HashMap<NFloat, Const<u16>, &'arena Arena>,
-  str_map: HashMap<Ref<Str>, Const<u16>, &'arena Arena>,
-  offset_map: HashMap<Offset<u64>, Const<u16>, &'arena Arena>,
+  float_map: BumpHashMap<'arena, NFloat, Const<u16>>,
+  str_map: BumpHashMap<'arena, Ref<Str>, Const<u16>>,
+  offset_map: BumpHashMap<'arena, Offset<u64>, Const<u16>>,
 }
 
 impl<'arena> ConstantPoolBuilder<'arena> {
   pub fn new_in(arena: &'arena Arena) -> Self {
     Self {
       entries: Vec::new_in(arena),
-      float_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
-      str_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
-      offset_map: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
+      float_map: BumpHashMap::with_hasher_in(fx(), arena),
+      str_map: BumpHashMap::with_hasher_in(fx(), arena),
+      offset_map: BumpHashMap::with_hasher_in(fx(), arena),
     }
   }
 

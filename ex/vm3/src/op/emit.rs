@@ -19,6 +19,8 @@ use crate::ast::{
   Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, LogicalOp, Loop, Module,
   Return, SetVar, Stmt, Unary, UnaryOp,
 };
+use crate::ds::fx;
+use crate::ds::map::BumpHashMap;
 use crate::error::{AllocError, StdError};
 use crate::gc::{Gc, Ref};
 use crate::lex::Span;
@@ -62,9 +64,6 @@ impl Display for EmitError {
 
 impl StdError for EmitError {}
 
-// type HashSet<T, A> = hashbrown::HashSet<T, BuildHasherDefault<FxHasher>, A>;
-type HashMap<K, V, A> = hashbrown::HashMap<K, V, BuildHasherDefault<FxHasher>, A>;
-
 struct Compiler<'arena, 'gc, 'src> {
   arena: &'arena Arena,
   gc: &'gc Gc,
@@ -75,7 +74,7 @@ struct Compiler<'arena, 'gc, 'src> {
   /// This is a map of top-level variables, a.k.a. global variables.
   /// In hebi they're referred to as "module" variables, because
   /// they're instantiated per module.
-  vars: HashMap<&'src str, Mvar<u16>, &'arena Arena>,
+  vars: BumpHashMap<'arena, &'src str, Mvar<u16>>,
 
   funcs: Vec<'arena, Function<'arena, 'src>>,
 }
@@ -366,7 +365,7 @@ pub fn module<'arena, 'gc, 'src>(
     ast,
 
     src,
-    vars: HashMap::with_hasher_in(BuildHasherDefault::default(), arena),
+    vars: BumpHashMap::with_hasher_in(fx(), arena),
     funcs: Vec::new_in(arena),
   };
   let root = top_level(&mut module, arena, gc)?;

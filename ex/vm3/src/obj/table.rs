@@ -8,14 +8,14 @@
 use core::cell::UnsafeCell;
 use core::fmt::{Debug, Display};
 use core::hash::BuildHasherDefault;
-use core::mem::transmute;
 
 use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
 use super::string::Str;
 use crate::ds::map::{GcOrdHashMap, GcOrdHashMapN};
-use crate::ds::{HasAlloc, HasNoAlloc};
+use crate::ds::set::GcHashSet;
+use crate::ds::{fx, HasAlloc, HasNoAlloc};
 use crate::error::AllocError;
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
 use crate::op::Reg;
@@ -150,14 +150,10 @@ pub struct TableDescriptor {
 
 impl TableDescriptor {
   pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocError> {
-    let mut key_set: HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, _> = HashSet::with_hasher_in(
-      BuildHasherDefault::default(),
-      Alloc::new(unsafe { &*(gc as *const _) }),
-    );
-    key_set.try_reserve(keys.len())?;
-    key_set.extend(keys);
-
-    let keys = unsafe { transmute::<_, HashSet<_, _, NoAlloc>>(key_set) };
+    let mut k = GcHashSet::with_hasher_in(fx(), Alloc::new(gc));
+    k.try_reserve(keys.len())?;
+    k.extend(keys);
+    let keys = k.to_no_alloc();
     gc.try_alloc(Self { start, keys })
   }
 

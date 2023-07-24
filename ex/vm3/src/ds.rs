@@ -1,9 +1,18 @@
 #![allow(clippy::needless_lifetimes)]
 
 pub mod map;
+pub mod set;
 pub mod vec;
 
+use core::hash::BuildHasherDefault;
+
+use rustc_hash::FxHasher;
+
 use crate::gc::Gc;
+
+pub fn fx() -> BuildHasherDefault<FxHasher> {
+  BuildHasherDefault::default()
+}
 
 pub trait HasNoAlloc {
   type Alloc<'gc>;
