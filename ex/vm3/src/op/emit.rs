@@ -62,6 +62,9 @@ impl Display for EmitError {
 
 impl StdError for EmitError {}
 
+// TODO: investigate why `emit__assign_field` uses 5 registers
+// the disassembly only shows `r0, r1, r2, r3`. where's `r4`?
+
 struct Compiler<'arena, 'gc, 'src> {
   arena: &'arena Arena,
   gc: &'gc Gc,
