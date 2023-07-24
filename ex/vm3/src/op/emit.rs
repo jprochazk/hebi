@@ -810,7 +810,12 @@ fn get_var<'arena, 'gc, 'src>(
       Ok(None)
     }
     Global => {
-      todo!()
+      if let Some(dst) = dst {
+        let name = Str::try_intern_in(c.gc, node.name.lexeme)?;
+        let name = c.pool().str(name)?;
+        c.emit(load_global(dst, name), span)?;
+      }
+      Ok(None)
     }
   }
 }

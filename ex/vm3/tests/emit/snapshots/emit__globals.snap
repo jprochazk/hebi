@@ -1,0 +1,16 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+function `__main__` (registers: 2, length: 6 (24 bytes))
+.const
+  0: "a"
+  1: "b"
+.code
+  lg    [0], r0         ; a + b
+  lg    [1], r1
+  add   r0, r1, r0
+  fin
+  lnil  r0
+  ret   r0
+
