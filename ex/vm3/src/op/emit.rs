@@ -940,6 +940,11 @@ fn set_field<'arena, 'gc, 'src>(
 
   let target = expr(c, Some(dst_r), node.target)?.unwrap_or(dst_r);
 
+  // TODO: Add set_field_r and use it instead of set_field
+  //       then change set_field key to be Const<u8>
+  //       and emit it in the same way as load_field.
+  //       This saves an extra instruction to load the key
+  //       in the common case, and it's trivial to do.
   use crate::ast::Key::*;
   match node.key {
     Int(key) => {
