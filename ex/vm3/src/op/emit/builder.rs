@@ -1,5 +1,3 @@
-use core::hash::BuildHasherDefault;
-
 use bumpalo::collections::Vec;
 
 use super::{EmitError, Result};

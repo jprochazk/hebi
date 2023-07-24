@@ -1,17 +1,14 @@
 use core::fmt::{Debug, Display, Write};
-use core::hash::BuildHasherDefault;
 use core::ptr::NonNull;
 
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump as Arena;
-use hashbrown::HashMap;
-use rustc_hash::FxHasher;
 
 use super::string::Str;
 use crate::ds::map::{BumpHashMap, GcHashMap, GcHashMapN};
 use crate::ds::{fx, HasAlloc};
 use crate::error::AllocError;
-use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref};
+use crate::gc::{Alloc, Gc, Object, Ref};
 use crate::lex::Span;
 use crate::op::Op;
 use crate::val::Constant;

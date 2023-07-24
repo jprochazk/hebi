@@ -5,13 +5,11 @@ pub mod builder;
 use alloc::format;
 use core::cmp::max;
 use core::fmt::{Debug, Display};
-use core::hash::BuildHasherDefault;
 use core::mem::replace;
 
 use beef::lean::Cow;
 use bumpalo::collections::Vec;
 use bumpalo::vec;
-use rustc_hash::FxHasher;
 
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
 use super::{Mvar, Op, Reg, Upvalue};
