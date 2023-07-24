@@ -1,6 +1,0 @@
----
-source: ex/vm3/tests/emit.rs
-expression: snapshot
-input_file: ex/vm3/tests/emit/input/break_top_level.h2
----
-error: cannot use `break` outside of loop

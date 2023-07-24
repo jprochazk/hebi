@@ -1,7 +1,6 @@
 ---
-source: ex/vm3/tests/lex.rs
+source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
-input_file: ex/vm3/tests/parse/input/if.h2
 ---
 [
     (

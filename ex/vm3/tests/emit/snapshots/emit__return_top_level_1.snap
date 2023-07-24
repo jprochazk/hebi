@@ -1,0 +1,5 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+error: cannot use `return` outside of function

@@ -7,17 +7,13 @@
 
 use core::cell::UnsafeCell;
 use core::fmt::{Debug, Display};
-use core::hash::BuildHasherDefault;
-
-use hashbrown::HashSet;
-use rustc_hash::FxHasher;
 
 use super::string::Str;
 use crate::ds::map::{GcOrdHashMap, GcOrdHashMapN};
-use crate::ds::set::GcHashSet;
+use crate::ds::set::{GcHashSet, GcHashSetN};
 use crate::ds::{fx, HasAlloc, HasNoAlloc};
 use crate::error::AllocError;
-use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
+use crate::gc::{Alloc, Gc, Object, Ref, NO_ALLOC};
 use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
@@ -145,7 +141,7 @@ impl Display for Table {
 #[derive(Debug)]
 pub struct TableDescriptor {
   start: Reg<u8>,
-  keys: HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, NoAlloc>,
+  keys: GcHashSetN<Ref<Str>>,
 }
 
 impl TableDescriptor {
@@ -168,7 +164,7 @@ impl TableDescriptor {
   }
 
   #[inline]
-  pub fn keys(&self) -> &HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, NoAlloc> {
+  pub fn keys(&self) -> &GcHashSetN<Ref<Str>> {
     &self.keys
   }
 }

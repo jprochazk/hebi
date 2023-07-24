@@ -3,10 +3,10 @@
 use core::alloc::Layout;
 use core::any::type_name;
 use core::borrow::Borrow;
-use core::cell::{Cell, RefCell};
+use core::cell::{Cell, UnsafeCell};
 use core::cmp::max;
 use core::fmt::{Debug, Display};
-use core::hash::{BuildHasherDefault, Hash};
+use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::transmute;
 use core::ops::Deref;
@@ -15,8 +15,6 @@ use core::{mem, ptr, slice, str};
 
 use allocator_api2::alloc::Allocator;
 use bumpalo::{vec, Bump};
-use hashbrown::HashSet;
-use rustc_hash::FxHasher;
 
 use crate::ds::fx;
 use crate::ds::set::GcHashSet;
@@ -57,8 +55,8 @@ mod private {
 
 pub struct Gc {
   heap: Bump,
-  drop_chain: Cell<Option<NonNull<Box<()>>>>,
-  string_table: RefCell<HashSet<&'static str, BuildHasherDefault<FxHasher>, Alloc<'static>>>,
+  drop_chain: Cell<Option<NonNull<GcBox<()>>>>,
+  string_table: NonNull<UnsafeCell<GcHashSet<'static, &'static str>>>,
 
   /// Ensure that `Gc` is not `Send` or `Sync`
   _not_thread_safe: PhantomData<()>,
@@ -70,13 +68,13 @@ impl Gc {
   }
 
   pub fn with_base_capacity(capacity: usize) -> Self {
+    let heap = Bump::with_capacity(capacity);
+    let string_table = GcHashSet::with_hasher_in(fx(), Alloc::null());
+    let string_table = NonNull::from(heap.alloc(UnsafeCell::new(string_table)));
     Gc {
-      heap: Bump::with_capacity(capacity),
       drop_chain: Cell::new(None),
-      string_table: RefCell::new(GcHashSet::with_hasher_in(
-        fx(),
-        Alloc(Cell::new(ptr::null()), PhantomData),
-      )),
+      string_table,
+      heap,
       _not_thread_safe: PhantomData,
     }
   }
@@ -91,7 +89,7 @@ impl Default for Gc {
 impl Gc {
   pub fn try_alloc<T: Object + 'static>(&self, obj: T) -> Result<Ref<T>, AllocError> {
     let ptr = if T::NEEDS_DROP {
-      let ptr = self.heap.try_alloc(Box {
+      let ptr = self.heap.try_alloc(GcBox {
         next: self.drop_chain.get(),
         info: vtable::<T>(),
         data: obj,
@@ -100,7 +98,7 @@ impl Gc {
       self.drop_chain.replace(Some(ptr.cast()));
       ptr
     } else {
-      NonNull::from(self.heap.try_alloc(Box {
+      NonNull::from(self.heap.try_alloc(GcBox {
         next: None,
         info: vtable::<T>(),
         data: obj,
@@ -119,13 +117,24 @@ impl Gc {
     Ok(unsafe { str::from_utf8_unchecked(dst) })
   }
 
+  #[inline]
+  unsafe fn string_table(&self) -> &GcHashSet<'static, &'static str> {
+    &*self.string_table.as_ref().get()
+  }
+
+  #[allow(clippy::mut_from_ref)]
+  #[inline]
+  unsafe fn string_table_mut(&self) -> &mut GcHashSet<'static, &'static str> {
+    &mut *self.string_table.as_ref().get()
+  }
+
   pub fn try_intern_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocError> {
-    if let Some(str) = self.string_table.borrow().get(src).copied() {
+    if let Some(str) = unsafe { self.string_table() }.get(src).copied() {
       return Ok(str);
     }
     let str = self.try_alloc_str(src)?;
     let str = unsafe { transmute::<&'gc str, &'static str>(str) };
-    let mut table = self.string_table.borrow_mut();
+    let table = unsafe { self.string_table_mut() };
     table.allocator().set(self);
     table.insert(str);
     Ok(str)
@@ -186,7 +195,7 @@ impl Drop for Gc {
 #[derive(Clone, Copy)]
 pub struct Any {
   /// Type-erased pointer to the object
-  ptr: NonNull<Box<()>>,
+  ptr: NonNull<GcBox<()>>,
 }
 
 impl Any {
@@ -224,7 +233,7 @@ impl Any {
   pub unsafe fn from_addr(addr: usize) -> Any {
     unsafe {
       Any {
-        ptr: NonNull::new_unchecked(addr as *mut Box<()>),
+        ptr: NonNull::new_unchecked(addr as *mut GcBox<()>),
       }
     }
   }
@@ -256,7 +265,7 @@ impl Any {
 }
 
 pub struct Ref<T: 'static> {
-  ptr: NonNull<Box<T>>,
+  ptr: NonNull<GcBox<T>>,
 }
 
 impl<T> Copy for Ref<T> {}
@@ -344,9 +353,9 @@ impl<T> Borrow<T> for Ref<T> {
 }
 
 #[repr(C)]
-struct Box<T: 'static> {
+struct GcBox<T: 'static> {
   /// Linked list of all finalized objects
-  next: Option<NonNull<Box<()>>>,
+  next: Option<NonNull<GcBox<()>>>,
   info: &'static VTable<T>,
   data: T,
 }
@@ -458,6 +467,12 @@ unsafe impl Allocator for NoAlloc {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Alloc<'gc>(Cell<*const Gc>, PhantomData<&'gc ()>);
+
+impl Alloc<'static> {
+  fn null() -> Self {
+    Self(Cell::new(ptr::null()), PhantomData)
+  }
+}
 
 impl<'gc> Alloc<'gc> {
   pub fn new(gc: &'gc Gc) -> Self {

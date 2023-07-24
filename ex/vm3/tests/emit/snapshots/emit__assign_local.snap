@@ -1,7 +1,6 @@
 ---
-source: ex/vm3/tests/emit.rs
+source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
-input_file: ex/vm3/tests/emit/input/assign_local.h2
 ---
 function `__main__` (registers: 2, length: 7 (28 bytes))
 .code

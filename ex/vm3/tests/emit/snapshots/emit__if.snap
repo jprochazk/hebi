@@ -1,7 +1,6 @@
 ---
-source: ex/vm3/tests/emit.rs
+source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
-input_file: ex/vm3/tests/emit/input/if.h2
 ---
 function `__main__` (registers: 1, length: 18 (72 bytes))
 .code

@@ -1,6 +1,0 @@
----
-source: ex/vm3/tests/emit.rs
-expression: snapshot
-input_file: ex/vm3/tests/emit/input/return_top_level_1.h2
----
-error: cannot use `return` outside of function

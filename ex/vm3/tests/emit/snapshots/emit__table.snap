@@ -1,7 +1,6 @@
 ---
-source: ex/vm3/tests/emit.rs
+source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
-input_file: ex/vm3/tests/emit/input/table.h2
 ---
 function `__main__` (registers: 4, length: 14 (56 bytes))
 .const

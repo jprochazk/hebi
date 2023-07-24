@@ -1,16 +1,24 @@
+#[path = "./common/mod.rs"]
+mod common;
+
+use std::error::Error;
+
 use vm3::lex::{Lexer, Tokens};
 
-#[cfg(any(not(miri), rust_analyzer))]
 #[test]
-fn lexer() {
-  let mut settings = insta::Settings::clone_current();
-  settings.set_snapshot_path("./lex/snapshots");
-  let _scope = settings.bind_to_scope();
+fn lexer() -> Result<(), Box<dyn Error>> {
+  // skip when running under miri
+  if cfg!(miri) {
+    return Ok(());
+  }
 
-  insta::glob!("parse/input/*.h2", |path| {
-    let file = std::fs::read_to_string(path).unwrap();
-    let tokens: Vec<_> = Tokens(Lexer::new(&file)).collect();
-    let snapshot = format!("{tokens:#?}");
-    insta::assert_snapshot!(snapshot)
-  });
+  common::snapshot(
+    "lexer",
+    "tests/parse/input",
+    "tests/lex/snapshots",
+    |input| {
+      let tokens: Vec<_> = Tokens(Lexer::new(input)).collect();
+      format!("{tokens:#?}")
+    },
+  )
 }
