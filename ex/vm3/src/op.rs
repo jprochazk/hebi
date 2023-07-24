@@ -26,13 +26,19 @@ pub enum Op {
   StoreUpvalue { src: Reg<u8>, idx: Upvalue<u16> },
   LoadMvar { dst: Reg<u8>, idx: Mvar<u16> },
   StoreMvar { src: Reg<u8>, idx: Mvar<u16> },
-  LoadGlobal { dst: Reg<u8>, name: Const<u16> },
-  StoreGlobal { src: Reg<u8>, name: Const<u16> },
-  LoadField { dst: Reg<u8>, name: Const<u16> },
-  LoadFieldOpt { dst: Reg<u8>, name: Const<u16> },
+  LoadGlobal { dst: Reg<u8>, key: Const<u16> },
+  StoreGlobal { src: Reg<u8>, key: Const<u16> },
+  LoadField { obj: Reg<u8>, key: Const<u8>, dst: Reg<u8> },
+  LoadFieldR { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
+  LoadFieldOpt { obj: Reg<u8>, key: Const<u8>, dst: Reg<u8> },
+  LoadFieldROpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
+  LoadFieldInt { obj: Reg<u8>, key: Const<u8>, dst: Reg<u8> },
+  LoadFieldIntR { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
+  LoadFieldIntOpt { obj: Reg<u8>, key: Const<u8>, dst: Reg<u8> },
+  LoadFieldIntROpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   // TODO: come up with a better scheme for storing fields
   // maybe an extra DATA op? that's probably necessary anyway for ICs
-  StoreField { obj: Reg<u8>, name: Reg<u8>, src: Reg<u8> },
+  StoreField { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
   LoadIndex { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   LoadIndexOpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   StoreIndex { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
@@ -108,6 +114,16 @@ pub struct Const<T>(pub T);
 impl<T: Into<usize>> Const<T> {
   pub fn wide(self) -> usize {
     self.0.into()
+  }
+}
+
+impl Const<u16> {
+  pub fn u8(self) -> Const<u8> {
+    Const(self.0 as u8)
+  }
+
+  pub fn is_u8(&self) -> bool {
+    self.0 <= u8::MAX as u16
   }
 }
 

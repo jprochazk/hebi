@@ -35,7 +35,7 @@ fn emit() -> Result<(), Box<dyn Error>> {
 
 /* #[test]
 fn _temp() {
-  let file = include_str!("./emit/input/if.h2");
+  let file = "{ let v let o v = o.a + o.0 }";
   let arena = Bump::new();
   let lex = Lexer::new(file);
   let parser = Parser::new(&arena, lex);

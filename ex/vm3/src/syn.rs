@@ -591,7 +591,7 @@ mod expr {
       self.expect(OpDot)?;
       let key = match self.current().kind {
         TokIdent => Key::Ident(self.ident()?),
-        LitInt => Key::Int(self.int()? as usize),
+        LitInt => Key::Int(self.int()?),
         _ => return Err(self.error("invalid key", self.current().span)),
       };
       let target = self.alloc(*expr);

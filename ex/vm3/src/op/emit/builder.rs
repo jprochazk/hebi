@@ -201,6 +201,11 @@ impl<'arena> ConstantPoolBuilder<'arena> {
     }
   }
 
+  #[inline]
+  pub fn is_u8_index(&self) -> bool {
+    self.entries.len() < u8::MAX as usize
+  }
+
   fn insert(&mut self, entry: Constant) -> Result<Const<u16>> {
     let idx = self.entries.len();
     if idx > u16::MAX as usize {

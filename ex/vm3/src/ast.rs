@@ -188,7 +188,7 @@ pub struct SetVar<'arena, 'src> {
 
 #[derive(Clone, Debug)]
 pub enum Key<'src> {
-  Int(usize),
+  Int(i32),
   Ident(Ident<'src>),
 }
 

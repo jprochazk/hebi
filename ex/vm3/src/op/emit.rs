@@ -617,9 +617,9 @@ fn expr<'arena, 'gc, 'src>(
     GetVar(node) => get_var(c, dst, node, span),
     SetVar(node) => set_var(c, node, span),
     GetField(node) => get_field(c, dst, node, span),
-    SetField(node) => set_field(c, dst, node, span),
+    SetField(node) => set_field(c, node, span),
     GetIndex(node) => get_index(c, dst, node, span),
-    SetIndex(node) => set_index(c, dst, node, span),
+    SetIndex(node) => set_index(c, node, span),
     Call(_) => todo!(),
     Lit(inner) => lit(c, dst, inner, span),
   }
@@ -828,7 +828,8 @@ fn set_var<'arena, 'gc, 'src>(
   use Var::*;
 
   // TODO: test all cases here
-
+  // TODO: compound assignment is not handled here
+  //       maybe just desugar it? 🤷‍♂️
   match c.resolve_var(node.name.lexeme) {
     Self_ => {
       return Err(EmitError::new(if fmut!(c).params.has_self {
@@ -877,16 +878,86 @@ fn get_field<'arena, 'gc, 'src>(
   node: &GetField<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  let (free, dst) = match dst {
+    Some(dst) => (false, dst),
+    None => (true, c.reg()?),
+  };
+
+  let tmp0 = c.reg()?;
+  let target = expr(c, Some(tmp0), node.target)?.unwrap_or(tmp0);
+
+  use crate::ast::Key::*;
+  match node.key {
+    Int(key) => {
+      let key = c.pool().int(*key)?;
+      if key.is_u8() {
+        let key = key.u8();
+        c.emit(load_field_int(target, key, dst), span)?;
+      } else {
+        let tmp1 = c.reg()?;
+        c.emit(load_const(tmp1, key), span)?;
+        c.emit(load_field_int_r(target, tmp1, dst), span)?;
+        c.free(tmp1);
+      }
+    }
+    Ident(key) => {
+      let key = Str::try_intern_in(c.gc, key.lexeme)?;
+      let key = c.pool().str(key)?;
+      if key.is_u8() {
+        let key = key.u8();
+        c.emit(load_field(target, key, dst), span)?;
+      } else {
+        let tmp1 = c.reg()?;
+        c.emit(load_const(tmp1, key), span)?;
+        c.emit(load_field_r(target, tmp1, dst), span)?;
+        c.free(tmp1);
+      }
+    }
+  }
+
+  c.free(tmp0);
+  if free {
+    c.free(dst);
+  }
+
+  Ok(None)
 }
 
 fn set_field<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
-  dst: Option<Reg<u8>>,
   node: &SetField<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  // TODO: compound assignment not handled here
+  //       (same as `set_var`)
+
+  let dst_r = c.reg()?;
+  let key_r = c.reg()?;
+  let val_r = c.reg()?;
+
+  let target = expr(c, Some(dst_r), node.target)?.unwrap_or(dst_r);
+
+  use crate::ast::Key::*;
+  match node.key {
+    Int(key) => {
+      let key = c.pool().int(*key)?;
+      c.emit(load_const(key_r, key), span)?;
+    }
+    Ident(key) => {
+      let key = Str::try_intern_in(c.gc, key.lexeme)?;
+      let key = c.pool().str(key)?;
+      c.emit(load_const(key_r, key), span)?;
+    }
+  }
+
+  let value = expr(c, Some(val_r), &node.value)?.unwrap_or(val_r);
+  c.emit(store_field(target, key_r, value), span)?;
+
+  c.free(val_r);
+  c.free(key_r);
+  c.free(dst_r);
+
+  Ok(None)
 }
 
 fn get_index<'arena, 'gc, 'src>(
@@ -895,16 +966,49 @@ fn get_index<'arena, 'gc, 'src>(
   node: &GetIndex<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  let (free, dst) = match dst {
+    Some(dst) => (false, dst),
+    None => (true, c.reg()?),
+  };
+
+  let obj_r = c.reg()?;
+  let key_r = c.reg()?;
+
+  let obj = expr(c, Some(obj_r), node.target)?.unwrap_or(obj_r);
+  let key = expr(c, Some(key_r), node.index)?.unwrap_or(key_r);
+  c.emit(load_index(obj, key, dst), span)?;
+
+  c.free(key_r);
+  c.free(obj_r);
+  if free {
+    c.free(dst);
+  }
+
+  Ok(None)
 }
 
 fn set_index<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
-  dst: Option<Reg<u8>>,
   node: &SetIndex<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  // TODO: compound assignment not handled here
+  //       (same as `set_var`)
+
+  let dst_r = c.reg()?;
+  let key_r = c.reg()?;
+  let val_r = c.reg()?;
+
+  let obj = expr(c, Some(dst_r), node.target)?.unwrap_or(dst_r);
+  let key = expr(c, Some(key_r), node.index)?.unwrap_or(key_r);
+  let value = expr(c, Some(val_r), &node.value)?.unwrap_or(val_r);
+  c.emit(store_index(obj, key, value), span)?;
+
+  c.free(val_r);
+  c.free(key_r);
+  c.free(dst_r);
+
+  Ok(None)
 }
 
 fn assign_to<'arena, 'gc, 'src>(
