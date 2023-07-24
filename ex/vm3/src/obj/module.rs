@@ -1,9 +1,8 @@
 use core::fmt::{Debug, Display};
 
-use bumpalo::AllocErr;
-
 use super::func::FunctionDescriptor;
 use super::string::Str;
+use crate::error::AllocError;
 use crate::gc::{Gc, Object, Ref};
 
 #[derive(Debug)]
@@ -19,7 +18,7 @@ impl ModuleDescriptor {
     name: &str,
     root: Ref<FunctionDescriptor>,
     num_vars: u16,
-  ) -> Result<Ref<Self>, AllocErr> {
+  ) -> Result<Ref<Self>, AllocError> {
     let name = Str::try_new_in(gc, name)?;
     gc.try_alloc(ModuleDescriptor {
       name,

@@ -6,28 +6,24 @@
 //! Implementation is heavily inspired by [indexmap](https://docs.rs/indexmap/latest/indexmap/).
 
 use core::cell::UnsafeCell;
-use core::cmp;
 use core::fmt::{Debug, Display};
-use core::hash::{BuildHasher, BuildHasherDefault, Hash, Hasher};
-use core::mem::{replace, transmute};
+use core::hash::BuildHasherDefault;
+use core::mem::transmute;
 
-use allocator_api2::vec::Vec;
-use bumpalo::AllocErr;
-use hashbrown::raw::RawTable;
 use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
 use super::string::Str;
+use crate::ds::map::{GcOrdHashMap, GcOrdHashMapN};
+use crate::ds::{HasAlloc, HasNoAlloc};
+use crate::error::AllocError;
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
 use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
 
 pub struct Table {
-  table: UnsafeCell<RawTable<usize, NoAlloc>>,
-  vec: UnsafeCell<Vec<Entry, NoAlloc>>,
-  // TODO: feature for DOS-resistant hasher
-  hash_builder: BuildHasherDefault<FxHasher>,
+  map: UnsafeCell<GcOrdHashMapN<Ref<Str>, Value>>,
 }
 
 impl Table {
@@ -36,55 +32,34 @@ impl Table {
   /// The table is initially empty.
   /// The only allocation done here is to put the `Table` object
   /// onto the garbage-collected heap.
-  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocErr> {
-    let table = UnsafeCell::new(RawTable::new_in(NO_ALLOC));
-    let vec = UnsafeCell::new(Vec::new_in(NO_ALLOC));
-    let hash_builder = BuildHasherDefault::default();
-    gc.try_alloc(Table {
-      table,
-      vec,
-      hash_builder,
-    })
+  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
+    let map = UnsafeCell::new(GcOrdHashMapN::new_in(NO_ALLOC));
+    gc.try_alloc(Table { map })
   }
 
   /// Allocates a new table with space for at least `capacity` entries.
-  pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocErr> {
-    let table = RawTable::try_with_capacity_in(capacity, Alloc::new(gc)).map_err(|_| AllocErr)?;
-    // We promise never to attempt to grow a `NoAlloc` table, so this is safe.
-    let table = unsafe { transmute::<RawTable<usize, _>, RawTable<usize, NoAlloc>>(table) };
-
-    let mut vec = Vec::new_in(Alloc::new(gc));
-    vec.try_reserve_exact(capacity).map_err(|_| AllocErr)?;
-    // We promise never to attempt to grow a `NoAlloc` table, so this is safe.
-    let vec = unsafe { transmute::<Vec<Entry, _>, Vec<Entry, NoAlloc>>(vec) };
-
-    let hash_builder = BuildHasherDefault::default();
-
-    gc.try_alloc(Table {
-      table: UnsafeCell::new(table),
-      vec: UnsafeCell::new(vec),
-      hash_builder,
-    })
+  pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocError> {
+    let map = GcOrdHashMap::try_with_capacity_in(capacity, Alloc::new(gc))?;
+    let map = UnsafeCell::new(map.to_no_alloc());
+    gc.try_alloc(Table { map })
   }
 
   /// Returns the number of entries currently in the table.
   #[inline]
   pub fn len(&self) -> usize {
-    unsafe { self.get_table() }.len()
+    self.map().len()
   }
 
   /// Returns the table's remaining capacity.
   #[inline]
   pub fn capacity(&self) -> usize {
-    let vec_cap = unsafe { self.get_vec().capacity() };
-    let table_cap = unsafe { self.get_table().capacity() };
-    cmp::min(vec_cap, table_cap)
+    self.map().capacity()
   }
 
   /// Returns `true` if the table is empty.
   #[inline]
   pub fn is_empty(&self) -> bool {
-    unsafe { self.get_table() }.is_empty()
+    self.map().is_empty()
   }
 
   /// Inserts `value` into the table associated with the key `key`.
@@ -93,29 +68,15 @@ impl Table {
     gc: &Gc,
     key: Ref<Str>,
     value: Value,
-  ) -> Result<Option<Value>, AllocErr> {
-    self.try_reserve(gc, 1)?;
-    Ok(unsafe { self.try_insert_no_grow(key, value).unwrap_unchecked() })
+  ) -> Result<Option<Value>, AllocError> {
+    let map = self.map_alloc(gc);
+    map.try_reserve(1)?;
+    Ok(unsafe { map.try_insert_no_grow(key, value).unwrap_unchecked() })
   }
 
   /// Removes `key` from the table, returning it if it exists.
   pub fn remove(&self, key: &str) -> Option<Value> {
-    let hash = self.hash(key);
-    let vec = unsafe { self.get_vec_mut_no_alloc() };
-    let table = unsafe { self.get_table_mut_no_alloc() };
-    let eq = |i: &usize| unsafe { vec.get_unchecked(*i) }.key.as_str() == key;
-    match table.remove_entry(hash, eq) {
-      Some(index) => {
-        let entry = vec.swap_remove(index);
-        if let Some(entry) = vec.get(index) {
-          let last = vec.len();
-          let current = unsafe { table.get_mut(entry.hash, |i| *i == last).unwrap_unchecked() };
-          *current = index;
-        }
-        Some(entry.value)
-      }
-      None => None,
-    }
+    self.map_mut().remove(key)
   }
 
   /// Like [`Table::try_insert`], but will return the `(key, value)` pair
@@ -125,115 +86,35 @@ impl Table {
     key: Ref<Str>,
     value: Value,
   ) -> Result<Option<Value>, (Ref<Str>, Value)> {
-    let hash = self.hash(key.as_str());
-    let vec = unsafe { self.get_vec_mut_no_alloc() };
-    let table = unsafe { self.get_table_mut_no_alloc() };
-    match table.find_or_find_insert_slot(
-      hash,
-      // The indices are guaranteed to exist in `vec`.
-      |i| unsafe { vec.get_unchecked(*i) }.key.as_str() == key.as_str(),
-      |i| unsafe { vec.get_unchecked(*i) }.hash,
-    ) {
-      Ok(bucket) => {
-        // The pointer in the bucket is valid for reads.
-        let index = unsafe { bucket.as_ptr().read() };
-        // The index is guaranteed to exist.
-        let prev = replace(&mut unsafe { vec.get_unchecked_mut(index) }.value, value);
-        Ok(Some(prev))
-      }
-      Err(slot) => {
-        let index = vec.len();
-        let entry = Entry { hash, key, value };
-        match vec.push_within_capacity(entry) {
-          Ok(()) => {
-            unsafe { table.insert_in_slot(hash, slot, index) };
-            Ok(None)
-          }
-          Err(entry) => Err((entry.key, entry.value)),
-        }
-      }
-    }
+    self.map_mut().try_insert_no_grow(key, value)
   }
 
   #[inline]
-  pub fn try_reserve(&self, gc: &Gc, additional: usize) -> Result<(), AllocErr> {
-    let table = unsafe { self.get_table_mut_alloc(gc) };
-    let vec = unsafe { self.get_vec_mut_alloc(gc) };
-
-    table
-      // The index is guaranteed to exist
-      .try_reserve(additional, |i| unsafe { vec.get_unchecked(*i) }.hash)
-      .map_err(|_| AllocErr)?;
-    vec.try_reserve(additional).map_err(|_| AllocErr)?;
-
-    Ok(())
+  pub fn try_reserve(&self, gc: &Gc, additional: usize) -> Result<(), AllocError> {
+    self.map_alloc(gc).try_reserve(additional)
   }
 
   pub fn get(&self, key: &str) -> Option<Value> {
-    let hash = self.hash(key);
-    let table = unsafe { self.get_table() };
-    let vec = unsafe { self.get_vec() };
-    // The indices are guaranteed to exist
-    let eq = |i: &usize| unsafe { vec.get_unchecked(*i) }.key.as_str() == key;
-    table
-      .get(hash, eq)
-      .map(|index| unsafe { vec.get_unchecked(*index).value })
+    self.map().get(key).copied()
   }
 
   #[inline]
-  fn hash(&self, key: &str) -> u64 {
-    let mut hasher = self.hash_builder.build_hasher();
-    key.hash(&mut hasher);
-    hasher.finish()
-  }
-
-  #[inline]
-  unsafe fn get_table(&self) -> &RawTable<usize, NoAlloc> {
-    // `get()` returns a possibly null pointer, which is never null here.
-    self.table.get().as_ref().unwrap_unchecked()
+  fn map(&self) -> &GcOrdHashMapN<Ref<Str>, Value> {
+    unsafe { &*self.map.get() }
   }
 
   #[allow(clippy::mut_from_ref)]
   #[inline]
-  unsafe fn get_table_mut_no_alloc(&self) -> &mut RawTable<usize, NoAlloc> {
-    // `get()` returns a possibly null pointer, which is never null here.
-    self.table.get().as_mut().unwrap_unchecked()
+  fn map_mut(&self) -> &mut GcOrdHashMapN<Ref<Str>, Value> {
+    unsafe { &mut *self.map.get() }
   }
 
   #[allow(clippy::mut_from_ref)]
   #[inline]
-  unsafe fn get_table_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut RawTable<usize, Alloc<'gc>> {
-    let table = self.get_table_mut_no_alloc();
-    let table = transmute::<_, &mut RawTable<usize, Alloc<'gc>>>(table);
-    table.allocator().set(gc);
-    table
+  fn map_alloc<'gc>(&self, gc: &'gc Gc) -> &mut GcOrdHashMap<'gc, Ref<Str>, Value> {
+    let map = unsafe { &mut *self.map.get() };
+    map.as_alloc_mut(gc)
   }
-
-  #[inline]
-  unsafe fn get_vec(&self) -> &Vec<Entry, NoAlloc> {
-    self.vec.get().as_ref().unwrap_unchecked()
-  }
-
-  #[allow(clippy::mut_from_ref)]
-  #[inline]
-  unsafe fn get_vec_mut_no_alloc(&self) -> &mut Vec<Entry, NoAlloc> {
-    self.vec.get().as_mut().unwrap_unchecked()
-  }
-
-  #[allow(clippy::mut_from_ref)]
-  #[inline]
-  unsafe fn get_vec_mut_alloc<'gc>(&self, gc: &'gc Gc) -> &mut Vec<Entry, Alloc<'gc>> {
-    let vec = self.get_vec_mut_no_alloc();
-    let vec = transmute::<_, &mut Vec<Entry, Alloc<'gc>>>(vec);
-    vec.allocator().set(gc);
-    vec
-  }
-}
-
-struct Entry {
-  hash: u64,
-  key: Ref<Str>,
-  value: Value,
 }
 
 impl Object for Table {
@@ -242,27 +123,22 @@ impl Object for Table {
   // by the GC at some point.
   const NEEDS_DROP: bool = false;
 }
-
 impl Debug for Table {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut f = f.debug_map();
-    for entry in unsafe { self.get_vec() }.iter() {
-      f.entry(&entry.key, &entry.value);
-    }
-    f.finish()
+    f.debug_map().entries(self.map().iter()).finish()
   }
 }
 
 impl Display for Table {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut f = f.debug_map();
-    for entry in unsafe { self.get_vec() }.iter() {
-      f.entry(
-        &DelegateDebugToDisplay(entry.key),
-        &DelegateDebugToDisplay(entry.value),
-      );
-    }
-    f.finish()
+    f.debug_map()
+      .entries(
+        self
+          .map()
+          .iter()
+          .map(|(k, v)| (DelegateDebugToDisplay(k), DelegateDebugToDisplay(v))),
+      )
+      .finish()
   }
 }
 
@@ -273,12 +149,12 @@ pub struct TableDescriptor {
 }
 
 impl TableDescriptor {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocError> {
     let mut key_set: HashSet<Ref<Str>, BuildHasherDefault<FxHasher>, _> = HashSet::with_hasher_in(
       BuildHasherDefault::default(),
       Alloc::new(unsafe { &*(gc as *const _) }),
     );
-    key_set.try_reserve(keys.len()).map_err(|_| AllocErr)?;
+    key_set.try_reserve(keys.len())?;
     key_set.extend(keys);
 
     let keys = unsafe { transmute::<_, HashSet<_, _, NoAlloc>>(key_set) };

@@ -7,24 +7,24 @@ function `__main__` (registers: 2, length: 15 (60 bytes))
 .code
 <loop::start#0>:
   jl    loop::start#0
-<loop::end#0>:
-  lsmi  0, r0           ; let i = 0
-<loop::start#1>:
-  lsmi  1, r0           ; i += 1
-  jl    loop::start#1
 <loop::end#1>:
+  lsmi  0, r0           ; let i = 0
 <loop::start#2>:
-  lnil  r0              ; let a
-  jmp   loop::end#2     ; break
-  lnil  r1              ; let b
-  jl    loop::end#1
-<loop::end#2>:
-<loop::start#3>:
-  lnil  r0              ; let a
-  jl    loop::end#2     ; continue
-  lnil  r1              ; let b
-  jl    loop::end#2
+  lsmi  1, r0           ; i += 1
+  jl    loop::start#2
 <loop::end#3>:
+<loop::start#4>:
+  lnil  r0              ; let a
+  jmp   loop::end#5     ; break
+  lnil  r1              ; let b
+  jl    loop::start#4
+<loop::end#5>:
+<loop::start#6>:
+  lnil  r0              ; let a
+  jl    loop::start#6   ; continue
+  lnil  r1              ; let b
+  jl    loop::start#6
+<loop::end#7>:
   fin
   lnil  r0
   ret   r0

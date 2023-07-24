@@ -5,7 +5,7 @@ use bumpalo::collections::Vec;
 use super::{EmitError, HashMap, Result};
 use crate::gc::Ref;
 use crate::lex::Span;
-use crate::obj::func::LabelInfo;
+use crate::obj::func::{LabelInfo, LabelMapBuilder};
 use crate::obj::list::ListDescriptor;
 use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
@@ -19,8 +19,7 @@ pub struct BytecodeBuilder<'arena> {
   code: Vec<'arena, Op>,
   pool: ConstantPoolBuilder<'arena>,
   spans: Vec<'arena, Span>,
-  labels: Vec<'arena, (usize, LabelInfo)>,
-  label_index: usize,
+  label_map: LabelMapBuilder<'arena>,
 }
 
 impl<'arena> BytecodeBuilder<'arena> {
@@ -29,15 +28,8 @@ impl<'arena> BytecodeBuilder<'arena> {
       code: Vec::new_in(arena),
       pool: ConstantPoolBuilder::new_in(arena),
       spans: Vec::new_in(arena),
-      labels: Vec::new_in(arena),
-      label_index: 0,
+      label_map: LabelMapBuilder::new_in(arena),
     }
-  }
-
-  pub fn label_index(&mut self) -> usize {
-    let v = self.label_index;
-    self.label_index += 1;
-    v
   }
 
   #[inline]
@@ -58,9 +50,9 @@ impl<'arena> BytecodeBuilder<'arena> {
     Vec<'arena, Op>,
     Vec<'arena, Constant>,
     Vec<'arena, Span>,
-    Vec<'arena, (usize, LabelInfo)>,
+    LabelMapBuilder<'arena>,
   ) {
-    (self.code, self.pool.entries, self.spans, self.labels)
+    (self.code, self.pool.entries, self.spans, self.label_map)
   }
 }
 
@@ -70,9 +62,9 @@ pub struct BasicLabel {
 }
 
 impl BasicLabel {
-  pub fn new(name: &'static str, index: usize) -> Self {
+  pub fn new(b: &mut BytecodeBuilder, name: &'static str) -> Self {
     Self {
-      info: LabelInfo { name, index },
+      info: b.label_map.reserve_label(name),
       referrer_offset: None,
     }
   }
@@ -81,7 +73,10 @@ impl BasicLabel {
   where
     F: FnOnce() -> Op,
   {
-    self.referrer_offset = Some(b.code.len());
+    let referrer = b.code.len();
+    b.label_map.on_emit(self.info, referrer);
+
+    self.referrer_offset = Some(referrer);
     let op = op();
     debug_assert!(op.is_fwd_jump());
     b.emit(op, span)
@@ -92,7 +87,7 @@ impl BasicLabel {
     patch_jump(referrer_offset, b)?;
 
     let offset = b.code.len();
-    b.labels.push((offset, self.info));
+    b.label_map.on_bind(self.info, offset);
 
     Ok(())
   }
@@ -104,10 +99,10 @@ pub struct MultiLabel<'arena> {
 }
 
 impl<'arena> MultiLabel<'arena> {
-  pub fn new(b: &BytecodeBuilder<'arena>, name: &'static str, index: usize) -> Self {
+  pub fn new(b: &mut BytecodeBuilder<'arena>, name: &'static str) -> Self {
     let arena = b.code.bump();
     Self {
-      info: LabelInfo { name, index },
+      info: b.label_map.reserve_label(name),
       referrers: Vec::new_in(arena),
     }
   }
@@ -116,7 +111,10 @@ impl<'arena> MultiLabel<'arena> {
   where
     F: Fn() -> Op,
   {
-    self.referrers.push(b.code.len());
+    let referrer = b.code.len();
+    b.label_map.on_emit(self.info, referrer);
+
+    self.referrers.push(referrer);
     let op = op();
     debug_assert!(op.is_fwd_jump());
     b.emit(op, span)
@@ -128,7 +126,7 @@ impl<'arena> MultiLabel<'arena> {
     }
 
     let offset = b.code.len();
-    b.labels.push((offset, self.info));
+    b.label_map.on_bind(self.info, offset);
 
     Ok(())
   }
@@ -141,9 +139,9 @@ pub struct LoopLabel {
 }
 
 impl LoopLabel {
-  pub fn new(name: &'static str, index: usize) -> Self {
+  pub fn new(b: &mut BytecodeBuilder, name: &'static str) -> Self {
     Self {
-      info: LabelInfo { name, index },
+      info: b.label_map.reserve_label(name),
       offset: usize::MAX,
       bound: false,
     }
@@ -153,7 +151,10 @@ impl LoopLabel {
   where
     F: Fn(JumpOffset) -> Op,
   {
-    let offset = b.code.len() - self.offset;
+    let referrer = b.code.len();
+    b.label_map.on_emit(self.info, referrer);
+
+    let offset = referrer - self.offset;
     let offset = match u24::try_from(offset)
       .map(Offset)
       .map_err(|_| Offset(offset as u64))
@@ -168,8 +169,10 @@ impl LoopLabel {
 
   pub fn bind(&mut self, b: &mut BytecodeBuilder) {
     assert!(!self.bound);
-    self.offset = b.code.len();
-    b.labels.push((self.offset, self.info));
+    let offset = b.code.len();
+    b.label_map.on_bind(self.info, offset);
+
+    self.offset = offset;
     self.bound = true;
   }
 }

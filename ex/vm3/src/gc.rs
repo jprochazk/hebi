@@ -1,5 +1,8 @@
+#![allow(clippy::needless_lifetimes)]
+
 use core::alloc::Layout;
 use core::any::type_name;
+use core::borrow::Borrow;
 use core::cell::{Cell, RefCell};
 use core::cmp::max;
 use core::fmt::{Debug, Display};
@@ -11,10 +14,11 @@ use core::ptr::{addr_of, addr_of_mut, copy_nonoverlapping, NonNull};
 use core::{mem, ptr, slice, str};
 
 use allocator_api2::alloc::Allocator;
-use bumpalo::{vec, AllocErr, Bump};
+use bumpalo::{vec, Bump};
 use hashbrown::HashSet;
 use rustc_hash::FxHasher;
 
+use crate::error::AllocError;
 use crate::val::Value;
 
 pub trait Object: Debug + Display {
@@ -83,7 +87,7 @@ impl Default for Gc {
 }
 
 impl Gc {
-  pub fn try_alloc<T: Object + 'static>(&self, obj: T) -> Result<Ref<T>, AllocErr> {
+  pub fn try_alloc<T: Object + 'static>(&self, obj: T) -> Result<Ref<T>, AllocError> {
     let ptr = if T::NEEDS_DROP {
       let ptr = self.heap.try_alloc(Box {
         next: self.drop_chain.get(),
@@ -104,7 +108,7 @@ impl Gc {
     Ok(Ref { ptr })
   }
 
-  pub fn try_alloc_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocErr> {
+  pub fn try_alloc_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocError> {
     let dst = self.heap.try_alloc_layout(Layout::for_value(src))?;
     let dst = unsafe {
       copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
@@ -113,7 +117,7 @@ impl Gc {
     Ok(unsafe { str::from_utf8_unchecked(dst) })
   }
 
-  pub fn try_intern_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocErr> {
+  pub fn try_intern_str<'gc>(&'gc self, src: &str) -> Result<&'gc str, AllocError> {
     if let Some(str) = self.string_table.borrow().get(src).copied() {
       return Ok(str);
     }
@@ -128,7 +132,7 @@ impl Gc {
   /// Allocate a slice on the GC heap.
   ///
   /// The contents of the slice will _not_ be dropped.
-  pub fn try_alloc_slice<'gc, T>(&'gc self, src: &[T]) -> Result<&'gc [T], AllocErr> {
+  pub fn try_alloc_slice<'gc, T>(&'gc self, src: &[T]) -> Result<&'gc [T], AllocError> {
     let dst = self.heap.try_alloc_layout(Layout::for_value(src))?;
     let dst = dst.cast::<T>();
     let dst = unsafe {
@@ -140,21 +144,21 @@ impl Gc {
 
   pub fn try_collect_slice<'gc, T>(
     &'gc self,
-    items: impl IntoIterator<Item = Result<T, AllocErr>>,
-  ) -> Result<&'gc [T], AllocErr> {
+    items: impl IntoIterator<Item = Result<T, AllocError>>,
+  ) -> Result<&'gc [T], AllocError> {
     let mut iter = items.into_iter();
     let size_hint = iter.size_hint();
     let len = max(size_hint.1.unwrap_or(size_hint.0), 1);
     let mut v = vec![in &self.heap];
-    v.try_reserve(len).map_err(|_| AllocErr)?;
+    v.try_reserve(len).map_err(|_| AllocError)?;
     if let Some(item) = iter.next() {
       let item = item?;
       // we have space for at least one item
       v.push(item);
     }
-    while let Some(item) = iter.next() {
+    for item in iter {
       let item = item?;
-      v.try_reserve(1).map_err(|_| AllocErr)?;
+      v.try_reserve(1).map_err(|_| AllocError)?;
       v.push(item);
     }
     Ok(v.into_bump_slice())
@@ -328,6 +332,12 @@ impl<T: PartialOrd> PartialOrd for Ref<T> {
 impl<T: Ord> Ord for Ref<T> {
   fn cmp(&self, other: &Self) -> core::cmp::Ordering {
     self.get_ref().cmp(other.get_ref())
+  }
+}
+
+impl<T> Borrow<T> for Ref<T> {
+  fn borrow(&self) -> &T {
+    self.deref()
   }
 }
 

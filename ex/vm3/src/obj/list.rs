@@ -3,8 +3,8 @@ use core::fmt::{Debug, Display};
 use core::mem::transmute;
 
 use allocator_api2::vec::Vec;
-use bumpalo::AllocErr;
 
+use crate::error::AllocError;
 use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref, NO_ALLOC};
 use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
@@ -15,15 +15,15 @@ pub struct List {
 }
 
 impl List {
-  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(List {
       vec: UnsafeCell::new(Vec::new_in(NO_ALLOC)),
     })
   }
 
-  pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocError> {
     let mut vec = Vec::<Value, _>::new_in(Alloc::new(gc));
-    vec.try_reserve_exact(capacity).map_err(|_| AllocErr)?;
+    vec.try_reserve_exact(capacity).map_err(|_| AllocError)?;
     let vec = unsafe { transmute::<_, Vec<Value, NoAlloc>>(vec) };
     gc.try_alloc(List {
       vec: UnsafeCell::new(vec),
@@ -46,9 +46,9 @@ impl List {
   }
 
   #[inline]
-  pub fn try_push(&self, gc: &Gc, value: Value) -> Result<(), AllocErr> {
+  pub fn try_push(&self, gc: &Gc, value: Value) -> Result<(), AllocError> {
     let vec = unsafe { self.get_vec_mut_alloc(gc) };
-    vec.try_reserve(1).map_err(|_| AllocErr)?;
+    vec.try_reserve(1).map_err(|_| AllocError)?;
     unsafe { self.try_push_no_grow(value).unwrap_unchecked() }
     Ok(())
   }
@@ -85,9 +85,9 @@ impl List {
     }
   }
 
-  pub fn extend_from_slice(&self, gc: &Gc, items: &[Value]) -> Result<(), AllocErr> {
+  pub fn extend_from_slice(&self, gc: &Gc, items: &[Value]) -> Result<(), AllocError> {
     let vec = unsafe { self.get_vec_mut_alloc(gc) };
-    vec.try_reserve(items.len()).map_err(|_| AllocErr)?;
+    vec.try_reserve(items.len()).map_err(|_| AllocError)?;
     let len = vec.len();
     for (i, item) in items.iter().enumerate() {
       unsafe {
@@ -178,7 +178,7 @@ pub struct ListDescriptor {
 }
 
 impl ListDescriptor {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(ListDescriptor { start, count })
   }
 

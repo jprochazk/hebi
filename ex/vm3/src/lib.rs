@@ -11,6 +11,7 @@ pub(crate) use std as alloc;
 pub mod util;
 
 pub mod ast;
+pub mod ds;
 pub mod error;
 pub mod gc;
 pub mod lex;

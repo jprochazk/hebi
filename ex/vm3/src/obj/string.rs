@@ -1,10 +1,10 @@
+use core::borrow::Borrow;
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
 use core::ops::Deref;
 use core::ptr::NonNull;
 
-use bumpalo::AllocErr;
-
+use crate::error::AllocError;
 use crate::gc::{Gc, Object, Ref};
 
 pub struct Str {
@@ -12,12 +12,12 @@ pub struct Str {
 }
 
 impl Str {
-  pub fn try_new_in(gc: &Gc, data: &str) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc, data: &str) -> Result<Ref<Self>, AllocError> {
     let data = NonNull::from(gc.try_alloc_str(data)?);
     gc.try_alloc(Str { data })
   }
 
-  pub fn try_intern_in(gc: &Gc, data: &str) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_intern_in(gc: &Gc, data: &str) -> Result<Ref<Self>, AllocError> {
     let data = NonNull::from(gc.try_intern_str(data)?);
     gc.try_alloc(Str { data })
   }
@@ -76,6 +76,18 @@ impl PartialOrd for Str {
 impl Ord for Str {
   fn cmp(&self, other: &Self) -> core::cmp::Ordering {
     self.as_str().cmp(other.as_str())
+  }
+}
+
+impl Borrow<str> for Str {
+  fn borrow(&self) -> &str {
+    self.as_str()
+  }
+}
+
+impl Borrow<str> for Ref<Str> {
+  fn borrow(&self) -> &str {
+    self.as_str()
   }
 }
 

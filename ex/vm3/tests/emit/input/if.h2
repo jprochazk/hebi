@@ -1,0 +1,6 @@
+if true { 0 }
+
+if true { 0 } else { 1 }
+
+let v = if true { 0 } else { 1 }
+

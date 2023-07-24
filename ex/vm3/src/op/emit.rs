@@ -10,7 +10,7 @@ use core::mem::replace;
 
 use beef::lean::Cow;
 use bumpalo::collections::Vec;
-use bumpalo::{vec, AllocErr};
+use bumpalo::vec;
 use rustc_hash::FxHasher;
 
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
@@ -19,7 +19,7 @@ use crate::ast::{
   Binary, BinaryOp, Block, Expr, Func, GetVar, If, Let, Lit, Logical, LogicalOp, Loop, Module,
   Return, SetVar, Stmt, Unary, UnaryOp,
 };
-use crate::error::StdError;
+use crate::error::{AllocError, StdError};
 use crate::gc::{Gc, Ref};
 use crate::lex::Span;
 use crate::obj::func::{Code, FunctionDescriptor, Params};
@@ -48,8 +48,8 @@ impl EmitError {
   }
 }
 
-impl From<AllocErr> for EmitError {
-  fn from(e: AllocErr) -> Self {
+impl From<AllocError> for EmitError {
+  fn from(e: AllocError) -> Self {
     Self::new(format!("{}", e))
   }
 }
@@ -410,13 +410,13 @@ fn top_level<'arena, 'gc, 'src>(
 
   let func = c.funcs.pop().unwrap();
 
-  let (ops, pool, spans, labels) = func.builder.finish();
+  let (ops, pool, spans, label_map) = func.builder.finish();
   let code = Code {
     src: c.src,
     ops: &ops,
     pool: &pool,
     spans: &spans,
-    labels: &labels,
+    label_map,
     stack_space: func.registers.total,
   };
 
@@ -493,9 +493,8 @@ macro_rules! build_loop {
   ) => {{
     #![allow(unused_variables, clippy::redundant_closure_call)]
 
-    let index = $c.builder().label_index();
-    let mut lstart = LoopLabel::new(concat!($name, "::start"), index);
-    let lend = MultiLabel::new(&fs!($c).builder, concat!($name, "::end"), index);
+    let mut lstart = LoopLabel::new($c.builder(), concat!($name, "::start"));
+    let lend = MultiLabel::new($c.builder(), concat!($name, "::end"));
 
     lstart.bind($c.builder());
     (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
@@ -518,9 +517,9 @@ macro_rules! build_loop {
 
     let index = $c.builder().label_index();
 
-    let mut lstart = LoopLabel::new(concat!($name, "::start"), index);
-    let llatch = MultiLabel::new(&fs!($c).builder, concat!($name, "::latch"), index);
-    let lend = MultiLabel::new(&fs!($c).builder, concat!($name, "::end"), index);
+    let mut lstart = LoopLabel::new($c.builder(), concat!($name, "::start"));
+    let llatch = MultiLabel::new($c.builder(), concat!($name, "::latch"));
+    let lend = MultiLabel::new($c.builder(), concat!($name, "::end"));
 
     lstart.bind($c.builder());
     (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
@@ -615,7 +614,7 @@ fn expr<'arena, 'gc, 'src>(
     Logical(node) => logical(c, dst, node),
     Binary(node) => binary(c, dst, node, span),
     Unary(node) => unary(c, dst, node, span),
-    Block(node) => block(c, dst, node),
+    Block(node) => block(c, dst, node).map(|_| None),
     If(node) => if_(c, dst, node),
     Func(_) => todo!(),
     GetVar(node) => get_var(c, dst, node, span),
@@ -636,7 +635,6 @@ fn logical<'arena, 'gc, 'src>(
 ) -> Result<Option<Reg<u8>>> {
   use LogicalOp::*;
 
-  let label_index = c.builder().label_index();
   let (free, dst) = match dst {
     Some(dst) => (false, dst),
     None => (true, c.reg()?),
@@ -645,7 +643,7 @@ fn logical<'arena, 'gc, 'src>(
     And => "and",
     Or => "or",
   };
-  let mut use_lhs = BasicLabel::new(name, label_index);
+  let mut use_lhs = BasicLabel::new(c.builder(), name);
 
   assign_to(c, dst, &node.lhs)?;
   match node.op {
@@ -721,20 +719,29 @@ fn unary<'arena, 'gc, 'src>(
   Ok(None)
 }
 
+// TODO:
+// test weird edges cases:
+//   {a} + {b}
+//   a = {b}
+// etc.
 fn block<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
   node: &Block<'arena, 'src>,
-) -> Result<Option<Reg<u8>>> {
+) -> Result<()> {
   c.scope(|c| {
     for node in node.body {
       stmt(c, node)?;
     }
 
-    match &node.last {
-      Some(node) => expr(c, dst, node),
-      None => Ok(None),
+    if let Some(last) = &node.last {
+      match dst {
+        Some(dst) => assign_to(c, dst, last)?,
+        None => expr(c, dst, last).map(|_| ())?,
+      };
     }
+
+    Ok(())
   })
 }
 
@@ -743,7 +750,33 @@ fn if_<'arena, 'gc, 'src>(
   dst: Option<Reg<u8>>,
   node: &If<'arena, 'src>,
 ) -> Result<Option<Reg<u8>>> {
-  todo!()
+  let (free, dst) = match dst {
+    Some(dst) => (false, dst),
+    None => (true, c.reg()?),
+  };
+
+  let mut end = MultiLabel::new(c.builder(), "if::end");
+
+  for branch in node.br {
+    let mut next = BasicLabel::new(c.builder(), "if::next");
+    assign_to(c, dst, &branch.cond)?;
+    next.emit(c.builder(), jump_if_false(dst), branch.cond.span)?;
+    block(c, Some(dst), &branch.body)?;
+    end.emit(c.builder(), jump, Span::empty())?;
+    next.bind(c.builder())?;
+  }
+
+  if let Some(tail) = &node.tail {
+    block(c, Some(dst), tail)?;
+  }
+
+  end.bind(c.builder())?;
+
+  if free {
+    c.free(dst);
+  }
+
+  Ok(None)
 }
 
 enum Var {

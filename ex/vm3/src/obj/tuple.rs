@@ -1,8 +1,7 @@
 use core::fmt::{Debug, Display};
 
-use bumpalo::AllocErr;
-
 use super::list::List;
+use crate::error::AllocError;
 use crate::gc::{Gc, Object, Ref};
 use crate::op::Reg;
 use crate::val::Value;
@@ -12,7 +11,7 @@ pub struct Tuple {
 }
 
 impl Tuple {
-  pub fn try_new_in(gc: &Gc, items: &[Value]) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc, items: &[Value]) -> Result<Ref<Self>, AllocError> {
     let inner = List::try_with_capacity_in(gc, items.len())?;
     inner.extend_from_slice(gc, items)?;
     gc.try_alloc(Tuple { inner })
@@ -46,7 +45,7 @@ pub struct TupleDescriptor {
 }
 
 impl TupleDescriptor {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocErr> {
+  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(TupleDescriptor { start, count })
   }
 

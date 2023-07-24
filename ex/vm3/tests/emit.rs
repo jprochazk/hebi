@@ -12,6 +12,7 @@ fn emit() {
   let _scope = settings.bind_to_scope();
 
   insta::glob!("emit/input/*.h2", |path| {
+    eprintln!("{}", path.display());
     let file = std::fs::read_to_string(path).unwrap();
     let arena = Bump::new();
     let lex = Lexer::new(&file);
@@ -31,7 +32,7 @@ fn emit() {
 
 /* #[test]
 fn _temp() {
-  let file = include_str!("./emit/input/logical.h2");
+  let file = include_str!("./emit/input/if.h2");
   let arena = Bump::new();
   let lex = Lexer::new(file);
   let parser = Parser::new(&arena, lex);

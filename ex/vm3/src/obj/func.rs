@@ -1,10 +1,17 @@
 use core::fmt::{Debug, Display, Write};
+use core::hash::BuildHasherDefault;
 use core::ptr::NonNull;
 
-use bumpalo::AllocErr;
+use bumpalo::collections::Vec as BumpVec;
+use bumpalo::Bump as Arena;
+use hashbrown::HashMap;
+use rustc_hash::FxHasher;
 
 use super::string::Str;
-use crate::gc::{Gc, Object, Ref};
+use crate::ds::map::{fx, BumpHashMap, GcHashMap};
+use crate::ds::HasAlloc;
+use crate::error::AllocError;
+use crate::gc::{Alloc, Gc, NoAlloc, Object, Ref};
 use crate::lex::Span;
 use crate::op::Op;
 use crate::val::Constant;
@@ -21,7 +28,7 @@ pub struct FunctionDescriptor {
 pub struct DebugInfo {
   src: Ref<Str>,
   spans: NonNull<[Span]>,
-  labels: NonNull<[(usize, LabelInfo)]>,
+  label_map: LabelMap,
 }
 
 impl DebugInfo {
@@ -34,10 +41,95 @@ impl DebugInfo {
   }
 }
 
+pub struct LabelMapBuilder<'arena> {
+  arena: &'arena Arena,
+  labels: BumpVec<'arena, LabelInfo>,
+  offset: BumpHashMap<'arena, usize, BumpVec<'arena, usize>>,
+  referrer: BumpHashMap<'arena, usize, usize>,
+}
+
+impl<'arena> LabelMapBuilder<'arena> {
+  pub fn new_in(arena: &'arena Arena) -> Self {
+    Self {
+      arena,
+      labels: BumpVec::new_in(arena),
+      offset: BumpHashMap::with_hasher_in(fx(), arena),
+      referrer: BumpHashMap::with_hasher_in(fx(), arena),
+    }
+  }
+
+  pub fn reserve_label(&mut self, name: &'static str) -> LabelInfo {
+    let index = self.labels.len();
+    let info = LabelInfo { name, index };
+    self.labels.push(info);
+    info
+  }
+
+  pub fn on_emit(&mut self, label: LabelInfo, referrer: usize) {
+    self.referrer.insert(referrer, label.index);
+  }
+
+  pub fn on_bind(&mut self, label: LabelInfo, offset: usize) {
+    let indices = self
+      .offset
+      .entry(offset)
+      .or_insert_with(|| BumpVec::new_in(self.arena));
+    indices.push(label.index);
+  }
+
+  pub fn finish(self, gc: &Gc) -> Result<LabelMap, AllocError> {
+    let labels: NonNull<_> = gc.try_alloc_slice(self.labels.into_bump_slice())?.into();
+
+    let mut offset = GcHashMap::with_hasher_in(fx(), Alloc::new(gc));
+    offset.try_reserve(self.offset.len())?;
+    for (o, indices) in self.offset.into_iter() {
+      let indices: NonNull<_> = gc.try_alloc_slice(indices.into_bump_slice())?.into();
+      offset.insert_unique_unchecked(o, indices);
+    }
+    let offset = offset.to_no_alloc();
+
+    let mut referrer = GcHashMap::with_hasher_in(fx(), Alloc::new(gc));
+    referrer.try_reserve(self.referrer.len())?;
+    for (o, i) in self.referrer.into_iter() {
+      referrer.insert_unique_unchecked(o, i);
+    }
+    let referrer = referrer.to_no_alloc();
+
+    Ok(LabelMap {
+      labels,
+      offset,
+      referrer,
+    })
+  }
+}
+
+pub struct LabelMap {
+  labels: NonNull<[LabelInfo]>,
+  offset: HashMap<usize, NonNull<[usize]>, BuildHasherDefault<FxHasher>, NoAlloc>,
+  referrer: HashMap<usize, usize, BuildHasherDefault<FxHasher>, NoAlloc>,
+}
+
+impl LabelMap {
+  pub fn by_offset(&self, offset: usize) -> Option<impl Iterator<Item = &LabelInfo> + '_> {
+    self.offset.get(&offset).map(|indices| {
+      let indices = unsafe { indices.as_ref() };
+      let labels = unsafe { self.labels.as_ref() };
+      indices.iter().map(|&i| &labels[i])
+    })
+  }
+
+  pub fn by_referrer(&self, referrer: usize) -> Option<&LabelInfo> {
+    self.referrer.get(&referrer).map(|&i| {
+      let labels = unsafe { self.labels.as_ref() };
+      &labels[i]
+    })
+  }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct LabelInfo {
   pub name: &'static str,
-  pub index: usize,
+  index: usize,
 }
 
 impl FunctionDescriptor {
@@ -46,12 +138,12 @@ impl FunctionDescriptor {
     name: &str,
     params: Params,
     code: Code,
-  ) -> Result<Ref<Self>, AllocErr> {
+  ) -> Result<Ref<Self>, AllocError> {
     let name = Str::try_new_in(gc, name)?;
     let ops = gc.try_alloc_slice(code.ops)?.into();
     let pool = gc.try_alloc_slice(code.pool)?.into();
     let spans = gc.try_alloc_slice(code.spans)?.into();
-    let labels = gc.try_alloc_slice(code.labels)?.into();
+    let label_map = code.label_map.finish(gc)?;
 
     gc.try_alloc(FunctionDescriptor {
       name,
@@ -62,7 +154,7 @@ impl FunctionDescriptor {
       dbg: DebugInfo {
         src: code.src,
         spans,
-        labels,
+        label_map,
       },
     })
   }
@@ -144,7 +236,7 @@ pub struct Code<'a> {
   pub ops: &'a [Op],
   pub pool: &'a [Constant],
   pub spans: &'a [Span],
-  pub labels: &'a [(usize, LabelInfo)],
+  pub label_map: LabelMapBuilder<'a>,
   pub stack_space: u8,
 }
 
@@ -161,7 +253,7 @@ impl<'a> Display for Disasm<'a> {
     let func = self.0;
 
     let src = func.dbg.src.as_str();
-    let labels = unsafe { func.dbg.labels.as_ref() };
+    let label_map = &func.dbg.label_map;
     let ops = func.ops();
     let pool = func.pool();
     let loc = func.loc();
@@ -193,17 +285,15 @@ impl<'a> Display for Disasm<'a> {
       }
     }
 
-    let mut label_iter = labels.iter().peekable();
     if !ops.is_empty() {
       writeln!(f, ".code")?;
       let mut prev_line_span = Span::empty();
       for (offset, (op, span)) in ops.iter().zip(loc.iter()).enumerate() {
         // write labels if one or more exists at the current offset
-        while label_iter.peek().is_some_and(|(loff, _)| *loff == offset) {
-          let (_, label) = label_iter.next().unwrap();
+        for label in label_map.by_offset(offset).into_iter().flatten() {
           writeln!(f, "<{}#{}>:", label.name, label.index)?;
         }
-        let written = disasm_op(offset, op, labels, pool, f)?;
+        let written = disasm_op(offset, op, label_map, pool, f)?;
         let padding = remainder_to(24, written);
         // write line at `span`
         let line_span = find_line(src, span);
@@ -227,8 +317,8 @@ impl<'a> Display for Disasm<'a> {
 fn disasm_op(
   base: usize,
   op: &Op,
-  labels: &[(usize, LabelInfo)],
-  pool: &[Constant],
+  labels: &LabelMap,
+  _pool: &[Constant],
   f: &mut core::fmt::Formatter,
 ) -> core::result::Result<usize, core::fmt::Error> {
   macro_rules! w {
@@ -239,21 +329,20 @@ fn disasm_op(
     }}
   }
 
-  macro_rules! c {
+  /* macro_rules! c {
     ($p:expr, $i:expr, $ty:ident) => {{
       match ($p)[$i.wide()] {
         crate::val::Constant::$ty(v) => v,
         _ => unreachable!(),
       }
     }};
-  }
+  } */
 
   macro_rules! label {
-    ($l:expr, $op:tt, $b:expr, $o:expr) => {{
-      let o = $b as u64 $op u64::from(($o).0);
-      let (_, label) = labels.iter().find(|(oo, _)| (*oo) as u64 == o).unwrap();
+    ($l:expr, $b:expr) => {{
+      let label = $l.by_referrer($b).unwrap();
       format_args!("{}#{}", label.name, label.index)
-    }}
+    }};
   }
 
   #[rustfmt::skip]
@@ -290,14 +379,14 @@ fn disasm_op(
       Op::MakeTableEmpty { dst } =>               w!(f, "  mtble {dst}"),
       Op::MakeTuple { dst, desc } =>              w!(f, "  mtup  {desc}, {dst}"),
       Op::MakeTupleEmpty { dst } =>               w!(f, "  mtupe {dst}"),
-      Op::Jump { offset } =>                      w!(f, "  jmp   {}", label!(labels, +, base, offset)),
-      Op::JumpConst { offset } =>                 w!(f, "  jmp   {}", label!(labels, +, base, c!(pool, offset, Offset))),
-      Op::JumpLoop { offset } =>                  w!(f, "  jl    {}", label!(labels, -, base, offset)),
-      Op::JumpLoopConst { offset } =>             w!(f, "  jl    {}", label!(labels, -, base, c!(pool, offset, Offset))),
-      Op::JumpIfFalse { val, offset } =>          w!(f, "  jf    {val}, {}", label!(labels, +, base, offset)),
-      Op::JumpIfFalseConst { val, offset } =>     w!(f, "  jf    {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
-      Op::JumpIfTrue { val, offset } =>           w!(f, "  jt    {val}, {}", label!(labels, +, base, offset)),
-      Op::JumpIfTrueConst { val, offset } =>      w!(f, "  jt    {val}, {}", label!(labels, +, base, c!(pool, offset, Offset))),
+      Op::Jump { .. } =>                      w!(f, "  jmp   {}", label!(labels, base)),
+      Op::JumpConst { .. } =>                 w!(f, "  jmp   {}", label!(labels, base)),
+      Op::JumpLoop { .. } =>                  w!(f, "  jl    {}", label!(labels, base)),
+      Op::JumpLoopConst { .. } =>             w!(f, "  jl    {}", label!(labels, base)),
+      Op::JumpIfFalse { val, .. } =>          w!(f, "  jf    {val}, {}", label!(labels, base)),
+      Op::JumpIfFalseConst { val, .. } =>     w!(f, "  jf    {val}, {}", label!(labels, base)),
+      Op::JumpIfTrue { val, .. } =>           w!(f, "  jt    {val}, {}", label!(labels, base)),
+      Op::JumpIfTrueConst { val, .. } =>      w!(f, "  jt    {val}, {}", label!(labels, base)),
       Op::Add { dst, lhs, rhs } =>                w!(f, "  add   {lhs}, {rhs}, {dst}"),
       Op::Sub { dst, lhs, rhs } =>                w!(f, "  sub   {lhs}, {rhs}, {dst}"),
       Op::Mul { dst, lhs, rhs } =>                w!(f, "  mul   {lhs}, {rhs}, {dst}"),

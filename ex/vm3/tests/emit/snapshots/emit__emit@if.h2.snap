@@ -1,0 +1,32 @@
+---
+source: ex/vm3/tests/emit.rs
+expression: snapshot
+input_file: ex/vm3/tests/emit/input/if.h2
+---
+function `__main__` (registers: 1, length: 18 (72 bytes))
+.code
+  lbt   r0              ; if true { 0 }
+  jf    r0, if::next#1
+  lsmi  0, r0
+  jmp   if::end#0
+<if::next#1>:
+<if::end#0>:
+  lbt   r0              ; if true { 0 } else { 1 }
+  jf    r0, if::next#3
+  lsmi  0, r0
+  jmp   if::end#2
+<if::next#3>:
+  lsmi  1, r0
+<if::end#2>:
+  lbt   r0              ; let v = if true { 0 } else { 1 }
+  jf    r0, if::next#5
+  lsmi  0, r0
+  jmp   if::end#4
+<if::next#5>:
+  lsmi  1, r0
+<if::end#4>:
+  smv   r0, m0
+  fin
+  lnil  r0
+  ret   r0
+
