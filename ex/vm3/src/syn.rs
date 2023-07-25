@@ -591,6 +591,7 @@ mod expr {
 
     fn args(&mut self) -> Result<Vec<'arena, Expr<'arena, 'src>>> {
       self.expect(BrkParenL)?;
+      let start = self.previous().span.start;
       let mut list = vec![in self.arena];
       if !self.end() && !self.at(BrkParenR) {
         list.push(self.expr()?);
@@ -599,6 +600,12 @@ mod expr {
         }
       }
       self.expect(BrkParenR)?;
+      let end = self.previous().span.end;
+
+      if list.len() > u8::MAX as usize {
+        return Err(self.error("too many arguments", start..end));
+      }
+
       Ok(list)
     }
 

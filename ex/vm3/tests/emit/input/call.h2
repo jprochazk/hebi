@@ -1,0 +1,26 @@
+{
+  let f
+
+  f()
+  f(0)
+  f(0, 1, 2)
+}
+
+{
+  let f
+  let v // top -> `dst` for calls
+
+  v = f()
+}
+
+{
+  let v // not top -> `mov` after call
+  let f
+
+  v = f()
+}
+
+{
+  let f
+  let v = f() // should be optimal
+}

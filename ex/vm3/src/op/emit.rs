@@ -14,7 +14,7 @@ use bumpalo::vec;
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
 use super::{Capture, Const, Mvar, Op, Reg};
 use crate::ast::{
-  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, Ident, If, Key, Let, Lit,
+  Binary, BinaryOp, Block, Call, Expr, Func, GetField, GetIndex, GetVar, Ident, If, Key, Let, Lit,
   Logical, LogicalOp, Loop, Module, Name, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
 };
 use crate::ds::fx;
@@ -30,7 +30,7 @@ use crate::obj::string::Str;
 use crate::obj::tuple::TupleProto;
 use crate::op::asm::*;
 use crate::op::emit::builder::BasicLabel;
-use crate::op::Smi;
+use crate::op::{Count, Smi};
 use crate::{alloc, Arena};
 
 pub type Result<T> = core::result::Result<T, EmitError>;
@@ -769,8 +769,8 @@ fn expr<'arena, 'gc, 'src>(
     SetField(node) => set_field(c, node, span),
     GetIndex(node) => get_index(c, dst, node, span),
     SetIndex(node) => set_index(c, node, span),
-    Call(_) => todo!(),
-    Lit(inner) => lit(c, dst, inner, span),
+    Call(node) => call_fn(c, dst, node, span),
+    Lit(node) => lit(c, dst, node, span),
   }
 }
 
@@ -1204,6 +1204,61 @@ fn assign_to<'arena, 'gc, 'src>(
   }
 
   Ok(())
+}
+
+fn call_fn<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  node: &Call<'arena, 'src>,
+  span: Span,
+) -> Result<Option<Reg<u8>>> {
+  // calling convention:
+  // - function is emitted first, then arguments in order.
+  // - no live registers must exist above the last argument.
+  // - the callee frame overlaps with the caller frame from the function to the
+  //   last argument.
+  // - the callee must not mutate the overlapping registers.
+  // - the return value is placed in the function register.
+
+  let (free, flat_dst, dst) = match dst {
+    Some(dst) => (false, dst.0 + 1 == fs!(c).registers.current, dst),
+    None => (true, true, c.reg()?),
+  };
+
+  // if the `dst` register is the current top, we can use it directly
+  // otherwise we emit `move` after the call
+  let (free_fn, fn_reg) = match flat_dst {
+    true => (false, dst),
+    false => (true, c.reg()?),
+  };
+
+  let mut args = vec![in c.arena];
+  for _ in 0..node.args.len() {
+    args.push(c.reg()?);
+  }
+
+  assign_to(c, fn_reg, &node.target)?;
+  for (arg, reg) in node.args.iter().zip(args.iter()) {
+    assign_to(c, *reg, arg)?;
+  }
+
+  match node.args {
+    [] => c.emit(call0(fn_reg), span)?,
+    _ => c.emit(call(fn_reg, Count(args.len() as u8)), span)?,
+  };
+
+  if !flat_dst {
+    c.emit(mov(fn_reg, dst), span)?;
+  }
+
+  if free_fn {
+    c.free(fn_reg);
+  }
+  if free {
+    c.free(dst);
+  }
+
+  Ok(None)
 }
 
 fn lit<'arena, 'gc, 'src>(
