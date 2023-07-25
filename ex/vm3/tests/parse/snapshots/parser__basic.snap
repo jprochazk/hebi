@@ -168,7 +168,6 @@ expression: snapshot
                                 },
                             ),
                         },
-                        kind: Bare,
                     },
                 ),
             },
@@ -742,13 +741,40 @@ expression: snapshot
                                             start: 255,
                                             end: 256,
                                         },
-                                        kind: Lit(
-                                            Int(
-                                                1,
-                                            ),
+                                        kind: Binary(
+                                            Binary {
+                                                op: Add,
+                                                lhs: Expr {
+                                                    span: Span {
+                                                        start: 250,
+                                                        end: 251,
+                                                    },
+                                                    kind: GetVar(
+                                                        GetVar {
+                                                            name: Ident {
+                                                                span: Span {
+                                                                    start: 250,
+                                                                    end: 251,
+                                                                },
+                                                                lexeme: "i",
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                                rhs: Expr {
+                                                    span: Span {
+                                                        start: 255,
+                                                        end: 256,
+                                                    },
+                                                    kind: Lit(
+                                                        Int(
+                                                            1,
+                                                        ),
+                                                    ),
+                                                },
+                                            },
                                         ),
                                     },
-                                    kind: Add,
                                 },
                             ),
                         },
@@ -2248,7 +2274,6 @@ expression: snapshot
                                 ),
                             ),
                         },
-                        kind: Bare,
                     },
                 ),
             },

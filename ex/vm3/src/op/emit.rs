@@ -835,11 +835,12 @@ fn set_var<'arena, 'gc, 'src>(
   //       maybe just desugar it? 🤷‍♂️
   match c.resolve_var(node.name.lexeme) {
     Self_ => {
-      return Err(EmitError::new(if fmut!(c).params.has_self {
+      let msg = if fmut!(c).params.has_self {
         Cow::borrowed("cannot assign to `self`")
       } else {
         Cow::owned(format!("cannot assign to function `{}`", node.name.lexeme))
-      }));
+      };
+      return Err(EmitError::new(msg));
     }
     Param(_) => {
       return Err(EmitError::new(format!(

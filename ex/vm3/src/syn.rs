@@ -363,15 +363,15 @@ mod stmt {
       Ok(mk!(self, Expr(target) @ span))
     }
 
-    fn assign_target(&mut self) -> Result<Option<AssignKind>> {
+    fn assign_target(&mut self) -> Result<Option<Assign>> {
       let kind = match self.current().kind {
-        OpEqual => AssignKind::Bare,
-        OpPlusEqual => AssignKind::Add,
-        OpMinusEqual => AssignKind::Sub,
-        OpSlashEqual => AssignKind::Div,
-        OpStarEqual => AssignKind::Mul,
-        OpPercentEqual => AssignKind::Rem,
-        OpStarStarEqual => AssignKind::Pow,
+        OpEqual => Assign::Bare,
+        OpPlusEqual => Assign::Compound(AssignKind::Add),
+        OpMinusEqual => Assign::Compound(AssignKind::Sub),
+        OpSlashEqual => Assign::Compound(AssignKind::Div),
+        OpStarEqual => Assign::Compound(AssignKind::Mul),
+        OpPercentEqual => Assign::Compound(AssignKind::Rem),
+        OpStarStarEqual => Assign::Compound(AssignKind::Pow),
         _ => return Ok(None),
       };
       self.bump()?;
@@ -382,26 +382,44 @@ mod stmt {
       &mut self,
       target: Expr<'arena, 'src>,
       value: Expr<'arena, 'src>,
-      kind: AssignKind,
+      assign: Assign,
     ) -> Result<Stmt<'arena, 'src>> {
       let span = Span::from(target.span.start..value.span.end);
+      let value = match assign {
+        Assign::Bare => value,
+        Assign::Compound(kind) => {
+          let op = match kind {
+            AssignKind::Add => BinaryOp::Add,
+            AssignKind::Sub => BinaryOp::Sub,
+            AssignKind::Div => BinaryOp::Div,
+            AssignKind::Mul => BinaryOp::Mul,
+            AssignKind::Rem => BinaryOp::Rem,
+            AssignKind::Pow => BinaryOp::Pow,
+          };
+          Expr::new(
+            ExprKind::Binary(self.alloc(Binary {
+              op,
+              lhs: target,
+              rhs: value,
+            })),
+            value.span,
+          )
+        }
+      };
       let assign = match target.kind {
         ExprKind::GetVar(e) => ExprKind::SetVar(self.alloc(SetVar {
           name: e.name,
           value,
-          kind,
         })),
         ExprKind::GetField(e) => ExprKind::SetField(self.alloc(SetField {
           target: e.target,
           key: e.key,
           value,
-          kind,
         })),
         ExprKind::GetIndex(e) => ExprKind::SetIndex(self.alloc(SetIndex {
           target: e.target,
           index: e.index,
           value,
-          kind,
         })),
         _ => return Err(err!(self, @span, "invalid assignment target")),
       };

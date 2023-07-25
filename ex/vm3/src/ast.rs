@@ -51,14 +51,32 @@ pub struct Let<'arena, 'src> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum AssignKind {
+pub enum Assign {
   Bare,
+  Compound(AssignKind),
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum AssignKind {
   Add,
   Sub,
   Div,
   Mul,
   Rem,
   Pow,
+}
+
+impl From<AssignKind> for BinaryOp {
+  fn from(value: AssignKind) -> Self {
+    match value {
+      AssignKind::Add => BinaryOp::Add,
+      AssignKind::Sub => BinaryOp::Sub,
+      AssignKind::Div => BinaryOp::Div,
+      AssignKind::Mul => BinaryOp::Mul,
+      AssignKind::Rem => BinaryOp::Rem,
+      AssignKind::Pow => BinaryOp::Pow,
+    }
+  }
 }
 
 #[derive(Debug)]
@@ -183,7 +201,6 @@ pub struct GetVar<'src> {
 pub struct SetVar<'arena, 'src> {
   pub name: Ident<'src>,
   pub value: Expr<'arena, 'src>,
-  pub kind: AssignKind,
 }
 
 #[derive(Clone, Debug)]
@@ -203,7 +220,6 @@ pub struct SetField<'arena, 'src> {
   pub target: &'arena Expr<'arena, 'src>,
   pub key: &'arena Key<'src>,
   pub value: Expr<'arena, 'src>,
-  pub kind: AssignKind,
 }
 
 #[derive(Clone, Debug)]
@@ -217,7 +233,6 @@ pub struct SetIndex<'arena, 'src> {
   pub target: &'arena Expr<'arena, 'src>,
   pub index: &'arena Expr<'arena, 'src>,
   pub value: Expr<'arena, 'src>,
-  pub kind: AssignKind,
 }
 
 #[derive(Clone, Debug)]
