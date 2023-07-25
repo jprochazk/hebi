@@ -39,14 +39,14 @@ impl Object for Tuple {
 }
 
 #[derive(Debug)]
-pub struct TupleDescriptor {
+pub struct TupleProto {
   start: Reg<u8>,
   count: u8,
 }
 
-impl TupleDescriptor {
+impl TupleProto {
   pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
-    gc.try_alloc(TupleDescriptor { start, count })
+    gc.try_alloc(TupleProto { start, count })
   }
 
   #[inline]
@@ -60,10 +60,10 @@ impl TupleDescriptor {
   }
 }
 
-impl Display for TupleDescriptor {
+impl Display for TupleProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "<tuple>")
   }
 }
 
-impl Object for TupleDescriptor {}
+impl Object for TupleProto {}

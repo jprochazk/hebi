@@ -21,7 +21,7 @@ function `__main__` (registers: 6, length: 22 (88 bytes))
   lsmi  0, r5
   li    r0, r5, r3
   si    r0, r2, r3
-  mtble r1              ; #{}["a"] = 0
+  mme   r1              ; #{}["a"] = 0
   lc    [0], r2
   lsmi  0, r3
   si    r1, r2, r3

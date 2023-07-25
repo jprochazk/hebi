@@ -4,21 +4,21 @@ expression: snapshot
 ---
 function `__main__` (registers: 12, length: 18 (72 bytes))
 .const
-  0: FunctionDescriptor { name: "_0", params: 0, .. }
-  1: FunctionDescriptor { name: "_1", params: 0, .. }
-  2: FunctionDescriptor { name: "_2", params: 0, .. }
-  3: FunctionDescriptor { name: "_3", params: 0, .. }
-  4: FunctionDescriptor { name: "[fn@72..74]", params: 0, .. }
-  5: FunctionDescriptor { name: "[fn@89..91]", params: 0, .. }
-  6: FunctionDescriptor { name: "[fn@108..110]", params: 0, .. }
-  7: FunctionDescriptor { name: "[fn@128..130]", params: 0, .. }
-  8: FunctionDescriptor { name: "foo", params: 0, .. }
-  9: FunctionDescriptor { name: "bar", params: 0, .. }
-  10: FunctionDescriptor { name: "baz", params: 0, .. }
-  11: FunctionDescriptor { name: "quox", params: 0, .. }
-  12: FunctionDescriptor { name: "sum", params: 0, .. }
-  13: FunctionDescriptor { name: "with_return", params: 0, .. }
-  14: FunctionDescriptor { name: "tail_if", params: 0, .. }
+  0: FunctionProto { name: "_0", params: 0, .. }
+  1: FunctionProto { name: "_1", params: 0, .. }
+  2: FunctionProto { name: "_2", params: 0, .. }
+  3: FunctionProto { name: "_3", params: 0, .. }
+  4: FunctionProto { name: "[fn@72..74]", params: 0, .. }
+  5: FunctionProto { name: "[fn@89..91]", params: 0, .. }
+  6: FunctionProto { name: "[fn@108..110]", params: 0, .. }
+  7: FunctionProto { name: "[fn@128..130]", params: 0, .. }
+  8: FunctionProto { name: "foo", params: 0, .. }
+  9: FunctionProto { name: "bar", params: 0, .. }
+  10: FunctionProto { name: "baz", params: 0, .. }
+  11: FunctionProto { name: "quox", params: 0, .. }
+  12: FunctionProto { name: "sum", params: 0, .. }
+  13: FunctionProto { name: "with_return", params: 0, .. }
+  14: FunctionProto { name: "tail_if", params: 0, .. }
 .code
   lc    [0], r0         ; fn _0 {}
   lc    [1], r1         ; fn _1() {}

@@ -1,26 +1,26 @@
 use core::fmt::{Debug, Display};
 
-use super::func::FunctionDescriptor;
+use super::func::FunctionProto;
 use super::string::Str;
 use crate::error::AllocError;
 use crate::gc::{Gc, Object, Ref};
 
 #[derive(Debug)]
-pub struct ModuleDescriptor {
+pub struct ModuleProto {
   name: Ref<Str>,
-  root: Ref<FunctionDescriptor>,
+  root: Ref<FunctionProto>,
   num_vars: u16,
 }
 
-impl ModuleDescriptor {
+impl ModuleProto {
   pub fn try_new_in(
     gc: &Gc,
     name: &str,
-    root: Ref<FunctionDescriptor>,
+    root: Ref<FunctionProto>,
     num_vars: u16,
   ) -> Result<Ref<Self>, AllocError> {
     let name = Str::try_new_in(gc, name)?;
-    gc.try_alloc(ModuleDescriptor {
+    gc.try_alloc(ModuleProto {
       name,
       root,
       num_vars,
@@ -31,7 +31,7 @@ impl ModuleDescriptor {
     self.name
   }
 
-  pub fn root(&self) -> Ref<FunctionDescriptor> {
+  pub fn root(&self) -> Ref<FunctionProto> {
     self.root
   }
 
@@ -40,10 +40,10 @@ impl ModuleDescriptor {
   }
 }
 
-impl Display for ModuleDescriptor {
+impl Display for ModuleProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "<module `{}`>", self.name)
   }
 }
 
-impl Object for ModuleDescriptor {}
+impl Object for ModuleProto {}

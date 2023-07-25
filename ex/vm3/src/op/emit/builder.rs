@@ -5,11 +5,11 @@ use crate::ds::fx;
 use crate::ds::map::BumpHashMap;
 use crate::gc::Ref;
 use crate::lex::Span;
-use crate::obj::func::{FunctionDescriptor, LabelInfo, LabelMapBuilder};
-use crate::obj::list::ListDescriptor;
+use crate::obj::func::{FunctionProto, LabelInfo, LabelMapBuilder};
+use crate::obj::list::ListProto;
+use crate::obj::map::MapProto;
 use crate::obj::string::Str;
-use crate::obj::table::TableDescriptor;
-use crate::obj::tuple::TupleDescriptor;
+use crate::obj::tuple::TupleProto;
 use crate::op::ux::u24;
 use crate::op::{Const, Offset, Op};
 use crate::val::{Constant, NFloat};
@@ -257,19 +257,19 @@ impl<'arena> ConstantPoolBuilder<'arena> {
     Ok(idx)
   }
 
-  pub fn table(&mut self, v: Ref<TableDescriptor>) -> Result<Const<u16>> {
+  pub fn map(&mut self, v: Ref<MapProto>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
 
-  pub fn list(&mut self, v: Ref<ListDescriptor>) -> Result<Const<u16>> {
+  pub fn list(&mut self, v: Ref<ListProto>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
 
-  pub fn tuple(&mut self, v: Ref<TupleDescriptor>) -> Result<Const<u16>> {
+  pub fn tuple(&mut self, v: Ref<TupleProto>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
 
-  pub fn func(&mut self, v: Ref<FunctionDescriptor>) -> Result<Const<u16>> {
+  pub fn func(&mut self, v: Ref<FunctionProto>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
 }

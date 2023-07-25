@@ -15,7 +15,7 @@ use crate::op::emit::CaptureInfo;
 use crate::op::{Capture, Op, Reg};
 use crate::val::Constant;
 
-pub struct FunctionDescriptor {
+pub struct FunctionProto {
   name: Ref<Str>,
   params: Params,
   stack_space: u8,
@@ -33,8 +33,8 @@ pub enum CaptureSource {
 impl From<CaptureInfo> for CaptureSource {
   fn from(value: CaptureInfo) -> Self {
     match value {
-      CaptureInfo::NonLocal { src, dst } => CaptureSource::NonLocal(src),
-      CaptureInfo::Parent { src, dst } => CaptureSource::Parent(src),
+      CaptureInfo::NonLocal { src, .. } => CaptureSource::NonLocal(src),
+      CaptureInfo::Parent { src, .. } => CaptureSource::Parent(src),
     }
   }
 }
@@ -146,7 +146,7 @@ pub struct LabelInfo {
   index: usize,
 }
 
-impl FunctionDescriptor {
+impl FunctionProto {
   pub fn try_new_in(
     gc: &Gc,
     name: &str,
@@ -167,7 +167,7 @@ impl FunctionDescriptor {
       .into();
     let label_map = code.label_map.finish(gc)?;
 
-    gc.try_alloc(FunctionDescriptor {
+    gc.try_alloc(FunctionProto {
       name,
       params,
       stack_space: code.stack_space,
@@ -223,22 +223,22 @@ impl FunctionDescriptor {
   }
 }
 
-impl Debug for FunctionDescriptor {
+impl Debug for FunctionProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    f.debug_struct("FunctionDescriptor")
+    f.debug_struct("FunctionProto")
       .field("name", &self.name)
       .field("params", &self.params.min)
       .finish_non_exhaustive()
   }
 }
 
-impl Display for FunctionDescriptor {
+impl Display for FunctionProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "<function `{}`>", self.name)
   }
 }
 
-impl Object for FunctionDescriptor {
+impl Object for FunctionProto {
   const NEEDS_DROP: bool = false;
 }
 
@@ -269,13 +269,13 @@ pub struct Code<'a> {
   pub stack_space: u8,
 }
 
-impl FunctionDescriptor {
+impl FunctionProto {
   pub fn dis(&self) -> Disasm<'_> {
     Disasm(self)
   }
 }
 
-pub struct Disasm<'a>(&'a FunctionDescriptor);
+pub struct Disasm<'a>(&'a FunctionProto);
 
 impl<'a> Display for Disasm<'a> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -408,14 +408,14 @@ fn disasm_op(
       Op::LoadFalse { dst } =>                    w!(f, "  lbf   {dst}"),
       Op::LoadSmi { dst, value } =>               w!(f, "  lsmi  {value}, {dst}"),
       Op::MakeFn { dst, desc } =>                 w!(f, "  mfn   {desc}, {dst}"),
-      Op::MakeClass { dst, desc } =>              w!(f, "  mcls  {desc}, {dst}"),
-      Op::MakeClassDerived { dst, desc } =>       w!(f, "  mclsd {desc}, {dst}"),
-      Op::MakeList { dst, desc } =>               w!(f, "  mlst  {desc}, {dst}"),
-      Op::MakeListEmpty { dst } =>                w!(f, "  mlste {dst}"),
-      Op::MakeTable { dst, desc } =>              w!(f, "  mtbl  {desc}, {dst}"),
-      Op::MakeTableEmpty { dst } =>               w!(f, "  mtble {dst}"),
-      Op::MakeTuple { dst, desc } =>              w!(f, "  mtup  {desc}, {dst}"),
-      Op::MakeTupleEmpty { dst } =>               w!(f, "  mtupe {dst}"),
+      Op::MakeClass { dst, desc } =>              w!(f, "  mc    {desc}, {dst}"),
+      Op::MakeClassDerived { dst, desc } =>       w!(f, "  mcd   {desc}, {dst}"),
+      Op::MakeList { dst, desc } =>               w!(f, "  ml    {desc}, {dst}"),
+      Op::MakeListEmpty { dst } =>                w!(f, "  mle   {dst}"),
+      Op::MakeMap { dst, desc } =>                w!(f, "  mm    {desc}, {dst}"),
+      Op::MakeMapEmpty { dst } =>                 w!(f, "  mme   {dst}"),
+      Op::MakeTuple { dst, desc } =>              w!(f, "  mt    {desc}, {dst}"),
+      Op::MakeTupleEmpty { dst } =>               w!(f, "  mte   {dst}"),
       Op::Jump { .. } =>                          w!(f, "  jmp   {}", label!(labels, base)),
       Op::JumpConst { .. } =>                     w!(f, "  jmp   {}", label!(labels, base)),
       Op::JumpLoop { .. } =>                      w!(f, "  jl    {}", label!(labels, base)),

@@ -164,14 +164,14 @@ impl Display for List {
 }
 
 #[derive(Debug)]
-pub struct ListDescriptor {
+pub struct ListProto {
   start: Reg<u8>,
   count: u8,
 }
 
-impl ListDescriptor {
+impl ListProto {
   pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
-    gc.try_alloc(ListDescriptor { start, count })
+    gc.try_alloc(ListProto { start, count })
   }
 
   #[inline]
@@ -185,13 +185,13 @@ impl ListDescriptor {
   }
 }
 
-impl Display for ListDescriptor {
+impl Display for ListProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "<list>")
   }
 }
 
-impl Object for ListDescriptor {}
+impl Object for ListProto {}
 
 #[cfg(test)]
 mod tests {

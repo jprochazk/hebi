@@ -1,11 +1,11 @@
 use core::fmt::{Debug, Display};
 
 use crate::gc::Ref;
-use crate::obj::func::FunctionDescriptor;
-use crate::obj::list::ListDescriptor;
+use crate::obj::func::FunctionProto;
+use crate::obj::list::ListProto;
+use crate::obj::map::MapProto;
 use crate::obj::string::Str;
-use crate::obj::table::TableDescriptor;
-use crate::obj::tuple::TupleDescriptor;
+use crate::obj::tuple::TupleProto;
 use crate::op::Offset;
 
 #[derive(Clone, Copy)]
@@ -14,10 +14,10 @@ pub enum Constant {
   Int(i32),
   Offset(Offset<u64>),
   Str(Ref<Str>),
-  Table(Ref<TableDescriptor>),
-  List(Ref<ListDescriptor>),
-  Tuple(Ref<TupleDescriptor>),
-  Func(Ref<FunctionDescriptor>),
+  Table(Ref<MapProto>),
+  List(Ref<ListProto>),
+  Tuple(Ref<TupleProto>),
+  Func(Ref<FunctionProto>),
 }
 
 impl From<NFloat> for Constant {
@@ -44,26 +44,26 @@ impl From<Ref<Str>> for Constant {
   }
 }
 
-impl From<Ref<TableDescriptor>> for Constant {
-  fn from(value: Ref<TableDescriptor>) -> Self {
+impl From<Ref<MapProto>> for Constant {
+  fn from(value: Ref<MapProto>) -> Self {
     Self::Table(value)
   }
 }
 
-impl From<Ref<ListDescriptor>> for Constant {
-  fn from(value: Ref<ListDescriptor>) -> Self {
+impl From<Ref<ListProto>> for Constant {
+  fn from(value: Ref<ListProto>) -> Self {
     Self::List(value)
   }
 }
 
-impl From<Ref<TupleDescriptor>> for Constant {
-  fn from(value: Ref<TupleDescriptor>) -> Self {
+impl From<Ref<TupleProto>> for Constant {
+  fn from(value: Ref<TupleProto>) -> Self {
     Self::Tuple(value)
   }
 }
 
-impl From<Ref<FunctionDescriptor>> for Constant {
-  fn from(value: Ref<FunctionDescriptor>) -> Self {
+impl From<Ref<FunctionProto>> for Constant {
+  fn from(value: Ref<FunctionProto>) -> Self {
     Self::Func(value)
   }
 }

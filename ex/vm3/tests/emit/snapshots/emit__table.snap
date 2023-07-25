@@ -4,22 +4,22 @@ expression: snapshot
 ---
 function `__main__` (registers: 4, length: 14 (56 bytes))
 .const
-  0: TableDescriptor { start: Reg(1), keys: {"a"} }
-  1: TableDescriptor { start: Reg(1), keys: {"c", "b", "a"} }
-  2: TableDescriptor { start: Reg(2), keys: {"b"} }
-  3: TableDescriptor { start: Reg(1), keys: {"a"} }
+  0: MapProto { start: Reg(1), keys: {"a"} }
+  1: MapProto { start: Reg(1), keys: {"c", "b", "a"} }
+  2: MapProto { start: Reg(2), keys: {"b"} }
+  3: MapProto { start: Reg(1), keys: {"a"} }
 .code
   lnil  r0              ; let v
-  mtble r0              ; v = #{}
+  mme   r0              ; v = #{}
   lsmi  0, r1           ; v = #{a:0}
-  mtbl  [0], r0
+  mm    [0], r0
   lsmi  0, r1           ; v = #{a:0, b:1, c:2}
   lsmi  1, r2
   lsmi  2, r3
-  mtbl  [1], r0
+  mm    [1], r0
   lsmi  0, r2           ; v = #{a:#{b:0}}
-  mtbl  [2], r1
-  mtbl  [3], r0
+  mm    [2], r1
+  mm    [3], r0
   fin   
   lnil  r0
   ret   r0

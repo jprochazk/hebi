@@ -18,47 +18,47 @@ use crate::op::Reg;
 use crate::util::DelegateDebugToDisplay;
 use crate::val::Value;
 
-pub struct Table {
+pub struct Map {
   map: UnsafeCell<GcOrdHashMapN<Ref<Str>, Value>>,
 }
 
-impl Table {
-  /// Allocates a new table.
+impl Map {
+  /// Allocates a new map.
   ///
-  /// The table is initially empty.
-  /// The only allocation done here is to put the `Table` object
+  /// The map is initially empty.
+  /// The only allocation done here is to put the `Map` object
   /// onto the garbage-collected heap.
   pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
     let map = UnsafeCell::new(GcOrdHashMapN::new_in(NO_ALLOC));
-    gc.try_alloc(Table { map })
+    gc.try_alloc(Map { map })
   }
 
-  /// Allocates a new table with space for at least `capacity` entries.
+  /// Allocates a new map with space for at least `capacity` entries.
   pub fn try_with_capacity_in(gc: &Gc, capacity: usize) -> Result<Ref<Self>, AllocError> {
     let map = GcOrdHashMap::try_with_capacity_in(capacity, Alloc::new(gc))?;
     let map = UnsafeCell::new(map.to_no_alloc());
-    gc.try_alloc(Table { map })
+    gc.try_alloc(Map { map })
   }
 
-  /// Returns the number of entries currently in the table.
+  /// Returns the number of entries currently inhabiting the map.
   #[inline]
   pub fn len(&self) -> usize {
     self.map().len()
   }
 
-  /// Returns the table's remaining capacity.
+  /// Returns the map's remaining capacity.
   #[inline]
   pub fn capacity(&self) -> usize {
     self.map().capacity()
   }
 
-  /// Returns `true` if the table is empty.
+  /// Returns `true` if the map is empty.
   #[inline]
   pub fn is_empty(&self) -> bool {
     self.map().is_empty()
   }
 
-  /// Inserts `value` into the table associated with the key `key`.
+  /// Inserts `value` into the map associated with the key `key`.
   pub fn try_insert(
     &self,
     gc: &Gc,
@@ -70,13 +70,13 @@ impl Table {
     Ok(unsafe { map.try_insert_no_grow(key, value).unwrap_unchecked() })
   }
 
-  /// Removes `key` from the table, returning it if it exists.
+  /// Removes `key` from the map, returning it if it exists.
   pub fn remove(&self, key: &str) -> Option<Value> {
     self.map_mut().remove(key)
   }
 
-  /// Like [`Table::try_insert`], but will return the `(key, value)` pair
-  /// if the table does not have enough spare capacity.
+  /// Like [`Map::try_insert`], but will return the `(key, value)` pair
+  /// if the map does not have enough spare capacity.
   pub fn try_insert_no_grow(
     &self,
     key: Ref<Str>,
@@ -113,19 +113,19 @@ impl Table {
   }
 }
 
-impl Object for Table {
-  // We don't want to call `Drop` on the contents of the inner `table` or `vec`.
-  // The `Table` object and its backing storage will be deallocated
+impl Object for Map {
+  // We don't want to call `Drop` on the contents of the inner `map` or `vec`.
+  // The `Map` object and its backing storage will be deallocated
   // by the GC at some point.
   const NEEDS_DROP: bool = false;
 }
-impl Debug for Table {
+impl Debug for Map {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     f.debug_map().entries(self.map().iter()).finish()
   }
 }
 
-impl Display for Table {
+impl Display for Map {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     f.debug_map()
       .entries(
@@ -139,12 +139,12 @@ impl Display for Table {
 }
 
 #[derive(Debug)]
-pub struct TableDescriptor {
+pub struct MapProto {
   start: Reg<u8>,
   keys: GcHashSetN<Ref<Str>>,
 }
 
-impl TableDescriptor {
+impl MapProto {
   pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocError> {
     let mut k = GcHashSet::with_hasher_in(fx(), Alloc::new(gc));
     k.try_reserve(keys.len())?;
@@ -169,13 +169,13 @@ impl TableDescriptor {
   }
 }
 
-impl Display for TableDescriptor {
+impl Display for MapProto {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(f, "<table>")
+    write!(f, "<map>")
   }
 }
 
-impl Object for TableDescriptor {
+impl Object for MapProto {
   const NEEDS_DROP: bool = false;
 }
 
@@ -187,23 +187,23 @@ mod tests {
   fn table_ops_new() {
     let gc = Gc::new();
 
-    let table = Table::try_new_in(&gc).unwrap();
-    assert_eq!(table.len(), 0);
-    assert_eq!(table.capacity(), 0);
-    table
+    let map = Map::try_new_in(&gc).unwrap();
+    assert_eq!(map.len(), 0);
+    assert_eq!(map.capacity(), 0);
+    map
       .try_insert(
         &gc,
         Str::try_new_in(&gc, "test").unwrap(),
         Value::new(10i32),
       )
       .unwrap();
-    assert_eq!(table.len(), 1);
-    assert!(table.capacity() > 0);
-    assert_eq!(table.get("test").unwrap().cast::<i32>().unwrap(), 10i32);
-    let value = table.remove("test").unwrap();
-    assert_eq!(table.len(), 0);
-    assert!(table.capacity() > 0);
-    assert!(table.get("test").is_none());
+    assert_eq!(map.len(), 1);
+    assert!(map.capacity() > 0);
+    assert_eq!(map.get("test").unwrap().cast::<i32>().unwrap(), 10i32);
+    let value = map.remove("test").unwrap();
+    assert_eq!(map.len(), 0);
+    assert!(map.capacity() > 0);
+    assert!(map.get("test").is_none());
     assert_eq!(value.cast::<i32>().unwrap(), 10i32);
   }
 
@@ -211,23 +211,23 @@ mod tests {
   fn table_ops_with_cap() {
     let gc = Gc::new();
 
-    let table = Table::try_with_capacity_in(&gc, 1).unwrap();
-    assert_eq!(table.len(), 0);
-    assert!(table.capacity() > 0);
-    table
+    let map = Map::try_with_capacity_in(&gc, 1).unwrap();
+    assert_eq!(map.len(), 0);
+    assert!(map.capacity() > 0);
+    map
       .try_insert(
         &gc,
         Str::try_new_in(&gc, "test").unwrap(),
         Value::new(10i32),
       )
       .unwrap();
-    assert_eq!(table.len(), 1);
-    assert!(table.capacity() > 0);
-    assert_eq!(table.get("test").unwrap().cast::<i32>().unwrap(), 10i32);
-    let value = table.remove("test").unwrap();
-    assert_eq!(table.len(), 0);
-    assert!(table.capacity() > 0);
-    assert!(table.get("test").is_none());
+    assert_eq!(map.len(), 1);
+    assert!(map.capacity() > 0);
+    assert_eq!(map.get("test").unwrap().cast::<i32>().unwrap(), 10i32);
+    let value = map.remove("test").unwrap();
+    assert_eq!(map.len(), 0);
+    assert!(map.capacity() > 0);
+    assert!(map.get("test").is_none());
     assert_eq!(value.cast::<i32>().unwrap(), 10i32);
   }
 }

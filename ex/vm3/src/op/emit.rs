@@ -22,12 +22,12 @@ use crate::ds::map::BumpHashMap;
 use crate::error::{AllocError, StdError};
 use crate::gc::{Gc, Ref};
 use crate::lex::Span;
-use crate::obj::func::{Code, FunctionDescriptor, Params};
-use crate::obj::list::ListDescriptor;
-use crate::obj::module::ModuleDescriptor;
+use crate::obj::func::{Code, FunctionProto, Params};
+use crate::obj::list::ListProto;
+use crate::obj::map::MapProto;
+use crate::obj::module::ModuleProto;
 use crate::obj::string::Str;
-use crate::obj::table::TableDescriptor;
-use crate::obj::tuple::TupleDescriptor;
+use crate::obj::tuple::TupleProto;
 use crate::op::asm::*;
 use crate::op::emit::builder::BasicLabel;
 use crate::op::Smi;
@@ -432,7 +432,7 @@ pub fn module<'arena, 'gc, 'src>(
   gc: &'gc Gc,
   name: &'src str,
   ast: Module<'arena, 'src>,
-) -> Result<Ref<ModuleDescriptor>> {
+) -> Result<Ref<ModuleProto>> {
   let src = Str::try_new_in(gc, ast.src)?;
   let mut module = Compiler {
     arena,
@@ -444,7 +444,7 @@ pub fn module<'arena, 'gc, 'src>(
     funcs: Vec::new_in(arena),
   };
   let root = top_level(&mut module, arena, gc)?;
-  Ok(ModuleDescriptor::try_new_in(
+  Ok(ModuleProto::try_new_in(
     gc,
     name,
     root,
@@ -456,7 +456,7 @@ fn top_level<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   arena: &'arena Arena,
   gc: &'gc Gc,
-) -> Result<Ref<FunctionDescriptor>> {
+) -> Result<Ref<FunctionProto>> {
   c.funcs.push(Function {
     loop_: None,
 
@@ -496,7 +496,7 @@ fn top_level<'arena, 'gc, 'src>(
     captures: &func.captures,
   };
 
-  Ok(FunctionDescriptor::try_new_in(
+  Ok(FunctionProto::try_new_in(
     gc,
     &func.name,
     Params::empty(),
@@ -692,7 +692,7 @@ fn function<'arena, 'gc, 'src>(
   name: &Name<'src>,
   block: &Block<'arena, 'src>,
   is_anon: bool,
-) -> Result<Ref<FunctionDescriptor>> {
+) -> Result<Ref<FunctionProto>> {
   c.funcs.push(Function {
     loop_: None,
 
@@ -751,7 +751,7 @@ fn function<'arena, 'gc, 'src>(
     captures: &func.captures,
   };
 
-  Ok(FunctionDescriptor::try_new_in(
+  Ok(FunctionProto::try_new_in(
     c.gc,
     &func.name,
     Params::empty(),
@@ -1253,7 +1253,7 @@ fn lit<'arena, 'gc, 'src>(
       c.emit(load_const(dst, v), span)?;
     }
     Record([]) => {
-      c.emit(make_table_empty(dst), span)?;
+      c.emit(make_map_empty(dst), span)?;
     }
     Record(fields) => {
       let mut regs = vec![in c.arena];
@@ -1265,9 +1265,9 @@ fn lit<'arena, 'gc, 'src>(
         assign_to(c, *reg, value)?;
         keys.push(Str::try_intern_in(c.gc, key.lexeme)?);
       }
-      let desc = TableDescriptor::try_new_in(c.gc, regs[0], &keys)?;
-      let desc = c.pool().table(desc)?;
-      c.emit(make_table(dst, desc), span)?;
+      let desc = MapProto::try_new_in(c.gc, regs[0], &keys)?;
+      let desc = c.pool().map(desc)?;
+      c.emit(make_map(dst, desc), span)?;
       c.free(regs[0]);
     }
     List([]) => {
@@ -1281,7 +1281,7 @@ fn lit<'arena, 'gc, 'src>(
       for (value, reg) in items.iter().zip(regs.iter()) {
         assign_to(c, *reg, value)?;
       }
-      let desc = ListDescriptor::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = ListProto::try_new_in(c.gc, regs[0], regs.len() as u8)?;
       let desc = c.pool().list(desc)?;
       c.emit(make_list(dst, desc), span)?;
       c.free(regs[0]);
@@ -1297,7 +1297,7 @@ fn lit<'arena, 'gc, 'src>(
       for (value, reg) in elems.iter().zip(regs.iter()) {
         assign_to(c, *reg, value)?;
       }
-      let desc = TupleDescriptor::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = TupleProto::try_new_in(c.gc, regs[0], regs.len() as u8)?;
       let desc = c.pool().tuple(desc)?;
       c.emit(make_tuple(dst, desc), span)?;
       c.free(regs[0]);
