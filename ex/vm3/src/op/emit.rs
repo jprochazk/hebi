@@ -324,7 +324,7 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       // no need to emit anything, just add it to locals
       let func = fmut!(self);
       let current_scope = func.scopes.last_mut().unwrap();
-      if current_scope.locals.iter().any(|v| v.name == name) {
+      if !current_scope.locals.iter().any(|v| v.name == name) {
         current_scope.locals.push(LocalVar { name, reg });
       }
       // note: doing nothing is fine if `locals` already contains
