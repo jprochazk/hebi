@@ -1,5 +1,5 @@
 use super::emit::builder::JumpOffset;
-use super::{Const, Count, Mvar, Offset, Op, Reg, Smi, Upvalue};
+use super::{Capture, Const, Count, Mvar, Offset, Op, Reg, Smi};
 
 macro_rules! _asm {
   ($inst:ident $(, $($arg:ident : $ty:ident<$g:ident>),*)?) => {
@@ -16,11 +16,13 @@ macro_rules! _asm {
   };
 }
 
+// TODO: prune unused ops
+
 _asm!(nop);
 _asm!(mov,                   src: Reg<u8>, dst: Reg<u8>);
 _asm!(load_const,            dst: Reg<u8>, idx: Const<u16>);
-_asm!(load_upvalue,          dst: Reg<u8>, idx: Upvalue<u16>);
-_asm!(store_upvalue,         src: Reg<u8>, idx: Upvalue<u16>);
+_asm!(load_capture,          dst: Reg<u8>, idx: Capture<u16>);
+_asm!(store_capture,         src: Reg<u8>, idx: Capture<u16>);
 _asm!(load_mvar,             dst: Reg<u8>, idx: Mvar<u16>);
 _asm!(store_mvar,            src: Reg<u8>, idx: Mvar<u16>);
 _asm!(load_global,           dst: Reg<u8>, key: Const<u16>);

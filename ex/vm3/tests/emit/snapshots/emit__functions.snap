@@ -1,0 +1,145 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+function `__main__` (registers: 12, length: 18 (72 bytes))
+.const
+  0: FunctionDescriptor { name: "_0", params: 0, .. }
+  1: FunctionDescriptor { name: "_1", params: 0, .. }
+  2: FunctionDescriptor { name: "_2", params: 0, .. }
+  3: FunctionDescriptor { name: "_3", params: 0, .. }
+  4: FunctionDescriptor { name: "[fn@72..74]", params: 0, .. }
+  5: FunctionDescriptor { name: "[fn@89..91]", params: 0, .. }
+  6: FunctionDescriptor { name: "[fn@108..110]", params: 0, .. }
+  7: FunctionDescriptor { name: "[fn@128..130]", params: 0, .. }
+  8: FunctionDescriptor { name: "foo", params: 0, .. }
+  9: FunctionDescriptor { name: "bar", params: 0, .. }
+  10: FunctionDescriptor { name: "baz", params: 0, .. }
+  11: FunctionDescriptor { name: "quox", params: 0, .. }
+  12: FunctionDescriptor { name: "sum", params: 0, .. }
+  13: FunctionDescriptor { name: "with_return", params: 0, .. }
+  14: FunctionDescriptor { name: "tail_if", params: 0, .. }
+.code
+  lc    [0], r0         ; fn _0 {}
+  lc    [1], r1         ; fn _1() {}
+  lc    [2], r2         ; fn _2(a) {}
+  lc    [3], r3         ; fn _3(a, b, c) {}
+  lc    [4], r4         ; let _4 = fn {}
+  lc    [5], r5         ; let _5 = fn() {}
+  lc    [6], r6         ; let _6 = fn(a) {}
+  lc    [7], r7         ; let _7 = fn(a, b, c) {}
+  lc    [8], r8         ; let _8 = fn foo {}
+  lc    [9], r9         ; let _9 = fn bar() {}
+  lc    [10], r10       ; let _10 = fn baz(a) {}
+  lc    [11], r11       ; let _11 = fn quox(a, b, c) {}
+  lc    [12], r0        ; fn sum(a, b, c) {
+  lc    [13], r1        ; fn with_return(a, b, c) {
+  lc    [14], r2        ; fn tail_if(a, b, c) {
+  fin   
+  lnil  r0
+  ret   r0
+
+function `_0` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `_1` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `_2` (registers: 3, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `_3` (registers: 5, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `[fn@72..74]` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `[fn@89..91]` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `[fn@108..110]` (registers: 3, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `[fn@128..130]` (registers: 5, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `foo` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `bar` (registers: 2, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `baz` (registers: 3, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `quox` (registers: 5, length: 2 (8 bytes))
+.code
+  lnil  r0
+  ret   r0
+
+
+function `sum` (registers: 6, length: 5 (20 bytes))
+.code
+  add   r1, r2, r4      ; a + b + c
+  add   r4, r3, r4
+  ret   r4
+  lnil  r0
+  ret   r0
+
+
+function `with_return` (registers: 6, length: 5 (20 bytes))
+.code
+  add   r1, r2, r4      ; return a + b + c
+  add   r4, r3, r4
+  ret   r4
+  lnil  r0
+  ret   r0
+
+
+function `tail_if` (registers: 6, length: 8 (32 bytes))
+.code
+  lbt   r4              ; if true {
+  jf    r4, if::next#1
+  add   r1, r2, r4      ; a + b
+  jmp   if::end#0
+<if::next#1>:
+  mov   r3, r4          ; c
+<if::end#0>:
+  ret   r4
+  lnil  r0
+  ret   r0
+
+

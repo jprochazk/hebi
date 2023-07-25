@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Display, Write};
 use core::ptr::NonNull;
 
+use beef::lean::Cow;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump as Arena;
 
@@ -10,16 +11,32 @@ use crate::ds::{fx, HasAlloc};
 use crate::error::AllocError;
 use crate::gc::{Alloc, Gc, Object, Ref};
 use crate::lex::Span;
-use crate::op::Op;
+use crate::op::emit::CaptureInfo;
+use crate::op::{Capture, Op, Reg};
 use crate::val::Constant;
 
 pub struct FunctionDescriptor {
   name: Ref<Str>,
   params: Params,
   stack_space: u8,
+  captures: NonNull<[CaptureSource]>,
   ops: NonNull<[Op]>,
   pool: NonNull<[Constant]>,
   dbg: DebugInfo,
+}
+
+pub enum CaptureSource {
+  NonLocal(Reg<u8>),
+  Parent(Capture<u16>),
+}
+
+impl From<CaptureInfo> for CaptureSource {
+  fn from(value: CaptureInfo) -> Self {
+    match value {
+      CaptureInfo::NonLocal { src, dst } => CaptureSource::NonLocal(src),
+      CaptureInfo::Parent { src, dst } => CaptureSource::Parent(src),
+    }
+  }
 }
 
 pub struct DebugInfo {
@@ -140,12 +157,21 @@ impl FunctionDescriptor {
     let ops = gc.try_alloc_slice(code.ops)?.into();
     let pool = gc.try_alloc_slice(code.pool)?.into();
     let spans = gc.try_alloc_slice(code.spans)?.into();
+    let captures = gc
+      .try_collect_slice(
+        code
+          .captures
+          .iter()
+          .map(|(_, c)| Ok(CaptureSource::from(*c))),
+      )?
+      .into();
     let label_map = code.label_map.finish(gc)?;
 
     gc.try_alloc(FunctionDescriptor {
       name,
       params,
       stack_space: code.stack_space,
+      captures,
       ops,
       pool,
       dbg: DebugInfo {
@@ -190,13 +216,18 @@ impl FunctionDescriptor {
   pub fn dbg(&self) -> &DebugInfo {
     &self.dbg
   }
+
+  #[inline]
+  pub fn captures(&self) -> &[CaptureSource] {
+    unsafe { self.captures.as_ref() }
+  }
 }
 
 impl Debug for FunctionDescriptor {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     f.debug_struct("FunctionDescriptor")
       .field("name", &self.name)
-      .field("params", &self.params)
+      .field("params", &self.params.min)
       .finish_non_exhaustive()
   }
 }
@@ -232,6 +263,7 @@ pub struct Code<'a> {
   pub src: Ref<Str>,
   pub ops: &'a [Op],
   pub pool: &'a [Constant],
+  pub captures: &'a [(Cow<'a, str>, CaptureInfo)],
   pub spans: &'a [Span],
   pub label_map: LabelMapBuilder<'a>,
   pub stack_space: u8,
@@ -254,6 +286,7 @@ impl<'a> Display for Disasm<'a> {
     let ops = func.ops();
     let pool = func.pool();
     let loc = func.loc();
+    let captures = func.captures();
 
     writeln!(
       f,
@@ -264,16 +297,15 @@ impl<'a> Display for Disasm<'a> {
       func.ops.len() * 4,
     )?;
 
-    // TODO: emit upvalues
-    /* if !function.upvalues.borrow().is_empty() {
-      writeln!(f, ".upvalues")?;
-      for (index, upvalue) in function.upvalues.borrow().iter().enumerate() {
-        match upvalue {
-          Upvalue::Register(r) => writeln!(f, "  {index} <- {r}",)?,
-          Upvalue::Upvalue(u) => writeln!(f, "  {index} <- {u}",)?,
+    if !captures.is_empty() {
+      writeln!(f, ".captures")?;
+      for (index, src) in captures.iter().enumerate() {
+        match src {
+          CaptureSource::NonLocal(r) => writeln!(f, "  {index}: nonlocal {r}",)?,
+          CaptureSource::Parent(u) => writeln!(f, "  {index}: parent {u}",)?,
         }
       }
-    } */
+    }
 
     if !pool.is_empty() {
       writeln!(f, ".const")?;
@@ -302,10 +334,11 @@ impl<'a> Display for Disasm<'a> {
       }
     }
 
-    // TODO: emit nested functions
-    /* for v in pool {
-
-    } */
+    for v in pool {
+      if let Constant::Func(child) = v {
+        writeln!(f, "\n{}", child.dis())?;
+      }
+    }
 
     Ok(())
   }
@@ -348,8 +381,8 @@ fn disasm_op(
       Op::Nop =>                                  w!(f, "  nop   "),
       Op::Mov { src, dst } =>                     w!(f, "  mov   {src}, {dst}"),
       Op::LoadConst { dst, idx } =>               w!(f, "  lc    {idx}, {dst}"),
-      Op::LoadUpvalue { dst, idx } =>             w!(f, "  lup   {idx}, {dst}"),
-      Op::StoreUpvalue { src, idx } =>            w!(f, "  sup   {src}, {idx}"),
+      Op::LoadCapture { dst, idx } =>             w!(f, "  lup   {idx}, {dst}"),
+      Op::StoreCapture { src, idx } =>            w!(f, "  sup   {src}, {idx}"),
       Op::LoadMvar { dst, idx } =>                w!(f, "  lmv   {idx}, {dst}"),
       Op::StoreMvar { src, idx } =>               w!(f, "  smv   {src}, {idx}"),
       Op::LoadGlobal { dst, key } =>              w!(f, "  lg    {key}, {dst}"),

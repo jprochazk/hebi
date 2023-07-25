@@ -11,9 +11,6 @@ use super::Arena;
 use crate::alloc;
 use crate::error::StdError;
 
-// TODO: make this robust against allocation failures
-// should've done that from the start, oops...
-
 pub type Result<T, E = SyntaxError> = core::result::Result<T, E>;
 
 #[derive(Debug)]
@@ -177,6 +174,7 @@ impl<'arena, 'src> Parser<'arena, 'src> {
 
   fn param_list(&mut self) -> Result<Vec<'arena, Ident<'src>>> {
     self.expect(BrkParenL)?;
+    let start = self.previous().span.start;
     let mut list = vec![in self.arena];
     if !self.end() && !self.at(BrkParenR) {
       list.push(self.ident()?);
@@ -185,6 +183,12 @@ impl<'arena, 'src> Parser<'arena, 'src> {
       }
     }
     self.expect(BrkParenR)?;
+    let end = self.previous().span.end;
+
+    if list.len() > u8::MAX as usize {
+      return Err(self.error("too many parameters", start..end));
+    }
+
     Ok(list)
   }
 
@@ -306,6 +310,7 @@ mod stmt {
 
     fn func(&mut self) -> Result<Stmt<'arena, 'src>> {
       self.expect(KwFn)?;
+      let fn_token_span = self.previous().span;
       let start = self.previous().span.start;
       let name = Some(self.ident()?); // required in stmt
       let params = if self.at(BrkParenL) {
@@ -316,7 +321,7 @@ mod stmt {
       .unwrap_or(&[]);
       let body = self.block()?;
       let end = self.previous().span.end;
-      Ok(mk!(self, Func { name, params, body } @ start..end))
+      Ok(mk!(self, Func { fn_token_span, name, params, body } @ start..end))
     }
 
     fn break_(&mut self) -> Result<Stmt<'arena, 'src>> {
@@ -758,6 +763,7 @@ mod expr {
 
     fn lit_func(&mut self) -> Result<Expr<'arena, 'src>> {
       self.expect(KwFn)?;
+      let fn_token_span = self.previous().span;
       let start = self.previous().span.start;
       let name = if self.at(TokIdent) {
         Some(self.ident()?)
@@ -772,7 +778,7 @@ mod expr {
       .unwrap_or(&[]);
       let body = self.block()?;
       let end = self.previous().span.end;
-      Ok(mk!(self, Func { name, params, body } @ start..end))
+      Ok(mk!(self, Func { fn_token_span, name, params, body } @ start..end))
     }
 
     fn lit_if(&mut self) -> Result<Expr<'arena, 'src>> {

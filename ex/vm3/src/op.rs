@@ -7,14 +7,6 @@ use ux::u24;
 
 use crate::util::static_assert_size;
 
-/*
-codegen notes:
-- for constant indices stored as `u8`, the constant can
-  first be loaded into a register, and then used, because
-  `LoadConst` stores the constant index as `u16`, allowing
-  a much greater range
-*/
-
 #[rustfmt::skip]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
@@ -22,8 +14,8 @@ pub enum Op {
   Nop,
   Mov { src: Reg<u8>, dst: Reg<u8> },
   LoadConst { dst: Reg<u8>, idx: Const<u16> },
-  LoadUpvalue { dst: Reg<u8>, idx: Upvalue<u16> },
-  StoreUpvalue { src: Reg<u8>, idx: Upvalue<u16> },
+  LoadCapture { dst: Reg<u8>, idx: Capture<u16> },
+  StoreCapture { src: Reg<u8>, idx: Capture<u16> },
   LoadMvar { dst: Reg<u8>, idx: Mvar<u16> },
   StoreMvar { src: Reg<u8>, idx: Mvar<u16> },
   LoadGlobal { dst: Reg<u8>, key: Const<u16> },
@@ -36,8 +28,6 @@ pub enum Op {
   LoadFieldIntR { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   LoadFieldIntOpt { obj: Reg<u8>, key: Const<u8>, dst: Reg<u8> },
   LoadFieldIntROpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
-  // TODO: come up with a better scheme for storing fields
-  // maybe an extra DATA op? that's probably necessary anyway for ICs
   StoreField { obj: Reg<u8>, key: Const<u8>, src: Reg<u8> },
   StoreFieldR { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
   StoreFieldInt { obj: Reg<u8>, key: Const<u8>, src: Reg<u8> },
@@ -138,15 +128,15 @@ impl<T: Display> Display for Const<T> {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Upvalue<T>(pub T);
+pub struct Capture<T>(pub T);
 
-impl<T: Into<usize>> Upvalue<T> {
+impl<T: Into<usize>> Capture<T> {
   pub fn wide(self) -> usize {
     self.0.into()
   }
 }
 
-impl<T: Display> Display for Upvalue<T> {
+impl<T: Display> Display for Capture<T> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     write!(f, "u{}", self.0)
   }

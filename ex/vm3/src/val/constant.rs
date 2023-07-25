@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Display};
 
 use crate::gc::Ref;
+use crate::obj::func::FunctionDescriptor;
 use crate::obj::list::ListDescriptor;
 use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
@@ -16,6 +17,7 @@ pub enum Constant {
   Table(Ref<TableDescriptor>),
   List(Ref<ListDescriptor>),
   Tuple(Ref<TupleDescriptor>),
+  Func(Ref<FunctionDescriptor>),
 }
 
 impl From<NFloat> for Constant {
@@ -57,6 +59,12 @@ impl From<Ref<ListDescriptor>> for Constant {
 impl From<Ref<TupleDescriptor>> for Constant {
   fn from(value: Ref<TupleDescriptor>) -> Self {
     Self::Tuple(value)
+  }
+}
+
+impl From<Ref<FunctionDescriptor>> for Constant {
+  fn from(value: Ref<FunctionDescriptor>) -> Self {
+    Self::Func(value)
   }
 }
 
@@ -120,6 +128,7 @@ impl Display for Constant {
       Constant::Table(v) => Display::fmt(v, f),
       Constant::List(v) => Display::fmt(v, f),
       Constant::Tuple(v) => Display::fmt(v, f),
+      Constant::Func(v) => Display::fmt(v, f),
     }
   }
 }
@@ -134,6 +143,7 @@ impl Debug for Constant {
       Self::Table(arg0) => Debug::fmt(arg0, f),
       Self::List(arg0) => Debug::fmt(arg0, f),
       Self::Tuple(arg0) => Debug::fmt(arg0, f),
+      Self::Func(arg0) => Debug::fmt(arg0, f),
     }
   }
 }

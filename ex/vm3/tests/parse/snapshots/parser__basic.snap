@@ -790,6 +790,10 @@ expression: snapshot
         },
         kind: Func(
             Func {
+                fn_token_span: Span {
+                    start: 260,
+                    end: 262,
+                },
                 name: Some(
                     Ident {
                         span: Span {
@@ -917,6 +921,10 @@ expression: snapshot
         },
         kind: Func(
             Func {
+                fn_token_span: Span {
+                    start: 329,
+                    end: 331,
+                },
                 name: Some(
                     Ident {
                         span: Span {
@@ -1110,6 +1118,10 @@ expression: snapshot
                         },
                         kind: Func(
                             Func {
+                                fn_token_span: Span {
+                                    start: 418,
+                                    end: 420,
+                                },
                                 name: None,
                                 params: [],
                                 body: Block {
@@ -1186,6 +1198,10 @@ expression: snapshot
                         },
                         kind: Func(
                             Func {
+                                fn_token_span: Span {
+                                    start: 473,
+                                    end: 475,
+                                },
                                 name: None,
                                 params: [
                                     Ident {
@@ -1902,6 +1918,10 @@ expression: snapshot
         },
         kind: Func(
             Func {
+                fn_token_span: Span {
+                    start: 733,
+                    end: 735,
+                },
                 name: Some(
                     Ident {
                         span: Span {

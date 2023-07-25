@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+use beef::lean::Cow;
+
 use crate::lex::*;
 
 pub struct Module<'arena, 'src> {
@@ -17,6 +19,30 @@ impl<'arena, 'src> Debug for Module<'arena, 'src> {
 pub struct Ident<'src> {
   pub span: Span,
   pub lexeme: &'src str,
+}
+
+#[derive(Clone, Debug)]
+pub struct Name<'src> {
+  pub span: Span,
+  pub lexeme: Cow<'src, str>,
+}
+
+impl<'src> Name<'src> {
+  pub fn fake(span: Span, lexeme: impl Into<Cow<'src, str>>) -> Self {
+    Self {
+      span,
+      lexeme: lexeme.into(),
+    }
+  }
+}
+
+impl<'src> From<Ident<'src>> for Name<'src> {
+  fn from(value: Ident<'src>) -> Self {
+    Name {
+      span: value.span,
+      lexeme: value.lexeme.into(),
+    }
+  }
 }
 
 #[derive(Debug)]
@@ -109,6 +135,7 @@ pub struct Return<'arena, 'src> {
 
 #[derive(Debug)]
 pub struct Func<'arena, 'src> {
+  pub fn_token_span: Span,
   pub name: Option<Ident<'src>>,
   pub params: &'arena [Ident<'src>],
   pub body: Block<'arena, 'src>,

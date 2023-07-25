@@ -1,0 +1,34 @@
+{
+  fn _0 {}
+  fn _1() {}
+  fn _2(a) {}
+  fn _3(a, b, c) {}
+
+  let _4 = fn {}
+  let _5 = fn() {}
+  let _6 = fn(a) {}
+  let _7 = fn(a, b, c) {}
+
+  let _8 = fn foo {}
+  let _9 = fn bar() {}
+  let _10 = fn baz(a) {}
+  let _11 = fn quox(a, b, c) {}
+}
+
+{
+  fn sum(a, b, c) {
+    a + b + c
+  }
+
+  fn with_return(a, b, c) {
+    return a + b + c
+  }
+  
+  fn tail_if(a, b, c) {
+    if true {
+      a + b
+    } else {
+      c
+    }
+  }
+}

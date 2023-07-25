@@ -5,7 +5,7 @@ use crate::ds::fx;
 use crate::ds::map::BumpHashMap;
 use crate::gc::Ref;
 use crate::lex::Span;
-use crate::obj::func::{LabelInfo, LabelMapBuilder};
+use crate::obj::func::{FunctionDescriptor, LabelInfo, LabelMapBuilder};
 use crate::obj::list::ListDescriptor;
 use crate::obj::string::Str;
 use crate::obj::table::TableDescriptor;
@@ -266,6 +266,10 @@ impl<'arena> ConstantPoolBuilder<'arena> {
   }
 
   pub fn tuple(&mut self, v: Ref<TupleDescriptor>) -> Result<Const<u16>> {
+    self.insert(v.into())
+  }
+
+  pub fn func(&mut self, v: Ref<FunctionDescriptor>) -> Result<Const<u16>> {
     self.insert(v.into())
   }
 }

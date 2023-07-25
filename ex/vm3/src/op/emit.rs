@@ -12,10 +12,10 @@ use bumpalo::collections::Vec;
 use bumpalo::vec;
 
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
-use super::{Const, Mvar, Op, Reg, Upvalue};
+use super::{Capture, Const, Mvar, Op, Reg};
 use crate::ast::{
-  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, If, Key, Let, Lit, Logical,
-  LogicalOp, Loop, Module, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
+  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, Ident, If, Key, Let, Lit,
+  Logical, LogicalOp, Loop, Module, Name, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
 };
 use crate::ds::fx;
 use crate::ds::map::BumpHashMap;
@@ -68,14 +68,13 @@ impl StdError for EmitError {}
 struct Compiler<'arena, 'gc, 'src> {
   arena: &'arena Arena,
   gc: &'gc Gc,
-  name: &'src str,
   ast: Module<'arena, 'src>,
 
   src: Ref<Str>,
   /// This is a map of top-level variables, a.k.a. global variables.
   /// In hebi they're referred to as "module" variables, because
   /// they're instantiated per module.
-  vars: BumpHashMap<'arena, &'src str, Mvar<u16>>,
+  vars: BumpHashMap<'arena, Cow<'src, str>, Mvar<u16>>,
 
   funcs: Vec<'arena, Function<'arena, 'src>>,
 }
@@ -83,13 +82,37 @@ struct Compiler<'arena, 'gc, 'src> {
 struct Function<'arena, 'src> {
   loop_: Option<LoopState<'arena>>,
 
-  name: &'src str,
+  name: Cow<'src, str>,
 
   builder: BytecodeBuilder<'arena>,
   registers: Registers,
 
   params: Params,
   scopes: Vec<'arena, Scope<'arena, 'src>>,
+  captures: Vec<'arena, (Cow<'src, str>, CaptureInfo)>,
+}
+
+impl<'arena, 'src> Function<'arena, 'src> {
+  fn resolve_local(&self, name: &'src str) -> Option<Reg<u8>> {
+    for scope in self.scopes.iter().rev() {
+      for local in scope.locals.iter().rev() {
+        if local.name == name {
+          return Some(local.reg);
+        }
+      }
+    }
+    None
+  }
+
+  fn resolve_local_in_scope(&self, name: &'src str) -> Option<Reg<u8>> {
+    let scope = self.scopes.last().unwrap();
+    for local in scope.locals.iter().rev() {
+      if local.name == name {
+        return Some(local.reg);
+      }
+    }
+    None
+  }
 }
 
 pub struct Scope<'arena, 'src> {
@@ -104,8 +127,29 @@ impl<'arena, 'src> Scope<'arena, 'src> {
   }
 }
 
+#[derive(Clone, Copy)]
+pub enum CaptureInfo {
+  NonLocal {
+    src: Reg<u8>,
+    dst: Capture<u16>,
+  },
+  Parent {
+    src: Capture<u16>,
+    dst: Capture<u16>,
+  },
+}
+
+impl CaptureInfo {
+  pub fn dst(&self) -> Capture<u16> {
+    match self {
+      CaptureInfo::NonLocal { dst, .. } => *dst,
+      CaptureInfo::Parent { dst, .. } => *dst,
+    }
+  }
+}
+
 pub struct LocalVar<'src> {
-  pub name: &'src str,
+  pub name: Cow<'src, str>,
   pub reg: Reg<u8>,
 }
 
@@ -248,7 +292,12 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
   /// Invariant: `reg` must already contain the value
   ///
   /// Note: This frees `reg` if necessary
-  fn declare_var(&mut self, name: &'src str, reg: Reg<u8>, span: impl Into<Span>) -> Result<()> {
+  fn declare_var(
+    &mut self,
+    name: Cow<'src, str>,
+    reg: Reg<u8>,
+    span: impl Into<Span>,
+  ) -> Result<()> {
     if self.is_global_scope() {
       // module variable
       // value is in `reg`, we have to add the var to module.vars
@@ -297,58 +346,84 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
     Ok(())
   }
 
-  fn resolve_var(&self, name: &'src str) -> Var {
+  fn resolve_var(&mut self, name: &'src str) -> Result<Var> {
     if self.is_top_level() {
-      if let Some(reg) = self.resolve_local(name) {
-        Var::Local(reg)
+      if let Some(reg) = fs!(self).resolve_local(name) {
+        Ok(Var::Local(reg))
       } else if let Some(idx) = self.vars.get(name).copied() {
-        Var::Module(idx)
+        Ok(Var::Module(idx))
       } else {
-        Var::Global
+        Ok(Var::Global)
       }
-    } else if let Some(reg) = self.resolve_local(name) {
+    } else if let Some(reg) = fs!(self).resolve_local(name) {
       // `0` is `self` or the callee
       // `1..=params.max` are the params, e.g. `params.max=5`,
       // then `1, 2, 3, 4, 5` would be params
       if reg.wide() == 0 {
-        Var::Self_
+        Ok(Var::Self_)
       } else if reg.wide() <= fs!(self).params.max as usize {
-        Var::Param(reg)
+        Ok(Var::Param(reg))
       } else {
-        Var::Local(reg)
+        Ok(Var::Local(reg))
       }
-    } else if let Some(idx) = self.resolve_upvalue(name) {
-      Var::Upvalue(idx)
+    } else if let Some(idx) = self.resolve_capture(name)? {
+      Ok(Var::Capture(idx))
     } else if let Some(idx) = self.vars.get(name).copied() {
-      Var::Module(idx)
+      Ok(Var::Module(idx))
     } else {
-      Var::Global
+      Ok(Var::Global)
     }
   }
 
-  fn resolve_local(&self, name: &'src str) -> Option<Reg<u8>> {
-    for scope in fs!(self).scopes.iter().rev() {
-      for local in scope.locals.iter().rev() {
-        if local.name == name {
-          return Some(local.reg);
-        }
+  fn resolve_capture(&mut self, name: &'src str) -> Result<Option<Capture<u16>>> {
+    fn inner<'arena, 'gc, 'src>(
+      c: &mut Compiler<'arena, 'gc, 'src>,
+      name: &'src str,
+      idx: usize,
+    ) -> Result<Option<Capture<u16>>> {
+      if idx == 0 {
+        return Ok(None);
       }
-    }
-    None
-  }
 
-  fn resolve_local_in_scope(&self, name: &'src str) -> Option<Reg<u8>> {
-    let scope = fs!(self).scopes.last().unwrap();
-    for local in scope.locals.iter().rev() {
-      if local.name == name {
-        return Some(local.reg);
+      macro_rules! f {
+        ($c:ident, $i:expr) => {
+          $c.funcs[$i]
+        };
       }
-    }
-    None
-  }
 
-  fn resolve_upvalue(&self, name: &'src str) -> Option<Upvalue<u16>> {
-    todo!()
+      macro_rules! u {
+        ($c:ident, $i:expr) => {
+          $c.funcs[$i].captures
+        };
+      }
+
+      if let Some((_, uv)) = u!(c, idx).iter().find(|(n, _)| n == name) {
+        return Ok(Some(uv.dst()));
+      }
+
+      if u!(c, idx).len() > u16::MAX as usize {
+        return Err(EmitError::new(format!(
+          "too many captures in function `{}`",
+          f!(c, idx).name
+        )));
+      }
+
+      let dst = Capture(u!(c, idx).len() as u16);
+      if let Some(src) = f!(c, idx - 1).resolve_local(name) {
+        u!(c, idx).push((name.into(), CaptureInfo::NonLocal { src, dst }));
+        return Ok(Some(dst));
+      }
+
+      if let Some(src) = inner(c, name, idx - 1)? {
+        u!(c, idx).push((name.into(), CaptureInfo::Parent { src, dst }));
+        return Ok(Some(src));
+      }
+
+      Ok(None)
+    }
+
+    let top = self.funcs.len().saturating_sub(1);
+    inner(self, name, top)
   }
 }
 
@@ -362,7 +437,6 @@ pub fn module<'arena, 'gc, 'src>(
   let mut module = Compiler {
     arena,
     gc,
-    name,
     ast,
 
     src,
@@ -386,13 +460,14 @@ fn top_level<'arena, 'gc, 'src>(
   c.funcs.push(Function {
     loop_: None,
 
-    name: "__main__",
+    name: "__main__".into(),
 
     builder: BytecodeBuilder::new_in(arena),
     registers: Registers::default(),
 
     params: Params::empty(),
     scopes: Vec::new_in(arena),
+    captures: Vec::new_in(arena),
   });
 
   c.scope(|c| {
@@ -418,11 +493,12 @@ fn top_level<'arena, 'gc, 'src>(
     spans: &spans,
     label_map,
     stack_space: func.registers.total,
+    captures: &func.captures,
   };
 
   Ok(FunctionDescriptor::try_new_in(
     gc,
-    func.name,
+    &func.name,
     Params::empty(),
     code,
   )?)
@@ -441,12 +517,27 @@ fn stmt<'arena, 'gc, 'src>(
     Break => break_(c, span),
     Continue => continue_(c, span),
     Return(inner) => return_(c, inner, span),
-    Func(inner) => func(c, inner),
+    Func(inner) => func_stmt(c, inner),
     Expr(inner) => {
       let _ = expr(c, None, inner)?;
       Ok(())
     }
   }
+}
+
+fn func_stmt<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  node: &Func<'arena, 'src>,
+) -> Result<()> {
+  let name = Name::from(node.name.unwrap());
+  let func = function(c, node.params, &name, &node.body, false)?;
+  let dst = match fs!(c).resolve_local_in_scope(func.name().as_str()) {
+    Some(reg) => reg,
+    None => c.reg()?,
+  };
+  let func = c.pool().func(func)?;
+  c.emit(load_const(dst, func), name.span)?;
+  c.declare_var(name.lexeme, dst, name.span)
 }
 
 fn let_<'arena, 'gc, 'src>(
@@ -455,7 +546,7 @@ fn let_<'arena, 'gc, 'src>(
   span: Span,
 ) -> Result<()> {
   // note: `declare_var` at the end is responsible for freeing `dst` if necessary
-  let dst = match c.resolve_local_in_scope(node.name.lexeme) {
+  let dst = match fs!(c).resolve_local_in_scope(node.name.lexeme) {
     Some(reg) => reg,
     None => c.reg()?,
   };
@@ -466,7 +557,7 @@ fn let_<'arena, 'gc, 'src>(
     c.emit(load_nil(dst), span)?;
   }
 
-  c.declare_var(node.name.lexeme, dst, span)?;
+  c.declare_var(node.name.lexeme.into(), dst, span)?;
 
   Ok(())
 }
@@ -595,11 +686,77 @@ fn return_<'arena, 'gc, 'src>(
   Ok(())
 }
 
-fn func<'arena, 'gc, 'src>(
+fn function<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
-  node: &Func<'arena, 'src>,
-) -> Result<()> {
-  todo!()
+  params: &[Ident<'src>],
+  name: &Name<'src>,
+  block: &Block<'arena, 'src>,
+  is_anon: bool,
+) -> Result<Ref<FunctionDescriptor>> {
+  c.funcs.push(Function {
+    loop_: None,
+
+    name: name.lexeme.clone(),
+
+    builder: BytecodeBuilder::new_in(c.arena),
+    registers: Registers::default(),
+
+    params: Params {
+      min: params.len() as u8,
+      max: params.len() as u8,
+      has_self: false,
+    },
+    scopes: Vec::new_in(c.arena),
+    captures: Vec::new_in(c.arena),
+  });
+
+  c.scope(|c| {
+    let fn_reg = c.reg()?;
+    if !is_anon {
+      c.declare_var(name.lexeme.clone(), fn_reg, name.span)?;
+    }
+    for param in params {
+      let reg = c.reg()?;
+      c.declare_var(param.lexeme.into(), reg, param.span)?;
+    }
+
+    for node in block.body {
+      stmt(c, node)?;
+    }
+
+    let out = c.reg()?;
+    if let Some(last) = &block.last {
+      assign_to(c, out, last)?;
+      c.emit(ret(out), Span::empty())?;
+    }
+
+    Ok(())
+  })?;
+
+  c.free(Reg(0));
+  let dst = c.reg()?;
+  c.emit(load_nil(dst), Span::empty())?;
+  c.emit(ret(dst), Span::empty())?;
+
+  let func = c.funcs.pop().unwrap();
+
+  let (ops, pool, spans, label_map) = func.builder.finish();
+  let code = Code {
+    src: c.src,
+    ops: &ops,
+    pool: &pool,
+    spans: &spans,
+    label_map,
+    stack_space: func.registers.total,
+    captures: &func.captures,
+  };
+
+  Ok(FunctionDescriptor::try_new_in(
+    c.gc,
+    &func.name,
+    Params::empty(),
+    code,
+  )?)
 }
 
 fn expr<'arena, 'gc, 'src>(
@@ -616,7 +773,7 @@ fn expr<'arena, 'gc, 'src>(
     Unary(node) => unary(c, dst, node, span),
     Block(node) => block(c, dst, node).map(|_| None),
     If(node) => if_(c, dst, node),
-    Func(_) => todo!(),
+    Func(node) => func_expr(c, dst, node).map(|_| None),
     GetVar(node) => get_var(c, dst, node, span),
     SetVar(node) => set_var(c, node, span),
     GetField(node) => get_field(c, dst, node, span),
@@ -626,6 +783,24 @@ fn expr<'arena, 'gc, 'src>(
     Call(_) => todo!(),
     Lit(inner) => lit(c, dst, inner, span),
   }
+}
+
+fn func_expr<'arena, 'gc, 'src>(
+  c: &mut Compiler<'arena, 'gc, 'src>,
+  dst: Option<Reg<u8>>,
+  f: &Func<'arena, 'src>,
+) -> Result<()> {
+  if let Some(dst) = dst {
+    let name = match f.name {
+      Some(name) => name.into(),
+      None => Name::fake(f.fn_token_span, format!("[fn@{}]", f.fn_token_span)),
+    };
+    let func = function(c, f.params, &name, &f.body, f.name.is_none())?;
+    let func = c.pool().func(func)?;
+    c.emit(load_const(dst, func), name.span)?;
+  }
+
+  Ok(())
 }
 
 fn logical<'arena, 'gc, 'src>(
@@ -719,11 +894,6 @@ fn unary<'arena, 'gc, 'src>(
   Ok(None)
 }
 
-// TODO:
-// test weird edges cases:
-//   {a} + {b}
-//   a = {b}
-// etc.
 fn block<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
@@ -786,7 +956,7 @@ enum Var {
   Self_,
   Param(Reg<u8>),
   Local(Reg<u8>),
-  Upvalue(Upvalue<u16>),
+  Capture(Capture<u16>),
   Module(Mvar<u16>),
   Global,
 }
@@ -799,13 +969,13 @@ fn get_var<'arena, 'gc, 'src>(
 ) -> Result<Option<Reg<u8>>> {
   use Var::*;
 
-  match c.resolve_var(node.name.lexeme) {
+  match c.resolve_var(node.name.lexeme)? {
     Self_ => Ok(Some(Reg(0))),
     Param(reg) => Ok(Some(reg)),
     Local(reg) => Ok(Some(reg)),
-    Upvalue(idx) => {
+    Capture(idx) => {
       if let Some(dst) = dst {
-        c.emit(load_upvalue(dst, idx), span)?;
+        c.emit(load_capture(dst, idx), span)?;
       }
       Ok(None)
     }
@@ -834,7 +1004,7 @@ fn set_var<'arena, 'gc, 'src>(
   use Var::*;
 
   // TODO: test all cases here
-  match c.resolve_var(node.name.lexeme) {
+  match c.resolve_var(node.name.lexeme)? {
     Self_ => {
       let msg = if fmut!(c).params.has_self {
         Cow::borrowed("cannot assign to `self`")
@@ -852,7 +1022,7 @@ fn set_var<'arena, 'gc, 'src>(
     Local(reg) => {
       assign_to(c, reg, &node.value)?;
     }
-    Upvalue(_) => {
+    Capture(_) => {
       return Err(EmitError::new(format!(
         "cannot assign to non-local variable `{}`",
         node.name.lexeme
