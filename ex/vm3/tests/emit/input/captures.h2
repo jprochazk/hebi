@@ -1,0 +1,19 @@
+{
+  let v = 0
+
+  fn foo() {
+    v
+  }
+}
+
+{
+  let v = 0
+
+  fn foo() {
+    fn bar() {
+      v
+    }
+
+    bar()
+  }
+}

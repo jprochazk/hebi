@@ -1,0 +1,51 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+function `__main__` (registers: 2, length: 7 (28 bytes))
+.const
+  0: FunctionProto { name: "foo", params: 0, .. }
+  1: FunctionProto { name: "foo", params: 0, .. }
+.code
+  lsmi  0, r0           ; let v = 0
+  lc    [0], r1         ; fn foo() {
+  lsmi  0, r0           ; let v = 0
+  lc    [1], r1         ; fn foo() {
+  fin   
+  lnil  r0
+  ret   r0
+
+function `foo` (registers: 2, length: 4 (16 bytes))
+.captures
+  0: nonlocal r0
+.code
+  lup   u0, r1          ; v
+  ret   r1
+  lnil  r0
+  ret   r0
+
+
+function `foo` (registers: 3, length: 6 (24 bytes))
+.captures
+  0: nonlocal r0
+.const
+  0: FunctionProto { name: "bar", params: 0, .. }
+.code
+  lc    [0], r1         ; fn bar() {
+  mov   r1, r2          ; bar()
+  call  r2, 0
+  ret   r2
+  lnil  r0
+  ret   r0
+
+function `bar` (registers: 2, length: 4 (16 bytes))
+.captures
+  0: parent u0
+.code
+  lup   u0, r1          ; v
+  ret   r1
+  lnil  r0
+  ret   r0
+
+
+
