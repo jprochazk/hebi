@@ -38,7 +38,10 @@ pub enum Op {
   LoadFieldIntROpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   // TODO: come up with a better scheme for storing fields
   // maybe an extra DATA op? that's probably necessary anyway for ICs
-  StoreField { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
+  StoreField { obj: Reg<u8>, key: Const<u8>, src: Reg<u8> },
+  StoreFieldR { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
+  StoreFieldInt { obj: Reg<u8>, key: Const<u8>, src: Reg<u8> },
+  StoreFieldIntR { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },
   LoadIndex { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   LoadIndexOpt { obj: Reg<u8>, key: Reg<u8>, dst: Reg<u8> },
   StoreIndex { obj: Reg<u8>, key: Reg<u8>, src: Reg<u8> },

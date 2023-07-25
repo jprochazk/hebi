@@ -12,9 +12,9 @@ use bumpalo::collections::Vec;
 use bumpalo::vec;
 
 use self::builder::{BytecodeBuilder, ConstantPoolBuilder, LoopLabel, MultiLabel};
-use super::{Mvar, Op, Reg, Upvalue};
+use super::{Const, Mvar, Op, Reg, Upvalue};
 use crate::ast::{
-  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, If, Let, Lit, Logical,
+  Binary, BinaryOp, Block, Expr, Func, GetField, GetIndex, GetVar, If, Key, Let, Lit, Logical,
   LogicalOp, Loop, Module, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
 };
 use crate::ds::fx;
@@ -886,44 +886,39 @@ fn get_field<'arena, 'gc, 'src>(
     None => (true, c.reg()?),
   };
 
-  let tmp0 = c.reg()?;
-  let target = expr(c, Some(tmp0), node.target)?.unwrap_or(tmp0);
+  let obj_r = c.reg()?;
+  let obj = expr(c, Some(obj_r), node.target)?.unwrap_or(obj_r);
 
-  use crate::ast::Key::*;
-  match node.key {
-    Int(key) => {
-      let key = c.pool().int(*key)?;
-      if key.is_u8() {
-        let key = key.u8();
-        c.emit(load_field_int(target, key, dst), span)?;
-      } else {
-        let tmp1 = c.reg()?;
-        c.emit(load_const(tmp1, key), span)?;
-        c.emit(load_field_int_r(target, tmp1, dst), span)?;
-        c.free(tmp1);
-      }
+  match field_key(c, node.key, span)? {
+    FieldKey::IntConst(key) => {
+      c.emit(load_field_int(obj, key, dst), span)?;
     }
-    Ident(key) => {
-      let key = Str::try_intern_in(c.gc, key.lexeme)?;
-      let key = c.pool().str(key)?;
-      if key.is_u8() {
-        let key = key.u8();
-        c.emit(load_field(target, key, dst), span)?;
-      } else {
-        let tmp1 = c.reg()?;
-        c.emit(load_const(tmp1, key), span)?;
-        c.emit(load_field_r(target, tmp1, dst), span)?;
-        c.free(tmp1);
-      }
+    FieldKey::IntReg(key) => {
+      c.emit(load_field_int_r(obj, key, dst), span)?;
+      c.free(key);
+    }
+    FieldKey::StrConst(key) => {
+      c.emit(load_field(obj, key, dst), span)?;
+    }
+    FieldKey::StrReg(key) => {
+      c.emit(load_field_r(obj, key, dst), span)?;
+      c.free(key);
     }
   }
 
-  c.free(tmp0);
+  c.free(obj_r);
   if free {
     c.free(dst);
   }
 
   Ok(None)
+}
+
+enum FieldKey {
+  IntConst(Const<u8>),
+  IntReg(Reg<u8>),
+  StrConst(Const<u8>),
+  StrReg(Reg<u8>),
 }
 
 fn set_field<'arena, 'gc, 'src>(
@@ -934,38 +929,59 @@ fn set_field<'arena, 'gc, 'src>(
   // TODO: compound assignment not handled here
   //       (same as `set_var`)
 
-  let dst_r = c.reg()?;
-  let key_r = c.reg()?;
+  let obj_r = c.reg()?;
   let val_r = c.reg()?;
 
-  let target = expr(c, Some(dst_r), node.target)?.unwrap_or(dst_r);
+  let obj = expr(c, Some(obj_r), node.target)?.unwrap_or(obj_r);
+  let val = expr(c, Some(val_r), &node.value)?.unwrap_or(val_r);
+  match field_key(c, node.key, span)? {
+    FieldKey::IntConst(key) => {
+      c.emit(store_field_int(obj, key, val), span)?;
+    }
+    FieldKey::IntReg(key) => {
+      c.emit(store_field_int_r(obj, key, val), span)?;
+      c.free(key);
+    }
+    FieldKey::StrConst(key) => {
+      c.emit(store_field(obj, key, val), span)?;
+    }
+    FieldKey::StrReg(key) => {
+      c.emit(store_field_r(obj, key, val), span)?;
+      c.free(key);
+    }
+  }
 
-  // TODO: Add set_field_r and use it instead of set_field
-  //       then change set_field key to be Const<u8>
-  //       and emit it in the same way as load_field.
-  //       This saves an extra instruction to load the key
-  //       in the common case, and it's trivial to do.
+  c.free(val_r);
+  c.free(obj_r);
+
+  Ok(None)
+}
+
+fn field_key(c: &mut Compiler, key: &Key, span: Span) -> Result<FieldKey> {
   use crate::ast::Key::*;
-  match node.key {
+  match key {
     Int(key) => {
       let key = c.pool().int(*key)?;
-      c.emit(load_const(key_r, key), span)?;
+      if key.is_u8() {
+        Ok(FieldKey::IntConst(key.u8()))
+      } else {
+        let tmp1 = c.reg()?;
+        c.emit(load_const(tmp1, key), span)?;
+        Ok(FieldKey::IntReg(tmp1))
+      }
     }
     Ident(key) => {
       let key = Str::try_intern_in(c.gc, key.lexeme)?;
       let key = c.pool().str(key)?;
-      c.emit(load_const(key_r, key), span)?;
+      if key.is_u8() {
+        Ok(FieldKey::StrConst(key.u8()))
+      } else {
+        let tmp1 = c.reg()?;
+        c.emit(load_const(tmp1, key), span)?;
+        Ok(FieldKey::StrReg(tmp1))
+      }
     }
   }
-
-  let value = expr(c, Some(val_r), &node.value)?.unwrap_or(val_r);
-  c.emit(store_field(target, key_r, value), span)?;
-
-  c.free(val_r);
-  c.free(key_r);
-  c.free(dst_r);
-
-  Ok(None)
 }
 
 fn get_index<'arena, 'gc, 'src>(
