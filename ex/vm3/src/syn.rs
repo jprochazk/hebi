@@ -396,6 +396,9 @@ mod stmt {
             AssignKind::Rem => BinaryOp::Rem,
             AssignKind::Pow => BinaryOp::Pow,
           };
+          // TODO: this won't work for an assignment like `o[1+1] += 1`
+          //       in those cases, the key should be emitted only once.
+          //       not sure how best to achieve that.
           Expr::new(
             ExprKind::Binary(self.alloc(Binary {
               op,

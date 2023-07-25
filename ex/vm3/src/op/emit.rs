@@ -757,12 +757,15 @@ fn if_<'arena, 'gc, 'src>(
 
   let mut end = MultiLabel::new(c.builder(), "if::end");
 
-  for branch in node.br {
+  let mut branches = node.br.iter().peekable();
+  while let Some(branch) = branches.next() {
     let mut next = BasicLabel::new(c.builder(), "if::next");
     assign_to(c, dst, &branch.cond)?;
     next.emit(c.builder(), jump_if_false(dst), branch.cond.span)?;
     block(c, Some(dst), &branch.body)?;
-    end.emit(c.builder(), jump, Span::empty())?;
+    if node.tail.is_some() || branches.peek().is_some() {
+      end.emit(c.builder(), jump, Span::empty())?;
+    }
     next.bind(c.builder())?;
   }
 
@@ -831,8 +834,6 @@ fn set_var<'arena, 'gc, 'src>(
   use Var::*;
 
   // TODO: test all cases here
-  // TODO: compound assignment is not handled here
-  //       maybe just desugar it? 🤷‍♂️
   match c.resolve_var(node.name.lexeme) {
     Self_ => {
       let msg = if fmut!(c).params.has_self {
@@ -927,9 +928,6 @@ fn set_field<'arena, 'gc, 'src>(
   node: &SetField<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  // TODO: compound assignment not handled here
-  //       (same as `set_var`)
-
   let obj_r = c.reg()?;
   let val_r = c.reg()?;
 
@@ -985,6 +983,7 @@ fn field_key(c: &mut Compiler, key: &Key, span: Span) -> Result<FieldKey> {
   }
 }
 
+// TODO: specialize index ops for constant keys
 fn get_index<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   dst: Option<Reg<u8>>,
@@ -1017,9 +1016,6 @@ fn set_index<'arena, 'gc, 'src>(
   node: &SetIndex<'arena, 'src>,
   span: Span,
 ) -> Result<Option<Reg<u8>>> {
-  // TODO: compound assignment not handled here
-  //       (same as `set_var`)
-
   let dst_r = c.reg()?;
   let key_r = c.reg()?;
   let val_r = c.reg()?;

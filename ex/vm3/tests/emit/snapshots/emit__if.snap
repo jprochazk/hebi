@@ -2,12 +2,11 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 1, length: 18 (72 bytes))
+function `__main__` (registers: 1, length: 17 (68 bytes))
 .code
   lbt   r0              ; if true { 0 }
   jf    r0, if::next#1
   lsmi  0, r0
-  jmp   if::end#0
 <if::next#1>:
 <if::end#0>:
   lbt   r0              ; if true { 0 } else { 1 }

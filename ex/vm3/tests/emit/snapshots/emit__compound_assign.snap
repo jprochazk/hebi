@@ -1,0 +1,170 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+function `__main__` (registers: 7, length: 150 (600 bytes))
+.const
+  0: "a"
+  1: Int(0)
+.code
+  lbt   r0              ; if true {
+  jf    r0, if::next#1
+  lnil  r1              ; let o
+  lsmi  1, r2           ; o += 1
+  add   r1, r2, r1
+  lsmi  1, r2           ; o -= 1
+  sub   r1, r2, r1
+  lsmi  1, r2           ; o *= 1
+  mul   r1, r2, r1
+  lsmi  1, r2           ; o /= 1
+  div   r1, r2, r1
+  lsmi  1, r2           ; o %= 1
+  rem   r1, r2, r1
+  lsmi  1, r2           ; o **= 1
+  pow   r1, r2, r1
+<if::next#1>:
+<if::end#0>:
+  lbt   r0              ; if true {
+  jf    r0, if::next#3
+  lnil  r1              ; let o
+  lf    r1, [0], r3     ; o.a += 1
+  lsmi  1, r4
+  add   r3, r4, r3
+  sf    r1, [0], r3
+  lf    r1, [0], r3     ; o.a -= 1
+  lsmi  1, r4
+  sub   r3, r4, r3
+  sf    r1, [0], r3
+  lf    r1, [0], r3     ; o.a *= 1
+  lsmi  1, r4
+  mul   r3, r4, r3
+  sf    r1, [0], r3
+  lf    r1, [0], r3     ; o.a /= 1
+  lsmi  1, r4
+  div   r3, r4, r3
+  sf    r1, [0], r3
+  lf    r1, [0], r3     ; o.a %= 1
+  lsmi  1, r4
+  rem   r3, r4, r3
+  sf    r1, [0], r3
+  lf    r1, [0], r3     ; o.a **= 1
+  lsmi  1, r4
+  pow   r3, r4, r3
+  sf    r1, [0], r3
+<if::next#3>:
+<if::end#2>:
+  lbt   r0              ; if true {
+  jf    r0, if::next#5
+  lnil  r1              ; let o
+  lfi   r1, [1], r3     ; o.0 += 1
+  lsmi  1, r4
+  add   r3, r4, r3
+  sfi   r1, [1], r3
+  lfi   r1, [1], r3     ; o.0 -= 1
+  lsmi  1, r4
+  sub   r3, r4, r3
+  sfi   r1, [1], r3
+  lfi   r1, [1], r3     ; o.0 *= 1
+  lsmi  1, r4
+  mul   r3, r4, r3
+  sfi   r1, [1], r3
+  lfi   r1, [1], r3     ; o.0 /= 1
+  lsmi  1, r4
+  div   r3, r4, r3
+  sfi   r1, [1], r3
+  lfi   r1, [1], r3     ; o.0 %= 1
+  lsmi  1, r4
+  rem   r3, r4, r3
+  sfi   r1, [1], r3
+  lfi   r1, [1], r3     ; o.0 **= 1
+  lsmi  1, r4
+  pow   r3, r4, r3
+  sfi   r1, [1], r3
+<if::next#5>:
+<if::end#4>:
+  lbt   r0              ; if true {
+  jf    r0, if::next#7
+  lnil  r1              ; let o
+  lc    [0], r3         ; o["a"] += 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  add   r4, r5, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] -= 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  sub   r4, r5, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] *= 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  mul   r4, r5, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] /= 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  div   r4, r5, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] %= 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  rem   r4, r5, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] **= 1
+  lc    [0], r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  pow   r4, r5, r4
+  si    r1, r3, r4
+<if::next#7>:
+<if::end#6>:
+  lbt   r0              ; if true {
+  jf    r0, if::next#9
+  lnil  r1              ; let o
+  lsmi  0, r3           ; o[0] += 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  add   r4, r5, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] -= 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  sub   r4, r5, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] *= 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  mul   r4, r5, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] /= 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  div   r4, r5, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] %= 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  rem   r4, r5, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] **= 1
+  lsmi  0, r6
+  li    r1, r6, r4
+  lsmi  1, r5
+  pow   r4, r5, r4
+  si    r1, r3, r4
+<if::next#9>:
+<if::end#8>:
+  fin   
+  lnil  r0
+  ret   r0
+
