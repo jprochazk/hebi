@@ -1,0 +1,19 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+function `__main__` (registers: 5, length: 12 (48 bytes))
+.code
+  lnil  r0              ; let a
+  lnil  r1              ; let b
+  lnil  r2              ; let c
+  lsmi  10, r4          ; c = a+b*10
+  mul   r1, r4, r3
+  add   r0, r3, r2
+  add   r0, r1, r2      ; c = {a+b}*10
+  lsmi  10, r3
+  mul   r2, r3, r2
+  fin   
+  lnil  r0
+  ret   r0
+

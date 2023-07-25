@@ -1,0 +1,8 @@
+{
+  let a
+  let b
+  let c
+
+  c = a+b*10
+  c = {a+b}*10
+}
