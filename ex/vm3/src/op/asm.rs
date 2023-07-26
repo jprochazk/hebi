@@ -52,8 +52,8 @@ _asm!(make_class,            dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_class_derived,    dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_list,             dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_list_empty,       dst: Reg<u8>);
-_asm!(make_map,            dst: Reg<u8>, desc: Const<u16>);
-_asm!(make_map_empty,      dst: Reg<u8>);
+_asm!(make_map,              dst: Reg<u8>, desc: Const<u16>);
+_asm!(make_map_empty,        dst: Reg<u8>);
 _asm!(make_tuple,            dst: Reg<u8>, desc: Const<u16>);
 _asm!(make_tuple_empty,      dst: Reg<u8>);
 // _asm!(jump,                  offset: Offset<u24>);
@@ -110,6 +110,6 @@ pub fn jump_loop(offset: JumpOffset) -> Op {
   use JumpOffset::*;
   match offset {
     Short(offset) => Op::JumpLoop { offset },
-    Long(offset) => Op::JumpLoopConst { offset },
+    Long(offset) => Op::JumpLoopConst { idx: offset },
   }
 }

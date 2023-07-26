@@ -28,7 +28,7 @@ impl Map {
   /// The map is initially empty.
   /// The only allocation done here is to put the `Map` object
   /// onto the garbage-collected heap.
-  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc) -> Result<Ref<Self>, AllocError> {
     let map = UnsafeCell::new(GcOrdHashMapN::new_in(NO_ALLOC));
     gc.try_alloc(Map { map })
   }
@@ -90,8 +90,19 @@ impl Map {
     self.map_alloc(gc).try_reserve(additional)
   }
 
+  #[inline]
   pub fn get(&self, key: &str) -> Option<Value> {
     self.map().get(key).copied()
+  }
+
+  #[inline]
+  pub fn get_index(&self, index: usize) -> Option<Value> {
+    self.map().get_index(index).copied()
+  }
+
+  #[inline]
+  pub fn set_index(&self, index: usize, value: Value) -> bool {
+    self.map_mut().set_index(index, value)
   }
 
   #[inline]
@@ -145,7 +156,7 @@ pub struct MapProto {
 }
 
 impl MapProto {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc, start: Reg<u8>, keys: &[Ref<Str>]) -> Result<Ref<Self>, AllocError> {
     let mut k = GcHashSet::with_hasher_in(fx(), Alloc::new(gc));
     k.try_reserve(keys.len())?;
     k.extend(keys);
@@ -187,15 +198,11 @@ mod tests {
   fn table_ops_new() {
     let gc = Gc::new();
 
-    let map = Map::try_new_in(&gc).unwrap();
+    let map = Map::new(&gc).unwrap();
     assert_eq!(map.len(), 0);
     assert_eq!(map.capacity(), 0);
     map
-      .try_insert(
-        &gc,
-        Str::try_new_in(&gc, "test").unwrap(),
-        Value::new(10i32),
-      )
+      .try_insert(&gc, Str::new(&gc, "test").unwrap(), Value::new(10i32))
       .unwrap();
     assert_eq!(map.len(), 1);
     assert!(map.capacity() > 0);
@@ -215,11 +222,7 @@ mod tests {
     assert_eq!(map.len(), 0);
     assert!(map.capacity() > 0);
     map
-      .try_insert(
-        &gc,
-        Str::try_new_in(&gc, "test").unwrap(),
-        Value::new(10i32),
-      )
+      .try_insert(&gc, Str::new(&gc, "test").unwrap(), Value::new(10i32))
       .unwrap();
     assert_eq!(map.len(), 1);
     assert!(map.capacity() > 0);

@@ -2,21 +2,21 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 3, length: 15 (60 bytes))
+function `__main__` (registers: 4, length: 15 (60 bytes))
 .code
-  lsmi  10, r0          ; let a = 10
-  smv   r0, m0
-  lsmi  20, r0          ; let b = 20
-  smv   r0, m1
-  lmv   m1, r0          ; let c = b
-  smv   r0, m2
-  lmv   m2, r0          ; let a = c
-  smv   r0, m0
-  lsmi  10, r0          ; let a = 10
+  lsmi  10, r1          ; let a = 10
+  smv   r1, m0
   lsmi  20, r1          ; let b = 20
-  mov   r1, r2          ; let c = b
-  mov   r2, r0          ; let a = c
-  fin   
+  smv   r1, m1
+  lmv   m1, r1          ; let c = b
+  smv   r1, m2
+  lmv   m2, r1          ; let a = c
+  smv   r1, m0
+  lsmi  10, r1          ; let a = 10
+  lsmi  20, r2          ; let b = 20
+  mov   r2, r3          ; let c = b
+  mov   r3, r1          ; let a = c
   lnil  r0
+  fin   
   ret   r0
 

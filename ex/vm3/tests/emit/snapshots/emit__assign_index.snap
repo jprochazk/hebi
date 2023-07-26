@@ -2,30 +2,30 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 6, length: 22 (88 bytes))
+function `__main__` (registers: 7, length: 22 (88 bytes))
 .const
   0: "a"
 .code
-  lnil  r0              ; let o
-  lc    [0], r2         ; o["a"] = 0
-  lsmi  0, r3
-  si    r0, r2, r3
-  lsmi  0, r2           ; o[0] = 0
-  lsmi  0, r3
-  si    r0, r2, r3
-  lc    [0], r2         ; o["a"] = o["a"]
-  lc    [0], r5
-  li    r0, r5, r3
-  si    r0, r2, r3
-  lsmi  0, r2           ; o[0] = o[0]
-  lsmi  0, r5
-  li    r0, r5, r3
-  si    r0, r2, r3
-  mme   r1              ; #{}["a"] = 0
-  lc    [0], r2
-  lsmi  0, r3
-  si    r1, r2, r3
-  fin   
+  lnil  r1              ; let o
+  lc    [0], r3         ; o["a"] = 0
+  lsmi  0, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] = 0
+  lsmi  0, r4
+  si    r1, r3, r4
+  lc    [0], r3         ; o["a"] = o["a"]
+  lc    [0], r6
+  li    r1, r6, r4
+  si    r1, r3, r4
+  lsmi  0, r3           ; o[0] = o[0]
+  lsmi  0, r6
+  li    r1, r6, r4
+  si    r1, r3, r4
+  mme   r2              ; #{}["a"] = 0
+  lc    [0], r3
+  lsmi  0, r4
+  si    r2, r3, r4
   lnil  r0
+  fin   
   ret   r0
 

@@ -17,8 +17,8 @@ fn lexer() -> Result<(), Box<dyn Error>> {
     "tests/parse/input",
     "tests/lex/snapshots",
     |input| {
-      let tokens: Vec<_> = Tokens(Lexer::new(input)).collect();
-      format!("{tokens:#?}")
+      let tokens: Vec<_> = Tokens(Lexer::new(input.contents)).collect();
+      Ok(format!("{tokens:#?}"))
     },
   )
 }

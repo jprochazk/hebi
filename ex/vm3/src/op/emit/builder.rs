@@ -1,8 +1,8 @@
 use bumpalo::collections::Vec;
 
-use super::{EmitError, Result};
 use crate::ds::fx;
 use crate::ds::map::BumpHashMap;
+use crate::error::{Error, Result};
 use crate::gc::Ref;
 use crate::lex::Span;
 use crate::obj::func::{FunctionProto, LabelInfo, LabelMapBuilder};
@@ -209,7 +209,7 @@ impl<'arena> ConstantPoolBuilder<'arena> {
   fn insert(&mut self, entry: Constant) -> Result<Const<u16>> {
     let idx = self.entries.len();
     if idx > u16::MAX as usize {
-      return Err(EmitError::new(format!(
+      return Err(Error::simple(format!(
         "exceeded maximum number of constants ({})",
         u16::MAX
       )));
@@ -230,7 +230,7 @@ impl<'arena> ConstantPoolBuilder<'arena> {
   pub fn float(&mut self, v: f64) -> Result<Const<u16>> {
     // Should never fail, because all floats created at compile time
     // are guaranteed to not be `NaN`.
-    let v = NFloat::try_from(v).map_err(|()| EmitError::new(format!("invalid float: {v}")))?;
+    let v = NFloat::try_from(v).map_err(|()| Error::simple(format!("invalid float: {v}")))?;
     if let Some(idx) = self.float_map.get(&v).copied() {
       return Ok(idx);
     }
@@ -284,25 +284,25 @@ fn patch_jump(referrer: usize, b: &mut BytecodeBuilder) -> Result<()> {
       Ok(offset) => code[referrer] = Op::Jump { offset },
       Err(_) => {
         let offset = pool.offset(Offset(offset as u64))?;
-        code[referrer] = Op::JumpConst { offset };
+        code[referrer] = Op::JumpConst { idx: offset };
       }
     },
     Op::JumpIfFalse { val, .. } => match u16::try_from(offset).map(Offset) {
       Ok(offset) => code[referrer] = Op::JumpIfFalse { val, offset },
       Err(_) => {
         let offset = pool.offset(Offset(offset as u64))?;
-        code[referrer] = Op::JumpIfFalseConst { val, offset };
+        code[referrer] = Op::JumpIfFalseConst { val, idx: offset };
       }
     },
     Op::JumpIfTrue { val, .. } => match u16::try_from(offset).map(Offset) {
       Ok(offset) => code[referrer] = Op::JumpIfTrue { val, offset },
       Err(_) => {
         let offset = pool.offset(Offset(offset as u64))?;
-        code[referrer] = Op::JumpIfTrueConst { val, offset };
+        code[referrer] = Op::JumpIfTrueConst { val, idx: offset };
       }
     },
     op => {
-      return Err(EmitError::new(format!(
+      return Err(Error::simple(format!(
         "invalid instruction {op:?} at offset {referrer}, expected forward jump instruction"
       )))
     }

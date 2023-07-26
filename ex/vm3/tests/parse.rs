@@ -20,11 +20,11 @@ fn parser() -> Result<(), Box<dyn Error>> {
     "tests/parse/snapshots",
     |input| {
       let arena = Bump::new();
-      let lex = Lexer::new(input);
-      let parser = Parser::new(&arena, lex);
+      let lex = Lexer::new(input.contents);
+      let parser = Parser::new(input.name, &arena, lex);
       match parser.parse() {
-        Ok(ast) => format!("{ast:#?}"),
-        Err(e) => format!("{e}"),
+        Ok(ast) => Ok(format!("{ast:#?}")),
+        Err(e) => Ok(e.report()),
       }
     },
   )

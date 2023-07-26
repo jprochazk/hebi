@@ -6,6 +6,7 @@ use std::error::Error;
 use bumpalo::Bump;
 use vm3::gc::Gc;
 use vm3::lex::Lexer;
+use vm3::obj::module::ModuleRegistry;
 use vm3::op::emit;
 use vm3::syn::Parser;
 
@@ -18,16 +19,17 @@ fn emit() -> Result<(), Box<dyn Error>> {
     |input| {
       let arena = Bump::new();
       let gc = Gc::new();
+      let registry = ModuleRegistry::new(&gc).unwrap();
 
-      let lex = Lexer::new(input);
-      let parser = Parser::new(&arena, lex);
+      let lex = Lexer::new(input.contents);
+      let parser = Parser::new(input.name, &arena, lex);
       let ast = match parser.parse() {
         Ok(ast) => ast,
-        Err(e) => panic!("{e}"),
+        Err(e) => panic!("{}", e.report()),
       };
-      match emit::module(&arena, &gc, "test", ast) {
-        Ok(module) => format!("{}", module.root().dis()),
-        Err(e) => format!("{e}"),
+      match emit::module(&arena, &gc, registry, input.name, ast) {
+        Ok(module) => Ok(format!("{}", module.root().dis())),
+        Err(e) => Ok(e.report()),
       }
     },
   )

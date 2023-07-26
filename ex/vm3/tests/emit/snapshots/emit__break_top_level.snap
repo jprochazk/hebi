@@ -2,4 +2,7 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-error: cannot use `break` outside of loop
+error in `break_top_level`: cannot use `break` outside of loop
+1 |  break
+  |  ^^^^^
+

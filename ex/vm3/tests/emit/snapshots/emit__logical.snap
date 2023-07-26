@@ -2,33 +2,33 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 3, length: 23 (92 bytes))
+function `__main__` (registers: 4, length: 23 (92 bytes))
 .code
-  lnil  r0              ; let a
-  lnil  r1              ; let b
-  mov   r0, r2          ; a && b
-  jf    r2, and#0
-  mov   r1, r2
+  lnil  r1              ; let a
+  lnil  r2              ; let b
+  mov   r1, r3          ; a && b
+  jf    r3, and#0
+  mov   r2, r3
 <and#0>:
-  lnil  r0              ; let a
-  lnil  r1              ; let b
-  mov   r0, r2          ; let c = a && b
-  jf    r2, and#1
-  mov   r1, r2
+  lnil  r1              ; let a
+  lnil  r2              ; let b
+  mov   r1, r3          ; let c = a && b
+  jf    r3, and#1
+  mov   r2, r3
 <and#1>:
-  lnil  r0              ; let a
-  lnil  r1              ; let b
-  mov   r0, r2          ; a || b
-  jt    r2, or#2
-  mov   r1, r2
+  lnil  r1              ; let a
+  lnil  r2              ; let b
+  mov   r1, r3          ; a || b
+  jt    r3, or#2
+  mov   r2, r3
 <or#2>:
-  lnil  r0              ; let a
-  lnil  r1              ; let b
-  mov   r0, r2          ; let c = a || b
-  jt    r2, or#3
-  mov   r1, r2
+  lnil  r1              ; let a
+  lnil  r2              ; let b
+  mov   r1, r3          ; let c = a || b
+  jt    r3, or#3
+  mov   r2, r3
 <or#3>:
-  fin   
   lnil  r0
+  fin   
   ret   r0
 

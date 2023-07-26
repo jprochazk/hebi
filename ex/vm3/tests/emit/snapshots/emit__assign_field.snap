@@ -2,24 +2,24 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 4, length: 15 (60 bytes))
+function `__main__` (registers: 5, length: 15 (60 bytes))
 .const
   0: "a"
   1: Int(0)
 .code
-  lnil  r0              ; let o
-  lsmi  0, r2           ; o.a = 0
-  sf    r0, [0], r2
-  lsmi  0, r2           ; o.0 = 0
-  sfi   r0, [1], r2
-  lf    r0, [0], r2     ; o.a = o.a
-  sf    r0, [0], r2
-  lfi   r0, [1], r2     ; o.0 = o.0
-  sfi   r0, [1], r2
-  mme   r1              ; #{}.a = 0
-  lsmi  0, r2
-  sf    r1, [0], r2
-  fin   
+  lnil  r1              ; let o
+  lsmi  0, r3           ; o.a = 0
+  sf    r1, [0], r3
+  lsmi  0, r3           ; o.0 = 0
+  sfi   r1, [1], r3
+  lf    r1, [0], r3     ; o.a = o.a
+  sf    r1, [0], r3
+  lfi   r1, [1], r3     ; o.0 = o.0
+  sfi   r1, [1], r3
+  mme   r2              ; #{}.a = 0
+  lsmi  0, r3
+  sf    r2, [0], r3
   lnil  r0
+  fin   
   ret   r0
 

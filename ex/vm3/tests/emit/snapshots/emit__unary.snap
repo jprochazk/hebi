@@ -2,19 +2,19 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 1, length: 13 (52 bytes))
+function `__main__` (registers: 2, length: 13 (52 bytes))
 .code
-  lnil  r0              ; let v
-  lsmi  1, r0           ; v = -1
-  inv   r0
-  lbt   r0              ; v = !true
-  not   r0
-  lsmi  1, r0           ; v = ----1
-  inv   r0
-  inv   r0
-  inv   r0
-  inv   r0
-  fin   
+  lnil  r1              ; let v
+  lsmi  1, r1           ; v = -1
+  inv   r1
+  lbt   r1              ; v = !true
+  not   r1
+  lsmi  1, r1           ; v = ----1
+  inv   r1
+  inv   r1
+  inv   r1
+  inv   r1
   lnil  r0
+  fin   
   ret   r0
 

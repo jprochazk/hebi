@@ -126,6 +126,23 @@ impl Value {
   }
 }
 
+impl Value {
+  pub fn is_truthy(&self) -> bool {
+    if let Some(v) = self.cast::<f64>() {
+      v != 0.0
+    } else if let Some(v) = self.cast::<i32>() {
+      v != 0
+    } else if let Some(v) = self.cast::<bool>() {
+      v
+    } else if self.is::<nil>() {
+      false
+    } else {
+      // object
+      true
+    }
+  }
+}
+
 pub trait ValueType: private::Sealed {
   fn is(value: Value) -> bool;
 }
@@ -320,7 +337,7 @@ impl<T: Object + 'static> TryFrom<Value> for Ref<T> {
 
   #[inline]
   fn try_from(value: Value) -> Result<Self, Self::Error> {
-    <Any as TryFrom<Value>>::try_from(value).and_then(|o| o.cast().ok_or(()))
+    <Any as TryFrom<Value>>::try_from(value).and_then(|o| o.cast::<T>().ok_or(()))
   }
 }
 

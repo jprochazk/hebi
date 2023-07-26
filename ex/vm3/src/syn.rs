@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::sync::Arc;
 use core::fmt::Display;
 
 use bumpalo::collections::Vec;
@@ -9,26 +10,86 @@ use super::ast::*;
 use super::lex::*;
 use super::Arena;
 use crate::alloc;
-use crate::error::StdError;
-
-pub type Result<T, E = SyntaxError> = core::result::Result<T, E>;
+use crate::error::{Error, Result, StdError};
 
 #[derive(Debug)]
 pub struct SyntaxError {
-  pub message: String,
+  pub module: Arc<str>,
+  pub source: Arc<str>,
+  pub message: Arc<str>,
+  pub span: Span,
 }
 
 impl SyntaxError {
-  pub fn new(message: impl Into<String>) -> SyntaxError {
+  pub fn new(
+    module: Arc<str>,
+    source: Arc<str>,
+    message: impl Into<Arc<str>>,
+    span: impl Into<Span>,
+  ) -> SyntaxError {
     SyntaxError {
+      module,
+      source,
       message: message.into(),
+      span: span.into(),
     }
+  }
+
+  pub fn report(&self) -> String {
+    use core::fmt::Write;
+
+    let Self {
+      module,
+      source,
+      message,
+      span,
+    } = self;
+
+    let mut out = String::new();
+
+    // empty span
+    if span.start == span.end {
+      writeln!(&mut out, "syntax error in `{module}`: {message} at {span}").unwrap();
+      return out;
+    }
+
+    writeln!(&mut out, "{message} in {module} at {span}:").unwrap();
+    let line_start = source[..span.start()]
+      .rfind('\n')
+      .map(|v| v + 1)
+      .unwrap_or(0);
+    let line_num = 1 + source[..line_start].lines().count();
+    let line_num_width = num_digits(line_num);
+    let line_end = source[span.start()..]
+      .find('\n')
+      .map(|v| v + span.start())
+      .unwrap_or(source.len());
+    writeln!(&mut out, "{line_num} |  {}", &source[line_start..line_end]).unwrap();
+    let cursor_pos = span.start() - line_start;
+    let cursor_len = if span.end() > line_end {
+      line_end - span.start()
+    } else {
+      span.end() - span.start()
+    };
+    writeln!(
+      &mut out,
+      "{:lw$} |  {:w$}{:^<l$}",
+      "",
+      "",
+      "^",
+      lw = line_num_width,
+      w = cursor_pos,
+      l = cursor_len
+    )
+    .unwrap();
+
+    out
   }
 }
 
 impl Display for SyntaxError {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(f, "syntax error: {}", self.message)
+    write!(f, "syntax error in `{}`: {}", self.module, self.message)
   }
 }
 
@@ -50,13 +111,14 @@ macro_rules! err {
 }
 
 pub struct Parser<'arena, 'src> {
+  name: &'src str,
   arena: &'arena Arena,
   lex: Lexer<'src>,
 }
 
 impl<'arena, 'src> Parser<'arena, 'src> {
-  pub fn new(arena: &'arena Arena, lex: Lexer<'src>) -> Self {
-    Self { arena, lex }
+  pub fn new(name: &'src str, arena: &'arena Arena, lex: Lexer<'src>) -> Self {
+    Self { name, arena, lex }
   }
 
   pub fn parse(mut self) -> Result<Module<'arena, 'src>> {
@@ -64,57 +126,40 @@ impl<'arena, 'src> Parser<'arena, 'src> {
   }
 
   fn program(&mut self) -> Result<Module<'arena, 'src>> {
-    let mut list = vec![in self.arena];
+    let mut body = vec![in self.arena];
     while !self.end() {
-      list.push(self.stmt()?);
+      body.push(self.stmt()?);
     }
+
+    let last = if let Some(last) = body.pop() {
+      match last.kind {
+        StmtKind::Expr(e)
+          if !matches!(
+            e.kind,
+            ExprKind::SetVar(..) | ExprKind::SetField(..) | ExprKind::SetIndex(..)
+          ) =>
+        {
+          Some(*e)
+        }
+        _ => {
+          body.push(last);
+          None
+        }
+      }
+    } else {
+      None
+    };
+
+    let body = body.into_bump_slice();
+
     Ok(Module {
       src: self.lex.src(),
-      body: list.into_bump_slice(),
+      body: Block { body, last },
     })
   }
 
-  fn error(&self, message: impl Display, span: impl Into<Span>) -> SyntaxError {
-    use core::fmt::Write;
-
-    let span: Span = span.into();
-    let src = self.lex.src();
-    let mut out = String::new();
-
-    // empty span
-    if span.start == span.end {
-      writeln!(&mut out, "syntax error: {message} at {span}").unwrap();
-      return SyntaxError::new(out);
-    }
-
-    writeln!(&mut out, "{message} at {span}:").unwrap();
-    let line_start = src[..span.start()].rfind('\n').map(|v| v + 1).unwrap_or(0);
-    let line_num = 1 + src[..line_start].lines().count();
-    let line_num_width = num_digits(line_num);
-    let line_end = src[span.start()..]
-      .find('\n')
-      .map(|v| v + span.start())
-      .unwrap_or(src.len());
-    writeln!(&mut out, "{line_num} |  {}", &src[line_start..line_end]).unwrap();
-    let cursor_pos = span.start() - line_start;
-    let cursor_len = if span.end() > line_end {
-      line_end - span.start()
-    } else {
-      span.end() - span.start()
-    };
-    writeln!(
-      &mut out,
-      "{:lw$} |  {:w$}{:^<l$}",
-      "",
-      "",
-      "^",
-      lw = line_num_width,
-      w = cursor_pos,
-      l = cursor_len
-    )
-    .unwrap();
-
-    SyntaxError::new(out)
+  fn error(&self, message: impl Display, span: impl Into<Span>) -> Error {
+    Error::syntax(self.name.clone(), self.lex.src(), message.to_string(), span)
   }
 
   fn alloc<T>(&self, v: T) -> &'arena T {
@@ -207,7 +252,11 @@ impl<'arena, 'src> Parser<'arena, 'src> {
       Some(Stmt {
         kind: StmtKind::Expr(expr),
         ..
-      }) => {
+      }) if !matches!(
+        expr.kind,
+        ExprKind::SetVar(..) | ExprKind::SetIndex(..) | ExprKind::SetField(..)
+      ) =>
+      {
         let last = **expr;
         body.pop();
         Some(last)
@@ -338,6 +387,7 @@ mod stmt {
 
     fn return_(&mut self) -> Result<Stmt<'arena, 'src>> {
       self.expect(KwReturn)?;
+      let return_token_span = self.previous().span;
       let start = self.previous().span.start;
       let value = if self.current().begins_expr() {
         Some(self.expr()?)
@@ -345,7 +395,7 @@ mod stmt {
         None
       };
       let end = self.previous().span.end;
-      Ok(mk!(self, Return { value } @ start..end))
+      Ok(mk!(self, Return { return_token_span, value } @ start..end))
     }
 
     fn top_level_block(&mut self) -> Result<Stmt<'arena, 'src>> {

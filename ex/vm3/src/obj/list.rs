@@ -14,7 +14,7 @@ pub struct List {
 }
 
 impl List {
-  pub fn try_new_in(gc: &Gc) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(List {
       vec: UnsafeCell::new(GcVecN::new_in(NO_ALLOC)),
     })
@@ -170,7 +170,7 @@ pub struct ListProto {
 }
 
 impl ListProto {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(ListProto { start, count })
   }
 
@@ -201,7 +201,7 @@ mod tests {
   fn list_ops_new() {
     let gc = Gc::new();
 
-    let list = List::try_new_in(&gc).unwrap();
+    let list = List::new(&gc).unwrap();
     assert_eq!(list.len(), 0);
     assert_eq!(list.capacity(), 0);
 

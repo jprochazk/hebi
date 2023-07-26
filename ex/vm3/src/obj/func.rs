@@ -5,6 +5,8 @@ use beef::lean::Cow;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump as Arena;
 
+use super::list::List;
+use super::module::ModuleId;
 use super::string::Str;
 use crate::ds::map::{BumpHashMap, GcHashMap, GcHashMapN};
 use crate::ds::{fx, HasAlloc};
@@ -15,10 +17,91 @@ use crate::op::emit::CaptureInfo;
 use crate::op::{Capture, Op, Reg};
 use crate::val::Constant;
 
+pub struct Function {
+  proto: Ref<FunctionProto>,
+
+  ops: NonNull<[Op]>,
+  pool: NonNull<[Constant]>,
+  frame_size: u8,
+  captures: Ref<List>,
+  arity: usize,
+}
+
+impl Function {
+  pub fn new(
+    gc: &Gc,
+    proto: Ref<FunctionProto>,
+    captures: Ref<List>,
+  ) -> Result<Ref<Function>, AllocError> {
+    gc.try_alloc(Function {
+      proto,
+      ops: proto.ops,
+      pool: proto.pool,
+      frame_size: proto.frame_size,
+      captures,
+      arity: proto.params.min as usize,
+    })
+  }
+
+  pub fn name(&self) -> Ref<Str> {
+    self.proto.name
+  }
+
+  pub fn module_id(&self) -> ModuleId {
+    self.proto.module_id
+  }
+
+  pub fn ops(&self) -> &[Op] {
+    unsafe { self.ops.as_ref() }
+  }
+
+  pub fn pool(&self) -> &[Constant] {
+    unsafe { self.pool.as_ref() }
+  }
+
+  pub fn arity(&self) -> usize {
+    self.arity
+  }
+
+  pub fn frame_size(&self) -> u8 {
+    self.frame_size
+  }
+
+  pub fn captures(&self) -> Ref<List> {
+    self.captures
+  }
+
+  pub fn dbg(&self) -> &DebugInfo {
+    &self.proto.dbg
+  }
+
+  pub fn dis(&self) -> Disasm {
+    self.proto.dis()
+  }
+}
+
+impl Debug for Function {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.debug_struct("Function")
+      .field("proto", &self.proto)
+      .field("captures", &self.captures)
+      .finish()
+  }
+}
+
+impl Display for Function {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "<function `{}`>", self.name())
+  }
+}
+
+impl Object for Function {}
+
 pub struct FunctionProto {
+  module_id: ModuleId,
   name: Ref<Str>,
   params: Params,
-  stack_space: u8,
+  frame_size: u8,
   captures: NonNull<[CaptureSource]>,
   ops: NonNull<[Op]>,
   pool: NonNull<[Constant]>,
@@ -147,13 +230,14 @@ pub struct LabelInfo {
 }
 
 impl FunctionProto {
-  pub fn try_new_in(
+  pub fn new(
     gc: &Gc,
+    module_id: ModuleId,
     name: &str,
     params: Params,
     code: Code,
   ) -> Result<Ref<Self>, AllocError> {
-    let name = Str::try_new_in(gc, name)?;
+    let name = Str::new(gc, name)?;
     let ops = gc.try_alloc_slice(code.ops)?.into();
     let pool = gc.try_alloc_slice(code.pool)?.into();
     let spans = gc.try_alloc_slice(code.spans)?.into();
@@ -168,9 +252,10 @@ impl FunctionProto {
     let label_map = code.label_map.finish(gc)?;
 
     gc.try_alloc(FunctionProto {
+      module_id,
       name,
       params,
-      stack_space: code.stack_space,
+      frame_size: code.frame_size,
       captures,
       ops,
       pool,
@@ -180,6 +265,10 @@ impl FunctionProto {
         label_map,
       },
     })
+  }
+
+  pub fn module_id(&self) -> ModuleId {
+    self.module_id
   }
 
   #[inline]
@@ -193,8 +282,8 @@ impl FunctionProto {
   }
 
   #[inline]
-  pub fn stack_space(&self) -> u8 {
-    self.stack_space
+  pub fn frame_size(&self) -> u8 {
+    self.frame_size
   }
 
   #[inline]
@@ -266,7 +355,7 @@ pub struct Code<'a> {
   pub captures: &'a [(Cow<'a, str>, CaptureInfo)],
   pub spans: &'a [Span],
   pub label_map: LabelMapBuilder<'a>,
-  pub stack_space: u8,
+  pub frame_size: u8,
 }
 
 impl FunctionProto {
@@ -292,7 +381,7 @@ impl<'a> Display for Disasm<'a> {
       f,
       "function `{}` (registers: {}, length: {} ({} bytes))",
       func.name,
-      func.stack_space(),
+      func.frame_size(),
       func.ops.len(),
       func.ops.len() * 4,
     )?;
@@ -407,7 +496,7 @@ fn disasm_op(
       Op::LoadTrue { dst } =>                     w!(f, "  lbt   {dst}"),
       Op::LoadFalse { dst } =>                    w!(f, "  lbf   {dst}"),
       Op::LoadSmi { dst, value } =>               w!(f, "  lsmi  {value}, {dst}"),
-      Op::MakeFn { dst, desc } =>                 w!(f, "  mfn   {desc}, {dst}"),
+      Op::MakeFn { dst, desc } =>                 w!(f, "  mf    {desc}, {dst}"),
       Op::MakeClass { dst, desc } =>              w!(f, "  mc    {desc}, {dst}"),
       Op::MakeClassDerived { dst, desc } =>       w!(f, "  mcd   {desc}, {dst}"),
       Op::MakeList { dst, desc } =>               w!(f, "  ml    {desc}, {dst}"),

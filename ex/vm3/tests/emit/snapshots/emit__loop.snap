@@ -2,30 +2,30 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 2, length: 16 (64 bytes))
+function `__main__` (registers: 3, length: 16 (64 bytes))
 .code
 <loop::start#0>:
   jl    loop::start#0
 <loop::end#1>:
-  lsmi  0, r0           ; let i = 0
+  lsmi  0, r1           ; let i = 0
 <loop::start#2>:
-  lsmi  1, r1           ; i += 1
-  add   r0, r1, r0
+  lsmi  1, r2           ; i += 1
+  add   r1, r2, r1
   jl    loop::start#2
 <loop::end#3>:
 <loop::start#4>:
-  lnil  r0              ; let a
+  lnil  r1              ; let a
   jmp   loop::end#5     ; break
-  lnil  r1              ; let b
+  lnil  r2              ; let b
   jl    loop::start#4
 <loop::end#5>:
 <loop::start#6>:
-  lnil  r0              ; let a
+  lnil  r1              ; let a
   jl    loop::start#6   ; continue
-  lnil  r1              ; let b
+  lnil  r2              ; let b
   jl    loop::start#6
 <loop::end#7>:
-  fin   
   lnil  r0
+  fin   
   ret   r0
 

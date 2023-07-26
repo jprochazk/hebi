@@ -1,4 +1,5 @@
 use core::cmp;
+use core::fmt::{Debug, Display};
 use core::hash::{BuildHasher, BuildHasherDefault, Hash, Hasher};
 use core::mem::replace;
 
@@ -9,6 +10,7 @@ use hashbrown::Equivalent;
 use rustc_hash::FxHasher;
 
 use crate::error::AllocError;
+use crate::util::DelegateDebugToDisplay;
 
 pub struct OrdHashMap<K, V, A: Allocator + Clone> {
   table: RawTable<usize, A>,
@@ -74,6 +76,11 @@ where
   K: Hash + Eq,
   A: Allocator + Clone,
 {
+  #[inline]
+  pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+    self.try_insert(key, value).unwrap()
+  }
+
   /// Inserts `value` into the table associated with the key `key`.
   pub fn try_insert(&mut self, key: K, value: V) -> Result<Option<V>, AllocError> {
     self.try_reserve(1)?;
@@ -158,8 +165,31 @@ where
       .map(|index| unsafe { &self.vec.get_unchecked(*index).value })
   }
 
-  pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> + '_ {
-    self.vec.iter().map(|e| (&e.key, &e.value))
+  #[inline]
+  pub fn get_index(&self, index: usize) -> Option<&V> {
+    match self.vec.get(index) {
+      Some(entry) => Some(&entry.value),
+      None => None,
+    }
+  }
+
+  #[inline]
+  pub fn set_index(&mut self, index: usize, value: V) -> bool {
+    match self.vec.get_mut(index) {
+      Some(slot) => {
+        slot.value = value;
+        true
+      }
+      None => false,
+    }
+  }
+
+  #[inline]
+  pub fn contains_key<Q: ?Sized + Hash + Equivalent<K>>(&self, key: &Q) -> bool {
+    let hash = self.hash(key);
+    // The indices are guaranteed to exist
+    let eq = |i: &usize| unsafe { key.equivalent(&self.vec.get_unchecked(*i).key) };
+    self.table.get(hash, eq).is_some()
   }
 
   #[inline]
@@ -167,6 +197,12 @@ where
     let mut hasher = self.hash_builder.build_hasher();
     key.hash(&mut hasher);
     hasher.finish()
+  }
+}
+
+impl<K, V, A: Allocator + Clone> OrdHashMap<K, V, A> {
+  pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> + '_ {
+    self.vec.iter().map(|e| (&e.key, &e.value))
   }
 }
 
@@ -184,6 +220,24 @@ struct Entry<K, V> {
   hash: u64,
   key: K,
   value: V,
+}
+
+impl<K: Debug, V: Debug, A: Allocator + Clone> Debug for OrdHashMap<K, V, A> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.debug_map().entries(self.iter()).finish()
+  }
+}
+
+impl<K: Display, V: Display, A: Allocator + Clone> Display for OrdHashMap<K, V, A> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    f.debug_map()
+      .entries(
+        self
+          .iter()
+          .map(|(k, v)| (DelegateDebugToDisplay(k), DelegateDebugToDisplay(v))),
+      )
+      .finish()
+  }
 }
 
 #[cfg(test)]

@@ -11,7 +11,7 @@ pub struct Tuple {
 }
 
 impl Tuple {
-  pub fn try_new_in(gc: &Gc, items: &[Value]) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc, items: &[Value]) -> Result<Ref<Self>, AllocError> {
     let inner = List::try_with_capacity_in(gc, items.len())?;
     inner.extend_from_slice(gc, items)?;
     gc.try_alloc(Tuple { inner })
@@ -45,7 +45,7 @@ pub struct TupleProto {
 }
 
 impl TupleProto {
-  pub fn try_new_in(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
+  pub fn new(gc: &Gc, start: Reg<u8>, count: u8) -> Result<Ref<Self>, AllocError> {
     gc.try_alloc(TupleProto { start, count })
   }
 

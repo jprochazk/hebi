@@ -2,4 +2,7 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-error: cannot use `continue` outside of loop
+error in `continue_top_level`: cannot use `continue` outside of loop
+1 |  continue
+  |  ^^^^^^^^
+

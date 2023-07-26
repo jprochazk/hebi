@@ -2,32 +2,32 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 5, length: 26 (104 bytes))
+function `__main__` (registers: 6, length: 26 (104 bytes))
 .code
-  lnil  r0              ; let f
-  mov   r0, r1          ; f()
-  call  r1, 0
-  mov   r0, r1          ; f(0)
-  lsmi  0, r2
-  call  r1, 1
-  mov   r0, r1          ; f(0, 1, 2)
-  lsmi  0, r2
-  lsmi  1, r3
-  lsmi  2, r4
-  call  r1, 3
-  lnil  r0              ; let f
-  lnil  r1              ; let v // top -> `dst` for calls
-  mov   r0, r1          ; v = f()
-  call  r1, 0
-  lnil  r0              ; let v // not top -> `mov` after call
   lnil  r1              ; let f
+  mov   r1, r2          ; f()
+  call  r2, 0
+  mov   r1, r2          ; f(0)
+  lsmi  0, r3
+  call  r2, 1
+  mov   r1, r2          ; f(0, 1, 2)
+  lsmi  0, r3
+  lsmi  1, r4
+  lsmi  2, r5
+  call  r2, 3
+  lnil  r1              ; let f
+  lnil  r2              ; let v // top -> `dst` for calls
   mov   r1, r2          ; v = f()
   call  r2, 0
-  mov   r2, r0
-  lnil  r0              ; let f
-  mov   r0, r1          ; let v = f() // should be optimal
-  call  r1, 0
-  fin   
+  lnil  r1              ; let v // not top -> `mov` after call
+  lnil  r2              ; let f
+  mov   r2, r3          ; v = f()
+  call  r3, 0
+  mov   r3, r1
+  lnil  r1              ; let f
+  mov   r1, r2          ; let v = f() // should be optimal
+  call  r2, 0
   lnil  r0
+  fin   
   ret   r0
 

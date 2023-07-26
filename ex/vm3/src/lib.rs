@@ -19,6 +19,7 @@ pub mod obj;
 pub mod op;
 pub mod syn;
 pub mod val;
+pub mod vm;
 
 type Arena = bumpalo::Bump;
 

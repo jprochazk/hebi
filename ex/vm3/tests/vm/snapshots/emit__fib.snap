@@ -1,0 +1,5 @@
+---
+source: ex/vm3/tests/./common/mod.rs
+expression: snapshot
+---
+610

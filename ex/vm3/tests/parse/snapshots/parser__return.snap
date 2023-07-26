@@ -2,804 +2,863 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-[
-    Stmt {
-        span: Span {
-            start: 0,
-            end: 16,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 0,
-                    end: 2,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 3,
-                            end: 5,
-                        },
-                        lexeme: "_0",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 8,
-                                end: 14,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: None,
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
+Block {
+    body: [
+        Stmt {
+            span: Span {
+                start: 0,
+                end: 16,
             },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 17,
-            end: 37,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 17,
-                    end: 19,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 20,
-                            end: 22,
-                        },
-                        lexeme: "_1",
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 0,
+                        end: 2,
                     },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
+                    name: Some(
+                        Ident {
                             span: Span {
-                                start: 25,
-                                end: 35,
+                                start: 3,
+                                end: 5,
                             },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 32,
-                                                end: 35,
-                                            },
-                                            kind: Lit(
-                                                Nil,
-                                            ),
+                            lexeme: "_0",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 8,
+                                    end: 14,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 8,
+                                            end: 14,
                                         },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 38,
-            end: 56,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 38,
-                    end: 40,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 41,
-                            end: 43,
-                        },
-                        lexeme: "_2",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 46,
-                                end: 54,
+                                        value: None,
+                                    },
+                                ),
                             },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 53,
-                                                end: 54,
-                                            },
-                                            kind: Lit(
-                                                Int(
-                                                    0,
-                                                ),
-                                            ),
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 17,
+                end: 37,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 17,
+                        end: 19,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 20,
+                                end: 22,
+                            },
+                            lexeme: "_1",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 25,
+                                    end: 35,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 25,
+                                            end: 31,
                                         },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 57,
-            end: 77,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 57,
-                    end: 59,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 60,
-                            end: 62,
-                        },
-                        lexeme: "_3",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 65,
-                                end: 75,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 72,
-                                                end: 75,
-                                            },
-                                            kind: Lit(
-                                                Float(
-                                                    0.1,
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 78,
-            end: 99,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 78,
-                    end: 80,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 81,
-                            end: 83,
-                        },
-                        lexeme: "_4",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 86,
-                                end: 97,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 93,
-                                                end: 97,
-                                            },
-                                            kind: Lit(
-                                                Bool(
-                                                    true,
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 100,
-            end: 123,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 100,
-                    end: 102,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 103,
-                            end: 105,
-                        },
-                        lexeme: "_5",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 108,
-                                end: 121,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 115,
-                                                end: 121,
-                                            },
-                                            kind: Lit(
-                                                String(
-                                                    "test",
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 124,
-            end: 144,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 124,
-                    end: 126,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 127,
-                            end: 129,
-                        },
-                        lexeme: "_6",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 132,
-                                end: 142,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 141,
-                                                end: 142,
-                                            },
-                                            kind: Lit(
-                                                Record(
-                                                    [],
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 145,
-            end: 165,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 145,
-                    end: 147,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 148,
-                            end: 150,
-                        },
-                        lexeme: "_7",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 153,
-                                end: 163,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 162,
-                                                end: 163,
-                                            },
-                                            kind: Lit(
-                                                List(
-                                                    [],
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 166,
-            end: 186,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 166,
-                    end: 168,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 169,
-                            end: 171,
-                        },
-                        lexeme: "_8",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 174,
-                                end: 184,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 183,
-                                                end: 184,
-                                            },
-                                            kind: Lit(
-                                                Tuple(
-                                                    [],
-                                                ),
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 187,
-            end: 209,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 187,
-                    end: 189,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 190,
-                            end: 192,
-                        },
-                        lexeme: "_9",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 195,
-                                end: 207,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 202,
-                                                end: 207,
-                                            },
-                                            kind: GetVar(
-                                                GetVar {
-                                                    name: Ident {
-                                                        span: Span {
-                                                            start: 202,
-                                                            end: 207,
-                                                        },
-                                                        lexeme: "value",
-                                                    },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 32,
+                                                    end: 35,
                                                 },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 210,
-            end: 233,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 210,
-                    end: 212,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 213,
-                            end: 216,
-                        },
-                        lexeme: "_10",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 219,
-                                end: 231,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 226,
-                                                end: 231,
+                                                kind: Lit(
+                                                    Nil,
+                                                ),
                                             },
-                                            kind: Func(
-                                                Func {
-                                                    fn_token_span: Span {
-                                                        start: 226,
-                                                        end: 228,
-                                                    },
-                                                    name: None,
-                                                    params: [],
-                                                    body: Block {
-                                                        body: [],
-                                                        last: None,
-                                                    },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 38,
+                end: 56,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 38,
+                        end: 40,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 41,
+                                end: 43,
+                            },
+                            lexeme: "_2",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 46,
+                                    end: 54,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 46,
+                                            end: 52,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 53,
+                                                    end: 54,
                                                 },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 234,
-            end: 276,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 234,
-                    end: 236,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 237,
-                            end: 240,
-                        },
-                        lexeme: "_11",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 243,
-                                end: 274,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 250,
-                                                end: 274,
+                                                kind: Lit(
+                                                    Int(
+                                                        0,
+                                                    ),
+                                                ),
                                             },
-                                            kind: If(
-                                                If {
-                                                    br: [
-                                                        Branch {
-                                                            cond: Expr {
-                                                                span: Span {
-                                                                    start: 253,
-                                                                    end: 257,
-                                                                },
-                                                                kind: Lit(
-                                                                    Bool(
-                                                                        true,
-                                                                    ),
-                                                                ),
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 57,
+                end: 77,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 57,
+                        end: 59,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 60,
+                                end: 62,
+                            },
+                            lexeme: "_3",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 65,
+                                    end: 75,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 65,
+                                            end: 71,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 72,
+                                                    end: 75,
+                                                },
+                                                kind: Lit(
+                                                    Float(
+                                                        0.1,
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 78,
+                end: 99,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 78,
+                        end: 80,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 81,
+                                end: 83,
+                            },
+                            lexeme: "_4",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 86,
+                                    end: 97,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 86,
+                                            end: 92,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 93,
+                                                    end: 97,
+                                                },
+                                                kind: Lit(
+                                                    Bool(
+                                                        true,
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 100,
+                end: 123,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 100,
+                        end: 102,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 103,
+                                end: 105,
+                            },
+                            lexeme: "_5",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 108,
+                                    end: 121,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 108,
+                                            end: 114,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 115,
+                                                    end: 121,
+                                                },
+                                                kind: Lit(
+                                                    String(
+                                                        "test",
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 124,
+                end: 144,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 124,
+                        end: 126,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 127,
+                                end: 129,
+                            },
+                            lexeme: "_6",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 132,
+                                    end: 142,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 132,
+                                            end: 138,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 141,
+                                                    end: 142,
+                                                },
+                                                kind: Lit(
+                                                    Record(
+                                                        [],
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 145,
+                end: 165,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 145,
+                        end: 147,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 148,
+                                end: 150,
+                            },
+                            lexeme: "_7",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 153,
+                                    end: 163,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 153,
+                                            end: 159,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 162,
+                                                    end: 163,
+                                                },
+                                                kind: Lit(
+                                                    List(
+                                                        [],
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 166,
+                end: 186,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 166,
+                        end: 168,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 169,
+                                end: 171,
+                            },
+                            lexeme: "_8",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 174,
+                                    end: 184,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 174,
+                                            end: 180,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 183,
+                                                    end: 184,
+                                                },
+                                                kind: Lit(
+                                                    Tuple(
+                                                        [],
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 187,
+                end: 209,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 187,
+                        end: 189,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 190,
+                                end: 192,
+                            },
+                            lexeme: "_9",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 195,
+                                    end: 207,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 195,
+                                            end: 201,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 202,
+                                                    end: 207,
+                                                },
+                                                kind: GetVar(
+                                                    GetVar {
+                                                        name: Ident {
+                                                            span: Span {
+                                                                start: 202,
+                                                                end: 207,
                                                             },
-                                                            body: Block {
+                                                            lexeme: "value",
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 210,
+                end: 233,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 210,
+                        end: 212,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 213,
+                                end: 216,
+                            },
+                            lexeme: "_10",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 219,
+                                    end: 231,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 219,
+                                            end: 225,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 226,
+                                                    end: 231,
+                                                },
+                                                kind: Func(
+                                                    Func {
+                                                        fn_token_span: Span {
+                                                            start: 226,
+                                                            end: 228,
+                                                        },
+                                                        name: None,
+                                                        params: [],
+                                                        body: Block {
+                                                            body: [],
+                                                            last: None,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 234,
+                end: 276,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 234,
+                        end: 236,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 237,
+                                end: 240,
+                            },
+                            lexeme: "_11",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 243,
+                                    end: 274,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 243,
+                                            end: 249,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 250,
+                                                    end: 274,
+                                                },
+                                                kind: If(
+                                                    If {
+                                                        br: [
+                                                            Branch {
+                                                                cond: Expr {
+                                                                    span: Span {
+                                                                        start: 253,
+                                                                        end: 257,
+                                                                    },
+                                                                    kind: Lit(
+                                                                        Bool(
+                                                                            true,
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                                body: Block {
+                                                                    body: [],
+                                                                    last: Some(
+                                                                        Expr {
+                                                                            span: Span {
+                                                                                start: 260,
+                                                                                end: 261,
+                                                                            },
+                                                                            kind: Lit(
+                                                                                Int(
+                                                                                    0,
+                                                                                ),
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            },
+                                                        ],
+                                                        tail: Some(
+                                                            Block {
                                                                 body: [],
                                                                 last: Some(
                                                                     Expr {
                                                                         span: Span {
-                                                                            start: 260,
-                                                                            end: 261,
+                                                                            start: 271,
+                                                                            end: 272,
                                                                         },
                                                                         kind: Lit(
                                                                             Int(
-                                                                                0,
+                                                                                1,
                                                                             ),
                                                                         ),
                                                                     },
                                                                 ),
                                                             },
-                                                        },
-                                                    ],
-                                                    tail: Some(
-                                                        Block {
-                                                            body: [],
-                                                            last: Some(
-                                                                Expr {
-                                                                    span: Span {
-                                                                        start: 271,
-                                                                        end: 272,
-                                                                    },
-                                                                    kind: Lit(
-                                                                        Int(
-                                                                            1,
-                                                                        ),
-                                                                    ),
-                                                                },
-                                                            ),
-                                                        },
-                                                    ),
-                                                },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 277,
-            end: 297,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 277,
-                    end: 279,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 280,
-                            end: 283,
-                        },
-                        lexeme: "_12",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 286,
-                                end: 295,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 293,
-                                                end: 295,
-                                            },
-                                            kind: Unary(
-                                                Unary {
-                                                    op: Min,
-                                                    rhs: Expr {
-                                                        span: Span {
-                                                            start: 294,
-                                                            end: 295,
-                                                        },
-                                                        kind: Lit(
-                                                            Int(
-                                                                1,
-                                                            ),
                                                         ),
                                                     },
-                                                },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
-                },
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 298,
-            end: 321,
-        },
-        kind: Func(
-            Func {
-                fn_token_span: Span {
-                    start: 298,
-                    end: 300,
-                },
-                name: Some(
-                    Ident {
-                        span: Span {
-                            start: 301,
-                            end: 304,
-                        },
-                        lexeme: "_13",
-                    },
-                ),
-                params: [],
-                body: Block {
-                    body: [
-                        Stmt {
-                            span: Span {
-                                start: 307,
-                                end: 319,
-                            },
-                            kind: Return(
-                                Return {
-                                    value: Some(
-                                        Expr {
-                                            span: Span {
-                                                start: 314,
-                                                end: 319,
+                                                ),
                                             },
-                                            kind: Unary(
-                                                Unary {
-                                                    op: Not,
-                                                    rhs: Expr {
-                                                        span: Span {
-                                                            start: 315,
-                                                            end: 319,
-                                                        },
-                                                        kind: Lit(
-                                                            Bool(
-                                                                true,
-                                                            ),
-                                                        ),
-                                                    },
-                                                },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ),
-                        },
-                    ],
-                    last: None,
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
                 },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 277,
+                end: 297,
             },
-        ),
-    },
-]
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 277,
+                        end: 279,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 280,
+                                end: 283,
+                            },
+                            lexeme: "_12",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 286,
+                                    end: 295,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 286,
+                                            end: 292,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 293,
+                                                    end: 295,
+                                                },
+                                                kind: Unary(
+                                                    Unary {
+                                                        op: Min,
+                                                        rhs: Expr {
+                                                            span: Span {
+                                                                start: 294,
+                                                                end: 295,
+                                                            },
+                                                            kind: Lit(
+                                                                Int(
+                                                                    1,
+                                                                ),
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 298,
+                end: 321,
+            },
+            kind: Func(
+                Func {
+                    fn_token_span: Span {
+                        start: 298,
+                        end: 300,
+                    },
+                    name: Some(
+                        Ident {
+                            span: Span {
+                                start: 301,
+                                end: 304,
+                            },
+                            lexeme: "_13",
+                        },
+                    ),
+                    params: [],
+                    body: Block {
+                        body: [
+                            Stmt {
+                                span: Span {
+                                    start: 307,
+                                    end: 319,
+                                },
+                                kind: Return(
+                                    Return {
+                                        return_token_span: Span {
+                                            start: 307,
+                                            end: 313,
+                                        },
+                                        value: Some(
+                                            Expr {
+                                                span: Span {
+                                                    start: 314,
+                                                    end: 319,
+                                                },
+                                                kind: Unary(
+                                                    Unary {
+                                                        op: Not,
+                                                        rhs: Expr {
+                                                            span: Span {
+                                                                start: 315,
+                                                                end: 319,
+                                                            },
+                                                            kind: Lit(
+                                                                Bool(
+                                                                    true,
+                                                                ),
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ],
+                        last: None,
+                    },
+                },
+            ),
+        },
+    ],
+    last: None,
+}

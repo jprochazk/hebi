@@ -3,8 +3,8 @@
 pub mod builder;
 
 use alloc::format;
+use alloc::sync::Arc;
 use core::cmp::max;
-use core::fmt::{Debug, Display};
 use core::mem::replace;
 
 use beef::lean::Cow;
@@ -17,15 +17,15 @@ use crate::ast::{
   Binary, BinaryOp, Block, Call, Expr, Func, GetField, GetIndex, GetVar, Ident, If, Key, Let, Lit,
   Logical, LogicalOp, Loop, Module, Name, Return, SetField, SetIndex, SetVar, Stmt, Unary, UnaryOp,
 };
-use crate::ds::fx;
-use crate::ds::map::BumpHashMap;
-use crate::error::{AllocError, StdError};
-use crate::gc::{Gc, Ref};
+use crate::ds::map::{BumpOrdHashMap, GcOrdHashMap};
+use crate::ds::HasAlloc;
+use crate::error::{AllocError, Error, Result};
+use crate::gc::{Alloc, Gc, Ref};
 use crate::lex::Span;
 use crate::obj::func::{Code, FunctionProto, Params};
 use crate::obj::list::ListProto;
 use crate::obj::map::MapProto;
-use crate::obj::module::ModuleProto;
+use crate::obj::module::{ModuleId, ModuleProto, ModuleRegistry};
 use crate::obj::string::Str;
 use crate::obj::tuple::TupleProto;
 use crate::op::asm::*;
@@ -33,48 +33,17 @@ use crate::op::emit::builder::BasicLabel;
 use crate::op::{Count, Smi};
 use crate::{alloc, Arena};
 
-pub type Result<T> = core::result::Result<T, EmitError>;
-
-#[derive(Debug)]
-pub struct EmitError {
-  pub message: Cow<'static, str>,
-}
-
-impl EmitError {
-  pub fn new(message: impl Into<Cow<'static, str>>) -> EmitError {
-    EmitError {
-      message: message.into(),
-    }
-  }
-}
-
-impl From<AllocError> for EmitError {
-  fn from(e: AllocError) -> Self {
-    Self::new(format!("{}", e))
-  }
-}
-
-impl Display for EmitError {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    write!(f, "error: {}", self.message)
-  }
-}
-
-impl StdError for EmitError {}
-
 // TODO: investigate why `emit__assign_field` uses 5 registers
 // the disassembly only shows `r0, r1, r2, r3`. where's `r4`?
 
 struct Compiler<'arena, 'gc, 'src> {
   arena: &'arena Arena,
   gc: &'gc Gc,
-  ast: Module<'arena, 'src>,
+  name: &'src str,
 
   src: Ref<Str>,
-  /// This is a map of top-level variables, a.k.a. global variables.
-  /// In hebi they're referred to as "module" variables, because
-  /// they're instantiated per module.
-  vars: BumpHashMap<'arena, Cow<'src, str>, Mvar<u16>>,
+  module_id: ModuleId,
+  vars: BumpOrdHashMap<'arena, Cow<'src, str>, Mvar<u16>>,
 
   funcs: Vec<'arena, Function<'arena, 'src>>,
 }
@@ -222,6 +191,21 @@ macro_rules! fs {
 }
 
 impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
+  fn error(&self, message: impl Into<Arc<str>>, span: impl Into<Span>) -> Error {
+    Error::emit(self.name, self.src.as_str(), message.into(), span)
+  }
+
+  fn alloc_error(&self) -> impl FnOnce(AllocError) -> Error + '_ {
+    move |message| {
+      Error::emit(
+        self.name,
+        self.src.as_str(),
+        message.to_string(),
+        Span::empty(),
+      )
+    }
+  }
+
   #[inline]
   fn scope<F, T>(&mut self, f: F) -> Result<T>
   where
@@ -247,13 +231,15 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
 
   #[inline]
   fn reg(&mut self) -> Result<Reg<u8>> {
-    let func = fmut!(self);
-    if func.registers.current == u8::MAX {
-      return Err(EmitError::new(format!(
-        "function `{}` uses too many registers, maximum is {}",
-        func.name,
-        u8::MAX
-      )));
+    if fs!(self).registers.current == u8::MAX {
+      return Err(self.error(
+        format!(
+          "function `{}` uses too many registers, maximum is {}",
+          fs!(self).name,
+          u8::MAX
+        ),
+        Span::empty(),
+      ));
     }
     Ok(self._reg())
   }
@@ -303,10 +289,10 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       // value is in `reg`, we have to add the var to module.vars
       let last = self.vars.len();
       if last > u16::MAX as usize {
-        return Err(EmitError::new(format!(
-          "too many global variables, maximum is {}",
-          u16::MAX
-        )));
+        return Err(self.error(
+          format!("too many global variables, maximum is {}", u16::MAX),
+          span,
+        ));
       }
       let last = last as u16;
       // if the var already exists, reuse it (as the previous one was shadowed)
@@ -316,7 +302,13 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       // is the same as:
       //   let a = 0
       //   a = 0
-      let idx = *self.vars.entry(name).or_insert_with(|| Mvar(last));
+      let idx = match self.vars.get(&name).copied() {
+        Some(idx) => idx,
+        None => {
+          self.vars.insert(name, Mvar(last));
+          Mvar(last)
+        }
+      };
       self.emit(store_mvar(reg, idx), span)?;
       self.free(reg);
     } else {
@@ -391,10 +383,10 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
       }
 
       if u!(c, idx).len() > u16::MAX as usize {
-        return Err(EmitError::new(format!(
-          "too many captures in function `{}`",
-          f!(c, idx).name
-        )));
+        return Err(c.error(
+          format!("too many captures in function `{}`", f!(c, idx).name),
+          Span::empty(),
+        ));
       }
 
       let dst = Capture(u!(c, idx).len() as u16);
@@ -419,32 +411,42 @@ impl<'arena, 'gc, 'src> Compiler<'arena, 'gc, 'src> {
 pub fn module<'arena, 'gc, 'src>(
   arena: &'arena Arena,
   gc: &'gc Gc,
+  registry: Ref<ModuleRegistry>,
   name: &'src str,
   ast: Module<'arena, 'src>,
 ) -> Result<Ref<ModuleProto>> {
-  let src = Str::try_new_in(gc, ast.src)?;
-  let mut module = Compiler {
+  let module_id = registry.next_id();
+  let src =
+    Str::new(gc, ast.src).map_err(|e| Error::emit(name, ast.src, e.to_string(), Span::empty()))?;
+  let mut c = Compiler {
     arena,
     gc,
-    ast,
+    name,
 
     src,
-    vars: BumpHashMap::with_hasher_in(fx(), arena),
+    module_id,
+    vars: BumpOrdHashMap::new_in(arena),
     funcs: Vec::new_in(arena),
   };
-  let root = top_level(&mut module, arena, gc)?;
-  Ok(ModuleProto::try_new_in(
-    gc,
-    name,
-    root,
-    module.vars.len() as u16,
-  )?)
+  let body = &ast.body;
+  let root = top_level(&mut c, arena, gc, body)?;
+
+  let mut vars = GcOrdHashMap::new_in(Alloc::new(c.gc));
+  vars.try_reserve(c.vars.len()).map_err(c.alloc_error())?;
+  for (k, _) in c.vars.iter() {
+    let k = Str::intern(c.gc, k).map_err(c.alloc_error())?;
+    vars.insert(k, ());
+  }
+  let vars = vars.to_no_alloc();
+
+  ModuleProto::new(gc, module_id, name, root, vars).map_err(c.alloc_error())
 }
 
 fn top_level<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   arena: &'arena Arena,
   gc: &'gc Gc,
+  body: &Block<'arena, 'src>,
 ) -> Result<Ref<FunctionProto>> {
   c.funcs.push(Function {
     loop_: None,
@@ -459,18 +461,14 @@ fn top_level<'arena, 'gc, 'src>(
     captures: Vec::new_in(arena),
   });
 
-  c.scope(|c| {
-    for node in c.ast.body {
-      stmt(c, node)?;
-    }
-    Ok(())
-  })?;
+  let val = c.reg()?;
+  block(c, Some(val), body)?;
 
   c.emit(finalize_module(), Span::empty())?;
-  c.free(Reg(0));
-  let dst = c.reg()?;
-  c.emit(load_nil(dst), Span::empty())?;
-  c.emit(ret(dst), Span::empty())?;
+  if body.last.is_none() {
+    c.emit(load_nil(val), Span::empty())?;
+  }
+  c.emit(ret(val), Span::empty())?;
 
   let func = c.funcs.pop().unwrap();
 
@@ -481,16 +479,11 @@ fn top_level<'arena, 'gc, 'src>(
     pool: &pool,
     spans: &spans,
     label_map,
-    stack_space: func.registers.total,
+    frame_size: func.registers.total,
     captures: &func.captures,
   };
 
-  Ok(FunctionProto::try_new_in(
-    gc,
-    &func.name,
-    Params::empty(),
-    code,
-  )?)
+  FunctionProto::new(gc, c.module_id, &func.name, Params::empty(), code).map_err(c.alloc_error())
 }
 
 fn stmt<'arena, 'gc, 'src>(
@@ -505,7 +498,7 @@ fn stmt<'arena, 'gc, 'src>(
     Loop(inner) => loop_(c, inner),
     Break => break_(c, span),
     Continue => continue_(c, span),
-    Return(inner) => return_(c, inner, span),
+    Return(inner) => return_(c, inner, inner.return_token_span, span),
     Func(inner) => func_stmt(c, inner),
     Expr(inner) => {
       let _ = expr(c, None, inner)?;
@@ -525,7 +518,7 @@ fn func_stmt<'arena, 'gc, 'src>(
     None => c.reg()?,
   };
   let func = c.pool().func(func)?;
-  c.emit(load_const(dst, func), name.span)?;
+  c.emit(make_fn(dst, func), name.span)?;
   c.declare_var(name.lexeme, dst, name.span)
 }
 
@@ -577,7 +570,7 @@ macro_rules! build_loop {
     let lend = MultiLabel::new($c.builder(), concat!($name, "::end"));
 
     lstart.bind($c.builder());
-    (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
+    (|$c| Ok::<(), Error>($start))(&mut *$c)?;
 
     let LoopStateBasic {
       continue_to: lstart,
@@ -602,7 +595,7 @@ macro_rules! build_loop {
     let lend = MultiLabel::new($c.builder(), concat!($name, "::end"));
 
     lstart.bind($c.builder());
-    (|$c| Ok::<(), EmitError>($start))(&mut *$c)?;
+    (|$c| Ok::<(), Error>($start))(&mut *$c)?;
 
     let LoopStateLatched {
       continue_to: llatch,
@@ -610,7 +603,7 @@ macro_rules! build_loop {
     } = loop_body($c, LoopState::latched(llatch, lend), (|$c| Ok($body)))?.to_latched();
 
     llatch.bind($c.builder())?;
-    (|$c| Ok::<(), EmitError>($latch))(&mut *$c)?;
+    (|$c| Ok::<(), Error>($latch))(&mut *$c)?;
 
     lstart.emit($c.builder(), jump_loop, Span::empty())?;
     lend.bind($c.builder())
@@ -632,7 +625,7 @@ fn loop_<'arena, 'gc, 'src>(
 fn break_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span) -> Result<()> {
   let f = fmut!(c);
   let Some(loop_) = f.loop_.as_mut() else {
-    return Err(EmitError::new("cannot use `break` outside of loop"));
+    return Err(c.error("cannot use `break` outside of loop", span));
   };
   match loop_ {
     LoopState::Basic(state) => state.break_to.emit(&mut f.builder, jump, span),
@@ -643,7 +636,7 @@ fn break_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span) ->
 fn continue_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span) -> Result<()> {
   let f = fmut!(c);
   let Some(loop_) = f.loop_.as_mut() else {
-    return Err(EmitError::new("cannot use `continue` outside of loop"));
+    return Err(c.error("cannot use `continue` outside of loop", span));
   };
   match loop_ {
     LoopState::Basic(state) => state.continue_to.emit(&mut f.builder, jump_loop, span),
@@ -654,10 +647,11 @@ fn continue_<'arena, 'gc, 'src>(c: &mut Compiler<'arena, 'gc, 'src>, span: Span)
 fn return_<'arena, 'gc, 'src>(
   c: &mut Compiler<'arena, 'gc, 'src>,
   node: &Return<'arena, 'src>,
+  return_token_span: Span,
   span: Span,
 ) -> Result<()> {
   if c.is_top_level() {
-    return Err(EmitError::new("cannot use `return` outside of function"));
+    return Err(c.error("cannot use `return` outside of function", return_token_span));
   }
 
   let tmp = c.reg()?;
@@ -736,16 +730,11 @@ fn function<'arena, 'gc, 'src>(
     pool: &pool,
     spans: &spans,
     label_map,
-    stack_space: func.registers.total,
+    frame_size: func.registers.total,
     captures: &func.captures,
   };
 
-  Ok(FunctionProto::try_new_in(
-    c.gc,
-    &func.name,
-    Params::empty(),
-    code,
-  )?)
+  FunctionProto::new(c.gc, c.module_id, &func.name, func.params, code).map_err(c.alloc_error())
 }
 
 fn expr<'arena, 'gc, 'src>(
@@ -786,7 +775,7 @@ fn func_expr<'arena, 'gc, 'src>(
     };
     let func = function(c, f.params, &name, &f.body, f.name.is_none())?;
     let func = c.pool().func(func)?;
-    c.emit(load_const(dst, func), name.span)?;
+    c.emit(make_fn(dst, func), name.span)?;
   }
 
   Ok(())
@@ -893,11 +882,11 @@ fn block<'arena, 'gc, 'src>(
       stmt(c, node)?;
     }
 
-    if let Some(last) = &node.last {
-      match dst {
-        Some(dst) => assign_to(c, dst, last)?,
-        None => expr(c, dst, last).map(|_| ())?,
-      };
+    match (dst, &node.last) {
+      (Some(dst), Some(last)) => assign_to(c, dst, last)?,
+      (Some(dst), None) => c.emit(load_nil(dst), Span::empty())?,
+      (None, Some(last)) => expr(c, dst, last).map(|_| ())?,
+      (None, None) => {}
     }
 
     Ok(())
@@ -976,7 +965,7 @@ fn get_var<'arena, 'gc, 'src>(
     }
     Global => {
       if let Some(dst) = dst {
-        let name = Str::try_intern_in(c.gc, node.name.lexeme)?;
+        let name = Str::intern(c.gc, node.name.lexeme).map_err(c.alloc_error())?;
         let name = c.pool().str(name)?;
         c.emit(load_global(dst, name), span)?;
       }
@@ -995,27 +984,28 @@ fn set_var<'arena, 'gc, 'src>(
   // TODO: test all cases here
   match c.resolve_var(node.name.lexeme)? {
     Self_ => {
-      let msg = if fmut!(c).params.has_self {
-        Cow::borrowed("cannot assign to `self`")
-      } else {
-        Cow::owned(format!("cannot assign to function `{}`", node.name.lexeme))
-      };
-      return Err(EmitError::new(msg));
+      return Err(match fmut!(c).params.has_self {
+        true => c.error("cannot assign to `self`", node.name.span),
+        false => c.error(
+          format!("cannot assign to function `{}`", node.name.lexeme),
+          node.name.span,
+        ),
+      });
     }
     Param(_) => {
-      return Err(EmitError::new(format!(
-        "cannot assign to parameter `{}`",
-        node.name.lexeme
-      )));
+      return Err(c.error(
+        format!("cannot assign to parameter `{}`", node.name.lexeme),
+        span,
+      ));
     }
     Local(reg) => {
       assign_to(c, reg, &node.value)?;
     }
     Capture(_) => {
-      return Err(EmitError::new(format!(
-        "cannot assign to non-local variable `{}`",
-        node.name.lexeme
-      )))
+      return Err(c.error(
+        format!("cannot assign to non-local variable `{}`", node.name.lexeme),
+        span,
+      ))
     }
     Module(idx) => {
       let dst = c.reg()?;
@@ -1024,7 +1014,7 @@ fn set_var<'arena, 'gc, 'src>(
       c.free(dst);
     }
     Global => {
-      let name = Str::try_intern_in(c.gc, node.name.lexeme)?;
+      let name = Str::intern(c.gc, node.name.lexeme).map_err(c.alloc_error())?;
       let name = c.pool().str(name)?;
       let dst = c.reg()?;
       let out = expr(c, Some(dst), &node.value)?.unwrap_or(dst);
@@ -1129,7 +1119,7 @@ fn field_key(c: &mut Compiler, key: &Key, span: Span) -> Result<FieldKey> {
       }
     }
     Ident(key) => {
-      let key = Str::try_intern_in(c.gc, key.lexeme)?;
+      let key = Str::intern(c.gc, key.lexeme).map_err(c.alloc_error())?;
       let key = c.pool().str(key)?;
       if key.is_u8() {
         Ok(FieldKey::StrConst(key.u8()))
@@ -1292,7 +1282,7 @@ fn lit<'arena, 'gc, 'src>(
       false => c.emit(load_false(dst), span)?,
     },
     String(v) => {
-      let v = Str::try_intern_in(c.gc, v)?;
+      let v = Str::intern(c.gc, v).map_err(c.alloc_error())?;
       let v = c.pool().str(v)?;
       c.emit(load_const(dst, v), span)?;
     }
@@ -1307,9 +1297,9 @@ fn lit<'arena, 'gc, 'src>(
       }
       for ((key, value), reg) in fields.iter().zip(regs.iter()) {
         assign_to(c, *reg, value)?;
-        keys.push(Str::try_intern_in(c.gc, key.lexeme)?);
+        keys.push(Str::intern(c.gc, key.lexeme).map_err(c.alloc_error())?);
       }
-      let desc = MapProto::try_new_in(c.gc, regs[0], &keys)?;
+      let desc = MapProto::new(c.gc, regs[0], &keys).map_err(c.alloc_error())?;
       let desc = c.pool().map(desc)?;
       c.emit(make_map(dst, desc), span)?;
       c.free(regs[0]);
@@ -1325,7 +1315,7 @@ fn lit<'arena, 'gc, 'src>(
       for (value, reg) in items.iter().zip(regs.iter()) {
         assign_to(c, *reg, value)?;
       }
-      let desc = ListProto::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = ListProto::new(c.gc, regs[0], regs.len() as u8).map_err(c.alloc_error())?;
       let desc = c.pool().list(desc)?;
       c.emit(make_list(dst, desc), span)?;
       c.free(regs[0]);
@@ -1341,7 +1331,7 @@ fn lit<'arena, 'gc, 'src>(
       for (value, reg) in elems.iter().zip(regs.iter()) {
         assign_to(c, *reg, value)?;
       }
-      let desc = TupleProto::try_new_in(c.gc, regs[0], regs.len() as u8)?;
+      let desc = TupleProto::new(c.gc, regs[0], regs.len() as u8).map_err(c.alloc_error())?;
       let desc = c.pool().tuple(desc)?;
       c.emit(make_tuple(dst, desc), span)?;
       c.free(regs[0]);

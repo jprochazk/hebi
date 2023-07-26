@@ -2,205 +2,201 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-[
-    Stmt {
-        span: Span {
-            start: 17,
-            end: 28,
-        },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 17,
-                    end: 28,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 17,
-                                end: 28,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
+Block {
+    body: [
+        Stmt {
+            span: Span {
+                start: 17,
+                end: 28,
             },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 36,
-            end: 47,
-        },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 36,
-                    end: 47,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 36,
-                                end: 47,
-                            },
-                            lexeme: "not_comment",
-                        },
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 17,
+                        end: 28,
                     },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 58,
-            end: 69,
-        },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 58,
-                    end: 69,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 58,
-                                end: 69,
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 17,
+                                    end: 28,
+                                },
+                                lexeme: "not_comment",
                             },
-                            lexeme: "not_comment",
                         },
-                    },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 80,
-            end: 91,
-        },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 80,
-                    end: 91,
+                    ),
                 },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 80,
-                                end: 91,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 102,
-            end: 113,
+            ),
         },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 102,
-                    end: 113,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 102,
-                                end: 113,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
+        Stmt {
+            span: Span {
+                start: 36,
+                end: 47,
             },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 130,
-            end: 141,
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 36,
+                        end: 47,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 36,
+                                    end: 47,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
         },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 130,
-                    end: 141,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 130,
-                                end: 141,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
+        Stmt {
+            span: Span {
+                start: 58,
+                end: 69,
             },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 160,
-            end: 171,
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 58,
+                        end: 69,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 58,
+                                    end: 69,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
         },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 160,
-                    end: 171,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 160,
-                                end: 171,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
+        Stmt {
+            span: Span {
+                start: 80,
+                end: 91,
             },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 208,
-            end: 219,
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 80,
+                        end: 91,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 80,
+                                    end: 91,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
         },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 208,
-                    end: 219,
-                },
-                kind: GetVar(
-                    GetVar {
-                        name: Ident {
-                            span: Span {
-                                start: 208,
-                                end: 219,
-                            },
-                            lexeme: "not_comment",
-                        },
-                    },
-                ),
+        Stmt {
+            span: Span {
+                start: 102,
+                end: 113,
             },
-        ),
-    },
-]
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 102,
+                        end: 113,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 102,
+                                    end: 113,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 130,
+                end: 141,
+            },
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 130,
+                        end: 141,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 130,
+                                    end: 141,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 160,
+                end: 171,
+            },
+            kind: Expr(
+                Expr {
+                    span: Span {
+                        start: 160,
+                        end: 171,
+                    },
+                    kind: GetVar(
+                        GetVar {
+                            name: Ident {
+                                span: Span {
+                                    start: 160,
+                                    end: 171,
+                                },
+                                lexeme: "not_comment",
+                            },
+                        },
+                    ),
+                },
+            ),
+        },
+    ],
+    last: Some(
+        Expr {
+            span: Span {
+                start: 208,
+                end: 219,
+            },
+            kind: GetVar(
+                GetVar {
+                    name: Ident {
+                        span: Span {
+                            start: 208,
+                            end: 219,
+                        },
+                        lexeme: "not_comment",
+                    },
+                },
+            ),
+        },
+    ),
+}

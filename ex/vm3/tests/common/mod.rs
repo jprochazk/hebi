@@ -22,7 +22,7 @@ pub fn snapshot<F>(
   build_snapshot: F,
 ) -> Result<(), Box<dyn Error>>
 where
-  F: Fn(&str) -> String,
+  F: Fn(Input) -> Result<String, Box<dyn Error>>,
 {
   let input_dir = relative_to_manifest_dir(input_dir);
   let snapshot_dir = relative_to_manifest_dir(snapshot_dir);
@@ -41,14 +41,19 @@ where
           path.display()
         )
       })?;
-    let contents = read_to_string(&path)?;
+    let contents = &read_to_string(&path)?;
     eprintln!("building snapshot for {module_name}/{name}");
-    let snapshot = build_snapshot(&contents);
+    let snapshot = build_snapshot(Input { name, contents })?;
 
     assert_snapshot(module_name, name, &snapshot)?;
   }
 
   Ok(())
+}
+
+pub struct Input<'a> {
+  pub name: &'a str,
+  pub contents: &'a str,
 }
 
 #[cfg(not(miri))]

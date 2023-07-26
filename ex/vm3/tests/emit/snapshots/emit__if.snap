@@ -2,28 +2,29 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 1, length: 17 (68 bytes))
+function `__main__` (registers: 2, length: 18 (72 bytes))
 .code
-  lbt   r0              ; if true { 0 }
-  jf    r0, if::next#1
-  lsmi  0, r0
+  lbt   r1              ; if true { 0 }
+  jf    r1, if::next#1
+  lsmi  0, r1
 <if::next#1>:
 <if::end#0>:
-  lbt   r0              ; if true { 0 } else { 1 }
-  jf    r0, if::next#3
-  lsmi  0, r0
+  lbt   r1              ; if true { 0 } else { 1 }
+  jf    r1, if::next#3
+  lsmi  0, r1
   jmp   if::end#2
 <if::next#3>:
-  lsmi  1, r0
+  lsmi  1, r1
 <if::end#2>:
-  lbt   r0              ; let v = if true { 0 } else { 1 }
-  jf    r0, if::next#5
-  lsmi  0, r0
+  lbt   r1              ; let v = if true { 0 } else { 1 }
+  jf    r1, if::next#5
+  lsmi  0, r1
   jmp   if::end#4
 <if::next#5>:
-  lsmi  1, r0
+  lsmi  1, r1
 <if::end#4>:
-  smv   r0, m0
+  smv   r1, m0
+  lnil  r0
   fin   
   lnil  r0
   ret   r0

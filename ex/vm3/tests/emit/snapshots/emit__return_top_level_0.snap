@@ -2,4 +2,7 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-error: cannot use `return` outside of function
+error in `return_top_level_0`: cannot use `return` outside of function
+1 |  return
+  |  ^^^^^^
+

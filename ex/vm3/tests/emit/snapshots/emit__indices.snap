@@ -2,26 +2,26 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-function `__main__` (registers: 5, length: 18 (72 bytes))
+function `__main__` (registers: 6, length: 18 (72 bytes))
 .const
   0: "a"
 .code
-  lnil  r0              ; let v
-  lnil  r1              ; let o
-  lc    [0], r4         ; o["a"]
-  li    r1, r4, r2
-  lsmi  0, r4           ; o[0]
-  li    r1, r4, r2
-  lc    [0], r3         ; v = o["a"]
-  li    r1, r3, r0
-  lsmi  0, r3           ; v = o[0]
-  li    r1, r3, r0
-  lc    [0], r3         ; v = o["a"] + o[0]
-  li    r1, r3, r0
-  lsmi  0, r4
-  li    r1, r4, r2
-  add   r0, r2, r0
-  fin   
+  lnil  r1              ; let v
+  lnil  r2              ; let o
+  lc    [0], r5         ; o["a"]
+  li    r2, r5, r3
+  lsmi  0, r5           ; o[0]
+  li    r2, r5, r3
+  lc    [0], r4         ; v = o["a"]
+  li    r2, r4, r1
+  lsmi  0, r4           ; v = o[0]
+  li    r2, r4, r1
+  lc    [0], r4         ; v = o["a"] + o[0]
+  li    r2, r4, r1
+  lsmi  0, r5
+  li    r2, r5, r3
+  add   r1, r3, r1
   lnil  r0
+  fin   
   ret   r0
 

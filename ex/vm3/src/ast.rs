@@ -6,7 +6,7 @@ use crate::lex::*;
 
 pub struct Module<'arena, 'src> {
   pub src: &'src str,
-  pub body: &'arena [Stmt<'arena, 'src>],
+  pub body: Block<'arena, 'src>,
 }
 
 impl<'arena, 'src> Debug for Module<'arena, 'src> {
@@ -130,6 +130,7 @@ pub struct Loop<'arena, 'src> {
 
 #[derive(Debug)]
 pub struct Return<'arena, 'src> {
+  pub return_token_span: Span,
   pub value: Option<Expr<'arena, 'src>>,
 }
 

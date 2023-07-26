@@ -1830,6 +1830,7 @@ dependencies = [
  "allocator-api2",
  "beef",
  "bumpalo",
+ "criterion",
  "hashbrown 0.14.0",
  "indoc",
  "insta",

@@ -5,6 +5,7 @@ pub type BumpHashMap<'arena, K, V> = HashMap<K, V, &'arena Arena>;
 pub type GcHashMap<'gc, K, V> = HashMap<K, V, Alloc<'gc>>;
 pub type GcHashMapN<K, V> = HashMap<K, V, NoAlloc>;
 pub type OrdHashMap<K, V, A> = ord::OrdHashMap<K, V, A>;
+pub type BumpOrdHashMap<'arena, K, V> = ord::OrdHashMap<K, V, &'arena Arena>;
 pub type GcOrdHashMap<'gc, K, V> = ord::OrdHashMap<K, V, Alloc<'gc>>;
 pub type GcOrdHashMapN<K, V> = ord::OrdHashMap<K, V, NoAlloc>;
 

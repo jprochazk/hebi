@@ -1,5 +1,6 @@
 use core::fmt::{Debug, Display};
 
+use super::Value;
 use crate::gc::Ref;
 use crate::obj::func::FunctionProto;
 use crate::obj::list::ListProto;
@@ -18,6 +19,38 @@ pub enum Constant {
   List(Ref<ListProto>),
   Tuple(Ref<TupleProto>),
   Func(Ref<FunctionProto>),
+}
+
+impl Constant {
+  #[inline]
+  pub fn value(&self) -> Value {
+    match *self {
+      Constant::Float(v) => Value::new(v.value()),
+      Constant::Int(v) => Value::new(v),
+      Constant::Str(v) => Value::new(v),
+      Constant::Offset(_)
+      | Constant::Table(_)
+      | Constant::List(_)
+      | Constant::Tuple(_)
+      | Constant::Func(_) => unreachable!(),
+    }
+  }
+
+  #[inline]
+  pub fn offset(self) -> Offset<usize> {
+    match self {
+      Constant::Offset(offset) => Offset(offset.0 as usize),
+      _ => unreachable!(),
+    }
+  }
+
+  #[inline]
+  pub fn function(self) -> Ref<FunctionProto> {
+    match self {
+      Constant::Func(proto) => proto,
+      _ => unreachable!(),
+    }
+  }
 }
 
 impl From<NFloat> for Constant {

@@ -2,290 +2,286 @@
 source: ex/vm3/tests/./common/mod.rs
 expression: snapshot
 ---
-[
-    Stmt {
-        span: Span {
-            start: 58,
-            end: 68,
-        },
-        kind: Let(
-            Let {
-                name: Ident {
-                    span: Span {
-                        start: 62,
-                        end: 63,
-                    },
-                    lexeme: "a",
-                },
-                value: Some(
-                    Expr {
+Block {
+    body: [
+        Stmt {
+            span: Span {
+                start: 58,
+                end: 68,
+            },
+            kind: Let(
+                Let {
+                    name: Ident {
                         span: Span {
-                            start: 66,
-                            end: 68,
+                            start: 62,
+                            end: 63,
                         },
-                        kind: Lit(
-                            Int(
-                                10,
+                        lexeme: "a",
+                    },
+                    value: Some(
+                        Expr {
+                            span: Span {
+                                start: 66,
+                                end: 68,
+                            },
+                            kind: Lit(
+                                Int(
+                                    10,
+                                ),
                             ),
-                        ),
-                    },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 69,
-            end: 79,
-        },
-        kind: Let(
-            Let {
-                name: Ident {
-                    span: Span {
-                        start: 73,
-                        end: 74,
-                    },
-                    lexeme: "b",
-                },
-                value: Some(
-                    Expr {
-                        span: Span {
-                            start: 77,
-                            end: 79,
                         },
-                        kind: Lit(
-                            Int(
-                                20,
+                    ),
+                },
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 69,
+                end: 79,
+            },
+            kind: Let(
+                Let {
+                    name: Ident {
+                        span: Span {
+                            start: 73,
+                            end: 74,
+                        },
+                        lexeme: "b",
+                    },
+                    value: Some(
+                        Expr {
+                            span: Span {
+                                start: 77,
+                                end: 79,
+                            },
+                            kind: Lit(
+                                Int(
+                                    20,
+                                ),
                             ),
-                        ),
-                    },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 80,
-            end: 89,
-        },
-        kind: Let(
-            Let {
-                name: Ident {
-                    span: Span {
-                        start: 84,
-                        end: 85,
-                    },
-                    lexeme: "c",
-                },
-                value: Some(
-                    Expr {
-                        span: Span {
-                            start: 88,
-                            end: 89,
                         },
-                        kind: GetVar(
-                            GetVar {
-                                name: Ident {
-                                    span: Span {
-                                        start: 88,
-                                        end: 89,
-                                    },
-                                    lexeme: "b",
-                                },
-                            },
-                        ),
-                    },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 90,
-            end: 99,
-        },
-        kind: Let(
-            Let {
-                name: Ident {
-                    span: Span {
-                        start: 94,
-                        end: 95,
-                    },
-                    lexeme: "a",
+                    ),
                 },
-                value: Some(
-                    Expr {
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 80,
+                end: 89,
+            },
+            kind: Let(
+                Let {
+                    name: Ident {
                         span: Span {
-                            start: 98,
-                            end: 99,
+                            start: 84,
+                            end: 85,
                         },
-                        kind: GetVar(
-                            GetVar {
-                                name: Ident {
-                                    span: Span {
-                                        start: 98,
-                                        end: 99,
-                                    },
-                                    lexeme: "c",
-                                },
-                            },
-                        ),
+                        lexeme: "c",
                     },
-                ),
-            },
-        ),
-    },
-    Stmt {
-        span: Span {
-            start: 101,
-            end: 166,
-        },
-        kind: Expr(
-            Expr {
-                span: Span {
-                    start: 101,
-                    end: 166,
+                    value: Some(
+                        Expr {
+                            span: Span {
+                                start: 88,
+                                end: 89,
+                            },
+                            kind: GetVar(
+                                GetVar {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 88,
+                                            end: 89,
+                                        },
+                                        lexeme: "b",
+                                    },
+                                },
+                            ),
+                        },
+                    ),
                 },
-                kind: Block(
-                    Block {
-                        body: [
-                            Stmt {
-                                span: Span {
-                                    start: 117,
-                                    end: 127,
-                                },
-                                kind: Let(
-                                    Let {
-                                        name: Ident {
-                                            span: Span {
-                                                start: 121,
-                                                end: 122,
-                                            },
-                                            lexeme: "a",
-                                        },
-                                        value: Some(
-                                            Expr {
-                                                span: Span {
-                                                    start: 125,
-                                                    end: 127,
-                                                },
-                                                kind: Lit(
-                                                    Int(
-                                                        10,
-                                                    ),
-                                                ),
-                                            },
-                                        ),
-                                    },
-                                ),
-                            },
-                            Stmt {
-                                span: Span {
-                                    start: 130,
-                                    end: 140,
-                                },
-                                kind: Let(
-                                    Let {
-                                        name: Ident {
-                                            span: Span {
-                                                start: 134,
-                                                end: 135,
-                                            },
-                                            lexeme: "b",
-                                        },
-                                        value: Some(
-                                            Expr {
-                                                span: Span {
-                                                    start: 138,
-                                                    end: 140,
-                                                },
-                                                kind: Lit(
-                                                    Int(
-                                                        20,
-                                                    ),
-                                                ),
-                                            },
-                                        ),
-                                    },
-                                ),
-                            },
-                            Stmt {
-                                span: Span {
-                                    start: 143,
-                                    end: 152,
-                                },
-                                kind: Let(
-                                    Let {
-                                        name: Ident {
-                                            span: Span {
-                                                start: 147,
-                                                end: 148,
-                                            },
-                                            lexeme: "c",
-                                        },
-                                        value: Some(
-                                            Expr {
-                                                span: Span {
-                                                    start: 151,
-                                                    end: 152,
-                                                },
-                                                kind: GetVar(
-                                                    GetVar {
-                                                        name: Ident {
-                                                            span: Span {
-                                                                start: 151,
-                                                                end: 152,
-                                                            },
-                                                            lexeme: "b",
-                                                        },
-                                                    },
-                                                ),
-                                            },
-                                        ),
-                                    },
-                                ),
-                            },
-                            Stmt {
-                                span: Span {
-                                    start: 155,
-                                    end: 164,
-                                },
-                                kind: Let(
-                                    Let {
-                                        name: Ident {
-                                            span: Span {
-                                                start: 159,
-                                                end: 160,
-                                            },
-                                            lexeme: "a",
-                                        },
-                                        value: Some(
-                                            Expr {
-                                                span: Span {
-                                                    start: 163,
-                                                    end: 164,
-                                                },
-                                                kind: GetVar(
-                                                    GetVar {
-                                                        name: Ident {
-                                                            span: Span {
-                                                                start: 163,
-                                                                end: 164,
-                                                            },
-                                                            lexeme: "c",
-                                                        },
-                                                    },
-                                                ),
-                                            },
-                                        ),
-                                    },
-                                ),
-                            },
-                        ],
-                        last: None,
-                    },
-                ),
+            ),
+        },
+        Stmt {
+            span: Span {
+                start: 90,
+                end: 99,
             },
-        ),
-    },
-]
+            kind: Let(
+                Let {
+                    name: Ident {
+                        span: Span {
+                            start: 94,
+                            end: 95,
+                        },
+                        lexeme: "a",
+                    },
+                    value: Some(
+                        Expr {
+                            span: Span {
+                                start: 98,
+                                end: 99,
+                            },
+                            kind: GetVar(
+                                GetVar {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 98,
+                                            end: 99,
+                                        },
+                                        lexeme: "c",
+                                    },
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        },
+    ],
+    last: Some(
+        Expr {
+            span: Span {
+                start: 101,
+                end: 166,
+            },
+            kind: Block(
+                Block {
+                    body: [
+                        Stmt {
+                            span: Span {
+                                start: 117,
+                                end: 127,
+                            },
+                            kind: Let(
+                                Let {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 121,
+                                            end: 122,
+                                        },
+                                        lexeme: "a",
+                                    },
+                                    value: Some(
+                                        Expr {
+                                            span: Span {
+                                                start: 125,
+                                                end: 127,
+                                            },
+                                            kind: Lit(
+                                                Int(
+                                                    10,
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                        Stmt {
+                            span: Span {
+                                start: 130,
+                                end: 140,
+                            },
+                            kind: Let(
+                                Let {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 134,
+                                            end: 135,
+                                        },
+                                        lexeme: "b",
+                                    },
+                                    value: Some(
+                                        Expr {
+                                            span: Span {
+                                                start: 138,
+                                                end: 140,
+                                            },
+                                            kind: Lit(
+                                                Int(
+                                                    20,
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                        Stmt {
+                            span: Span {
+                                start: 143,
+                                end: 152,
+                            },
+                            kind: Let(
+                                Let {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 147,
+                                            end: 148,
+                                        },
+                                        lexeme: "c",
+                                    },
+                                    value: Some(
+                                        Expr {
+                                            span: Span {
+                                                start: 151,
+                                                end: 152,
+                                            },
+                                            kind: GetVar(
+                                                GetVar {
+                                                    name: Ident {
+                                                        span: Span {
+                                                            start: 151,
+                                                            end: 152,
+                                                        },
+                                                        lexeme: "b",
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                        Stmt {
+                            span: Span {
+                                start: 155,
+                                end: 164,
+                            },
+                            kind: Let(
+                                Let {
+                                    name: Ident {
+                                        span: Span {
+                                            start: 159,
+                                            end: 160,
+                                        },
+                                        lexeme: "a",
+                                    },
+                                    value: Some(
+                                        Expr {
+                                            span: Span {
+                                                start: 163,
+                                                end: 164,
+                                            },
+                                            kind: GetVar(
+                                                GetVar {
+                                                    name: Ident {
+                                                        span: Span {
+                                                            start: 163,
+                                                            end: 164,
+                                                        },
+                                                        lexeme: "c",
+                                                    },
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ],
+                    last: None,
+                },
+            ),
+        },
+    ),
+}

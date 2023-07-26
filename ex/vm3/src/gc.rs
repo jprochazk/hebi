@@ -1,7 +1,7 @@
 #![allow(clippy::needless_lifetimes)]
 
 use core::alloc::Layout;
-use core::any::type_name;
+use core::any::{type_name, TypeId};
 use core::borrow::Borrow;
 use core::cell::{Cell, UnsafeCell};
 use core::cmp::max;
@@ -11,7 +11,7 @@ use core::marker::PhantomData;
 use core::mem::transmute;
 use core::ops::Deref;
 use core::ptr::{addr_of, addr_of_mut, copy_nonoverlapping, NonNull};
-use core::{mem, ptr, slice, str};
+use core::{ptr, slice, str};
 
 use allocator_api2::alloc::Allocator;
 use bumpalo::{vec, Bump};
@@ -92,6 +92,7 @@ impl Gc {
       let ptr = self.heap.try_alloc(GcBox {
         next: self.drop_chain.get(),
         info: vtable::<T>(),
+        ty: TypeId::of::<T>(),
         data: obj,
       })?;
       let ptr = NonNull::from(ptr);
@@ -101,6 +102,7 @@ impl Gc {
       NonNull::from(self.heap.try_alloc(GcBox {
         next: None,
         info: vtable::<T>(),
+        ty: TypeId::of::<T>(),
         data: obj,
       })?)
     };
@@ -143,12 +145,12 @@ impl Gc {
   /// Allocate a slice on the GC heap.
   ///
   /// The contents of the slice will _not_ be dropped.
-  pub fn try_alloc_slice<'gc, T>(&'gc self, src: &[T]) -> Result<&'gc [T], AllocError> {
+  pub fn try_alloc_slice<'gc, T>(&'gc self, src: &[T]) -> Result<&'gc mut [T], AllocError> {
     let dst = self.heap.try_alloc_layout(Layout::for_value(src))?;
     let dst = dst.cast::<T>();
     let dst = unsafe {
       copy_nonoverlapping(src.as_ptr(), dst.as_ptr(), src.len());
-      slice::from_raw_parts(dst.as_ptr(), src.len())
+      slice::from_raw_parts_mut(dst.as_ptr(), src.len())
     };
     Ok(dst)
   }
@@ -202,7 +204,7 @@ impl Any {
   /// Checks if `self` is a reference to a `T`.
   #[inline(always)]
   pub fn is<T: Object + 'static>(&self) -> bool {
-    ptr::eq(vtable::<T>().erase(), self.vtable())
+    TypeId::of::<T>() == self.ty()
   }
 
   /// Converts `self` into a reference to type `T`.
@@ -256,6 +258,11 @@ impl Any {
   #[inline(always)]
   fn vtable(&self) -> &'static VTable<()> {
     unsafe { ptr::addr_of!((*self.ptr.as_ptr()).info).read() }
+  }
+
+  #[inline(always)]
+  fn ty(&self) -> TypeId {
+    unsafe { ptr::addr_of!((*self.ptr.as_ptr()).ty).read() }
   }
 
   #[inline(always)]
@@ -357,6 +364,7 @@ struct GcBox<T: 'static> {
   /// Linked list of all finalized objects
   next: Option<NonNull<GcBox<()>>>,
   info: &'static VTable<T>,
+  ty: TypeId,
   data: T,
 }
 
@@ -369,12 +377,6 @@ struct VTable<T> {
   drop_in_place: unsafe fn(*mut T),
   display_fmt: fn(*const T, &mut core::fmt::Formatter<'_>) -> core::fmt::Result,
   debug_fmt: fn(*const T, &mut core::fmt::Formatter<'_>) -> core::fmt::Result,
-}
-
-impl<T> VTable<T> {
-  const fn erase(&'static self) -> &'static VTable<()> {
-    unsafe { mem::transmute(self) }
-  }
 }
 
 trait HasVTable<T: 'static> {

@@ -50,13 +50,13 @@ pub enum Op {
   MakeTuple { dst: Reg<u8>, desc: Const<u16> },
   MakeTupleEmpty { dst: Reg<u8> },
   Jump { offset: Offset<u24> },
-  JumpConst { offset: Const<u16> },
+  JumpConst { idx: Const<u16> },
   JumpLoop { offset: Offset<u24> },
-  JumpLoopConst { offset: Const<u16> },
+  JumpLoopConst { idx: Const<u16> },
   JumpIfFalse { val: Reg<u8>, offset: Offset<u16> },
-  JumpIfFalseConst { val: Reg<u8>, offset: Const<u16> },
+  JumpIfFalseConst { val: Reg<u8>, idx: Const<u16> },
   JumpIfTrue { val: Reg<u8>, offset: Offset<u16> },
-  JumpIfTrueConst { val: Reg<u8>, offset: Const<u16> },
+  JumpIfTrueConst { val: Reg<u8>, idx: Const<u16> },
   Add { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Sub { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
   Mul { dst: Reg<u8>, lhs: Reg<u8>, rhs: Reg<u8> },
@@ -89,6 +89,7 @@ const _: () = static_assert_size::<Op>(4, "expected a size of 4 bytes");
 pub struct Reg<T>(pub T);
 
 impl<T: Into<usize>> Reg<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -105,6 +106,7 @@ impl<T: Display> Display for Reg<T> {
 pub struct Const<T>(pub T);
 
 impl<T: Into<usize>> Const<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -131,6 +133,7 @@ impl<T: Display> Display for Const<T> {
 pub struct Capture<T>(pub T);
 
 impl<T: Into<usize>> Capture<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -147,6 +150,7 @@ impl<T: Display> Display for Capture<T> {
 pub struct Offset<T>(pub T);
 
 impl<T: Into<usize>> Offset<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -163,6 +167,7 @@ impl<T: Display> Display for Offset<T> {
 pub struct Count<T>(pub T);
 
 impl<T: Into<usize>> Count<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -179,6 +184,7 @@ impl<T: Display> Display for Count<T> {
 pub struct Mvar<T>(pub T);
 
 impl<T: Into<usize>> Mvar<T> {
+  #[inline]
   pub fn wide(self) -> usize {
     self.0.into()
   }
@@ -195,6 +201,7 @@ impl<T: Display> Display for Mvar<T> {
 pub struct Smi<T>(pub T);
 
 impl<T: Into<i32>> Smi<T> {
+  #[inline]
   pub fn wide(self) -> i32 {
     self.0.into()
   }
