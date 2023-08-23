@@ -1,0 +1,10 @@
+fn fib(n):
+  a := 0
+  b := 1
+  for _ in 0..n:
+    tmp := a + b
+    a = b
+    b = tmp
+  return a
+
+print "Fib(20) = ", fib(20)

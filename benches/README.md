@@ -1,7 +1,27 @@
 # Benchmarks
 
-Hebi benchmarks may be run using `cargo bench`.
+### Hebi
 
-There are also JavaScript and Python versions of each benchmark for the purposes of comparison.
+```
+$ cargo bench -p vm3
+```
 
-At the moment, it seems like Hebi is typically ~2x slower than Python.
+### Node.js
+
+```
+$ npm i
+$ node main.js fib
+```
+
+### Python
+
+```
+$ python3 main.py fib
+```
+
+### Lua
+
+```
+$ luarocks install luasocket
+$ lua main.lua fib
+```
