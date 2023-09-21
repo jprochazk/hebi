@@ -1,0 +1,26 @@
+[package]
+name = "tvm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+[dependencies]
+beef = "0.5.2"
+logos = "0.13.0"
+paste = "1.0.13"
+rustc-hash = "1.1.0"
+
+[dev-dependencies]
+indoc = "2.0.2"
+insta = "1.30.0"
+criterion = "0.4"
+
+# [[bench]]
+# name = "main"
+# harness = false
+
+# [profile.release]
+# lto = "fat"
