@@ -1,281 +1,162 @@
 #![allow(clippy::new_without_default)]
 
+#[macro_use]
+mod macros;
+
+use crate::lex::Lexer;
 use crate::lex::Span;
+use crate::lex::Token;
+use crate::lex::TokenKind;
 use crate::Cow;
 
-macro_rules! decl {
-  (
-    $name:ident<$lifetime:lifetime> {
-      $(
-        $variant:ident $({
-          $($field:ident : $ty:ty),* $(,)?
-        })?
-      ),* $(,)?
-    }
-  ) => {
-    paste::paste! {
-      #[derive(Clone, Debug)]
-      pub struct $name<$lifetime> {
-        pub kind: [<$name Kind>]<$lifetime>,
-        pub span: Span,
-      }
-
-      impl<$lifetime> $name<$lifetime> {
-        $(
-          pub fn [<make_ $variant:snake>](
-            span: impl Into<crate::lex::Span>,
-            $($($field : $ty),*)?
-          ) -> Self {
-            Self {
-              kind: [<$name Kind>]::$variant(
-                Box::new(
-                  [<$variant $name>]::new(
-                    $($($field),*)?
-                  )
-                )
-              ),
-              span: span.into(),
-            }
-          }
-        )*
-      }
-
-      #[derive(Clone, Debug)]
-      pub enum [<$name Kind>]<$lifetime> {
-        $(
-          $variant(Box<[<$variant $name>]<$lifetime>>)
-        ),*
-      }
-    }
-
-    $(
-      decl!(@variant_struct $variant $name $lifetime $({ $($field : $ty),* })?);
-    )*
-  };
-
-  (@variant_struct
-    $variant:ident
-    $name:ident
-    $lifetime:lifetime
-    { $($field:ident : $ty:ty),* }
-  ) => {
-    paste::paste! {
-      #[derive(Clone, Debug)]
-      pub struct [<$variant $name>]<$lifetime> {
-        _lifetime: std::marker::PhantomData<& $lifetime ()>,
-        $(pub $field : $ty),*
-      }
-
-      impl<$lifetime> [<$variant $name>]<$lifetime> {
-        pub fn new($($field : $ty),*) -> Self {
-          Self {
-            _lifetime: std::marker::PhantomData,
-            $($field),*
-          }
-        }
-      }
-    }
-  };
-
-  (@variant_struct
-    $variant:ident
-    $name:ident
-    $lifetime:lifetime
-  ) => {
-    paste::paste! {
-      #[derive(Clone, Debug)]
-      pub struct [<$variant $name>]<$lifetime>(std::marker::PhantomData<& $lifetime ()>);
-
-      impl<$lifetime> [<$variant $name>]<$lifetime> {
-        pub fn new() -> Self {
-          Self(std::marker::PhantomData)
-        }
-      }
-    }
-  };
-}
-
 #[derive(Clone, Debug)]
-pub struct SyntaxTree<'a> {
-  pub top_level: Vec<Stmt<'a>>,
+pub struct SyntaxTree<'src> {
+  pub top_level: Block<'src>,
 }
 
 decl! {
-  Stmt<'a> {
-    Var {
-      name: Ident<'a>,
-      ty: Type<'a>,
-      init: Expr<'a>,
+  Stmt<'src> {
+    Let {
+      name: Ident<'src>,
+      ty: Option<Type<'src>>,
+      init: Option<Expr<'src>>,
     },
-    Loop,
-    While {
-      cond: Expr<'a>,
-    },
-    ForIter {
-      item: Ident<'a>,
-      ty: Type<'a>,
-      iter: Expr<'a>,
-    },
-    ForRange {
-      item: Ident<'a>,
-      ty: Type<'a>,
-      start: Expr<'a>,
-      end: Expr<'a>,
-      inclusive: bool,
+    Loop {
+      body: Block<'src>,
     },
     Fn {
-      vis: Vis,
-      name: Ident<'a>,
-      sig: FnSig<'a>,
-      body: Block<'a>,
+      name: Ident<'src>,
+      params: Vec<Param<'src>>,
+      ret: Option<Type<'src>>,
+      body: Block<'src>,
     },
-    Class {
-      vis: Vis,
-      name: Ident<'a>,
-      type_params: Vec<Ident<'a>>,
-      super_class: Type<'a>,
-      bounds: Vec<Bound<'a>>,
-      members: ClassMembers<'a>,
-    },
-    Inter {
-      vis: Vis,
-      name: Ident<'a>,
-      type_params: Vec<Ident<'a>>,
-      super_inter: Type<'a>,
-      bounds: Vec<Bound<'a>>,
-      members: InterMembers<'a>,
-    },
-    Impl {
-      type_params: Vec<Ident<'a>>,
-      inter: Option<Type<'a>>,
-      target: Type<'a>,
-      bounds: Vec<Bound<'a>>,
-      members: InterMembers<'a>,
-    },
-    TypeAlias {
-      vis: Vis,
-      name: Ident<'a>,
-      type_params: Vec<Ident<'a>>,
-      target: Type<'a>,
+    Record {
+      name: Ident<'src>,
+      fields: Vec<LetStmt<'src>>,
     },
     Expr {
-      inner: Expr<'a>,
+      inner: Expr<'src>,
     },
   }
 }
 
-#[derive(Clone, Debug)]
-pub struct ClassMembers<'a> {
-  pub fields: Vec<VarStmt<'a>>,
-  pub methods: Vec<FnStmt<'a>>,
-}
-
-#[derive(Clone, Debug)]
-pub struct InterMembers<'a> {
-  pub methods: Vec<FnStmt<'a>>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Vis {
-  Pub,
-  Priv,
-}
-
 decl! {
-  Type<'a> {
+  Type<'src> {
+    Empty,
     Named {
-      name: Ident<'a>,
-      opt: bool,
-    },
-    Generic {
-      name: Ident<'a>,
-      type_params: Vec<Ident<'a>>,
-      opt: bool,
-    },
-    Tuple {
-      items: Vec<Type<'a>>,
+      name: Ident<'src>,
     },
     Array {
-      element: Type<'a>,
-      opt: bool,
+      element: Type<'src>,
+    },
+    Set {
+      value: Type<'src>,
+    },
+    Map {
+      key: Type<'src>,
+      value: Type<'src>,
     },
     Fn {
-      params: Vec<Type<'a>>,
-      ret: Option<Type<'a>>,
-      body: Block<'a>,
+      params: Vec<Type<'src>>,
+      ret: Type<'src>,
     },
-    Unknown,
   }
 }
 
 decl! {
-  Expr<'a> {
+  Expr<'src> {
+    Never,
     Return {
-      value: Option<Expr<'a>>,
+      value: Expr<'src>,
     },
     Yield {
-      value: Option<Expr<'a>>,
+      value: Expr<'src>,
     },
-    Break {
-      label: Option<Label<'a>>,
-    },
-    Continue {
-      label: Option<Label<'a>>,
-    },
+    Break,
+    Continue,
     Block {
-      inner: Block<'a>,
+      inner: Block<'src>,
     },
     If {
-      branches: Vec<(Expr<'a>, Block<'a>)>,
-      tail: Option<Block<'a>>,
-    },
-    Fn {
-      name: Option<Ident<'a>>,
-      sig: FnSig<'a>,
+      branches: Vec<Branch<'src>>,
+      tail: Option<Block<'src>>,
     },
     Binary {
-      left: Expr<'a>,
+      left: Expr<'src>,
       op: BinaryOp,
-      right: Expr<'a>,
+      right: Expr<'src>,
     },
     Unary {
       op: UnaryOp,
-      right: Expr<'a>,
+      right: Expr<'src>,
     },
     Literal {
-      inner: Literal<'a>,
+      value: Literal<'src>,
     },
-    GetVar {
-      name: Ident<'a>,
+    Use {
+      target: Place<'src>,
     },
-    SetVar {
-      name: Ident<'a>,
-      value: Expr<'a>,
+    Assign {
+      target: Place<'src>,
+      value: Expr<'src>,
     },
-    GetField {
-      target: Expr<'a>,
-      name: Ident<'a>,
-    },
-    SetField {
-      target: Expr<'a>,
-      name: Ident<'a>,
-      value: Expr<'a>,
-    },
-    GetIndex {
-      target: Expr<'a>,
-      key: Expr<'a>,
-    },
-    SetIndex {
-      target: Expr<'a>,
-      key: Expr<'a>,
-      value: Expr<'a>,
-    },
-    GetSelf,
-    GetSuper,
     Call {
-      target: Expr<'a>,
-      args: Vec<Arg<'a>>,
+      target: Expr<'src>,
+      args: Vec<Arg<'src>>,
     },
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct Param<'src> {
+  pub name: Ident<'src>,
+  pub ty: Type<'src>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Branch<'src> {
+  pub cond: Expr<'src>,
+  pub body: Block<'src>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Arg<'src> {
+  pub key: Option<Ident<'src>>,
+  pub value: Expr<'src>,
+}
+
+impl<'src> UseExpr<'src> {
+  pub fn target(&self) -> &Place {
+    &self.target
+  }
+}
+
+#[derive(Clone, Debug)]
+pub enum Place<'src> {
+  Var {
+    name: Ident<'src>,
+  },
+  Field {
+    parent: Expr<'src>,
+    name: Ident<'src>,
+  },
+  Index {
+    parent: Expr<'src>,
+    key: Expr<'src>,
+  },
+}
+
+impl<'src> Place<'src> {
+  pub fn is_var(&self) -> bool {
+    matches!(self, Self::Var { .. })
+  }
+
+  pub fn into_var(self) -> Option<Ident<'src>> {
+    if let Self::Var { name } = self {
+      Some(name)
+    } else {
+      None
+    }
   }
 }
 
@@ -298,6 +179,24 @@ pub enum BinaryOp {
   Opt,
 }
 
+macro_rules! binop {
+  [+] => ($crate::ast::BinaryOp::Add);
+  [-] => ($crate::ast::BinaryOp::Sub);
+  [*] => ($crate::ast::BinaryOp::Mul);
+  [/] => ($crate::ast::BinaryOp::Div);
+  [%] => ($crate::ast::BinaryOp::Rem);
+  [**] => ($crate::ast::BinaryOp::Pow);
+  [==] => ($crate::ast::BinaryOp::Eq);
+  [!=] => ($crate::ast::BinaryOp::Ne);
+  [>] => ($crate::ast::BinaryOp::Gt);
+  [<] => ($crate::ast::BinaryOp::Lt);
+  [>=] => ($crate::ast::BinaryOp::Ge);
+  [<=] => ($crate::ast::BinaryOp::Le);
+  [&&] => ($crate::ast::BinaryOp::And);
+  [||] => ($crate::ast::BinaryOp::Or);
+  [??] => ($crate::ast::BinaryOp::Opt);
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
   Minus,
@@ -305,41 +204,75 @@ pub enum UnaryOp {
   Opt,
 }
 
+macro_rules! unop {
+  [-] => ($crate::ast::UnaryOp::Minus);
+  [!] => ($crate::ast::UnaryOp::Not);
+  [?] => ($crate::ast::UnaryOp::Opt);
+}
+
 #[derive(Clone, Debug)]
-pub enum Literal<'a> {
+pub enum Literal<'src> {
+  None,
   Int(i64),
   Float(f64),
   Bool(bool),
-  String(Cow<'a, str>),
-  Tuple(Vec<Expr<'a>>),
-  Array(Vec<Expr<'a>>),
-  Map(Vec<(Expr<'a>, Expr<'a>)>),
+  String(Cow<'src, str>),
+  Array(Vec<Expr<'src>>),
+  // TODO: during type check, empty `map` can coerce to `set`
+  Set(Vec<Expr<'src>>),
+  Map(Vec<(Expr<'src>, Expr<'src>)>),
+}
+
+macro_rules! lit {
+  (none) => {
+    $crate::ast::Literal::None
+  };
+  (int, $v:expr) => {
+    $crate::ast::Literal::Int(($v).into())
+  };
+  (float, $v:expr) => {
+    $crate::ast::Literal::Float(($v).into())
+  };
+  (bool, $v:expr) => {
+    $crate::ast::Literal::Bool(($v).into())
+  };
+  (str, $v:expr) => {
+    $crate::ast::Literal::String(($v).into())
+  };
+  (array, $v:expr) => {
+    $crate::ast::Literal::Array(($v).into())
+  };
+  (set, $v:expr) => {
+    $crate::ast::Literal::Set(($v).into())
+  };
+  (map, $v:expr) => {
+    $crate::ast::Literal::Map(($v).into())
+  };
+}
+
+impl Default for Literal<'_> {
+  fn default() -> Self {
+    Self::Int(0)
+  }
 }
 
 #[derive(Clone, Debug)]
-pub struct FnSig<'a> {
-  pub type_params: Vec<Ident<'a>>,
-  pub params: Vec<(Ident<'a>, Type<'a>)>,
-  pub ret: Option<Type<'a>>,
-  pub bounds: Vec<Bound<'a>>,
+pub struct Block<'src> {
+  pub span: Span,
+  pub body: Vec<Stmt<'src>>,
+  pub tail: Option<Expr<'src>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Bound<'a> {
-  pub left: Type<'a>,
-  pub right: Vec<Type<'a>>,
+impl<'src> From<Block<'src>> for Stmt<'src> {
+  fn from(block: Block<'src>) -> Self {
+    Stmt::make_expr(block.span, Expr::make_block(block.span, block))
+  }
 }
 
-#[derive(Clone, Debug)]
-pub struct Block<'a> {
-  pub body: Vec<Stmt<'a>>,
-  pub tail: Option<Expr<'a>>,
-}
-
-#[derive(Clone, Debug)]
-pub enum Arg<'a> {
-  Labelled { value: Expr<'a>, label: Ident<'a> },
-  Plain { value: Expr<'a> },
+impl<'src> From<Expr<'src>> for Stmt<'src> {
+  fn from(value: Expr<'src>) -> Self {
+    Stmt::make_expr(value.span, value)
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -348,8 +281,24 @@ pub struct Ident<'src> {
   pub lexeme: &'src str,
 }
 
-#[derive(Clone, Debug)]
-pub struct Label<'src> {
-  pub span: Span,
-  pub lexeme: &'src str,
+impl<'src> Ident<'src> {
+  pub fn from_token(l: &Lexer<'src>, t: &Token) -> Self {
+    assert!(matches!(t.kind, TokenKind::Ident));
+    Self {
+      span: t.span,
+      lexeme: l.lexeme(t),
+    }
+  }
+}
+
+trait WrapBox {
+  type Boxed;
+
+  fn wrap_box(self) -> Self::Boxed;
+}
+
+trait UnwrapBox {
+  type Unboxed;
+
+  fn unwrap_box(self) -> Self::Unboxed;
 }

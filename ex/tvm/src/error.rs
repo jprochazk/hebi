@@ -1,146 +1,57 @@
-use std::fmt::{Debug, Display};
-use std::sync::Arc;
-
 use crate::lex::Span;
+use crate::lex::TokenKind;
+use crate::util::num_digits;
+use core::fmt::{self, Debug, Display, Write};
 
 pub type Result<T, E = Error> = ::std::result::Result<T, E>;
 
 #[derive(Clone)]
 pub struct Error {
   kind: ErrorKind,
-  module_name: Arc<str>,
-  source: Arc<str>,
-  message: Arc<str>,
   span: Span,
 }
 
+macro_rules! err {
+  (@$span:expr, $kind:ident,) => {err!(@$span, $kind)};
+  (@$span:expr, $kind:ident) => {
+    $crate::error::Error::new(
+      $crate::error::ErrorKind::$kind,
+      ($span).into(),
+    )
+  };
+  (@$span:expr, $kind:ident, $($f:expr),+) => {
+    $crate::error::Error::new(
+      $crate::error::ErrorKind::$kind($($f),+),
+      ($span).into(),
+    )
+  };
+}
+
 impl Error {
-  pub fn new(
-    kind: ErrorKind,
-    module_name: impl Into<Arc<str>>,
-    source: impl Into<Arc<str>>,
-    message: impl Into<Arc<str>>,
-    span: impl Into<Span>,
-  ) -> Self {
-    Self {
-      kind,
-      module_name: module_name.into(),
-      source: source.into(),
-      message: message.into(),
-      span: span.into(),
-    }
+  #[inline]
+  pub fn new(kind: ErrorKind, span: Span) -> Self {
+    Self { kind, span }
   }
 
-  pub fn syntax(
-    module_name: impl Into<Arc<str>>,
-    source: impl Into<Arc<str>>,
-    message: impl Into<Arc<str>>,
-    span: impl Into<Span>,
-  ) -> Self {
-    Self::new(ErrorKind::Syntax, module_name, source, message, span)
-  }
-
-  pub fn emit(
-    module_name: impl Into<Arc<str>>,
-    source: impl Into<Arc<str>>,
-    message: impl Into<Arc<str>>,
-    span: impl Into<Span>,
-  ) -> Self {
-    Self::new(ErrorKind::Emit, module_name, source, message, span)
-  }
-
-  pub fn runtime(
-    module_name: impl Into<Arc<str>>,
-    source: impl Into<Arc<str>>,
-    message: impl Into<Arc<str>>,
-    span: impl Into<Span>,
-  ) -> Self {
-    Self::new(ErrorKind::Runtime, module_name, source, message, span)
-  }
-
-  pub fn simple(message: impl Into<Arc<str>>) -> Self {
-    Self::new(ErrorKind::Simple, "", "", message, Span::empty())
-  }
-
-  pub fn kind(&self) -> ErrorKind {
-    self.kind
-  }
-
-  pub fn module_name(&self) -> &str {
-    &self.module_name
-  }
-
-  pub fn source(&self) -> &str {
-    &self.source
-  }
-
-  pub fn message(&self) -> &str {
-    &self.message
-  }
-
+  #[inline]
   pub fn span(&self) -> Span {
     self.span
   }
 
-  pub fn location(&self) -> Location {
-    Location::from_source_span(&self.source, &self.span)
+  #[inline]
+  pub fn location(&self, src: &str) -> Location {
+    Location::from_source_span(src, &self.span)
   }
 
-  pub fn report(&self) -> String {
-    report(
-      self.kind,
-      &self.module_name,
-      &self.source,
-      &self.message,
-      self.span,
-    )
+  #[inline]
+  pub fn with_src<'a, 'src>(&'a self, src: &'src str) -> ErrorWithSrc<'a, 'src> {
+    ErrorWithSrc { error: self, src }
   }
 }
 
-pub fn report(
-  kind: ErrorKind,
-  module_name: &str,
-  source: &str,
-  message: &str,
-  span: Span,
-) -> String {
-  use core::fmt::Write;
-
-  if matches!(kind, ErrorKind::Simple) {
-    return format!("error: {}", message);
-  }
-
-  // empty span
-  if span.start == span.end {
-    return format!("error in `{module_name}`: {message}");
-  }
-
-  let mut out = String::new();
-
-  let loc = Location::from_source_span(source, &span);
-  let ln = loc.line_num;
-  let lw = num_digits(loc.line_num);
-  let pos = span.start() - loc.line_start;
-  let len = if span.end() > loc.line_end {
-    loc.line_end - span.start()
-  } else {
-    span.end() - span.start()
-  };
-  let line = &source[loc.line_start..loc.line_end];
-
-  writeln!(&mut out, "error in `{module_name}`: {message}").unwrap();
-  writeln!(&mut out, "{ln} |  {line}").unwrap();
-  writeln!(&mut out, "{:lw$} |  {:pos$}{:^<len$}", "", "", "^").unwrap();
-
-  out
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum ErrorKind {
-  Simple,
-  Syntax,
-  Emit,
-  Runtime,
+pub struct ErrorWithSrc<'a, 'src> {
+  error: &'a Error,
+  src: &'src str,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -181,29 +92,32 @@ impl Location {
   }
 }
 
+impl std::error::Error for Error {}
+
+#[derive(Debug, Clone)]
+pub enum ErrorKind {
+  UnexpectedToken,
+  ExpectedToken(TokenKind),
+  InvalidFloat,
+  InvalidInt,
+  InvalidEscape,
+}
+
 impl Display for ErrorKind {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      ErrorKind::Simple => Ok(()),
-      ErrorKind::Syntax => f.write_str("syntax"),
-      ErrorKind::Emit => f.write_str("emit"),
-      ErrorKind::Runtime => f.write_str("runtime"),
+      ErrorKind::UnexpectedToken => f.write_str("unexpected token"),
+      ErrorKind::ExpectedToken(kind) => write!(f, "expected token `{kind}`"),
+      ErrorKind::InvalidFloat => f.write_str("invalid float literal"),
+      ErrorKind::InvalidInt => f.write_str("invalid integer literal"),
+      ErrorKind::InvalidEscape => f.write_str("invalid string escape"),
     }
   }
 }
 
 impl Display for Error {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let loc = self.location();
-
-    match self.kind {
-      ErrorKind::Simple => write!(f, "error: {}", self.message),
-      _ => write!(
-        f,
-        "{} error in {} (line {}, col {}): {}",
-        self.kind, self.module_name, loc.line_num, loc.column, self.message
-      ),
-    }
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "error: {}", self.kind)
   }
 }
 
@@ -211,17 +125,36 @@ impl Debug for Error {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     f.debug_struct("Error")
       .field("kind", &self.kind)
-      .field("module_name", &self.module_name)
-      .field("message", &self.message)
       .field("span", &self.span)
       .finish_non_exhaustive()
   }
 }
 
-impl std::error::Error for Error {}
+impl Display for ErrorWithSrc<'_, '_> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    report(f, &self.error.kind, self.src, self.error.span)
+  }
+}
 
-fn num_digits(v: usize) -> usize {
-  use core::iter::successors;
+pub fn report(out: &mut impl Write, kind: &ErrorKind, src: &str, span: Span) -> fmt::Result {
+  if span.is_empty() {
+    return write!(out, "error: {kind}");
+  }
 
-  successors(Some(v), |&n| (n >= 10).then_some(n / 10)).count()
+  let loc = Location::from_source_span(src, &span);
+  let ln = loc.line_num;
+  let lw = num_digits(loc.line_num);
+  let pos = span.start() - loc.line_start;
+  let len = if span.end() > loc.line_end {
+    loc.line_end - span.start()
+  } else {
+    span.end() - span.start()
+  };
+  let line = &src[loc.line_start..loc.line_end];
+
+  writeln!(out, "error: {kind}")?;
+  writeln!(out, "{ln} |  {line}")?;
+  writeln!(out, "{:lw$} |  {:pos$}{:^<len$}", "", "", "^")?;
+
+  Ok(())
 }
